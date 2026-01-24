@@ -1,5 +1,5 @@
 ---
-
+import '../styles/global.css';
 ---
 
 <html lang="en">
@@ -9,9 +9,111 @@
 		<link rel="icon" href="/favicon.ico" />
 		<meta name="viewport" content="width=device-width" />
 		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:wght@400;600;700&display=swap" rel="stylesheet" />
+		<title>World of Aletheia</title>
 	</head>
-	<body>
-		<h1>Astro</h1>
+	<body class="min-h-screen">
+		<!-- Full-screen background with map image -->
+		<div class="relative min-h-screen bg-cover bg-center bg-fixed" style="background-image: url(/Shattered_Lands_Landscape01.png);">
+			<!-- Gradient overlay for text readability -->
+			<div class="absolute inset-0 bg-gradient-to-b from-base-100/30 via-base-100/50 to-base-100/70"></div>
+			
+			<!-- Content layer -->
+			<div class="relative z-10">
+				<!-- Navigation bar -->
+				<div class="navbar bg-base-100/80 backdrop-blur-sm">
+					<div class="navbar-start">
+						<div class="dropdown">
+							<div tabindex="0" role="button" class="btn btn-ghost lg:hidden">
+								<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" />
+								</svg>
+							</div>
+							<ul tabindex="0" class="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow">
+								<li><a href="#about">About</a></li>
+								<li><a href="#lore">Lore</a></li>
+								<li><a href="#locations">Locations</a></li>
+								<li><a href="#characters">Characters</a></li>
+							</ul>
+						</div>
+						<a class="btn btn-ghost text-xl font-lora">World of Aletheia</a>
+					</div>
+					<div class="navbar-center hidden lg:flex">
+						<ul class="menu menu-horizontal px-1">
+							<li><a href="#about">About</a></li>
+							<li><a href="#lore">Lore</a></li>
+							<li><a href="#locations">Locations</a></li>
+							<li><a href="#characters">Characters</a></li>
+						</ul>
+					</div>
+					<div class="navbar-end">
+						<a href="https://spells.worldofaletheia.com" target="_blank" class="btn btn-primary">Sorcerer Spells</a>
+					</div>
+				</div>
+				
+				<!-- Hero content -->
+				<div class="container mx-auto px-4 pt-32 pb-16">
+					<div class="max-w-3xl">
+						<h1 class="text-6xl lg:text-7xl font-bold font-lora text-ink-950 mb-6 drop-shadow-lg">
+							World of Aletheia
+						</h1>
+						<p class="text-xl lg:text-2xl text-ink-800 mb-8 drop-shadow-md">
+							An immersive tabletop RPG setting where magic, mystery, and adventure await in the Shattered Lands.
+						</p>
+						<div class="flex flex-wrap gap-4">
+							<a href="#explore" class="btn btn-primary btn-lg">Explore the World</a>
+							<a href="#about" class="btn btn-outline btn-lg">Learn More</a>
+						</div>
+					</div>
+				</div>
+				
+				<!-- Quick links section -->
+				<div class="container mx-auto px-4 py-16">
+					<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+						<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
+							<div class="card-body">
+								<h2 class="card-title font-lora">Lore & History</h2>
+								<p>Discover the rich history and legends of Aletheia.</p>
+								<div class="card-actions justify-end">
+									<a href="#lore" class="btn btn-primary btn-sm">Explore</a>
+								</div>
+							</div>
+						</div>
+						
+						<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
+							<div class="card-body">
+								<h2 class="card-title font-lora">Locations</h2>
+								<p>Journey through cities, dungeons, and mysterious lands.</p>
+								<div class="card-actions justify-end">
+									<a href="#locations" class="btn btn-primary btn-sm">Explore</a>
+								</div>
+							</div>
+						</div>
+						
+						<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
+							<div class="card-body">
+								<h2 class="card-title font-lora">Characters</h2>
+								<p>Meet the heroes, villains, and legends of the realm.</p>
+								<div class="card-actions justify-end">
+									<a href="#characters" class="btn btn-primary btn-sm">Explore</a>
+								</div>
+							</div>
+						</div>
+						
+						<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
+							<div class="card-body">
+								<h2 class="card-title font-lora">Magic & Spells</h2>
+								<p>Delve into the arcane arts and mystical powers.</p>
+								<div class="card-actions justify-end">
+									<a href="https://spells.worldofaletheia.com" target="_blank" class="btn btn-primary btn-sm">Explore</a>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
 	</body>
 </html>
