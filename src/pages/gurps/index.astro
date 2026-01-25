@@ -1,5 +1,5 @@
 ---
-import '../styles/global.css';
+import '../../styles/global.css';
 ---
 
 <html lang="en">
@@ -12,11 +12,11 @@ import '../styles/global.css';
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:wght@400;600;700&display=swap" rel="stylesheet" />
-		<title>World of Aletheia</title>
+		<title>GURPS - World of Aletheia</title>
 	</head>
-	<body  class="min-h-screen">
+	<body class="min-h-screen">
 		<!-- Full-screen background with map image -->
-		<div class="relative min-h-screen bg-cover bg-center bg-fixed" style="background-image: url(Shattered_Lands_Landscape01.png);">
+		<div class="relative min-h-screen bg-cover bg-center bg-fixed" style="background-image: url(/Shattered_Lands_Landscape01.png);">
 			<!-- Gradient overlay for text readability -->
 			<div class="absolute inset-0 bg-gradient-to-b from-base-100/30 via-base-100/50 to-base-100/70"></div>
 			
@@ -32,26 +32,26 @@ import '../styles/global.css';
 								</svg>
 							</div>
 							<ul tabindex="0" class="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow">
-								<li><a href="#about">About</a></li>
-								<li><a href="#lore">Lore</a></li>
-								<li><a href="#locations">Locations</a></li>
-								<li><a href="#characters">Characters</a></li>
-								<li><a href="/gurps">GURPS</a></li>
+								<li><a href="/gurps/character-creation">Character Creation</a></li>
+								<li><a href="/gurps/house-rules">House Rules</a></li>
+								<li><a href="/gurps/resources">Resources</a></li>
+								<li><a href="/gurps/external-links">External Links</a></li>
+								<li><hr class="my-2" /></li>
+								<li><a href="/">← Back to Main Site</a></li>
 							</ul>
 						</div>
-						<a class="btn btn-ghost text-xl font-lora">World of Aletheia</a>
+						<a href="/" class="btn btn-ghost text-xl font-lora">World of Aletheia</a>
 					</div>
 					<div class="navbar-center hidden lg:flex">
 						<ul class="menu menu-horizontal px-1">
-							<li><a href="#about">About</a></li>
-							<li><a href="#lore">Lore</a></li>
-							<li><a href="#locations">Locations</a></li>
-							<li><a href="#characters">Characters</a></li>
-							<li><a href="/gurps">GURPS</a></li>
+							<li><a href="/gurps/character-creation">Character Creation</a></li>
+							<li><a href="/gurps/house-rules">House Rules</a></li>
+							<li><a href="/gurps/resources">Resources</a></li>
+							<li><a href="/gurps/external-links">External Links</a></li>
 						</ul>
 					</div>
-					<div class="navbar-end">
-						<a href="https://spells.worldofaletheia.com" target="_blank" class="btn btn-primary">Sorcerer Spells</a>
+					<div class="navbar-end gap-2">
+						<a href="/" class="btn btn-outline btn-sm">← Main Site</a>
 					</div>
 				</div>
 				
@@ -59,14 +59,14 @@ import '../styles/global.css';
 				<div class="container mx-auto px-4 pt-32 pb-16">
 					<div class="max-w-3xl">
 						<h1 class="text-6xl lg:text-7xl font-bold font-lora text-ink-950 mb-6 drop-shadow-lg">
-							World of Aletheia
+							GURPS Campaign Guide
 						</h1>
 						<p class="text-xl lg:text-2xl text-ink-800 mb-8 drop-shadow-md">
-							An immersive tabletop RPG setting where magic, mystery, and adventure await in the Shattered Lands.
+							Tips, tricks, and resources for playing in the World of Aletheia using the GURPS system.
 						</p>
 						<div class="flex flex-wrap gap-4">
-							<a href="#explore" class="btn btn-primary btn-lg">Explore the World</a>
-							<a href="#about" class="btn btn-outline btn-lg">Learn More</a>
+							<a href="/gurps/character-creation" class="btn btn-primary btn-lg">Character Creation</a>
+							<a href="/gurps/resources" class="btn btn-outline btn-lg">Resources</a>
 						</div>
 					</div>
 				</div>
@@ -76,50 +76,40 @@ import '../styles/global.css';
 					<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 						<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
 							<div class="card-body">
-								<h2 class="card-title font-lora">Lore & History</h2>
-								<p>Discover the rich history and legends of Aletheia.</p>
+								<h2 class="card-title font-lora">Character Creation</h2>
+								<p>Tips and tricks for creating characters with house rules and campaign-specific guidance.</p>
 								<div class="card-actions justify-end">
-									<a href="#lore" class="btn btn-primary btn-sm">Explore</a>
+									<a href="/gurps/character-creation" class="btn btn-primary btn-sm">Learn More</a>
 								</div>
 							</div>
 						</div>
 						
 						<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
 							<div class="card-body">
-								<h2 class="card-title font-lora">Locations</h2>
-								<p>Journey through cities, dungeons, and mysterious lands.</p>
+								<h2 class="card-title font-lora">House Rules</h2>
+								<p>Campaign-specific modifications and house rules for GURPS gameplay.</p>
 								<div class="card-actions justify-end">
-									<a href="#locations" class="btn btn-primary btn-sm">Explore</a>
+									<a href="/gurps/house-rules" class="btn btn-primary btn-sm">View Rules</a>
 								</div>
 							</div>
 						</div>
 						
 						<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
 							<div class="card-body">
-								<h2 class="card-title font-lora">Characters</h2>
-								<p>Meet the heroes, villains, and legends of the realm.</p>
+								<h2 class="card-title font-lora">Resources</h2>
+								<p>Helpful lists of spells, skills, equipment, and other game resources.</p>
 								<div class="card-actions justify-end">
-									<a href="#characters" class="btn btn-primary btn-sm">Explore</a>
+									<a href="/gurps/resources" class="btn btn-primary btn-sm">Browse</a>
 								</div>
 							</div>
 						</div>
 						
 						<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
 							<div class="card-body">
-								<h2 class="card-title font-lora">Magic & Spells</h2>
-								<p>Delve into the arcane arts and mystical powers.</p>
+								<h2 class="card-title font-lora">External Links</h2>
+								<p>Curated collection of external GURPS resources and references.</p>
 								<div class="card-actions justify-end">
-									<a href="https://spells.worldofaletheia.com" target="_blank" class="btn btn-primary btn-sm">Explore</a>
-								</div>
-							</div>
-						</div>
-						
-						<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
-							<div class="card-body">
-								<h2 class="card-title font-lora">GURPS Campaign</h2>
-								<p>Tips, tricks, and resources for GURPS gameplay.</p>
-								<div class="card-actions justify-end">
-									<a href="/gurps" class="btn btn-primary btn-sm">Explore</a>
+									<a href="/gurps/external-links" class="btn btn-primary btn-sm">Explore</a>
 								</div>
 							</div>
 						</div>

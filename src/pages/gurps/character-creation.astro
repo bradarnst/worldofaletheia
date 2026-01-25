@@ -1,0 +1,123 @@
+---
+import '../../styles/global.css';
+---
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" href="/favicon.ico" />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="generator" content={Astro.generator} />
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:wght@400;600;700&display=swap" rel="stylesheet" />
+		<title>Character Creation - GURPS - World of Aletheia</title>
+	</head>
+	<body class="min-h-screen">
+		<!-- Full-screen background with map image -->
+		<div class="relative min-h-screen bg-cover bg-center bg-fixed" style="background-image: url(/Shattered_Lands_Landscape01.png);">
+			<!-- Gradient overlay for text readability -->
+			<div class="absolute inset-0 bg-gradient-to-b from-base-100/30 via-base-100/50 to-base-100/70"></div>
+			
+			<!-- Content layer -->
+			<div class="relative z-10">
+				<!-- Navigation bar -->
+				<div class="navbar bg-base-100/80 backdrop-blur-sm">
+					<div class="navbar-start">
+						<div class="dropdown">
+							<div tabindex="0" role="button" class="btn btn-ghost lg:hidden">
+								<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" />
+								</svg>
+							</div>
+							<ul tabindex="0" class="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow">
+								<li><a href="/gurps">GURPS Home</a></li>
+								<li><a href="/gurps/character-creation">Character Creation</a></li>
+								<li><a href="/gurps/house-rules">House Rules</a></li>
+								<li><a href="/gurps/resources">Resources</a></li>
+								<li><a href="/gurps/external-links">External Links</a></li>
+								<li><hr class="my-2" /></li>
+								<li><a href="/">← Back to Main Site</a></li>
+							</ul>
+						</div>
+						<a href="/gurps" class="btn btn-ghost text-xl font-lora">GURPS Guide</a>
+					</div>
+					<div class="navbar-center hidden lg:flex">
+						<ul class="menu menu-horizontal px-1">
+							<li><a href="/gurps">GURPS Home</a></li>
+							<li><a href="/gurps/character-creation">Character Creation</a></li>
+							<li><a href="/gurps/house-rules">House Rules</a></li>
+							<li><a href="/gurps/resources">Resources</a></li>
+							<li><a href="/gurps/external-links">External Links</a></li>
+						</ul>
+					</div>
+					<div class="navbar-end gap-2">
+						<a href="/" class="btn btn-outline btn-sm">← Main Site</a>
+					</div>
+				</div>
+				
+				<!-- Main content -->
+				<div class="container mx-auto px-4 py-16">
+					<div class="max-w-4xl">
+						<h1 class="text-5xl lg:text-6xl font-bold font-lora text-ink-950 mb-6 drop-shadow-lg">
+							Character Creation
+						</h1>
+						<p class="text-lg text-ink-800 mb-8 drop-shadow-md">
+							Tips, tricks, and guidelines for creating characters in the World of Aletheia using GURPS.
+						</p>
+						
+						<!-- Content card -->
+						<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl mb-8">
+							<div class="card-body">
+								<h2 class="card-title font-lora text-2xl mb-4">Getting Started</h2>
+								<p class="mb-4">
+									This section provides guidance for creating characters for campaigns set in the World of Aletheia. 
+									Whether you're a new player or an experienced GURPS veteran, you'll find helpful tips and house rules 
+									specific to this campaign setting.
+								</p>
+								<p class="mb-4">
+									Key topics covered:
+								</p>
+								<ul class="list-disc list-inside space-y-2 mb-4">
+									<li>Character concept development</li>
+									<li>Point allocation strategies</li>
+									<li>Campaign-specific advantages and disadvantages</li>
+									<li>Skill recommendations for the setting</li>
+									<li>Equipment and starting resources</li>
+									<li>House rules and modifications</li>
+								</ul>
+								<p>
+									More detailed content coming soon. Check back for comprehensive character creation guides!
+								</p>
+							</div>
+						</div>
+						
+						<!-- Navigation cards -->
+						<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+							<a href="/gurps/house-rules" class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
+								<div class="card-body">
+									<h3 class="card-title font-lora">House Rules</h3>
+									<p>Campaign-specific modifications and rules.</p>
+									<div class="card-actions justify-end">
+										<div class="btn btn-primary btn-sm">View Rules</div>
+									</div>
+								</div>
+							</a>
+							
+							<a href="/gurps/resources" class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
+								<div class="card-body">
+									<h3 class="card-title font-lora">Resources</h3>
+									<p>Spells, skills, equipment, and more.</p>
+									<div class="card-actions justify-end">
+										<div class="btn btn-primary btn-sm">Browse</div>
+									</div>
+								</div>
+							</a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
