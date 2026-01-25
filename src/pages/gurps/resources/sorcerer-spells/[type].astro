@@ -1,6 +1,29 @@
 ---
 import '../../../../styles/global.css';
+import spellsData from '../../../../data/spells/spells-raw.json';
 import spellTypes from '../../../../data/spells/spell-types.json';
+
+// Get the spell type from the URL
+const { type } = Astro.params;
+
+// Convert URL slug back to spell type name
+const spellTypeName = spellTypes.find(st => 
+  st.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') === type
+);
+
+// Filter spells by type
+const spells = spellsData.spells
+  .filter(spell => spell.spell_type === spellTypeName)
+  .sort((a, b) => a.spell_name.localeCompare(b.spell_name));
+
+// Generate static paths for all spell types
+export async function getStaticPaths() {
+  return spellTypes.map(spellType => ({
+    params: { 
+      type: spellType.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+    }
+  }));
+}
 ---
 
 <html lang="en">
@@ -13,7 +36,7 @@ import spellTypes from '../../../../data/spells/spell-types.json';
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:wght@400;600;700&display=swap" rel="stylesheet" />
-		<title>Sorcerer Spells - GURPS - World of Aletheia</title>
+		<title>{spellTypeName} - Sorcerer Spells - GURPS - World of Aletheia</title>
 	</head>
 	<body class="min-h-screen">
 		<!-- Full-screen background with map image -->
@@ -64,86 +87,60 @@ import spellTypes from '../../../../data/spells/spell-types.json';
 				<div class="container mx-auto px-4 py-16">
 					<div class="max-w-4xl">
 						<h1 class="text-5xl lg:text-6xl font-bold font-lora text-ink-950 mb-6 drop-shadow-lg">
-							Sorcerer Spells
+							{spellTypeName}
 						</h1>
 						<p class="text-lg text-ink-800 mb-8 drop-shadow-md">
-							Comprehensive reference for sorcerer spells in the World of Aletheia.
+							{spells.length} spell{spells.length !== 1 ? 's' : ''} in this category.
 						</p>
 						
-						<!-- Attribution Section -->
-						<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl mb-8 border-2 border-primary">
-							<div class="card-body">
-								<h2 class="card-title font-lora text-lg mb-3">📚 Spell Source Attribution</h2>
-								<p class="mb-3">
-									These 676 sorcerer spells are sourced from the <strong>Generic Universal Eggplant</strong> blog, 
-									an excellent resource for GURPS spell variants and homebrew content.
-								</p>
-								<p class="mb-4">
-									<strong>Source:</strong> <a href="https://enragedeggplant.blogspot.com/" target="_blank" class="link link-primary font-semibold">
-										Generic Universal Eggplant - Sorcery Spells
-									</a>
-								</p>
-								<p class="text-sm text-ink-800">
-									The spells have been organized and integrated into this site to provide easy reference for World of Aletheia campaigns. 
-									We are grateful to the author for creating and sharing this comprehensive spell collection.
-								</p>
-							</div>
-						</div>
-						
-						<!-- Quick Links -->
+						<!-- Spell List -->
 						<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl mb-8">
 							<div class="card-body">
-								<h2 class="card-title font-lora text-2xl mb-4">Browse Spells</h2>
-								<div class="flex flex-wrap gap-3">
-									<a href="/gurps/resources/sorcerer-spells/all" class="btn btn-primary">
-										📖 All Spells (Alphabetical)
-									</a>
-								</div>
-							</div>
-						</div>
-						
-						<!-- Spell Types Grid -->
-						<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl mb-8">
-							<div class="card-body">
-								<h2 class="card-title font-lora text-2xl mb-4">Spell Types</h2>
-								<p class="mb-6">
-									Browse spells organized by type. There are {spellTypes.length} spell types available.
-								</p>
-								
-								<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-									{spellTypes.map((spellType) => {
-										const slug = spellType.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-										return (
-											<a 
-												href={`/gurps/resources/sorcerer-spells/${slug}`}
-												class="btn btn-outline justify-start"
-											>
-												{spellType}
-											</a>
-										);
-									})}
-								</div>
+								{spells.length > 0 ? (
+									<div class="overflow-x-auto">
+										<table class="table table-sm">
+											<thead>
+												<tr>
+													<th>Spell Name</th>
+													<th>Cost</th>
+													<th>Range</th>
+												</tr>
+											</thead>
+											<tbody>
+												{spells.map((spell) => (
+													<tr class="hover">
+														<td class="font-semibold">{spell.spell_name}</td>
+														<td class="text-sm">{spell.full_cost}</td>
+														<td class="text-sm">{spell.range}</td>
+													</tr>
+												))}
+											</tbody>
+										</table>
+									</div>
+								) : (
+									<p>No spells found in this category.</p>
+								)}
 							</div>
 						</div>
 						
 						<!-- Navigation cards -->
 						<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-							<a href="/gurps/resources" class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
+							<a href="/gurps/resources/sorcerer-spells" class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
 								<div class="card-body">
-									<h3 class="card-title font-lora">← Back to Resources</h3>
-									<p>View all GURPS resources.</p>
+									<h3 class="card-title font-lora">← Back to Sorcerer Spells</h3>
+									<p>Browse other spell types.</p>
 									<div class="card-actions justify-end">
 										<div class="btn btn-primary btn-sm">Back</div>
 									</div>
 								</div>
 							</a>
 							
-							<a href="/gurps" class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
+							<a href="/gurps/resources/sorcerer-spells/all" class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
 								<div class="card-body">
-									<h3 class="card-title font-lora">GURPS Home</h3>
-									<p>Back to the GURPS campaign guide.</p>
+									<h3 class="card-title font-lora">All Spells</h3>
+									<p>View alphabetical spell index.</p>
 									<div class="card-actions justify-end">
-										<div class="btn btn-primary btn-sm">Home</div>
+										<div class="btn btn-primary btn-sm">View</div>
 									</div>
 								</div>
 							</a>
