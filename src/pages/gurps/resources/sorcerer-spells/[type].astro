@@ -103,9 +103,9 @@ export async function getStaticPaths() {
 										: spell.description;
 									
 									// Truncate statistics to first 120 characters
-									const statisticsBlurb = spell.statistics.length > 120 
+									const statisticsBlurb = (spell.statistics && spell.statistics.length > 120)
 										? spell.statistics.substring(0, 120) + '...' 
-										: spell.statistics;
+										: spell.statistics || '';
 									
 									return (
 										<div class="card bg-base-100/90 backdrop-blur-sm shadow-lg hover:shadow-xl transition-shadow h-full flex flex-col">
@@ -174,7 +174,10 @@ export async function getStaticPaths() {
 												
 												{/* View Details Button */}
 												<div class="card-actions justify-end mt-auto">
-													<button class="btn btn-primary btn-sm">
+													<button 
+														class="btn btn-primary btn-sm"
+														onclick={`document.getElementById('spell-modal-${spell.spell_name.replace(/\s+/g, '-').toLowerCase()}').showModal()`}
+													>
 														View Details
 													</button>
 												</div>
@@ -217,5 +220,124 @@ export async function getStaticPaths() {
 				</div>
 			</div>
 		</div>
+
+		<!-- Spell Detail Modals -->
+		{spells.map((spell) => {
+			const modalId = `spell-modal-${spell.spell_name.replace(/\s+/g, '-').toLowerCase()}`;
+			return (
+				<dialog id={modalId} class="modal modal-bottom sm:modal-middle">
+					<div class="modal-box max-h-[90vh] overflow-y-auto">
+						{/* Close Button */}
+						<button 
+							class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
+							onclick={`document.getElementById('${modalId}').close()`}
+						>
+							✕
+						</button>
+
+						{/* Spell Title */}
+						<h2 class="font-lora text-2xl font-bold text-ink-950 mb-4 pr-8">
+							{spell.spell_name}
+						</h2>
+
+						{/* Cost */}
+						<div class="mb-4 pb-4 border-b border-base-300">
+							<p class="text-lg font-semibold text-primary">
+								💰 {spell.full_cost}
+							</p>
+						</div>
+
+						{/* Keywords */}
+						{spell.keywords && spell.keywords !== 'None' && (
+							<div class="mb-4">
+								<p class="text-sm font-semibold text-ink-700 uppercase tracking-wide mb-2">
+									Keywords
+								</p>
+								<p class="text-base text-ink-800">
+									{spell.keywords}
+								</p>
+							</div>
+						)}
+
+						{/* Casting Roll */}
+						<div class="mb-4">
+							<p class="text-sm font-semibold text-ink-700 uppercase tracking-wide mb-1">
+								Casting Roll
+							</p>
+							<p class="text-base text-ink-800">
+								{spell.casting_roll}
+							</p>
+						</div>
+
+						{/* Range */}
+						<div class="mb-4">
+							<p class="text-sm font-semibold text-ink-700 uppercase tracking-wide mb-1">
+								Range
+							</p>
+							<p class="text-base text-ink-800">
+								{spell.range}
+							</p>
+						</div>
+
+						{/* Duration */}
+						<div class="mb-4">
+							<p class="text-sm font-semibold text-ink-700 uppercase tracking-wide mb-1">
+								Duration
+							</p>
+							<p class="text-base text-ink-800">
+								{spell.duration}
+							</p>
+						</div>
+
+						{/* Full Description */}
+						<div class="mb-4">
+							<p class="text-sm font-semibold text-ink-700 uppercase tracking-wide mb-2">
+								Description
+							</p>
+							<p class="text-base text-ink-800 leading-relaxed">
+								{spell.description}
+							</p>
+						</div>
+
+						{/* Full Statistics */}
+						<div class="mb-6">
+							<p class="text-sm font-semibold text-ink-700 uppercase tracking-wide mb-2">
+								Statistics
+							</p>
+							<p class="text-sm text-ink-700 font-mono leading-relaxed whitespace-pre-wrap">
+								{spell.statistics}
+							</p>
+						</div>
+
+						{/* Close Button at Bottom */}
+						<div class="modal-action">
+							<button 
+								class="btn btn-primary"
+								onclick={`document.getElementById('${modalId}').close()`}
+							>
+								Close
+							</button>
+						</div>
+					</div>
+
+					{/* Backdrop - click to close */}
+					<form method="dialog" class="modal-backdrop">
+						<button>close</button>
+					</form>
+				</dialog>
+			);
+		})}
+
+		<script>
+			// Handle Escape key to close modals
+			document.addEventListener('keydown', (e) => {
+				if (e.key === 'Escape') {
+					const openModal = document.querySelector('dialog[open]') as HTMLDialogElement;
+					if (openModal) {
+						openModal.close();
+					}
+				}
+			});
+		</script>
 	</body>
 </html>
