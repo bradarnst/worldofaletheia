@@ -85,7 +85,7 @@ export async function getStaticPaths() {
 				
 				<!-- Main content -->
 				<div class="container mx-auto px-4 py-16">
-					<div class="max-w-4xl">
+					<div class="max-w-6xl">
 						<h1 class="text-5xl lg:text-6xl font-bold font-lora text-ink-950 mb-6 drop-shadow-lg">
 							{spellTypeName}
 						</h1>
@@ -93,35 +93,103 @@ export async function getStaticPaths() {
 							{spells.length} spell{spells.length !== 1 ? 's' : ''} in this category.
 						</p>
 						
-						<!-- Spell List -->
-						<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl mb-8">
-							<div class="card-body">
-								{spells.length > 0 ? (
-									<div class="overflow-x-auto">
-										<table class="table table-sm">
-											<thead>
-												<tr>
-													<th>Spell Name</th>
-													<th>Cost</th>
-													<th>Range</th>
-												</tr>
-											</thead>
-											<tbody>
-												{spells.map((spell) => (
-													<tr class="hover">
-														<td class="font-semibold">{spell.spell_name}</td>
-														<td class="text-sm">{spell.full_cost}</td>
-														<td class="text-sm">{spell.range}</td>
-													</tr>
-												))}
-											</tbody>
-										</table>
-									</div>
-								) : (
-									<p>No spells found in this category.</p>
-								)}
+						<!-- Spell Cards Grid -->
+						{spells.length > 0 ? (
+							<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+								{spells.map((spell) => {
+									// Truncate description to first 150 characters
+									const descriptionBlurb = spell.description.length > 150 
+										? spell.description.substring(0, 150) + '...' 
+										: spell.description;
+									
+									// Truncate statistics to first 120 characters
+									const statisticsBlurb = spell.statistics.length > 120 
+										? spell.statistics.substring(0, 120) + '...' 
+										: spell.statistics;
+									
+									return (
+										<div class="card bg-base-100/90 backdrop-blur-sm shadow-lg hover:shadow-xl transition-shadow h-full flex flex-col">
+											<div class="card-body flex flex-col h-full">
+												{/* Spell Title - Prominent */}
+												<h2 class="card-title font-lora text-xl text-ink-950 mb-2">
+													{spell.spell_name}
+												</h2>
+												
+												{/* Cost - Prominent */}
+												<div class="mb-3 pb-3 border-b border-base-300">
+													<p class="text-sm font-semibold text-primary">
+														💰 {spell.full_cost}
+													</p>
+												</div>
+												
+												{/* Keywords - Slightly Prominent */}
+												{spell.keywords && spell.keywords !== 'None' && (
+													<div class="mb-3">
+														<p class="text-xs font-semibold text-ink-700 uppercase tracking-wide">
+															Keywords
+														</p>
+														<p class="text-sm text-ink-800">
+															{spell.keywords}
+														</p>
+													</div>
+												)}
+												
+												{/* Casting Roll */}
+												<div class="mb-3 text-xs">
+													<span class="font-semibold text-ink-700">Casting:</span>
+													<span class="text-ink-800 ml-1">{spell.casting_roll}</span>
+												</div>
+												
+												{/* Range and Duration */}
+												<div class="mb-3 text-xs space-y-1">
+													<div>
+														<span class="font-semibold text-ink-700">Range:</span>
+														<span class="text-ink-800 ml-1">{spell.range}</span>
+													</div>
+													<div>
+														<span class="font-semibold text-ink-700">Duration:</span>
+														<span class="text-ink-800 ml-1">{spell.duration}</span>
+													</div>
+												</div>
+												
+												{/* Description Blurb */}
+												<div class="mb-3 flex-grow">
+													<p class="text-xs font-semibold text-ink-700 uppercase tracking-wide mb-1">
+														Description
+													</p>
+													<p class="text-sm text-ink-800 line-clamp-3">
+														{descriptionBlurb}
+													</p>
+												</div>
+												
+												{/* Statistics Blurb */}
+												<div class="mb-4">
+													<p class="text-xs font-semibold text-ink-700 uppercase tracking-wide mb-1">
+														Statistics
+													</p>
+													<p class="text-xs text-ink-700 line-clamp-2 font-mono">
+														{statisticsBlurb}
+													</p>
+												</div>
+												
+												{/* View Details Button */}
+												<div class="card-actions justify-end mt-auto">
+													<button class="btn btn-primary btn-sm">
+														View Details
+													</button>
+												</div>
+											</div>
+										</div>
+									);
+								})}
 							</div>
-						</div>
+						) : (
+							<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl">
+								<div class="card-body">
+									<p>No spells found in this category.</p>
+								</div>
+							</div>
+						)}
 						
 						<!-- Navigation cards -->
 						<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
