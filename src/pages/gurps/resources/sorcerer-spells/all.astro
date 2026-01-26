@@ -85,6 +85,7 @@ const spells = spellsData.spells.sort((a, b) =>
 												<th>Spell Name</th>
 												<th>Type</th>
 												<th>Cost</th>
+												<th>Details</th>
 											</tr>
 										</thead>
 										<tbody>
@@ -93,6 +94,14 @@ const spells = spellsData.spells.sort((a, b) =>
 													<td class="font-semibold">{spell.spell_name}</td>
 													<td class="text-sm">{spell.spell_type}</td>
 													<td class="text-sm">{spell.full_cost}</td>
+													<td class="text-sm">
+														<button 
+															class="btn btn-primary btn-sm"
+															onclick={`document.getElementById('spell-modal-${spell.spell_name.replace(/\s+/g, '-').toLowerCase()}').showModal()`}
+														>
+															Details
+														</button>
+													</td>
 												</tr>
 											))}
 										</tbody>
@@ -127,5 +136,124 @@ const spells = spellsData.spells.sort((a, b) =>
 				</div>
 			</div>
 		</div>
+
+		<!-- Spell Detail Modals -->
+		{spells.map((spell) => {
+			const modalId = `spell-modal-${spell.spell_name.replace(/\s+/g, '-').toLowerCase()}`;
+			return (
+				<dialog id={modalId} class="modal modal-bottom sm:modal-middle">
+					<div class="modal-box max-h-[90vh] overflow-y-auto">
+						{/* Close Button */}
+						<button 
+							class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
+							onclick={`document.getElementById('${modalId}').close()`}
+						>
+							✕
+						</button>
+
+						{/* Spell Title */}
+						<h2 class="font-lora text-2xl font-bold text-ink-950 mb-4 pr-8">
+							{spell.spell_name}
+						</h2>
+
+						{/* Cost */}
+						<div class="mb-4 pb-4 border-b border-base-300">
+							<p class="text-lg font-semibold text-primary">
+								💰 {spell.full_cost}
+							</p>
+						</div>
+
+						{/* Keywords */}
+						{spell.keywords && spell.keywords !== 'None' && (
+							<div class="mb-4">
+								<p class="text-sm font-semibold text-ink-700 uppercase tracking-wide mb-2">
+									Keywords
+								</p>
+								<p class="text-base text-ink-800">
+									{spell.keywords}
+								</p>
+							</div>
+						)}
+
+						{/* Casting Roll */}
+						<div class="mb-4">
+							<p class="text-sm font-semibold text-ink-700 uppercase tracking-wide mb-1">
+								Casting Roll
+							</p>
+							<p class="text-base text-ink-800">
+								{spell.casting_roll}
+							</p>
+						</div>
+
+						{/* Range */}
+						<div class="mb-4">
+							<p class="text-sm font-semibold text-ink-700 uppercase tracking-wide mb-1">
+								Range
+							</p>
+							<p class="text-base text-ink-800">
+								{spell.range}
+							</p>
+						</div>
+
+						{/* Duration */}
+						<div class="mb-4">
+							<p class="text-sm font-semibold text-ink-700 uppercase tracking-wide mb-1">
+								Duration
+							</p>
+							<p class="text-base text-ink-800">
+								{spell.duration}
+							</p>
+						</div>
+
+						{/* Full Description */}
+						<div class="mb-4">
+							<p class="text-sm font-semibold text-ink-700 uppercase tracking-wide mb-2">
+								Description
+							</p>
+							<p class="text-base text-ink-800 leading-relaxed">
+								{spell.description}
+							</p>
+						</div>
+
+						{/* Full Statistics */}
+						<div class="mb-6">
+							<p class="text-sm font-semibold text-ink-700 uppercase tracking-wide mb-2">
+								Statistics
+							</p>
+							<p class="text-sm text-ink-700 font-mono leading-relaxed whitespace-pre-wrap">
+								{spell.statistics}
+							</p>
+						</div>
+
+						{/* Close Button at Bottom */}
+						<div class="modal-action">
+							<button 
+								class="btn btn-primary"
+								onclick={`document.getElementById('${modalId}').close()`}
+							>
+								Close
+							</button>
+						</div>
+					</div>
+
+					{/* Backdrop - click to close */}
+					<form method="dialog" class="modal-backdrop">
+						<button>close</button>
+					</form>
+				</dialog>
+			);
+		})}
+
+		<script>
+			// Handle Escape key to close modals
+			document.addEventListener('keydown', (e) => {
+				if (e.key === 'Escape') {
+					const openModal = document.querySelector('dialog[open]') as HTMLDialogElement;
+					if (openModal) {
+						openModal.close();
+					}
+				}
+			});
+		</script>
 	</body>
 </html>
