@@ -12,248 +12,188 @@ const description = `Complete alphabetical index of all ${spells.length} sorcere
 ---
 
 <Layout title={title} description={description}>
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<link rel="preconnect" href="https://fonts.googleapis.com" />
-		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:wght@400;600;700&display=swap" rel="stylesheet" />
-		<title>All Spells (Alphabetical) - Sorcerer Spells - GURPS - World of Aletheia</title>
-	</head>
-	<body class="min-h-screen">
-		<!-- Full-screen background with map image -->
-		<div class="relative min-h-screen bg-cover bg-center bg-fixed" style="background-image: url(/Shattered_Lands_Landscape01.png);">
-			<!-- Gradient overlay for text readability -->
-			<div class="absolute inset-0 bg-gradient-to-b from-base-100/30 via-base-100/50 to-base-100/70"></div>
-			
-			<!-- Content layer -->
-			<div class="relative z-10">
-				<!-- Navigation bar -->
-				<div class="navbar bg-base-100/80 backdrop-blur-sm">
-					<div class="navbar-start">
-						<div class="dropdown">
-							<div tabindex="0" role="button" class="btn btn-ghost lg:hidden">
-								<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" />
-								</svg>
-							</div>
-							<ul tabindex="0" class="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow">
-								<li><a href="/gurps">GURPS Home</a></li>
-								<li><a href="/gurps/character-creation">Character Creation</a></li>
-								<li><a href="/gurps/house-rules">House Rules</a></li>
-								<li><a href="/gurps/resources">Resources</a></li>
-								<li><a href="/gurps/resources/sorcerer-spells">Sorcerer Spells</a></li>
-								<li><a href="/gurps/external-links">External Links</a></li>
-								<li><hr class="my-2" /></li>
-								<li><a href="/">← Back to Main Site</a></li>
-							</ul>
-						</div>
-						<a href="/gurps" class="btn btn-ghost text-xl font-lora">GURPS Guide</a>
-					</div>
-					<div class="navbar-center hidden lg:flex">
-						<ul class="menu menu-horizontal px-1">
-							<li><a href="/gurps">GURPS Home</a></li>
-							<li><a href="/gurps/character-creation">Character Creation</a></li>
-							<li><a href="/gurps/house-rules">House Rules</a></li>
-							<li><a href="/gurps/resources">Resources</a></li>
-							<li><a href="/gurps/resources/sorcerer-spells">Sorcerer Spells</a></li>
-							<li><a href="/gurps/external-links">External Links</a></li>
-						</ul>
-					</div>
-					<div class="navbar-end gap-2">
-						<a href="/" class="btn btn-outline btn-sm">← Main Site</a>
-					</div>
-				</div>
-				
-				<!-- Main content -->
-				<div class="max-w-6xl">
-					<h1 class="text-5xl lg:text-6xl font-bold font-lora text-ink-950 mb-6 drop-shadow-lg">
-						All Spells (Alphabetical)
-					</h1>
-					<p class="text-lg text-ink-800 mb-8 drop-shadow-md">
-						Complete alphabetical index of all {spells.length} sorcerer spells.
-					</p>
-					
-					<!-- Spell List -->
-					<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl mb-8">
-						<div class="card-body">
-							<div class="overflow-x-auto">
-								<table class="table table-sm">
-									<thead>
-										<tr>
-											<th>Spell Name</th>
-											<th>Type</th>
-											<th>Cost</th>
-											<th>Details</th>
-										</tr>
-									</thead>
-									<tbody>
-										{spells.map((spell) => (
-											<tr class="hover">
-												<td class="font-semibold">{spell.spell_name}</td>
-												<td class="text-sm">{spell.spell_type}</td>
-												<td class="text-sm">{spell.full_cost}</td>
-												<td class="text-sm">
-													<button 
-														class="btn btn-primary btn-sm"
-														onclick={`document.getElementById('spell-modal-${spell.spell_name.replace(/\s+/g, '-').toLowerCase()}').showModal()`}
-													>
-														Details
-													</button>
-												</td>
-											</tr>
-										))}
-									</tbody>
-								</table>
-							</div>
-						</div>
-					</div>
-					
-					<!-- Navigation cards -->
-					<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-						<a href="/gurps/resources/sorcerer-spells" class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
-							<div class="card-body">
-								<h3 class="card-title font-lora">← Back to Sorcerer Spells</h3>
-								<p>Browse spells by type.</p>
-								<div class="card-actions justify-end">
-									<div class="btn btn-primary btn-sm">Back</div>
-								</div>
-							</div>
-						</a>
-						
-						<a href="/gurps" class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
-							<div class="card-body">
-								<h3 class="card-title font-lora">GURPS Home</h3>
-								<p>Back to the GURPS campaign guide.</p>
-								<div class="card-actions justify-end">
-									<div class="btn btn-primary btn-sm">Home</div>
-								</div>
-							</div>
-						</a>
-					</div>
-				</div>
+
+	<h1 class="text-5xl lg:text-6xl font-bold font-lora text-ink-950 mb-6 drop-shadow-lg">
+		All Spells (Alphabetical)
+	</h1>
+	<p class="text-lg text-ink-800 mb-8 drop-shadow-md">
+		Complete alphabetical index of all {spells.length} sorcerer spells.
+	</p>
+	
+	<!-- Spell List -->
+	<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl mb-8">
+		<div class="card-body">
+			<div class="overflow-x-auto">
+				<table class="table table-sm">
+					<thead>
+						<tr>
+							<th>Spell Name</th>
+							<th>Type</th>
+							<th>Cost</th>
+							<th>Details</th>
+						</tr>
+					</thead>
+					<tbody>
+						{spells.map((spell) => (
+							<tr class="hover">
+								<td class="font-semibold">{spell.spell_name}</td>
+								<td class="text-sm">{spell.spell_type}</td>
+								<td class="text-sm">{spell.full_cost}</td>
+								<td class="text-sm">
+									<button 
+										class="btn btn-primary btn-sm"
+										onclick={`document.getElementById('spell-modal-${spell.spell_name.replace(/\s+/g, '-').toLowerCase()}').showModal()`}
+									>
+										Details
+									</button>
+								</td>
+							</tr>
+						))}
+					</tbody>
+				</table>
 			</div>
 		</div>
+	</div>
+	
+	<!-- Navigation cards -->
+	<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+		<a href="/gurps/resources/sorcerer-spells" class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
+			<div class="card-body">
+				<h3 class="card-title font-lora">← Back to Sorcerer Spells</h3>
+				<p>Browse spells by type.</p>
+				<div class="card-actions justify-end">
+					<div class="btn btn-primary btn-sm">Back</div>
+				</div>
+			</div>
+		</a>
+		
+		<a href="/gurps" class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
+			<div class="card-body">
+				<h3 class="card-title font-lora">GURPS Home</h3>
+				<p>Back to the GURPS campaign guide.</p>
+				<div class="card-actions justify-end">
+					<div class="btn btn-primary btn-sm">Home</div>
+				</div>
+			</div>
+		</a>
+	</div>
 
-		<!-- Spell Detail Modals -->
-		{spells.map((spell) => {
-			const modalId = `spell-modal-${spell.spell_name.replace(/\s+/g, '-').toLowerCase()}`;
-			return (
-				<dialog id={modalId} class="modal modal-bottom sm:modal-middle">
-					<div class="modal-box max-h-[90vh] overflow-y-auto">
-						{/* Close Button */}
-						<button 
-							class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
-							onclick={`document.getElementById('${modalId}').close()`}
-						>
-							✕
-						</button>
+	<!-- Spell Detail Modals -->
+	{spells.map((spell) => {
+		const modalId = `spell-modal-${spell.spell_name.replace(/\s+/g, '-').toLowerCase()}`;
+		return (
+			<dialog id={modalId} class="modal modal-bottom sm:modal-middle">
+				<div class="modal-box max-h-[90vh] overflow-y-auto">
+					{/* Close Button */}
+					<button 
+						class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
+						onclick={`document.getElementById('${modalId}').close()`}
+					>
+						✕
+					</button>
 
-						{/* Spell Title */}
-						<h2 class="font-lora text-2xl font-bold text-ink-950 mb-4 pr-8">
-							{spell.spell_name}
-						</h2>
+					{/* Spell Title */}
+					<h2 class="font-lora text-2xl font-bold text-ink-950 mb-4 pr-8">
+						{spell.spell_name}
+					</h2>
 
-						{/* Cost */}
-						<div class="mb-4 pb-4 border-b border-base-300">
-							<p class="text-lg font-semibold text-primary">
-								💰 {spell.full_cost}
-							</p>
-						</div>
-
-						{/* Keywords */}
-						{spell.keywords && spell.keywords !== 'None' && (
-							<div class="mb-4">
-								<p class="text-sm font-semibold text-ink-700 uppercase tracking-wide mb-2">
-									Keywords
-								</p>
-								<p class="text-base text-ink-800">
-									{spell.keywords}
-								</p>
-							</div>
-						)}
-
-						{/* Casting Roll */}
-						<div class="mb-4">
-							<p class="text-sm font-semibold text-ink-700 uppercase tracking-wide mb-1">
-								Casting Roll
-							</p>
-							<p class="text-base text-ink-800">
-								{spell.casting_roll}
-							</p>
-						</div>
-
-						{/* Range */}
-						<div class="mb-4">
-							<p class="text-sm font-semibold text-ink-700 uppercase tracking-wide mb-1">
-								Range
-							</p>
-							<p class="text-base text-ink-800">
-								{spell.range}
-							</p>
-						</div>
-
-						{/* Duration */}
-						<div class="mb-4">
-							<p class="text-sm font-semibold text-ink-700 uppercase tracking-wide mb-1">
-								Duration
-							</p>
-							<p class="text-base text-ink-800">
-								{spell.duration}
-							</p>
-						</div>
-
-						{/* Full Description */}
-						<div class="mb-4">
-							<p class="text-sm font-semibold text-ink-700 uppercase tracking-wide mb-2">
-								Description
-							</p>
-							<p class="text-base text-ink-800 leading-relaxed">
-								{spell.description}
-							</p>
-						</div>
-
-						{/* Full Statistics */}
-						<div class="mb-6">
-							<p class="text-sm font-semibold text-ink-700 uppercase tracking-wide mb-2">
-								Statistics
-							</p>
-							<p class="text-sm text-ink-700 font-mono leading-relaxed whitespace-pre-wrap">
-								{spell.statistics}
-							</p>
-						</div>
-
-						{/* Close Button at Bottom */}
-						<div class="modal-action">
-							<button 
-								class="btn btn-primary"
-								onclick={`document.getElementById('${modalId}').close()`}
-							>
-								Close
-							</button>
-						</div>
+					{/* Cost */}
+					<div class="mb-4 pb-4 border-b border-base-300">
+						<p class="text-lg font-semibold text-primary">
+							💰 {spell.full_cost}
+						</p>
 					</div>
 
-					{/* Backdrop - click to close */}
-					<form method="dialog" class="modal-backdrop">
-						<button>close</button>
-					</form>
-				</dialog>
-			);
-		})}
+					{/* Keywords */}
+					{spell.keywords && spell.keywords !== 'None' && (
+						<div class="mb-4">
+							<p class="text-sm font-semibold text-ink-700 uppercase tracking-wide mb-2">
+								Keywords
+							</p>
+							<p class="text-base text-ink-800">
+								{spell.keywords}
+							</p>
+						</div>
+					)}
 
-		<script>
-			// Handle Escape key to close modals
-			document.addEventListener('keydown', (e) => {
-				if (e.key === 'Escape') {
-					const openModal = document.querySelector('dialog[open]') as HTMLDialogElement;
-					if (openModal) {
-						openModal.close();
-					}
+					{/* Casting Roll */}
+					<div class="mb-4">
+						<p class="text-sm font-semibold text-ink-700 uppercase tracking-wide mb-1">
+							Casting Roll
+						</p>
+						<p class="text-base text-ink-800">
+							{spell.casting_roll}
+						</p>
+					</div>
+
+					{/* Range */}
+					<div class="mb-4">
+						<p class="text-sm font-semibold text-ink-700 uppercase tracking-wide mb-1">
+							Range
+						</p>
+						<p class="text-base text-ink-800">
+							{spell.range}
+						</p>
+					</div>
+
+					{/* Duration */}
+					<div class="mb-4">
+						<p class="text-sm font-semibold text-ink-700 uppercase tracking-wide mb-1">
+							Duration
+						</p>
+						<p class="text-base text-ink-800">
+							{spell.duration}
+						</p>
+					</div>
+
+					{/* Full Description */}
+					<div class="mb-4">
+						<p class="text-sm font-semibold text-ink-700 uppercase tracking-wide mb-2">
+							Description
+						</p>
+						<p class="text-base text-ink-800 leading-relaxed">
+							{spell.description}
+						</p>
+					</div>
+
+					{/* Full Statistics */}
+					<div class="mb-6">
+						<p class="text-sm font-semibold text-ink-700 uppercase tracking-wide mb-2">
+							Statistics
+						</p>
+						<p class="text-sm text-ink-700 font-mono leading-relaxed whitespace-pre-wrap">
+							{spell.statistics}
+						</p>
+					</div>
+
+					{/* Close Button at Bottom */}
+					<div class="modal-action">
+						<button 
+							class="btn btn-primary"
+							onclick={`document.getElementById('${modalId}').close()`}
+						>
+							Close
+						</button>
+					</div>
+				</div>
+
+				{/* Backdrop - click to close */}
+				<form method="dialog" class="modal-backdrop">
+					<button>close</button>
+				</form>
+			</dialog>
+		);
+	})}
+
+	<script>
+		// Handle Escape key to close modals
+		document.addEventListener('keydown', (e) => {
+			if (e.key === 'Escape') {
+				const openModal = document.querySelector('dialog[open]') as HTMLDialogElement;
+				if (openModal) {
+					openModal.close();
 				}
-			});
-		</script>
+			}
+		});
+	</script>
 </Layout>

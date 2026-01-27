@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import {SEO} from 'astro-seo';
 export interface Props {
   title?: string;
   description?: string;
@@ -20,6 +21,17 @@ const { title = 'World of Aletheia', description = 'An immersive tabletop RPG se
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:wght@400;600;700&display=swap" rel="stylesheet" />
 		<title>{title}</title>
+		<SEO
+			title={title}
+			description={description}
+			openGraph={{
+				basic: {
+					title: title,
+					type: 'website',
+					image: '/images/aletheia-logo.png',
+				},
+			}}
+		/>
 	</head>
 	<body class="min-h-screen">
 		<slot />

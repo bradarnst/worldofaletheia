@@ -7,63 +7,61 @@ const description = 'Campaign-specific modifications and house rules for GURPS g
 
 <Layout title={title} description={description}>
 	<!-- Main content -->
-	<div class="container mx-auto px-4 py-16">
-		<div class="max-w-4xl">
-			<h1 class="text-5xl lg:text-6xl font-bold font-lora text-ink-950 mb-6 drop-shadow-lg">
-				House Rules
-			</h1>
-			<p class="text-lg text-ink-800 mb-8 drop-shadow-md">
-				Campaign-specific modifications and house rules for GURPS gameplay in the World of Aletheia.
-			</p>
-			
-			<!-- Content card -->
-			<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl mb-8">
+	<div class="max-w-4xl">
+		<h1 class="text-5xl lg:text-6xl font-bold font-lora text-ink-950 mb-6 drop-shadow-lg">
+			House Rules
+		</h1>
+		<p class="text-lg text-ink-800 mb-8 drop-shadow-md">
+			Campaign-specific modifications and house rules for GURPS gameplay in the World of Aletheia.
+		</p>
+		
+		<!-- Content card -->
+		<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl mb-8">
+			<div class="card-body">
+				<h2 class="card-title font-lora text-2xl mb-4">Campaign Modifications</h2>
+				<p class="mb-4">
+					The following house rules have been established for campaigns in the World of Aletheia. 
+					These modifications are designed to enhance gameplay, balance mechanics for the setting, 
+					and create a more immersive experience.
+				</p>
+				<p class="mb-4">
+					Topics covered:
+				</p>
+				<ul class="list-disc list-inside space-y-2 mb-4">
+					<li>Combat modifications</li>
+					<li>Magic system adjustments</li>
+					<li>Skill and ability modifications</li>
+					<li>Campaign-specific mechanics</li>
+					<li>Experience and advancement rules</li>
+					<li>Equipment and technology guidelines</li>
+				</ul>
+				<p>
+					Detailed house rules documentation coming soon. Check back for comprehensive rule modifications!
+				</p>
+			</div>
+		</div>
+		
+		<!-- Navigation cards -->
+		<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+			<a href="/gurps/character-creation" class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
 				<div class="card-body">
-					<h2 class="card-title font-lora text-2xl mb-4">Campaign Modifications</h2>
-					<p class="mb-4">
-						The following house rules have been established for campaigns in the World of Aletheia. 
-						These modifications are designed to enhance gameplay, balance mechanics for the setting, 
-						and create a more immersive experience.
-					</p>
-					<p class="mb-4">
-						Topics covered:
-					</p>
-					<ul class="list-disc list-inside space-y-2 mb-4">
-						<li>Combat modifications</li>
-						<li>Magic system adjustments</li>
-						<li>Skill and ability modifications</li>
-						<li>Campaign-specific mechanics</li>
-						<li>Experience and advancement rules</li>
-						<li>Equipment and technology guidelines</li>
-					</ul>
-					<p>
-						Detailed house rules documentation coming soon. Check back for comprehensive rule modifications!
-					</p>
+					<h3 class="card-title font-lora">Character Creation</h3>
+					<p>Tips for creating characters with house rules.</p>
+					<div class="card-actions justify-end">
+						<div class="btn btn-primary btn-sm">Learn More</div>
+					</div>
 				</div>
-			</div>
+			</a>
 			
-			<!-- Navigation cards -->
-			<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-				<a href="/gurps/character-creation" class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
-					<div class="card-body">
-						<h3 class="card-title font-lora">Character Creation</h3>
-						<p>Tips for creating characters with house rules.</p>
-						<div class="card-actions justify-end">
-							<div class="btn btn-primary btn-sm">Learn More</div>
-						</div>
+			<a href="/gurps/resources" class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
+				<div class="card-body">
+					<h3 class="card-title font-lora">Resources</h3>
+					<p>Spells, skills, equipment, and more.</p>
+					<div class="card-actions justify-end">
+						<div class="btn btn-primary btn-sm">Browse</div>
 					</div>
-				</a>
-				
-				<a href="/gurps/resources" class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
-					<div class="card-body">
-						<h3 class="card-title font-lora">Resources</h3>
-						<p>Spells, skills, equipment, and more.</p>
-						<div class="card-actions justify-end">
-							<div class="btn btn-primary btn-sm">Browse</div>
-						</div>
-					</div>
-				</a>
-			</div>
+				</div>
+			</a>
 		</div>
 	</div>
 </Layout>

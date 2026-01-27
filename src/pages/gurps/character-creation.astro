@@ -7,63 +7,61 @@ const description = 'Tips, tricks, and guidelines for creating characters in the
 
 <Layout title={title} description={description}>
 	<!-- Main content -->
-	<div class="container mx-auto px-4 py-16">
-		<div class="max-w-4xl">
-			<h1 class="text-5xl lg:text-6xl font-bold font-lora text-ink-950 mb-6 drop-shadow-lg">
-				Character Creation
-			</h1>
-			<p class="text-lg text-ink-800 mb-8 drop-shadow-md">
-				Tips, tricks, and guidelines for creating characters in the World of Aletheia using GURPS.
-			</p>
-			
-			<!-- Content card -->
-			<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl mb-8">
+	<div class="max-w-4xl">
+		<h1 class="text-5xl lg:text-6xl font-bold font-lora text-ink-950 mb-6 drop-shadow-lg">
+			Character Creation
+		</h1>
+		<p class="text-lg text-ink-800 mb-8 drop-shadow-md">
+			Tips, tricks, and guidelines for creating characters in the World of Aletheia using GURPS.
+		</p>
+		
+		<!-- Content card -->
+		<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl mb-8">
+			<div class="card-body">
+				<h2 class="card-title font-lora text-2xl mb-4">Getting Started</h2>
+				<p class="mb-4">
+					This section provides guidance for creating characters for campaigns set in the World of Aletheia. 
+					Whether you're a new player or an experienced GURPS veteran, you'll find helpful tips and house rules 
+					specific to this campaign setting.
+				</p>
+				<p class="mb-4">
+					Key topics covered:
+				</p>
+				<ul class="list-disc list-inside space-y-2 mb-4">
+					<li>Character concept development</li>
+					<li>Point allocation strategies</li>
+					<li>Campaign-specific advantages and disadvantages</li>
+					<li>Skill recommendations for the setting</li>
+					<li>Equipment and starting resources</li>
+					<li>House rules and modifications</li>
+				</ul>
+				<p>
+					More detailed content coming soon. Check back for comprehensive character creation guides!
+				</p>
+			</div>
+		</div>
+		
+		<!-- Navigation cards -->
+		<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+			<a href="/gurps/house-rules" class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
 				<div class="card-body">
-					<h2 class="card-title font-lora text-2xl mb-4">Getting Started</h2>
-					<p class="mb-4">
-						This section provides guidance for creating characters for campaigns set in the World of Aletheia. 
-						Whether you're a new player or an experienced GURPS veteran, you'll find helpful tips and house rules 
-						specific to this campaign setting.
-					</p>
-					<p class="mb-4">
-						Key topics covered:
-					</p>
-					<ul class="list-disc list-inside space-y-2 mb-4">
-						<li>Character concept development</li>
-						<li>Point allocation strategies</li>
-						<li>Campaign-specific advantages and disadvantages</li>
-						<li>Skill recommendations for the setting</li>
-						<li>Equipment and starting resources</li>
-						<li>House rules and modifications</li>
-					</ul>
-					<p>
-						More detailed content coming soon. Check back for comprehensive character creation guides!
-					</p>
+					<h3 class="card-title font-lora">House Rules</h3>
+					<p>Campaign-specific modifications and rules.</p>
+					<div class="card-actions justify-end">
+						<div class="btn btn-primary btn-sm">View Rules</div>
+					</div>
 				</div>
-			</div>
+			</a>
 			
-			<!-- Navigation cards -->
-			<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-				<a href="/gurps/house-rules" class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
-					<div class="card-body">
-						<h3 class="card-title font-lora">House Rules</h3>
-						<p>Campaign-specific modifications and rules.</p>
-						<div class="card-actions justify-end">
-							<div class="btn btn-primary btn-sm">View Rules</div>
-						</div>
+			<a href="/gurps/resources" class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
+				<div class="card-body">
+					<h3 class="card-title font-lora">Resources</h3>
+					<p>Spells, skills, equipment, and more.</p>
+					<div class="card-actions justify-end">
+						<div class="btn btn-primary btn-sm">Browse</div>
 					</div>
-				</a>
-				
-				<a href="/gurps/resources" class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
-					<div class="card-body">
-						<h3 class="card-title font-lora">Resources</h3>
-						<p>Spells, skills, equipment, and more.</p>
-						<div class="card-actions justify-end">
-							<div class="btn btn-primary btn-sm">Browse</div>
-						</div>
-					</div>
-				</a>
-			</div>
+				</div>
+			</a>
 		</div>
 	</div>
 </Layout>
