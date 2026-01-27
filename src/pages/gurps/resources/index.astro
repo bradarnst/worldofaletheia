@@ -7,80 +7,77 @@ const description = 'Helpful lists and references for GURPS gameplay in the Worl
 
 <Layout title={title} description={description}>
 	<!-- Main content -->
-	<div class="container mx-auto px-4 py-16">
-		<div class="max-w-4xl">
-			<h1 class="text-5xl lg:text-6xl font-bold font-lora text-ink-950 mb-6 drop-shadow-lg">
-				Resources
-			</h1>
-			<p class="text-lg text-ink-800 mb-8 drop-shadow-md">
-				Helpful lists and references for GURPS gameplay in the World of Aletheia.
-			</p>
+	<div class="max-w-6xl">
+		<h1 class="text-5xl lg:text-6xl font-bold font-lora text-ink-950 mb-6 drop-shadow-lg">
+			Resources
+		</h1>
+		<p class="text-lg text-ink-800 mb-8 drop-shadow-md">
+			Helpful lists and references for GURPS gameplay in the World of Aletheia.
+		</p>
+		<!-- Resource categories -->
+		<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+			<a href="/gurps/resources/sorcerer-spells" class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
+				<div class="card-body">
+					<h2 class="card-title font-lora">Sorcerer Spells</h2>
+					<p>Comprehensive list of sorcerer spells for the World of Aletheia.</p>
+					<div class="card-actions justify-end">
+						<div class="btn btn-primary btn-sm">Browse</div>
+					</div>
+				</div>
+			</a>
 			
-			<!-- Resource categories -->
-			<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-				<a href="/gurps/resources/sorcerer-spells" class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
-					<div class="card-body">
-						<h2 class="card-title font-lora">Sorcerer Spells</h2>
-						<p>Comprehensive list of sorcerer spells for the World of Aletheia.</p>
-						<div class="card-actions justify-end">
-							<div class="btn btn-primary btn-sm">Browse</div>
-						</div>
-					</div>
-				</a>
-				
-				<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl">
-					<div class="card-body">
-						<h2 class="card-title font-lora">Skills</h2>
-						<p>Recommended skills and skill combinations for character development.</p>
-						<div class="card-actions justify-end">
-							<div class="btn btn-primary btn-sm">Coming Soon</div>
-						</div>
-					</div>
-				</div>
-				
-				<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl">
-					<div class="card-body">
-						<h2 class="card-title font-lora">Equipment</h2>
-						<p>Campaign-appropriate equipment and gear for various character types.</p>
-						<div class="card-actions justify-end">
-							<div class="btn btn-primary btn-sm">Coming Soon</div>
-						</div>
-					</div>
-				</div>
-				
-				<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl">
-					<div class="card-body">
-						<h2 class="card-title font-lora">Reference Tables</h2>
-						<p>Quick reference tables and charts for common game mechanics.</p>
-						<div class="card-actions justify-end">
-							<div class="btn btn-primary btn-sm">Coming Soon</div>
-						</div>
+			<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl">
+				<div class="card-body">
+					<h2 class="card-title font-lora">Skills</h2>
+					<p>Recommended skills and skill combinations for character development.</p>
+					<div class="card-actions justify-end">
+						<div class="btn btn-primary btn-sm">Coming Soon</div>
 					</div>
 				</div>
 			</div>
 			
-			<!-- Navigation cards -->
-			<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-				<a href="/gurps/character-creation" class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
-					<div class="card-body">
-						<h3 class="card-title font-lora">Character Creation</h3>
-						<p>Tips for creating characters with house rules.</p>
-						<div class="card-actions justify-end">
-							<div class="btn btn-primary btn-sm">Learn More</div>
-						</div>
+			<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl">
+				<div class="card-body">
+					<h2 class="card-title font-lora">Equipment</h2>
+					<p>Campaign-appropriate equipment and gear for various character types.</p>
+					<div class="card-actions justify-end">
+						<div class="btn btn-primary btn-sm">Coming Soon</div>
 					</div>
-				</a>
-				
-				<a href="/gurps/external-links" class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
-					<div class="card-body">
-						<h3 class="card-title font-lora">External Links</h3>
-						<p>Curated GURPS resources and references.</p>
-						<div class="card-actions justify-end">
-							<div class="btn btn-primary btn-sm">Explore</div>
-						</div>
-					</div>
-				</a>
+				</div>
 			</div>
+			
+			<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl">
+				<div class="card-body">
+					<h2 class="card-title font-lora">Reference Tables</h2>
+					<p>Quick reference tables and charts for common game mechanics.</p>
+					<div class="card-actions justify-end">
+						<div class="btn btn-primary btn-sm">Coming Soon</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+		<!-- Navigation cards -->
+		<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+			<a href="/gurps/character-creation" class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
+				<div class="card-body">
+					<h3 class="card-title font-lora">Character Creation</h3>
+					<p>Tips for creating characters with house rules.</p>
+					<div class="card-actions justify-end">
+						<div class="btn btn-primary btn-sm">Learn More</div>
+					</div>
+				</div>
+			</a>
+			
+			<a href="/gurps/external-links" class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
+				<div class="card-body">
+					<h3 class="card-title font-lora">External Links</h3>
+					<p>Curated GURPS resources and references.</p>
+					<div class="card-actions justify-end">
+						<div class="btn btn-primary btn-sm">Explore</div>
+					</div>
+				</div>
+			</a>
 		</div>
 	</div>
 </Layout>

@@ -69,72 +69,70 @@ const description = `Complete alphabetical index of all ${spells.length} sorcere
 				</div>
 				
 				<!-- Main content -->
-				<div class="container mx-auto px-4 py-16">
-					<div class="max-w-4xl">
-						<h1 class="text-5xl lg:text-6xl font-bold font-lora text-ink-950 mb-6 drop-shadow-lg">
-							All Spells (Alphabetical)
-						</h1>
-						<p class="text-lg text-ink-800 mb-8 drop-shadow-md">
-							Complete alphabetical index of all {spells.length} sorcerer spells.
-						</p>
-						
-						<!-- Spell List -->
-						<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl mb-8">
-							<div class="card-body">
-								<div class="overflow-x-auto">
-									<table class="table table-sm">
-										<thead>
-											<tr>
-												<th>Spell Name</th>
-												<th>Type</th>
-												<th>Cost</th>
-												<th>Details</th>
+				<div class="max-w-6xl">
+					<h1 class="text-5xl lg:text-6xl font-bold font-lora text-ink-950 mb-6 drop-shadow-lg">
+						All Spells (Alphabetical)
+					</h1>
+					<p class="text-lg text-ink-800 mb-8 drop-shadow-md">
+						Complete alphabetical index of all {spells.length} sorcerer spells.
+					</p>
+					
+					<!-- Spell List -->
+					<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl mb-8">
+						<div class="card-body">
+							<div class="overflow-x-auto">
+								<table class="table table-sm">
+									<thead>
+										<tr>
+											<th>Spell Name</th>
+											<th>Type</th>
+											<th>Cost</th>
+											<th>Details</th>
+										</tr>
+									</thead>
+									<tbody>
+										{spells.map((spell) => (
+											<tr class="hover">
+												<td class="font-semibold">{spell.spell_name}</td>
+												<td class="text-sm">{spell.spell_type}</td>
+												<td class="text-sm">{spell.full_cost}</td>
+												<td class="text-sm">
+													<button 
+														class="btn btn-primary btn-sm"
+														onclick={`document.getElementById('spell-modal-${spell.spell_name.replace(/\s+/g, '-').toLowerCase()}').showModal()`}
+													>
+														Details
+													</button>
+												</td>
 											</tr>
-										</thead>
-										<tbody>
-											{spells.map((spell) => (
-												<tr class="hover">
-													<td class="font-semibold">{spell.spell_name}</td>
-													<td class="text-sm">{spell.spell_type}</td>
-													<td class="text-sm">{spell.full_cost}</td>
-													<td class="text-sm">
-														<button 
-															class="btn btn-primary btn-sm"
-															onclick={`document.getElementById('spell-modal-${spell.spell_name.replace(/\s+/g, '-').toLowerCase()}').showModal()`}
-														>
-															Details
-														</button>
-													</td>
-												</tr>
-											))}
-										</tbody>
-									</table>
-								</div>
+										))}
+									</tbody>
+								</table>
 							</div>
 						</div>
+					</div>
+					
+					<!-- Navigation cards -->
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+						<a href="/gurps/resources/sorcerer-spells" class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
+							<div class="card-body">
+								<h3 class="card-title font-lora">← Back to Sorcerer Spells</h3>
+								<p>Browse spells by type.</p>
+								<div class="card-actions justify-end">
+									<div class="btn btn-primary btn-sm">Back</div>
+								</div>
+							</div>
+						</a>
 						
-						<!-- Navigation cards -->
-						<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-							<a href="/gurps/resources/sorcerer-spells" class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
-								<div class="card-body">
-									<h3 class="card-title font-lora">← Back to Sorcerer Spells</h3>
-									<p>Browse spells by type.</p>
-									<div class="card-actions justify-end">
-										<div class="btn btn-primary btn-sm">Back</div>
-									</div>
+						<a href="/gurps" class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
+							<div class="card-body">
+								<h3 class="card-title font-lora">GURPS Home</h3>
+								<p>Back to the GURPS campaign guide.</p>
+								<div class="card-actions justify-end">
+									<div class="btn btn-primary btn-sm">Home</div>
 								</div>
-							</a>
-							
-							<a href="/gurps" class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
-								<div class="card-body">
-									<h3 class="card-title font-lora">GURPS Home</h3>
-									<p>Back to the GURPS campaign guide.</p>
-									<div class="card-actions justify-end">
-										<div class="btn btn-primary btn-sm">Home</div>
-									</div>
-								</div>
-							</a>
-						</div>
+							</div>
+						</a>
 					</div>
 				</div>
 			</div>

@@ -53,11 +53,10 @@ const { title, description } = Astro.props;
 			</div>
 			
 			<!-- Main content slot -->
-			<main class="container mx-auto px-4 py-16">
-				<div class="content-container">
-					<slot />
-				</div>
+			<main class="container mx-auto max-w-6xl px-4 py-16">
+				<slot />
 			</main>
 		</div>
 	</div>
 </BaseLayout>
+
