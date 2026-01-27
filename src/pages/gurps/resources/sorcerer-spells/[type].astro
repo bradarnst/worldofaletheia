@@ -1,5 +1,5 @@
 ---
-import '../../../../styles/global.css';
+import Layout from '../../../../layouts/GurpsLayout.astro';
 import spellsData from '../../../../data/spells/spells-raw.json';
 import spellTypes from '../../../../data/spells/spell-types.json';
 
@@ -16,6 +16,9 @@ const spells = spellsData.spells
   .filter(spell => spell.spell_type === spellTypeName)
   .sort((a, b) => a.spell_name.localeCompare(b.spell_name));
 
+const title = `${spellTypeName} - Sorcerer Spells - GURPS - World of Aletheia`;
+const description = `${spells.length} ${spellTypeName} spells for World of Aletheia GURPS campaigns.`;
+
 // Generate static paths for all spell types
 export async function getStaticPaths() {
   return spellTypes.map(spellType => ({
@@ -26,66 +29,10 @@ export async function getStaticPaths() {
 }
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<link rel="preconnect" href="https://fonts.googleapis.com" />
-		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:wght@400;600;700&display=swap" rel="stylesheet" />
-		<title>{spellTypeName} - Sorcerer Spells - GURPS - World of Aletheia</title>
-	</head>
-	<body class="min-h-screen">
-		<!-- Full-screen background with map image -->
-		<div class="relative min-h-screen bg-cover bg-center bg-fixed" style="background-image: url(/Shattered_Lands_Landscape01.png);">
-			<!-- Gradient overlay for text readability -->
-			<div class="absolute inset-0 bg-gradient-to-b from-base-100/30 via-base-100/50 to-base-100/70"></div>
-			
-			<!-- Content layer -->
-			<div class="relative z-10">
-				<!-- Navigation bar -->
-				<div class="navbar bg-base-100/80 backdrop-blur-sm">
-					<div class="navbar-start">
-						<div class="dropdown">
-							<div tabindex="0" role="button" class="btn btn-ghost lg:hidden">
-								<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" />
-								</svg>
-							</div>
-							<ul tabindex="0" class="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow">
-								<li><a href="/gurps">GURPS Home</a></li>
-								<li><a href="/gurps/character-creation">Character Creation</a></li>
-								<li><a href="/gurps/house-rules">House Rules</a></li>
-								<li><a href="/gurps/resources">Resources</a></li>
-								<li><a href="/gurps/resources/sorcerer-spells">Sorcerer Spells</a></li>
-								<li><a href="/gurps/external-links">External Links</a></li>
-								<li><hr class="my-2" /></li>
-								<li><a href="/">← Back to Main Site</a></li>
-							</ul>
-						</div>
-						<a href="/gurps" class="btn btn-ghost text-xl font-lora">GURPS Guide</a>
-					</div>
-					<div class="navbar-center hidden lg:flex">
-						<ul class="menu menu-horizontal px-1">
-							<li><a href="/gurps">GURPS Home</a></li>
-							<li><a href="/gurps/character-creation">Character Creation</a></li>
-							<li><a href="/gurps/house-rules">House Rules</a></li>
-							<li><a href="/gurps/resources">Resources</a></li>
-							<li><a href="/gurps/resources/sorcerer-spells">Sorcerer Spells</a></li>
-							<li><a href="/gurps/external-links">External Links</a></li>
-						</ul>
-					</div>
-					<div class="navbar-end gap-2">
-						<a href="/" class="btn btn-outline btn-sm">← Main Site</a>
-					</div>
-				</div>
-				
-				<!-- Main content -->
-				<div class="container mx-auto px-4 py-16">
-					<div class="max-w-6xl">
+<Layout title={title} description={description}>
+	<!-- Main content -->
+	<div class="container mx-auto px-4 py-16">
+		<div class="max-w-6xl">
 						<h1 class="text-5xl lg:text-6xl font-bold font-lora text-ink-950 mb-6 drop-shadow-lg">
 							{spellTypeName}
 						</h1>
@@ -218,11 +165,11 @@ export async function getStaticPaths() {
 						</div>
 					</div>
 				</div>
-			</div>
 		</div>
+	</div>
 
-		<!-- Spell Detail Modals -->
-		{spells.map((spell) => {
+	<!-- Spell Detail Modals -->
+	{spells.map((spell) => {
 			const modalId = `spell-modal-${spell.spell_name.replace(/\s+/g, '-').toLowerCase()}`;
 			return (
 				<dialog id={modalId} class="modal modal-bottom sm:modal-middle">
@@ -338,6 +285,5 @@ export async function getStaticPaths() {
 					}
 				}
 			});
-		</script>
-	</body>
-</html>
+	</script>
+</Layout>

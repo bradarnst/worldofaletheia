@@ -1,14 +1,17 @@
 ---
-import '../../../../styles/global.css';
+import Layout from '../../../../layouts/GurpsLayout.astro';
 import spellsData from '../../../../data/spells/spells-raw.json';
 
 // Extract spells and sort alphabetically
 const spells = spellsData.spells.sort((a, b) => 
   a.spell_name.localeCompare(b.spell_name)
 );
+
+const title = 'All Spells (Alphabetical) - Sorcerer Spells - GURPS - World of Aletheia';
+const description = `Complete alphabetical index of all ${spells.length} sorcerer spells.`;
 ---
 
-<html lang="en">
+<Layout title={title} description={description}>
 	<head>
 		<meta charset="utf-8" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -255,5 +258,4 @@ const spells = spellsData.spells.sort((a, b) =>
 				}
 			});
 		</script>
-	</body>
-</html>
+</Layout>
