@@ -1,0 +1,32 @@
+---
+interface Props {
+  tags: string[];
+  maxTags?: number;
+  className?: string;
+}
+
+const { tags, maxTags = 10, className = '' } = Astro.props;
+---
+
+<div class="mt-6">
+  <h3 class="text-lg font-bold text-gray-900 mb-4">Tags</h3>
+  
+  {tags.length === 0 ? (
+    <p class="text-gray-600 text-sm">No tags available.</p>
+  ) : (
+    <div class="flex flex-wrap gap-2">
+      {tags.slice(0, maxTags).map((tag) => (
+        <a 
+          href={`/tags/${tag.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`} 
+          class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200 transition-colors duration-200"
+        >
+          {tag}
+        </a>
+      ))}
+      
+      {tags.length > maxTags && (
+        <span class="text-sm text-gray-500">+ {tags.length - maxTags} more</span>
+      )}
+    </div>
+  )}
+</div>

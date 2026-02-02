@@ -1,0 +1,46 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import ContentLayout from './ContentLayout.astro';
+
+interface Props {
+  content: any;
+  title?: string;
+  description?: string;
+  children: any;
+}
+
+const { content, title, description, children } = Astro.props;
+---
+
+<ContentLayout content={content} title={title} description={description}>
+  <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-8">
+    <h2 class="text-xl font-bold text-blue-800 mb-2">Campaign Information</h2>
+    <p class="text-blue-700">This content is part of the <strong>{content.campaign}</strong> campaign.</p>
+    <div class="mt-2 flex flex-wrap gap-2">
+      <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">{content.campaign}</span>
+      <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">{content.status}</span>
+      {content.secret && <span class="px-2 py-1 bg-red-100 text-red-800 rounded text-sm">Secret</span>}
+    </div>
+  </div>
+  
+  {children}
+  
+  <div class="mt-12 pt-6 border-t border-gray-200">
+    <h3 class="text-lg font-bold mb-4">Related Campaign Content</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <!-- Related content will be populated here -->
+      <div class="p-4 bg-gray-50 rounded border border-gray-200">
+        <h4 class="font-bold text-gray-800 mb-2">Sessions</h4>
+        <p class="text-gray-600 text-sm">View all sessions for this campaign</p>
+      </div>
+      <div class="p-4 bg-gray-50 rounded border border-gray-200">
+        <h4 class="font-bold text-gray-800 mb-2">Characters</h4>
+        <p class="text-gray-600 text-sm">View campaign characters</p>
+      </div>
+      <div class="p-4 bg-gray-50 rounded border border-gray-200">
+        <h4 class="font-bold text-gray-800 mb-2">Locations</h4>
+        <p class="text-gray-600 text-sm">View campaign locations</p>
+      </div>
+    </div>
+  </div>
+</ContentLayout>

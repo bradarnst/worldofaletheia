@@ -1,0 +1,30 @@
+---
+import { getCollection } from 'astro:content';
+import ContentLayout from '../../layouts/ContentLayout.astro';
+
+export async function getStaticPaths() {
+  const systemsCollection = await getCollection('systems');
+  return systemsCollection.map((item) => ({
+    params: { slug: item.id },
+    props: { item },
+  }));
+}
+
+interface Props {
+  item: any;
+}
+
+const { item } = Astro.props;
+const content = item;
+
+if (!content) {
+  throw new Error(`System with slug '${Astro.params.slug}' not found`);
+}
+---
+
+<ContentLayout content={content}>
+  <article class="prose max-w-none">
+    <h2>Content</h2>
+    <slot />
+  </article>
+</ContentLayout>
