@@ -1,5 +1,5 @@
 ---
-status: 'draft'
+status: 'published'
 author: 'brad'
 created: 2026-02-02
 secret: false
