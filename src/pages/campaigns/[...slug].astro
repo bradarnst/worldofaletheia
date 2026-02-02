@@ -1,30 +1,25 @@
----
-import { getCollection } from 'astro:content';
+import { getCollection, getEntry, render } from 'astro:content';
 import ContentLayout from '../../layouts/ContentLayout.astro';
 
 export async function getStaticPaths() {
   const campaignsCollection = await getCollection('campaigns');
   return campaignsCollection.map((item) => ({
     params: { slug: item.id },
-    props: { item },
   }));
 }
 
-interface Props {
-  item: any;
+const { slug } = Astro.params;
+const entry = await getEntry('campaigns', slug as string);
+
+if (!entry) {
+  throw new Error(`Campaign with slug '${slug}' not found`);
 }
 
-const { item } = Astro.props;
-const content = item;
-
-if (!content) {
-  throw new Error(`Campaign with slug '${Astro.params.slug}' not found`);
-}
+const { Content } = await render(entry);
 ---
 
-<ContentLayout content={content}>
+<ContentLayout content={entry}>
   <article class="prose max-w-none">
-    <h2>Content</h2>
-    <slot />
+    <Content />
   </article>
 </ContentLayout>

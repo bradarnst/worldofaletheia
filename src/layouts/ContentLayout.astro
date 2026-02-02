@@ -17,43 +17,45 @@ const contentDescription = description || data.excerpt || content.excerpt;
 ---
 
 <BaseLayout title={contentTitle} description={contentDescription}>
-  <article class="prose max-w-none mx-auto px-4 py-8">
-    <header class="mb-8">
-      <h1 class="text-4xl font-bold mb-2">{data.title || content.title}</h1>
-      
-      <div class="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-4">
-        <span>By {data.author || content.author}</span>
-        <span>•</span>
-        <span>{(data.created || content.created).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
-        <span>•</span>
-        <span class="px-2 py-1 rounded bg-blue-100 text-blue-800">{data.status || content.status}</span>
-        {(data.secret || content.secret) && <span class="px-2 py-1 rounded bg-red-100 text-red-800">Secret</span>}
-        {(data.campaign || content.campaign) && <span class="px-2 py-1 rounded bg-green-100 text-green-800">{data.campaign || content.campaign}</span>}
-      </div>
-      
-      {(data.excerpt || content.excerpt) && <p class="text-lg text-gray-600 mb-6">{data.excerpt || content.excerpt}</p>}
-      
-      <div class="flex flex-wrap gap-2 mb-6">
-        {(data.tags || content.tags || []).map((tag: string) => (
-          <span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">{tag}</span>
-        ))}
-      </div>
-    </header>
-    
-    <main>
-      {children}
-    </main>
-    
-    <footer class="mt-12 pt-6 border-t border-gray-200">
-      <div class="flex justify-between items-center">
-        <div class="text-sm text-gray-500">
-          <span>Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+  <div class="min-h-screen bg-gradient-to-br from-base-100 to-base-200">
+    <article class="prose prose-sm md:prose-base max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+      <header class="mb-8">
+        <h1 class="text-4xl font-bold mb-2">{data.title || content.title}</h1>
+        
+        <div class="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-4">
+          <span>By {data.author || content.author}</span>
+          <span>•</span>
+          <span>{(data.created || content.created).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+          <span>•</span>
+          <span class="px-2 py-1 rounded bg-blue-100 text-blue-800">{data.status || content.status}</span>
+          {(data.secret || content.secret) && <span class="px-2 py-1 rounded bg-red-100 text-red-800">Secret</span>}
+          {(data.campaign || content.campaign) && <span class="px-2 py-1 rounded bg-green-100 text-green-800">{data.campaign || content.campaign}</span>}
         </div>
-        <div class="flex gap-4">
-          <a href="/" class="text-blue-600 hover:text-blue-800 text-sm">Home</a>
-          <a href="/search" class="text-blue-600 hover:text-blue-800 text-sm">Search</a>
+        
+        {(data.excerpt || content.excerpt) && <p class="text-lg text-gray-600 mb-6">{data.excerpt || content.excerpt}</p>}
+        
+        <div class="flex flex-wrap gap-2 mb-6">
+          {(data.tags || content.tags || []).map((tag: string) => (
+            <span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">{tag}</span>
+          ))}
         </div>
-      </div>
-    </footer>
-  </article>
+      </header>
+      
+      <main class="content">
+        <slot />
+      </main>
+      
+      <footer class="mt-12 pt-6 border-t border-gray-200">
+        <div class="flex justify-between items-center">
+          <div class="text-sm text-gray-500">
+            <span>Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+          </div>
+          <div class="flex gap-4">
+            <a href="/" class="text-blue-600 hover:text-blue-800 text-sm">Home</a>
+            <a href="/search" class="text-blue-600 hover:text-blue-800 text-sm">Search</a>
+          </div>
+        </div>
+      </footer>
+    </article>
+  </div>
 </BaseLayout>
