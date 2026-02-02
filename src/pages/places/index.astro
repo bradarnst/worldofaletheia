@@ -1,23 +1,17 @@
 ---
 import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
 import ContentCard from '../../components/ContentCard.astro';
 import TagCloud from '../../components/TagCloud.astro';
 
 const places = await getCollection('places');
-const publishedPlaces = places.filter((item) => item.status === 'published');
+const publishedPlaces = places.filter((item) => item.data.status === 'published');
 
 // Get all unique tags
-const allTags = [...new Set(publishedPlaces.flatMap(item => item.tags))];
+const allTags = [...new Set(publishedPlaces.flatMap(item => item.data.tags))];
 ---
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Places - World of Aletheia</title>
-</head>
-<body>
+<BaseLayout title="Places - World of Aletheia" description="Discover locations, landmarks, and settlements across Aletheia">
   <div class="max-w-6xl mx-auto px-4 py-8">
     <header class="mb-12">
       <h1 class="text-4xl font-bold text-gray-900 mb-4">Places</h1>
@@ -43,5 +37,4 @@ const allTags = [...new Set(publishedPlaces.flatMap(item => item.tags))];
       <TagCloud tags={allTags} />
     </div>
   </div>
-</body>
-</html>
+</BaseLayout>
