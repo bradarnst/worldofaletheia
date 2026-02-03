@@ -1,5 +1,6 @@
 ---
 import BaseLayout from './BaseLayout.astro';
+import Footer from '../components/Footer.astro';
 
 interface Props {
   content: any;
@@ -45,17 +46,10 @@ const contentDescription = description || data.excerpt || content.excerpt;
         <slot />
       </main>
       
-      <footer class="mt-12 pt-6 border-t border-gray-200">
-        <div class="flex justify-between items-center">
-          <div class="text-sm text-gray-500">
-            <span>Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
-          </div>
-          <div class="flex gap-4">
-            <a href="/" class="text-blue-600 hover:text-blue-800 text-sm">Home</a>
-            <a href="/search" class="text-blue-600 hover:text-blue-800 text-sm">Search</a>
-          </div>
-        </div>
-      </footer>
+      <Footer>
+        <span slot="left">Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+      </Footer>
     </article>
   </div>
 </BaseLayout>
+
