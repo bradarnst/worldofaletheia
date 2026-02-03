@@ -1,39 +1,76 @@
-<div class="navbar bg-black/60 backdrop-blur-sm sticky top-0 z-50">
+<div class="navbar bg-paper-200  text-ink-200 sticky top-0 z-50 shadow-md border-b border-base-300">
+  
+  <!-- LEFT: Identity -->
   <div class="navbar-start">
+    <!-- Mobile Dropdown (Hamburger) -->
     <div class="dropdown">
-      <div tabindex="0" role="button" class="btn btn-ghost lg:hidden text-white">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" />
-        </svg>
+      <div tabindex="0" role="button" class="btn btn-ghost lg:hidden">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" /></svg>
       </div>
-      <ul tabindex="0" class="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow text-base-content">
-        <li><a href="/">Home</a></li>
-        <li><a href="/sentients">Sentients</a></li>
-        <li><a href="/places">Places</a></li>
-        <li><a href="/factions">Factions</a></li>
-        <li><a href="/creatures">Creatures</a></li>
-        <li><a href="/lore">Lore</a></li>
-        <li><a href="/sessions">Sessions</a></li>
-        <li><a href="/campaigns">Campaigns</a></li>
-        <li><a href="/systems">Systems</a></li>
-        <li><a href="/gurps">GURPS</a></li>
+      <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
+        <!-- Mobile users get everything here -->
+        <li><a href="/" class="hover:text-gray-200" >Home</a></li>
+        <li><a href="/about" class="hover:text-gray-200" >About</a></li>
+        <li><a href="/sentients" class="hover:text-gray-200" >Sentients</a></li>
+        <li><a href="/places" class="hover:text-gray-200" >Places</a></li>
+        <li><a href="/factions" class="hover:text-gray-200" >Factions</a></li>
+        <li><a href="/creatures" class="hover:text-gray-200" >Creatures</a></li>
+        <li><a href="/lore" class="hover:text-gray-200" >Lore</a></li>
+        <li><a href="/systems" class="hover:text-gray-200" >Systems</a></li>
+        <li><a href="/campaigns" class="hover:text-gray-200" >Campaigns</a></li>
+        <li><a href="/sessions" class="hover:text-gray-200" >Sessions</a></li>
+        <!-- <li>
+          <a>Regions</a>
+          <ul class="p-2">
+            <li><a>Northern Wastes</a></li>
+            <li><a>Iron Guilds</a></li>
+          </ul>
+        </li> -->
+        <li><a href="/gurps" class="text-secondary hover:text-gray-200">GURPS</a></li>
       </ul>
     </div>
-    <a href="/" class="btn btn-ghost text-xl font-lora text-white">World of Aletheia</a>
+    
+    <!-- Logo & Title -->
+    <a class="btn btn-ghost text-xl font-serif tracking-widest">
+      <img src="/src/images/aletheia-logo.png" class="h-8 w-12 mr-2" />
+        World of Aletheia
+    </a>
   </div>
+
+  <!-- CENTER: (Empty to keep it clean, or Search) -->
   <div class="navbar-center hidden lg:flex">
-    <ul class="menu menu-horizontal px-1 text-white">
-      <li><a href="/" class="hover:text-gray-200">Home</a></li>
-      <li><a href="/sentients" class="hover:text-gray-200">Sentients</a></li>
-      <li><a href="/places" class="hover:text-gray-200">Places</a></li>
-      <li><a href="/factions" class="hover:text-gray-200">Factions</a></li>
-      <li><a href="/creatures" class="hover:text-gray-200">Creatures</a></li>
-      <li><a href="/lore" class="hover:text-gray-200">Lore</a></li>
-      <li><a href="/sessions" class="hover:text-gray-200">Sessions</a></li>
-      <li><a href="/campaigns" class="hover:text-gray-200">Campaigns</a></li>
-      <li><a href="/systems" class="hover:text-gray-200">Systems</a></li>
-      <li><a href="/gurps" class="hover:text-gray-200">GURPS</a></li>
+    <!-- Optional: Put Search here if content is huge -->
+  </div>
+
+  <!-- RIGHT: Utilities & The "System" Link -->
+  <div class="navbar-end hidden lg:flex">
+    <ul class="menu menu-horizontal px-1">
+      <li><a href="/about" class="hover:text-gray-200">About</a></li>
+      
+      <!-- The "Regions" Dropdown (For quick jumping when NOT on homepage) -->
+      <!-- <li>
+        <details>
+          <summary>Atlas</summary>
+          <ul class="p-2 w-52 bg-base-100 shadow-xl rounded-t-none">
+             <li><a>Northern Wastes</a></li>
+             <li><a>Iron Guilds</a></li> -->
+             <!-- ... etc ... -->
+          <!-- </ul>
+        </details>
+      </li> -->
+
+      <!-- The GURPS Link (Visually Distinct) -->
+      <li>
+        <!-- <a class="btn btn-sm btn-outline btn-secondary ml-4"> -->
+        <li><a href="/gurps" class="text-secondary hover:text-gray-200">
+          GURPS
+        </a>
+      </li>
     </ul>
   </div>
-  <div class="navbar-end"></div>
+  
+  <!-- Right-most for mobile (Search icon or profile) -->
+  <div class="navbar-end lg:hidden">
+     <!-- Mobile simplified end -->
+  </div>
 </div>
