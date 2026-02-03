@@ -698,7 +698,7 @@ export async function getCampaignEntries<T extends keyof typeof collections>(
 ---
 // src/pages/lore/[...slug].astro
 import { getFilteredCollection } from '../../utils/content-filter';
-import ContentLayout from '../../layouts/ContentLayout.astro';
+import ContentLayout from '@layouts/ContentLayout.astro';
 
 export async function getStaticPaths() {
   const entries = await getFilteredCollection('lore');
@@ -1137,7 +1137,7 @@ export default {
 ```astro
 ---
 // src/pages/search.astro
-import MainSiteLayout from '../layouts/MainSiteLayout.astro';
+import MainSiteLayout from '@layouts/MainSiteLayout.astro';
 ---
 
 <MainSiteLayout title="Search - World of Aletheia">
@@ -1506,8 +1506,8 @@ const validEntries = resolved.filter(Boolean);
 ---
 // src/pages/lore/index.astro
 import { getFilteredCollection } from '../../utils/content-filter';
-import MainSiteLayout from '../../layouts/MainSiteLayout.astro';
-import ContentCard from '../../components/ContentCard.astro';
+import MainSiteLayout from '@layouts/MainSiteLayout.astro';
+import ContentCard from '@components/ContentCard.astro';
 
 const allLore = await getFilteredCollection('lore');
 

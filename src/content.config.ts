@@ -115,6 +115,16 @@ const sessions = defineCollection({
   schema: sessionsSchema,
 });
 
+const metaSchema = baseSchema.extend({
+  title: z.string(),
+  excerpt: z.string().optional(),
+});
+
+const meta = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: 'src/content/meta' }),
+  schema: metaSchema,
+});
+
 export const collections = {
   lore,
   places,
@@ -124,4 +134,5 @@ export const collections = {
   systems,
   campaigns,
   sessions,
+  meta,
 };

@@ -1,7 +1,7 @@
 ---
 title: About Aletheia
 description: What Aletheia is, how this world is used, and who is behind it.
-layout: ../layouts/MainSiteLayout.astro
+layout: @layouts/MainSiteLayout.astro
 ---
 
 ## What Is Aletheia?

@@ -1,0 +1,38 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '@layouts/BaseLayout.astro';
+import ContentCard from '@components/ContentCard.astro';
+import TagCloud from '@components/TagCloud.astro';
+
+const meta = await getCollection('meta');
+
+const allTags = [...new Set(meta.flatMap(item => item.data.tags))];
+---
+
+<BaseLayout title="Meta - World of Aletheia" description="Behind-the-scenes writing, planning, and notes for the World of Aletheia project">
+  <div class="max-w-6xl mx-auto px-4 py-8">
+    <header class="mb-12">
+      <h1 class="text-4xl font-bold text-gray-900 mb-4">Meta</h1>
+      <p class="text-xl text-gray-600">Notes on the project, development, and living document content.</p>
+    </header>
+
+    <div class="mb-12">
+      <h2 class="text-2xl font-bold text-gray-900 mb-6">Recent Meta Posts</h2>
+
+      {meta.length === 0 ? (
+        <p class="text-gray-600">No meta entries yet.</p>
+      ) : (
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {meta.map((item) => (
+            <ContentCard content={item} />
+          ))}
+        </div>
+      )}
+    </div>
+
+    <div>
+      <h2 class="text-2xl font-bold text-gray-900 mb-6">Tags</h2>
+      <TagCloud tags={allTags} />
+    </div>
+  </div>
+</BaseLayout>

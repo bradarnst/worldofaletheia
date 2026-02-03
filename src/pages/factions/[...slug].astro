@@ -1,6 +1,6 @@
 ---
 import { getCollection, getEntry, render } from 'astro:content';
-import ContentLayout from '../../layouts/ContentLayout.astro';
+import ContentLayout from '@layouts/ContentLayout.astro';
 
 export async function getStaticPaths() {
   const factionsCollection = await getCollection('factions');
