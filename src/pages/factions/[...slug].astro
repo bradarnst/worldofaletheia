@@ -1,6 +1,6 @@
 ---
 import { getCollection, getEntry, render } from 'astro:content';
-import ContentLayout from '@layouts/ContentLayout.astro';
+import WorldAletheiaContentLayout from '@layouts/WorldAletheiaContentLayout.astro';
 
 export async function getStaticPaths() {
   const factionsCollection = await getCollection('factions');
@@ -19,7 +19,7 @@ if (!entry) {
 const { Content } = await render(entry);
 ---
 
-<ContentLayout content={entry}>
+<WorldAletheiaContentLayout content={entry}>
   <article class="prose max-w-none">
     <Content />
   </article>

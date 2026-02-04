@@ -1,0 +1,32 @@
+---
+const currentPath = Astro.url.pathname;
+
+const links = [
+  { href: '/creatures', label: 'Creatures' },
+  { href: '/factions', label: 'Factions' },
+  { href: '/lore', label: 'Lore' },
+  { href: '/meta', label: 'Meta' },
+  { href: '/places', label: 'Places' },
+  { href: '/sentients', label: 'Sentients' },
+];
+---
+
+<nav class="bg-base-200 border-b border-base-300">
+  <ul class="flex flex-wrap gap-2 p-4">
+    {links.map((link) => (
+      <li>
+        <a
+          href={link.href}
+          class:list={[
+            'btn btn-sm',
+            currentPath === link.href || currentPath.startsWith(link.href + '/')
+              ? 'btn-primary'
+              : 'btn-ghost'
+          ]}
+        >
+          {link.label}
+        </a>
+      </li>
+    ))}
+  </ul>
+</nav>

@@ -1,23 +1,17 @@
 ---
 import { getCollection } from 'astro:content';
-import BaseLayout from '@layouts/BaseLayout.astro';
+import WorldAletheiaLayout from '@layouts/WorldAletheiaLayout.astro';
 import ContentCard from '@components/ContentCard.astro';
 import TagCloud from '@components/TagCloud.astro';
 
 const factions = await getCollection('factions');
 const publishedFactions = factions.filter((item) => item.data.status === 'published');
 
-// Get all unique tags
 const allTags = [...new Set(publishedFactions.flatMap(item => item.data.tags))];
 ---
 
-<BaseLayout title="Factions - World of Aletheia" description="Discover guilds, kingdoms, cults, and other organizations of Aletheia">
+<WorldAletheiaLayout title="Factions - World of Aletheia" description="Discover guilds, kingdoms, cults, and other organizations of Aletheia">
   <div class="max-w-6xl mx-auto px-4 py-8">
-    <header class="mb-12">
-      <h1 class="text-4xl font-bold text-gray-900 mb-4">Factions</h1>
-      <p class="text-xl text-gray-600">Discover guilds, kingdoms, cults, and other organizations of Aletheia</p>
-    </header>
-    
     <div class="mb-12">
       <h2 class="text-2xl font-bold text-gray-900 mb-6">Latest Factions</h2>
       
@@ -37,4 +31,4 @@ const allTags = [...new Set(publishedFactions.flatMap(item => item.data.tags))];
       <TagCloud tags={allTags} />
     </div>
   </div>
-</BaseLayout>
+</WorldAletheiaLayout>

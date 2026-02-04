@@ -1,22 +1,16 @@
 ---
 import { getCollection } from 'astro:content';
-import BaseLayout from '@layouts/BaseLayout.astro';
+import WorldAletheiaLayout from '@layouts/WorldAletheiaLayout.astro';
 import ContentCard from '@components/ContentCard.astro';
 import TagCloud from '@components/TagCloud.astro';
 
 const lore = await getCollection('lore');
 
-// Get all unique tags
 const allTags = [...new Set(lore.flatMap(item => item.data.tags))];
 ---
 
-<BaseLayout title="Lore - World of Aletheia" description="Explore the rich history, mythology, and world-building of Aletheia">
+<WorldAletheiaLayout title="Lore - World of Aletheia" description="Explore the rich history, mythology, and world-building of Aletheia">
   <div class="max-w-6xl mx-auto px-4 py-8">
-    <header class="mb-12">
-      <h1 class="text-4xl font-bold text-gray-900 mb-4">Lore</h1>
-      <p class="text-xl text-gray-600">Explore the rich history, mythology, and world-building of Aletheia</p>
-    </header>
-    
     <div class="mb-12">
       <h2 class="text-2xl font-bold text-gray-900 mb-6">Latest Lore</h2>
       
@@ -36,4 +30,4 @@ const allTags = [...new Set(lore.flatMap(item => item.data.tags))];
       <TagCloud tags={allTags} />
     </div>
   </div>
-</BaseLayout>
+</WorldAletheiaLayout>

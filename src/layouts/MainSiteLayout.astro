@@ -1,6 +1,6 @@
 ---
 import BaseLayout from './BaseLayout.astro';
-import MainSiteNavigation from '@components/MainSiteNavigation.astro';
+import GlobalNavigation from '@components/GlobalNavigation.astro';
 
 export interface Props {
   title?: string;
@@ -11,7 +11,7 @@ const { title, description } = Astro.props;
 ---
 
 <BaseLayout title={title} description={description}>
-	<MainSiteNavigation />
+	<GlobalNavigation />
 
 	<!-- Main content -->
 <main class="min-h-screen bg-base-100">

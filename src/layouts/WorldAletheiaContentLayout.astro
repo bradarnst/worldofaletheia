@@ -1,0 +1,54 @@
+---
+import WorldAletheiaLayout from './WorldAletheiaLayout.astro';
+import Footer from '@components/Footer.astro';
+import WorldAletheiaHeader from '@components/WorldAletheiaHeader.astro';
+
+interface Props {
+  content: any;
+  title?: string;
+  description?: string;
+  children: any;
+}
+
+const { content, title, description, children } = Astro.props;
+
+const data = content.data || content;
+const contentTitle = title || data.title || content.title;
+const contentDescription = description || data.excerpt || content.excerpt;
+---
+
+<WorldAletheiaLayout title={contentTitle} description={contentDescription}>
+  <WorldAletheiaHeader title={contentTitle} description={contentDescription} />
+  <div class="min-h-screen bg-gradient-to-br from-base-100 to-base-200">
+    <article class="prose prose-sm md:prose-base max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+      <header class="mb-8">
+        <h1 class="text-4xl font-bold mb-2">{data.title || content.title}</h1>
+        
+        <div class="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-4">
+          <span>By {data.author || content.author}</span>
+          <span>•</span>
+          <span>{(data.created || content.created).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+          <span>•</span>
+          <span class="px-2 py-1 rounded bg-blue-100 text-blue-800">{data.status || content.status}</span>
+          {(data.secret || content.secret) && <span class="px-2 py-1 rounded bg-red-100 text-red-800">Secret</span>}
+        </div>
+        
+        {(data.excerpt || content.excerpt) && <p class="text-lg text-gray-600 mb-6">{data.excerpt || content.excerpt}</p>}
+        
+        <div class="flex flex-wrap gap-2 mb-6">
+          {(data.tags || content.tags || []).map((tag: string) => (
+            <span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">{tag}</span>
+          ))}
+        </div>
+      </header>
+      
+      <main class="content">
+        <slot />
+      </main>
+      
+      <Footer>
+        <span slot="left">Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+      </Footer>
+    </article>
+  </div>
+</WorldAletheiaLayout>

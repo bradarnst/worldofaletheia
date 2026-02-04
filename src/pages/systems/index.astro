@@ -1,23 +1,17 @@
 ---
 import { getCollection } from 'astro:content';
-import BaseLayout from '@layouts/BaseLayout.astro';
+import UsingAletheiaLayout from '@layouts/UsingAletheiaLayout.astro';
 import ContentCard from '@components/ContentCard.astro';
 import TagCloud from '@components/TagCloud.astro';
 
 const systems = await getCollection('systems');
 const publishedSystems = systems.filter((item) => item.data.status === 'published');
 
-// Get all unique tags
 const allTags = [...new Set(publishedSystems.flatMap(item => item.data.tags))];
 ---
 
-<BaseLayout title="Systems - World of Aletheia" description="Explore magic, combat, skill, economy, and social systems of Aletheia">
+<UsingAletheiaLayout title="Systems - World of Aletheia" description="Explore magic, combat, skill, economy, and social systems of Aletheia">
   <div class="max-w-6xl mx-auto px-4 py-8">
-    <header class="mb-12">
-      <h1 class="text-4xl font-bold text-gray-900 mb-4">Systems</h1>
-      <p class="text-xl text-gray-600">Explore magic, combat, skill, economy, and social systems of Aletheia</p>
-    </header>
-    
     <div class="mb-12">
       <h2 class="text-2xl font-bold text-gray-900 mb-6">Latest Systems</h2>
       
@@ -37,4 +31,4 @@ const allTags = [...new Set(publishedSystems.flatMap(item => item.data.tags))];
       <TagCloud tags={allTags} />
     </div>
   </div>
-</BaseLayout>
+</UsingAletheiaLayout>
