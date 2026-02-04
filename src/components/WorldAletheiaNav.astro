@@ -11,22 +11,18 @@ const links = [
 ];
 ---
 
-<nav class="bg-base-200 border-b border-base-300">
-  <ul class="flex flex-wrap gap-2 p-4">
-    {links.map((link) => (
-      <li>
-        <a
-          href={link.href}
-          class:list={[
-            'btn btn-sm',
-            currentPath === link.href || currentPath.startsWith(link.href + '/')
-              ? 'btn-primary'
-              : 'btn-ghost'
-          ]}
-        >
-          {link.label}
-        </a>
-      </li>
-    ))}
-  </ul>
-</nav>
+<div class="tabs tabs-border bg-base-100 justify-center gap-1 p-1 h-12">
+  {links.map((link) => (
+    <a
+      href={link.href}
+      class:list={[
+        'tab tab-sm',
+        currentPath === link.href || currentPath.startsWith(link.href + '/')
+          ? 'tab-active'
+          : ''
+      ]}
+    >
+      {link.label}
+    </a>
+  ))}
+</div>

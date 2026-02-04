@@ -10,7 +10,6 @@ title: 'The Sequence of Creation'
 type: 'history'
 excerpt: ''
 ---
-# The Sequence of Creation
 
 ## The Lattice
 The Lattice has always existed. It is the underlying condition of reality that allows structure, stability, limitation, and resonance. It does not act, intend, communicate, or judge. All forces, including divine power, operate within its constraints. The Lattice can be strained, damaged, or stabilized, but it cannot be persuaded or directed.

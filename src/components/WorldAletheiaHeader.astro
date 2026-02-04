@@ -1,6 +1,4 @@
 ---
-import WorldAletheiaNav from '@components/WorldAletheiaNav.astro';
-
 interface Props {
   title: string;
   description?: string;
@@ -14,5 +12,4 @@ const { title, description } = Astro.props;
     <h1 class="text-4xl font-bold text-gray-900 mb-4">{title}</h1>
     {description && <p class="text-xl text-gray-600">{description}</p>}
   </div>
-  <WorldAletheiaNav />
 </header>
