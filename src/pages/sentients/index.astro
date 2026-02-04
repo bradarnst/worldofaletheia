@@ -11,14 +11,7 @@ const publishedSentients = sentients.filter((item) => item.data.status === 'publ
 const allTags = [...new Set(publishedSentients.flatMap(item => item.data.tags))];
 ---
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sentients - World of Aletheia</title>
-</head>
-<body>
+<BaseLayout title="Sentients - World of Aletheia" description="Learn about races, species, cultures, and organizations of Aletheia">
   <div class="max-w-6xl mx-auto px-4 py-8">
     <header class="mb-12">
       <h1 class="text-4xl font-bold text-gray-900 mb-4">Sentients</h1>
@@ -44,5 +37,4 @@ const allTags = [...new Set(publishedSentients.flatMap(item => item.data.tags))]
       <TagCloud tags={allTags} />
     </div>
   </div>
-</body>
-</html>
+</BaseLayout>
