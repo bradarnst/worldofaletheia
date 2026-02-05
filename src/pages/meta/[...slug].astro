@@ -1,6 +1,6 @@
 ---
 import { getCollection, getEntry, render } from 'astro:content';
-import WorldAletheiaContentLayout from '@layouts/WorldAletheiaContentLayout.astro';
+import UsingAletheiaContentLayout from '@layouts/UsingAletheiaContentLayout.astro';
 
 export async function getStaticPaths() {
   const metaCollection = await getCollection('meta');
@@ -19,7 +19,7 @@ if (!entry) {
 const { Content } = await render(entry);
 ---
 
-<WorldAletheiaContentLayout content={entry}>
+<UsingAletheiaContentLayout content={entry}>
   <article class="prose max-w-none">
     <Content />
   </article>

@@ -3,12 +3,13 @@ const currentPath = Astro.url.pathname;
 
 const links = [
   { href: '/campaigns', label: 'Campaigns' },
+  { href: '/meta', label: 'Meta' },
   { href: '/sessions', label: 'Sessions' },
   { href: '/systems', label: 'Systems' },
 ];
 ---
 
-<div class="tabs tabs-boxed bg-base-200 justify-center gap-1 p-1 h-12">
+<div class="tabs tabs-border bg-base-200 justify-center gap-1 p-1 h-12">
   {links.map((link) => (
     <a
       href={link.href}
