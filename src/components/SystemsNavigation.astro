@@ -1,0 +1,24 @@
+---
+const currentPath = Astro.url.pathname;
+
+const links = [
+  { href: '/systems', label: 'General' },
+  { href: '/systems/gurps', label: 'GURPS' },
+];
+---
+
+<div class="tabs tabs-boxed bg-base-200 justify-center gap-1 p-1 h-12">
+  {links.map((link) => (
+    <a
+      href={link.href}
+      class:list={[
+        'tab tab-sm',
+        currentPath === link.href || currentPath.startsWith(link.href + '/')
+          ? 'tab-active'
+          : ''
+      ]}
+    >
+      {link.label}
+    </a>
+  ))}
+</div>
