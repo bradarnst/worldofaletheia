@@ -20,7 +20,7 @@ const allTags = [...new Set(publishedCampaigns.flatMap(item => item.data.tags))]
       ) : (
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {publishedCampaigns.map((item) => (
-            <ContentCard content={item.data} />
+            <ContentCard content={item} />
           ))}
         </div>
       )}
