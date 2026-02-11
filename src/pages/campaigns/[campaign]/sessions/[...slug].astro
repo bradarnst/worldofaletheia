@@ -1,0 +1,171 @@
+---
+import { astroContentAdapter } from '@adapters/campaigns';
+import { render } from 'astro:content';
+import UsingAletheiaContentLayout from '@layouts/UsingAletheiaContentLayout.astro';
+
+// Get params from URL
+const { campaign, slug } = Astro.params;
+
+// Initialize adapter
+await astroContentAdapter.initialize();
+
+// Verify campaign exists
+const campaignExists = await astroContentAdapter.campaignExists(campaign!);
+if (!campaignExists) {
+  return Astro.redirect('/404');
+}
+
+// Get session details
+const session = await astroContentAdapter.getSessionBySlug(campaign!, slug!);
+if (!session) {
+  return Astro.redirect('/404');
+}
+
+// Get campaign details for context
+const campaignDetail = await astroContentAdapter.getCampaignBySlug(campaign!);
+
+// Get all sessions for navigation
+const allSessions = await astroContentAdapter.getSessionsByCampaign(campaign!);
+const sortedSessions = allSessions.sort((a, b) => {
+  if (!a.date || !b.date) return 0;
+  return a.date.getTime() - b.date.getTime();
+});
+
+// Find current index for prev/next navigation
+const currentIndex = sortedSessions.findIndex(s => s.slug === slug);
+const previousSession = currentIndex > 0 ? sortedSessions[currentIndex - 1] : null;
+const nextSession = currentIndex < sortedSessions.length - 1 ? sortedSessions[currentIndex + 1] : null;
+
+// Create a mock content entry for the layout
+const contentEntry = {
+  id: session.id,
+  collection: 'sessions' as const,
+  data: {
+    title: session.title,
+    excerpt: session.excerpt,
+    author: session.metadata.author,
+    created: session.metadata.createdAt,
+    status: 'published' as const,
+    secret: session.secret,
+    tags: session.tags,
+    permissions: session.permissions,
+    campaign: session.campaignSlug,
+    type: session.type,
+  },
+};
+
+const title = `${session.title} - ${campaignDetail?.title || campaign}`;
+---
+
+<UsingAletheiaContentLayout content={contentEntry} title={title}>
+  <article class="prose max-w-none">
+    <!-- Breadcrumb -->
+    <nav class="mb-6 text-sm text-gray-600 not-prose">
+      <a href="/campaigns" class="hover:text-blue-600">Campaigns</a>
+      <span class="mx-2">/</span>
+      {campaignDetail ? (
+        <a href={`/campaigns/${campaign}`} class="hover:text-blue-600">{campaignDetail.title}</a>
+      ) : (
+        <span>{campaign}</span>
+      )}
+      <span class="mx-2">/</span>
+      <a href={`/campaigns/${campaign}/sessions`} class="hover:text-blue-600">Sessions</a>
+      <span class="mx-2">/</span>
+      <span class="text-gray-900 font-medium">{session.title}</span>
+    </nav>
+
+    <!-- Session Header -->
+    <header class="mb-8 not-prose">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm uppercase">{session.type}</span>
+        {session.secret && (
+          <span class="px-2 py-1 bg-red-100 text-red-800 rounded text-sm">Secret</span>
+        )}
+        <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-sm">{session.permissions}</span>
+      </div>
+      
+      <h1 class="text-3xl font-bold text-gray-900 mb-4">{session.title}</h1>
+      
+      <div class="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+        {session.date && (
+          <div class="flex items-center gap-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            {session.date.toLocaleDateString('en-US', { 
+              weekday: 'long', 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric' 
+            })}
+          </div>
+        )}
+        {session.duration && (
+          <div class="flex items-center gap-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            {Math.floor(session.duration / 60)}h {session.duration % 60}m
+          </div>
+        )}
+      </div>
+    </header>
+
+    <!-- Session Content Placeholder -->
+    <!-- Note: In a full implementation, we would render the markdown content here -->
+    <div class="bg-gray-50 border-l-4 border-blue-500 p-4 mb-8">
+      <p class="text-gray-600 italic">
+        Session content would be rendered here. This page demonstrates the nested route structure.
+      </p>
+      <p class="text-gray-600 mt-2">
+        Session ID: <code class="bg-gray-200 px-1 rounded">{session.id}</code>
+      </p>
+    </div>
+
+    <!-- Session Navigation -->
+    <nav class="mt-12 pt-6 border-t not-prose">
+      <div class="flex justify-between items-center">
+        {previousSession ? (
+          <a 
+            href={`/campaigns/${campaign}/sessions/${previousSession.slug}`}
+            class="flex items-center text-blue-600 hover:text-blue-800"
+          >
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+            <div class="text-left">
+              <div class="text-xs text-gray-500">Previous Session</div>
+              <div class="font-medium">{previousSession.title}</div>
+            </div>
+          </a>
+        ) : (
+          <div />
+        )}
+        
+        <a 
+          href={`/campaigns/${campaign}/sessions`}
+          class="text-gray-600 hover:text-gray-900 text-sm"
+        >
+          All Sessions
+        </a>
+        
+        {nextSession ? (
+          <a 
+            href={`/campaigns/${campaign}/sessions/${nextSession.slug}`}
+            class="flex items-center text-blue-600 hover:text-blue-800"
+          >
+            <div class="text-right">
+              <div class="text-xs text-gray-500">Next Session</div>
+              <div class="font-medium">{nextSession.title}</div>
+            </div>
+            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </a>
+        ) : (
+          <div />
+        )}
+      </div>
+    </nav>
+  </article>
+</UsingAletheiaContentLayout>

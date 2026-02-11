@@ -1,0 +1,123 @@
+---
+import { astroContentAdapter } from '@adapters/campaigns';
+import UsingAletheiaLayout from '@layouts/UsingAletheiaLayout.astro';
+import ContentCard from '@components/ContentCard.astro';
+
+// Get the campaign slug from the URL
+const { campaign } = Astro.params;
+
+// Initialize adapter and fetch data
+await astroContentAdapter.initialize();
+
+// Verify campaign exists
+const campaignExists = await astroContentAdapter.campaignExists(campaign!);
+if (!campaignExists) {
+  return Astro.redirect('/404');
+}
+
+// Get campaign details and sessions
+const campaignDetail = await astroContentAdapter.getCampaignBySlug(campaign!);
+const sessions = await astroContentAdapter.getSessionsByCampaign(campaign!);
+
+// Sort sessions by date (newest first)
+const sortedSessions = sessions.sort((a, b) => {
+  if (!a.date || !b.date) return 0;
+  return b.date.getTime() - a.date.getTime();
+});
+
+const title = campaignDetail ? `${campaignDetail.title} - Sessions` : 'Campaign Sessions';
+---
+
+<UsingAletheiaLayout title={title} description={`Session notes for ${campaignDetail?.title || campaign}`}>
+  <div class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Breadcrumb -->
+    <nav class="mb-6 text-sm text-gray-600">
+      <a href="/campaigns" class="hover:text-blue-600">Campaigns</a>
+      <span class="mx-2">/</span>
+      {campaignDetail ? (
+        <a href={`/campaigns/${campaign}`} class="hover:text-blue-600">{campaignDetail.title}</a>
+      ) : (
+        <span>{campaign}</span>
+      )}
+      <span class="mx-2">/</span>
+      <span class="text-gray-900 font-medium">Sessions</span>
+    </nav>
+
+    <!-- Header -->
+    <div class="mb-12">
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">
+        {campaignDetail?.title || campaign}
+      </h1>
+      <h2 class="text-xl text-gray-600">Session Notes</h2>
+      {campaignDetail?.excerpt && (
+        <p class="mt-4 text-gray-700 max-w-3xl">{campaignDetail.excerpt}</p>
+      )}
+    </div>
+
+    <!-- Sessions List -->
+    <div class="mb-12">
+      <h3 class="text-2xl font-bold text-gray-900 mb-6">
+        Sessions ({sortedSessions.length})
+      </h3>
+      
+      {sortedSessions.length === 0 ? (
+        <div class="bg-gray-50 rounded-lg p-8 text-center">
+          <p class="text-gray-600">No sessions found for this campaign yet.</p>
+        </div>
+      ) : (
+        <div class="space-y-4">
+          {sortedSessions.map((session) => (
+            <a 
+              href={`/campaigns/${campaign}/sessions/${session.slug}`}
+              class="block bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md hover:border-blue-300 transition-all"
+            >
+              <div class="flex items-start justify-between">
+                <div>
+                  <h4 class="text-lg font-semibold text-gray-900 mb-1">{session.title}</h4>
+                  {session.excerpt && (
+                    <p class="text-gray-600 text-sm mb-2">{session.excerpt}</p>
+                  )}
+                  <div class="flex items-center gap-4 text-sm text-gray-500">
+                    {session.date && (
+                      <span>
+                        {session.date.toLocaleDateString('en-US', { 
+                          weekday: 'long', 
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric' 
+                        })}
+                      </span>
+                    )}
+                    {session.duration && (
+                      <span>{Math.floor(session.duration / 60)}h {session.duration % 60}m</span>
+                    )}
+                    <span class="px-2 py-0.5 bg-gray-100 rounded text-xs uppercase">{session.type}</span>
+                    {session.secret && (
+                      <span class="px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs">Secret</span>
+                    )}
+                  </div>
+                </div>
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
+
+    <!-- Back to Campaign -->
+    <div class="border-t pt-6">
+      <a 
+        href={`/campaigns/${campaign}`}
+        class="inline-flex items-center text-blue-600 hover:text-blue-800"
+      >
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Back to Campaign
+      </a>
+    </div>
+  </div>
+</UsingAletheiaLayout>

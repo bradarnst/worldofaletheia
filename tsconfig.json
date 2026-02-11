@@ -13,7 +13,10 @@
       "@utils/*": ["src/utils/*"],
       "@data/*": ["src/data/*"],
       "@assets/*": ["src/assets/*"],
-      "@images/*": ["src/images/*"]
+      "@images/*": ["src/images/*"],
+      "@services/*": ["src/services/*"],
+      "@adapters/*": ["src/adapters/*"],
+      "@contracts/*": ["src/contracts/*"]
     }
   }
 }

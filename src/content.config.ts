@@ -56,6 +56,7 @@ const systemsSchema = baseSchema.extend({
   excerpt: z.string().optional(),
 });
 
+// Campaign schema - supports nested structure
 const campaignsSchema = baseSchema.omit({ status: true }).extend({
   title: z.string(),
   type: z.enum(['campaign', 'adventure', 'quest', 'story']),
@@ -65,6 +66,7 @@ const campaignsSchema = baseSchema.omit({ status: true }).extend({
   end: z.date().optional(),
 });
 
+// Session schema - supports nested under campaigns
 const sessionsSchema = baseSchema.extend({
   title: z.string(),
   type: z.enum(['session', 'encounter', 'battle', 'roleplay']),
@@ -105,13 +107,15 @@ const systems = defineCollection({
   schema: systemsSchema,
 });
 
+// Campaigns collection - supports nested sessions
 const campaigns = defineCollection({
   loader: glob({ pattern: '**/*.md', base: 'src/content/campaigns' }),
   schema: campaignsSchema,
 });
 
+// Sessions collection - loads from nested campaign structure
 const sessions = defineCollection({
-  loader: glob({ pattern: '**/*.md', base: 'src/content/sessions' }),
+  loader: glob({ pattern: '**/sessions/*.md', base: 'src/content/campaigns' }),
   schema: sessionsSchema,
 });
 
