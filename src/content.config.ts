@@ -56,7 +56,7 @@ const systemsSchema = baseSchema.extend({
   excerpt: z.string().optional(),
 });
 
-// Campaign schema - supports nested structure
+// Campaign schema - only for campaign overview files (not sessions)
 const campaignsSchema = baseSchema.omit({ status: true }).extend({
   title: z.string(),
   type: z.enum(['campaign', 'adventure', 'quest', 'story']),
@@ -66,7 +66,7 @@ const campaignsSchema = baseSchema.omit({ status: true }).extend({
   end: z.date().optional(),
 });
 
-// Session schema - supports nested under campaigns
+// Session schema - for nested session files
 const sessionsSchema = baseSchema.extend({
   title: z.string(),
   type: z.enum(['session', 'encounter', 'battle', 'roleplay']),
@@ -107,15 +107,19 @@ const systems = defineCollection({
   schema: systemsSchema,
 });
 
-// Campaigns collection - supports nested sessions
+// Campaigns collection - only campaign overview files (index.md), NOT sessions
+// Pattern: any .md file directly in campaign subdirectories, but not in sessions subdirs
 const campaigns = defineCollection({
-  loader: glob({ pattern: '**/*.md', base: 'src/content/campaigns' }),
+  loader: glob({ 
+    pattern: ['**/*.md', '!**/sessions/*.md'], 
+    base: 'src/content/campaigns' 
+  }),
   schema: campaignsSchema,
 });
 
-// Sessions collection - loads from nested campaign structure
+// Sessions collection - loads from nested sessions folders
 const sessions = defineCollection({
-  loader: glob({ pattern: '**/sessions/*.md', base: 'src/content/campaigns' }),
+  loader: glob({ pattern: '*/sessions/*.md', base: 'src/content/campaigns' }),
   schema: sessionsSchema,
 });
 

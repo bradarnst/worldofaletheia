@@ -60,9 +60,12 @@ function mapToCampaignSummary(
   sessionCount: number = 0
 ): CampaignSummary {
   const data = entry.data;
+  // Campaign ID is the folder name (e.g., "sample-campaign" from "sample-campaign/index.md")
+  const campaignSlug = entry.id.replace(/\/index$/, '');
+  
   return {
-    id: entry.id,
-    slug: entry.id,
+    id: campaignSlug,
+    slug: campaignSlug,
     title: data.title,
     status: data.status as CampaignStatus,
     type: data.type as CampaignType,
@@ -86,6 +89,7 @@ function mapToCampaignDetail(
 ): CampaignDetail {
   const data = entry.data;
   const now = new Date();
+  const campaignSlug = entry.id.replace(/\/index$/, '');
   
   return {
     ...mapToCampaignSummary(entry, sessions.length),
@@ -96,7 +100,7 @@ function mapToCampaignDetail(
     metadata: {
       createdAt: data.created,
       updatedAt: now,
-      sourcePath: `src/content/campaigns/${entry.id}`,
+      sourcePath: `src/content/campaigns/${entry.id}.md`,
       lastIngestedAt: now,
       version: CAMPAIGNS_API_VERSION,
     },
@@ -111,10 +115,11 @@ function mapToSessionSummary(entry: CollectionEntry<'sessions'>): SessionSummary
   // Extract campaign slug from path: campaign-slug/sessions/session-slug
   const pathParts = entry.id.split('/');
   const campaignSlug = pathParts[0];
+  const sessionSlug = pathParts[pathParts.length - 1];
   
   return {
     id: entry.id,
-    slug: pathParts[pathParts.length - 1] || entry.id,
+    slug: sessionSlug,
     campaignSlug,
     campaignId: campaignSlug,
     title: data.title,
@@ -146,7 +151,7 @@ function mapToSessionDetail(
     metadata: {
       createdAt: data.created,
       updatedAt: now,
-      sourcePath: `src/content/campaigns/${entry.id}`,
+      sourcePath: `src/content/campaigns/${entry.id}.md`,
       lastIngestedAt: now,
       version: CAMPAIGNS_API_VERSION,
       author: data.author,
@@ -175,9 +180,6 @@ export class AstroContentAdapter implements CampaignsDataAdapter {
   async getCampaigns(params?: CampaignQueryParams): Promise<CampaignSummary[]> {
     const campaigns = await getCollection('campaigns');
     
-    // Filter out sessions (they're in nested folders but loaded separately)
-    const campaignEntries = campaigns.filter(c => !c.id.includes('/sessions/'));
-    
     // Get session counts
     const sessions = await getCollection('sessions');
     const sessionCounts = new Map<string, number>();
@@ -189,8 +191,8 @@ export class AstroContentAdapter implements CampaignsDataAdapter {
       }
     }
     
-    let results = campaignEntries.map(c => 
-      mapToCampaignSummary(c, sessionCounts.get(c.id) || 0)
+    let results = campaigns.map(c => 
+      mapToCampaignSummary(c, sessionCounts.get(c.id.replace(/\/index$/, '')) || 0)
     );
 
     // Apply filters
@@ -208,8 +210,9 @@ export class AstroContentAdapter implements CampaignsDataAdapter {
   }
 
   async getCampaignBySlug(slug: string): Promise<CampaignDetail | null> {
-    const entry = await getEntry('campaigns', slug);
-    if (!entry || entry.id.includes('/sessions/')) {
+    // Campaigns are stored as folder/index.md, so entry ID is folder/index
+    const entry = await getEntry('campaigns', `${slug}/index`);
+    if (!entry) {
       return null;
     }
 
@@ -217,7 +220,6 @@ export class AstroContentAdapter implements CampaignsDataAdapter {
     const sessions = await this.getSessionsByCampaign(slug);
     
     // Render content
-    const { Content } = await render(entry);
     // Note: In Astro SSR, we can't easily get the raw markdown body,
     // so we use an empty string here - pages will render the Content component directly
     
@@ -229,8 +231,8 @@ export class AstroContentAdapter implements CampaignsDataAdapter {
   }
 
   async campaignExists(slug: string): Promise<boolean> {
-    const entry = await getEntry('campaigns', slug);
-    return entry !== undefined && !entry.id.includes('/sessions/');
+    const entry = await getEntry('campaigns', `${slug}/index`);
+    return entry !== undefined;
   }
 
   // Session operations
