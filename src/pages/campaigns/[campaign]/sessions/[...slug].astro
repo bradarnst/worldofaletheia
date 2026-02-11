@@ -1,7 +1,6 @@
 ---
 import { astroContentAdapter } from '@adapters/campaigns';
-import { render } from 'astro:content';
-import UsingAletheiaContentLayout from '@layouts/UsingAletheiaContentLayout.astro';
+import CampaignsContentLayout from '@layouts/CampaignsContentLayout.astro';
 
 // Get params from URL
 const { campaign, slug } = Astro.params;
@@ -57,7 +56,7 @@ const contentEntry = {
 const title = `${session.title} - ${campaignDetail?.title || campaign}`;
 ---
 
-<UsingAletheiaContentLayout content={contentEntry} title={title}>
+<CampaignsContentLayout content={contentEntry} title={title}>
   <article class="prose max-w-none">
     <!-- Breadcrumb -->
     <nav class="mb-6 text-sm text-gray-600 not-prose">
@@ -168,4 +167,4 @@ const title = `${session.title} - ${campaignDetail?.title || campaign}`;
       </div>
     </nav>
   </article>
-</UsingAletheiaContentLayout>
+</CampaignsContentLayout>

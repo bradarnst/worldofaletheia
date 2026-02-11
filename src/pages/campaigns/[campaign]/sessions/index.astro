@@ -1,7 +1,6 @@
 ---
 import { astroContentAdapter } from '@adapters/campaigns';
-import UsingAletheiaLayout from '@layouts/UsingAletheiaLayout.astro';
-import ContentCard from '@components/ContentCard.astro';
+import CampaignsLayout from '@layouts/CampaignsLayout.astro';
 
 // Get the campaign slug from the URL
 const { campaign } = Astro.params;
@@ -28,7 +27,7 @@ const sortedSessions = sessions.sort((a, b) => {
 const title = campaignDetail ? `${campaignDetail.title} - Sessions` : 'Campaign Sessions';
 ---
 
-<UsingAletheiaLayout title={title} description={`Session notes for ${campaignDetail?.title || campaign}`}>
+<CampaignsLayout title={title} description={`Session notes for ${campaignDetail?.title || campaign}`}>
   <div class="max-w-6xl mx-auto px-4 py-8">
     <!-- Breadcrumb -->
     <nav class="mb-6 text-sm text-gray-600">
@@ -120,4 +119,4 @@ const title = campaignDetail ? `${campaignDetail.title} - Sessions` : 'Campaign 
       </a>
     </div>
   </div>
-</UsingAletheiaLayout>
+</CampaignsLayout>

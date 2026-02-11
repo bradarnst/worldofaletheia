@@ -1,0 +1,40 @@
+---
+interface Props {
+  title: string;
+  author?: string;
+  created?: Date;
+  status?: string;
+  secret?: boolean;
+  campaign?: string;
+  excerpt?: string;
+  tags?: string[];
+}
+
+const { title, author, created, status, secret, campaign, excerpt, tags } = Astro.props;
+---
+
+<header class="bg-base-100 pb-4">
+  <div class="container mx-auto px-4 py-8 text-center">
+    <h1 class="text-4xl font-bold text-gray-900 mb-4">{title}</h1>
+    
+    {excerpt && <p class="text-xl text-gray-600 mb-4">{excerpt}</p>}
+    
+    <div class="flex flex-wrap items-center justify-center gap-4 text-sm text-gray-500 mb-4">
+      {author && <span>By {author}</span>}
+      {author && created && <span>•</span>}
+      {created && <span>{created.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>}
+      {(author || created) && status && <span>•</span>}
+      {status && <span class="px-2 py-1 rounded bg-blue-100 text-blue-800">{status}</span>}
+      {secret && <span class="px-2 py-1 rounded bg-red-100 text-red-800">Secret</span>}
+      {campaign && <span class="px-2 py-1 rounded bg-green-100 text-green-800">{campaign}</span>}
+    </div>
+    
+    {tags && tags.length > 0 && (
+      <div class="flex flex-wrap gap-2 justify-center">
+        {tags.map((tag) => (
+          <span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">{tag}</span>
+        ))}
+      </div>
+    )}
+  </div>
+</header>
