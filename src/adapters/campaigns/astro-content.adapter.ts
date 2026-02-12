@@ -25,6 +25,16 @@ import {
 } from '@contracts/campaigns';
 import type { CampaignsDataAdapter } from './campaign.adapter';
 
+async function getCampaignEntryBySlug(slug: string) {
+  const direct = await getEntry('campaigns', slug);
+  if (direct) {
+    return direct;
+  }
+
+  // Compatibility fallback for folder/index style ids.
+  return getEntry('campaigns', `${slug}/index`);
+}
+
 /**
  * Environment-aware permission checker
  */
@@ -60,7 +70,6 @@ function mapToCampaignSummary(
   sessionCount: number = 0
 ): CampaignSummary {
   const data = entry.data;
-  // Campaign ID is the folder name (e.g., "sample-campaign" from "sample-campaign/index.md")
   const campaignSlug = entry.id.replace(/\/index$/, '');
   
   return {
@@ -100,7 +109,7 @@ function mapToCampaignDetail(
     metadata: {
       createdAt: data.created,
       updatedAt: now,
-      sourcePath: `src/content/campaigns/${entry.id}.md`,
+      sourcePath: `src/content/campaigns/${campaignSlug}/index.md`,
       lastIngestedAt: now,
       version: CAMPAIGNS_API_VERSION,
     },
@@ -210,8 +219,7 @@ export class AstroContentAdapter implements CampaignsDataAdapter {
   }
 
   async getCampaignBySlug(slug: string): Promise<CampaignDetail | null> {
-    // Campaigns are stored as folder/index.md, so entry ID is folder/index
-    const entry = await getEntry('campaigns', `${slug}/index`);
+    const entry = await getCampaignEntryBySlug(slug);
     if (!entry) {
       return null;
     }
@@ -231,7 +239,7 @@ export class AstroContentAdapter implements CampaignsDataAdapter {
   }
 
   async campaignExists(slug: string): Promise<boolean> {
-    const entry = await getEntry('campaigns', `${slug}/index`);
+    const entry = await getCampaignEntryBySlug(slug);
     return entry !== undefined;
   }
 

@@ -4,15 +4,15 @@ import CampaignsContentLayout from '@layouts/CampaignsContentLayout.astro';
 
 export async function getStaticPaths() {
   const campaignsCollection = await getCollection('campaigns');
-  // Campaigns are stored as folder/index.md, so entry ID is folder/index
   return campaignsCollection.map((item) => ({
     params: { slug: item.id.replace(/\/index$/, '') },
   }));
 }
 
 const { slug } = Astro.params;
-// Campaigns are stored as folder/index.md
-const entry = await getEntry('campaigns', `${slug}/index`);
+const entry =
+  (await getEntry('campaigns', slug!)) ??
+  (await getEntry('campaigns', `${slug}/index`));
 
 if (!entry) {
   throw new Error(`Campaign with slug '${slug}' not found`);

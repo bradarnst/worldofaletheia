@@ -22,12 +22,12 @@ Implement ADR-0002 Pattern A on the homepage so first-time visitors get immediat
   - Keep one clear CTA per block
   - Remove dense category-grid behavior above the fold
 
-- [ ] Implement Latest Article teaser
+- [x] Implement Latest Article teaser
   - Pull one latest entry from curated source set
   - Show title, short excerpt, domain label, and read CTA
   - Ensure fallback state if no content exists
 
-- [ ] Implement Random Article teaser
+- [x] Implement Random Article teaser
   - Select one random entry from curated source set
   - Show title, short excerpt, domain label, and explore CTA
   - Ensure deterministic fallback for build/runtime edge cases
@@ -61,7 +61,7 @@ Implement ADR-0002 Pattern A on the homepage so first-time visitors get immediat
   - Keep overlay and CTA readability consistent across all candidate images
   - Keep implementation lightweight and avoid slider UI or heavy client JS
 
-- [-] QA pass
+- [x] QA pass
   - Check CTA destination correctness
   - Check empty-content fallback rendering
   - Check visual consistency with Tailwind/DaisyUI design system

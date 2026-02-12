@@ -1,6 +1,15 @@
 ---
+import { getCollection } from 'astro:content';
 import { astroContentAdapter } from '@adapters/campaigns';
 import CampaignsLayout from '@layouts/CampaignsLayout.astro';
+
+export async function getStaticPaths() {
+  const campaignsCollection = await getCollection('campaigns');
+
+  return campaignsCollection.map((item) => ({
+    params: { campaign: item.id.replace(/\/index$/, '') },
+  }));
+}
 
 // Get the campaign slug from the URL
 const { campaign } = Astro.params;

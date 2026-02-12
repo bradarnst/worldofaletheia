@@ -1,6 +1,21 @@
 ---
+import { getCollection } from 'astro:content';
 import { astroContentAdapter } from '@adapters/campaigns';
 import CampaignsContentLayout from '@layouts/CampaignsContentLayout.astro';
+
+export async function getStaticPaths() {
+  const sessionsCollection = await getCollection('sessions');
+
+  return sessionsCollection.map((item) => {
+    const parts = item.id.split('/');
+    const campaign = parts[0];
+    const slug = parts[parts.length - 1];
+
+    return {
+      params: { campaign, slug },
+    };
+  });
+}
 
 // Get params from URL
 const { campaign, slug } = Astro.params;
