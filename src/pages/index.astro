@@ -1,159 +1,92 @@
 ---
 import Layout from '@layouts/MainSiteLayout.astro';
+
+import boatInMangroves from '@images/boat-in-mangroves.png';
+import desertTent from '@images/desert-tent.png';
+import dwarvenMountainEntrance from '@images/dwarven-mountain-entrance.png';
+import fertileLandsToCity from '@images/fertile-lands-to-city.png';
+import forestRoad from '@images/forest-road.png';
+import jungleRuin from '@images/jungle-ruin.png';
+import lakePort from '@images/lake-port.png';
+import rideOnTheBeach from '@images/ride-on-the-beach.png';
+import savannaFarmland from '@images/savanna-farmland.png';
+import wheatFields from '@images/wheat-fields.png';
+
+const heroImages = [
+  { src: boatInMangroves.src, alt: 'A small boat moving through dense mangrove waterways.' },
+  { src: desertTent.src, alt: 'A tent settlement in a broad desert under clear sky.' },
+  { src: dwarvenMountainEntrance.src, alt: 'A carved entrance set into a rugged mountain face.' },
+  { src: fertileLandsToCity.src, alt: 'Fertile countryside leading toward a distant city.' },
+  { src: forestRoad.src, alt: 'A winding road cutting through dense forest.' },
+  { src: jungleRuin.src, alt: 'Dense jungle growth surrounding old stone structures.' },
+  { src: lakePort.src, alt: 'A lakeside port with boats and low settlement buildings.' },
+  { src: rideOnTheBeach.src, alt: 'Travelers riding along a wide coastline at low tide.' },
+  { src: savannaFarmland.src, alt: 'Open savanna transitioning into cultivated farmlands.' },
+  { src: wheatFields.src, alt: 'Golden wheat fields stretching toward distant hills.' },
+];
+
+// UTC daily rotation: one image for the whole day, changes at 00:00 UTC.
+const utcDay = Math.floor(Date.now() / 86400000);
+const heroImage = heroImages[utcDay % heroImages.length];
 ---
 
-<Layout title="World of Aletheia" description="An immersive tabletop RPG setting where magic, mystery, and adventure await in the Shattered Lands.">
-	<div class="max-w-7xl mx-auto px-4 lg:px-0">
-		<h1 class="text-5xl lg:text-6xl font-bold font-lora text-ink-950 mb-4 drop-shadow-lg">
-			World of Aletheia
-		</h1>
-		<p class="text-lg lg:text-xl text-ink-800 mb-6 drop-shadow-md">
-			An immersive tabletop RPG setting where magic, mystery, and adventure await in the Shattered Lands.
-		</p>
-		<div class="flex flex-wrap gap-3">
-			<a href="#explore" class="btn btn-primary">Explore the World</a>
-			<a href="#about" class="btn btn-outline">Learn More</a>
-		</div>
-	</div>
-	
-	<!-- Quick links section -->
-	<div class="py-8 space-y-8">
-		<!-- Canon: World of Aletheia -->
-		<section class="max-w-7xl mx-auto space-y-4 px-4 lg:px-0">
-			<h2 class="text-2xl font-semibold font-lora text-ink-900">World of Aletheia (Canon)</h2>
-			<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-				<div class="card bg-base-100/90 backdrop-blur-sm shadow hover:shadow-md transition-shadow overflow-hidden">
-					<figure class="h-24 bg-gradient-to-br from-amber-100 to-amber-200">
-						<svg class="w-12 h-12 mx-auto mt-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-						</svg>
-					</figure>
-					<div class="card-body p-4">
-						<h3 class="card-title text-base font-lora">Lore</h3>
-						<p class="text-sm text-gray-600">Discover the rich history and legends.</p>
-						<div class="card-actions justify-end mt-2">
-							<a href="/lore" class="btn btn-primary btn-sm">Explore</a>
-						</div>
-					</div>
-				</div>
-				
-				<div class="card bg-base-100/90 backdrop-blur-sm shadow hover:shadow-md transition-shadow overflow-hidden">
-					<figure class="h-24 bg-gradient-to-br from-blue-100 to-blue-200">
-						<svg class="w-12 h-12 mx-auto mt-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-						</svg>
-					</figure>
-					<div class="card-body p-4">
-						<h3 class="card-title text-base font-lora">Sentients</h3>
-						<p class="text-sm text-gray-600">Meet heroes, villains, and legends.</p>
-						<div class="card-actions justify-end mt-2">
-							<a href="/sentients" class="btn btn-primary btn-sm">Explore</a>
-						</div>
-					</div>
-				</div>
-				
-				<div class="card bg-base-100/90 backdrop-blur-sm shadow hover:shadow-md transition-shadow overflow-hidden">
-					<figure class="h-24 bg-gradient-to-br from-green-100 to-green-200">
-						<svg class="w-12 h-12 mx-auto mt-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-						</svg>
-					</figure>
-					<div class="card-body p-4">
-						<h3 class="card-title text-base font-lora">Places</h3>
-						<p class="text-sm text-gray-600">Journey through cities and lands.</p>
-						<div class="card-actions justify-end mt-2">
-							<a href="/places" class="btn btn-primary btn-sm">Explore</a>
-						</div>
-					</div>
-				</div>
-				
-				<div class="card bg-base-100/90 backdrop-blur-sm shadow hover:shadow-md transition-shadow overflow-hidden">
-					<figure class="h-24 bg-gradient-to-br from-purple-100 to-purple-200">
-						<svg class="w-12 h-12 mx-auto mt-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-						</svg>
-					</figure>
-					<div class="card-body p-4">
-						<h3 class="card-title text-base font-lora">Factions</h3>
-						<p class="text-sm text-gray-600">Learn about powers and organizations.</p>
-						<div class="card-actions justify-end mt-2">
-							<a href="/factions" class="btn btn-primary btn-sm">Explore</a>
-						</div>
-					</div>
-				</div>
-				
-				<div class="card bg-base-100/90 backdrop-blur-sm shadow hover:shadow-md transition-shadow overflow-hidden">
-					<figure class="h-24 bg-gradient-to-br from-red-100 to-red-200">
-						<svg class="w-12 h-12 mx-auto mt-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-						</svg>
-					</figure>
-					<div class="card-body p-4">
-						<h3 class="card-title text-base font-lora">Creatures</h3>
-						<p class="text-sm text-gray-600">Encounter beasts and monsters.</p>
-						<div class="card-actions justify-end mt-2">
-							<a href="/creatures" class="btn btn-primary btn-sm">Explore</a>
-						</div>
-					</div>
-				</div>
-			</div>
-		</section>
+<Layout title="World of Aletheia" description="A grounded fantasy world shaped by history, consequence, and fragile renewal.">
+  <section class="max-w-7xl mx-auto px-4 lg:px-0">
+    <div class="hero min-h-[24rem] rounded-box overflow-hidden shadow-xl" style={`background-image: url(${heroImage.src});`}>
+      <div class="hero-overlay bg-black/45"></div>
+      <div class="hero-content text-neutral-content text-center px-6">
+        <div class="max-w-3xl">
+          <h1 class="mb-4 text-4xl md:text-5xl font-bold font-lora">World of Aletheia</h1>
+          <p class="mb-6 text-base md:text-lg opacity-95">
+            A grounded fantasy setting where power has consequences, histories are contested,
+            and life endures in the wake of catastrophe.
+          </p>
+          <div class="flex flex-wrap justify-center gap-3">
+            <a href="/lore" class="btn btn-primary">Start with Lore</a>
+            <a href="/campaigns" class="btn btn-outline btn-neutral">Explore Campaigns</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-		<!-- Using Aletheia -->
-		<section class="max-w-7xl mx-auto space-y-4 px-4 lg:px-0">
-			<h2 class="text-2xl font-semibold font-lora text-ink-900">Using Aletheia (Systems and Play)</h2>
-			<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-				<div class="card bg-base-100/90 backdrop-blur-sm shadow hover:shadow-md transition-shadow overflow-hidden">
-					<figure class="h-24 bg-gradient-to-br from-indigo-100 to-indigo-200">
-						<svg class="w-12 h-12 mx-auto mt-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-						</svg>
-					</figure>
-					<div class="card-body p-4">
-						<h3 class="card-title text-base font-lora">Systems</h3>
-						<p class="text-sm text-gray-600">Rules, mechanics, and systems.</p>
-						<div class="card-actions justify-end mt-2">
-							<a href="/systems" class="btn btn-primary btn-sm">Explore</a>
-						</div>
-					</div>
-				</div>
+  <section class="max-w-7xl mx-auto px-4 lg:px-0 py-8 space-y-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <article class="card bg-base-100 shadow-md border border-base-300">
+        <div class="card-body">
+          <h2 class="card-title font-lora">Canon</h2>
+          <p>
+            Discover the core truths of Aletheia: creation, peoples, places, and the long shadow of the Cataclysm.
+          </p>
+          <div class="card-actions justify-end">
+            <a href="/aletheia-world-canon" class="btn btn-primary btn-sm">Read Canon</a>
+          </div>
+        </div>
+      </article>
 
-				<div class="card bg-base-100/90 backdrop-blur-sm shadow hover:shadow-md transition-shadow overflow-hidden">
-					<figure class="h-24 bg-gradient-to-br from-gray-100 to-gray-200">
-						<svg class="w-12 h-12 mx-auto mt-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-						</svg>
-					</figure>
-					<div class="card-body p-4">
-						<h3 class="card-title text-base font-lora">Meta</h3>
-						<p class="text-sm text-gray-600">Project notes and updates.</p>
-						<div class="card-actions justify-end mt-2">
-							<a href="/meta" class="btn btn-primary btn-sm">Explore</a>
-						</div>
-					</div>
-				</div>
-			</div>
-		</section>
+      <article class="card bg-base-100 shadow-md border border-base-300">
+        <div class="card-body">
+          <h2 class="card-title font-lora">Using Aletheia</h2>
+          <p>
+            Practical guidance, systems context, and support material for running stories in a gritty fantasy world.
+          </p>
+          <div class="card-actions justify-end">
+            <a href="/using-aletheia" class="btn btn-primary btn-sm">Use the Setting</a>
+          </div>
+        </div>
+      </article>
 
-		<!-- Campaigns -->
-		<section class="max-w-7xl mx-auto space-y-4 px-4 lg:px-0">
-			<h2 class="text-2xl font-semibold font-lora text-ink-900">Campaigns</h2>
-			<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-				<div class="card bg-base-100/90 backdrop-blur-sm shadow hover:shadow-md transition-shadow overflow-hidden">
-					<figure class="h-24 bg-gradient-to-br from-orange-100 to-orange-200">
-						<svg class="w-12 h-12 mx-auto mt-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-						</svg>
-					</figure>
-					<div class="card-body p-4">
-						<h3 class="card-title text-base font-lora">Active Campaigns</h3>
-						<p class="text-sm text-gray-600">Ongoing campaigns and session notes.</p>
-						<div class="card-actions justify-end mt-2">
-							<a href="/campaigns" class="btn btn-primary btn-sm">Explore</a>
-						</div>
-					</div>
-				</div>
-			</div>
-		</section>
-	</div>
+      <article class="card bg-base-100 shadow-md border border-base-300">
+        <div class="card-body">
+          <h2 class="card-title font-lora">Campaigns</h2>
+          <p>
+            Follow active campaigns, session records, and evolving stories that reveal the world through play.
+          </p>
+          <div class="card-actions justify-end">
+            <a href="/campaigns" class="btn btn-primary btn-sm">Enter Campaigns</a>
+          </div>
+        </div>
+      </article>
+    </div>
+  </section>
 </Layout>

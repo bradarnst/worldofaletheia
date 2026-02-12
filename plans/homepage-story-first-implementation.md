@@ -48,10 +48,57 @@ Implement ADR-0002 Pattern A on the homepage so first-time visitors get immediat
   - Global and section nav remain utility wayfinding
   - Homepage blocks remain contextual teasers, not full nav replacement
 
+- [ ] Add single hero image selection capability with reusable biome and region assets
+  - Build image set that can be reused in related lore articles
+  - Start with 3 to 6 curated images max for performance
+  - Include alt text and region or biome metadata
+  - Ensure deterministic fallback if one image is missing
+
+- [ ] Implement simple homepage image strategy no carousel
+  - Option A: random single hero image per build request
+  - Option B: deterministic daily image rotation using date-based index
+  - Keep exactly one hero image visible at a time
+  - Keep overlay and CTA readability consistent across all candidate images
+  - Keep implementation lightweight and avoid slider UI or heavy client JS
+
 - [ ] QA pass
   - Check CTA destination correctness
   - Check empty-content fallback rendering
   - Check visual consistency with Tailwind/DaisyUI design system
+  - Check image loading behavior and no layout shift in hero
+
+## Tone, Imagery, and Lore Alignment Notes
+
+- Emphasize **rebirth after catastrophe** over ancient-ruin nostalgia
+- Present the Shattered Lands as reclaimed, uncanny, and evolving
+- Avoid heavy visual focus on ruins as primary motif
+- Keep visual storytelling grounded in:
+  - strange geography
+  - lingering lattice oddness
+  - fragile recovery and renewal
+
+### Image Direction for Homepage
+
+- Primary optional hero image: [`Shattered_Lands_Landscape01.png`](public/Shattered_Lands_Landscape01.png)
+- Use with subtle overlay for readability, not as pure spectacle
+- Prioritize environmental mood over architectural ruin close-ups
+
+### AI Prompt Direction if generating additional assets
+
+- “grounded fantasy landscape in a pre-industrial world, wide natural vistas, weathered plains and forests with distant mountains, gritty but hopeful tone, no magical visual effects, no glowing filaments, no rune motifs, no monumental ruins, no text”
+- “temperate fantasy frontier at golden hour, resilient ecosystems after a long-ago catastrophe, subtle signs of ecological recovery, cinematic but natural lighting, realistic terrain, no explicit cataclysm epicentre cues, no magical manifestations, no text”
+
+### Hero Image Prompt Color Palette Constraint
+
+Use this explicit palette guidance in prompts:
+- muted slate and charcoal shadows
+- desaturated earth browns and umber soils
+- subdued olive and moss greens
+- restrained steel-blue sky tones
+- soft warm highlights in amber only for sunlight accents
+
+Prompt suffix example:
+- “color palette: muted slate, charcoal, desaturated umber, olive green, steel-blue atmosphere, restrained amber highlights, low saturation, high contrast readability for white overlay text”
 
 ## Out of Scope
 - Reworking global navigation architecture
