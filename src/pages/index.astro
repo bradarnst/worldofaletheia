@@ -1,5 +1,6 @@
 ---
 import { Picture } from 'astro:assets';
+import { getCollection } from 'astro:content';
 import Layout from '@layouts/MainSiteLayout.astro';
 
 import boatInMangroves from '@images/boat-in-mangroves.png';
@@ -29,6 +30,137 @@ const heroImages = [
 // UTC daily rotation: one image for the whole day, changes at 00:00 UTC.
 const utcDay = Math.floor(Date.now() / 86400000);
 const heroImage = heroImages[utcDay % heroImages.length];
+
+type DiscoveryItem = {
+  id: string;
+  title: string;
+  excerpt?: string;
+  created: Date;
+  domain: string;
+  url: string;
+};
+
+const [lore, places, sentients, creatures, factions, systems, campaigns, meta, sessions] = await Promise.all([
+  getCollection('lore'),
+  getCollection('places'),
+  getCollection('sentients'),
+  getCollection('creatures'),
+  getCollection('factions'),
+  getCollection('systems'),
+  getCollection('campaigns'),
+  getCollection('meta'),
+  getCollection('sessions'),
+]);
+
+const discoveryPool: DiscoveryItem[] = [
+  ...lore
+    .filter((item) => item.data.status === 'published')
+    .map((item) => ({
+      id: `lore:${item.id}`,
+      title: item.data.title,
+      excerpt: item.data.excerpt,
+      created: item.data.created,
+      domain: 'Canon',
+      url: `/lore/${item.id}`,
+    })),
+  ...places
+    .filter((item) => item.data.status === 'published')
+    .map((item) => ({
+      id: `places:${item.id}`,
+      title: item.data.title,
+      excerpt: item.data.excerpt,
+      created: item.data.created,
+      domain: 'Canon',
+      url: `/places/${item.id}`,
+    })),
+  ...sentients
+    .filter((item) => item.data.status === 'published')
+    .map((item) => ({
+      id: `sentients:${item.id}`,
+      title: item.data.title,
+      excerpt: item.data.excerpt,
+      created: item.data.created,
+      domain: 'Canon',
+      url: `/sentients/${item.id}`,
+    })),
+  ...creatures
+    .filter((item) => item.data.status === 'published')
+    .map((item) => ({
+      id: `creatures:${item.id}`,
+      title: item.data.title,
+      excerpt: item.data.excerpt,
+      created: item.data.created,
+      domain: 'Canon',
+      url: `/creatures/${item.id}`,
+    })),
+  ...factions
+    .filter((item) => item.data.status === 'published')
+    .map((item) => ({
+      id: `factions:${item.id}`,
+      title: item.data.title,
+      excerpt: item.data.excerpt,
+      created: item.data.created,
+      domain: 'Canon',
+      url: `/factions/${item.id}`,
+    })),
+  ...systems
+    .filter((item) => item.data.status === 'published')
+    .map((item) => ({
+      id: `systems:${item.id}`,
+      title: item.data.title,
+      excerpt: item.data.excerpt,
+      created: item.data.created,
+      domain: 'Using',
+      url: `/systems/${item.id}`,
+    })),
+  ...meta
+    .filter((item) => item.data.status === 'published')
+    .map((item) => ({
+      id: `meta:${item.id}`,
+      title: item.data.title,
+      excerpt: item.data.excerpt,
+      created: item.data.created,
+      domain: 'Using',
+      url: `/meta/${item.id}`,
+    })),
+  ...campaigns
+    .filter((item) => item.data.status === 'active' || item.data.status === 'completed')
+    .map((item) => {
+      const campaignSlug = item.id.replace(/\/index$/, '');
+      return {
+        id: `campaigns:${item.id}`,
+        title: item.data.title,
+        excerpt: item.data.excerpt,
+        created: item.data.created,
+        domain: 'Campaigns',
+        url: `/campaigns/${campaignSlug}`,
+      };
+    }),
+  ...sessions
+    .filter((item) => item.data.status === 'published')
+    .map((item) => {
+      const parts = item.id.split('/');
+      const campaignSlug = parts[0];
+      const sessionSlug = parts[parts.length - 1];
+      return {
+        id: `sessions:${item.id}`,
+        title: item.data.title,
+        excerpt: item.data.excerpt,
+        created: item.data.created,
+        domain: 'Campaigns',
+        url: `/campaigns/${campaignSlug}/sessions/${sessionSlug}`,
+      };
+    }),
+];
+
+const sortedDiscovery = discoveryPool.sort((a, b) => b.created.getTime() - a.created.getTime());
+const latestItem = sortedDiscovery[0] ?? null;
+
+const randomPool = latestItem
+  ? sortedDiscovery.filter((item) => item.id !== latestItem.id)
+  : sortedDiscovery;
+const randomIndex = randomPool.length > 0 ? utcDay % randomPool.length : 0;
+const randomItem = randomPool.length > 0 ? randomPool[randomIndex] : null;
 ---
 
 <Layout title="World of Aletheia" description="A grounded fantasy world shaped by history, consequence, and fragile renewal.">
@@ -93,6 +225,50 @@ const heroImage = heroImages[utcDay % heroImages.length];
           <div class="card-actions justify-end">
             <a href="/campaigns" class="btn btn-primary btn-sm">Enter Campaigns</a>
           </div>
+        </div>
+      </article>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <article class="card bg-base-100 shadow-md border border-base-300">
+        <div class="card-body">
+          <div class="badge badge-outline">Latest Article</div>
+          {latestItem ? (
+            <>
+              <h3 class="card-title font-lora">{latestItem.title}</h3>
+              <p class="text-sm opacity-80">{latestItem.excerpt || 'Newly surfaced from the living record of Aletheia.'}</p>
+              <div class="text-xs opacity-70">{latestItem.domain} • {latestItem.created.toLocaleDateString('en-GB')}</div>
+              <div class="card-actions justify-end">
+                <a href={latestItem.url} class="btn btn-primary btn-sm">Read Latest</a>
+              </div>
+            </>
+          ) : (
+            <>
+              <h3 class="card-title font-lora">No published article yet</h3>
+              <p class="text-sm opacity-80">Add your first published entry to populate this section.</p>
+            </>
+          )}
+        </div>
+      </article>
+
+      <article class="card bg-base-100 shadow-md border border-base-300">
+        <div class="card-body">
+          <div class="badge badge-outline">From the Archives</div>
+          {randomItem ? (
+            <>
+              <h3 class="card-title font-lora">{randomItem.title}</h3>
+              <p class="text-sm opacity-80">{randomItem.excerpt || 'A rotating selection from the world records of Aletheia.'}</p>
+              <div class="text-xs opacity-70">{randomItem.domain} • UTC daily rotation</div>
+              <div class="card-actions justify-end">
+                <a href={randomItem.url} class="btn btn-secondary btn-sm">Explore Random</a>
+              </div>
+            </>
+          ) : (
+            <>
+              <h3 class="card-title font-lora">No archive entry yet</h3>
+              <p class="text-sm opacity-80">Publish content to enable daily rotating discovery.</p>
+            </>
+          )}
         </div>
       </article>
     </div>

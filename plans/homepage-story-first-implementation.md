@@ -10,7 +10,7 @@ Implement ADR-0002 Pattern A on the homepage so first-time visitors get immediat
 
 ## Checklist
 
-- [ ] Confirm canonical section order on homepage
+- [x] Confirm canonical section order on homepage
   - Hero
   - Canon teaser block
   - Using teaser block
@@ -18,7 +18,7 @@ Implement ADR-0002 Pattern A on the homepage so first-time visitors get immediat
   - Latest Article teaser
   - Random Article teaser
 
-- [ ] Reduce homepage to three primary domain feature blocks only
+- [x] Reduce homepage to three primary domain feature blocks only
   - Keep one clear CTA per block
   - Remove dense category-grid behavior above the fold
 
@@ -32,36 +32,36 @@ Implement ADR-0002 Pattern A on the homepage so first-time visitors get immediat
   - Show title, short excerpt, domain label, and explore CTA
   - Ensure deterministic fallback for build/runtime edge cases
 
-- [ ] Ensure clear information hierarchy and scanability
+- [x] Ensure clear information hierarchy and scanability
   - Distinct visual priority for hero and domain blocks
   - Discovery teasers visually secondary to domain blocks
 
-- [ ] Validate desktop behavior
+- [x] Validate desktop behavior
   - No section appears visually truncated at common viewport heights
   - Balanced whitespace and card sizing
 
-- [ ] Validate mobile behavior
+- [x] Validate mobile behavior
   - Stable vertical order: Hero -> Canon -> Using -> Campaigns -> Latest -> Random
   - Tap targets and spacing remain comfortable
 
-- [ ] Keep navigation responsibilities consistent
+- [x] Keep navigation responsibilities consistent
   - Global and section nav remain utility wayfinding
   - Homepage blocks remain contextual teasers, not full nav replacement
 
-- [ ] Add single hero image selection capability with reusable biome and region assets
+- [x] Add single hero image selection capability with reusable biome and region assets
   - Build image set that can be reused in related lore articles
   - Start with 3 to 6 curated images max for performance
   - Include alt text and region or biome metadata
   - Ensure deterministic fallback if one image is missing
 
-- [ ] Implement simple homepage image strategy no carousel
+- [x] Implement simple homepage image strategy no carousel
   - Option A: random single hero image per build request
   - Option B: deterministic daily image rotation using date-based index
   - Keep exactly one hero image visible at a time
   - Keep overlay and CTA readability consistent across all candidate images
   - Keep implementation lightweight and avoid slider UI or heavy client JS
 
-- [ ] QA pass
+- [-] QA pass
   - Check CTA destination correctness
   - Check empty-content fallback rendering
   - Check visual consistency with Tailwind/DaisyUI design system
