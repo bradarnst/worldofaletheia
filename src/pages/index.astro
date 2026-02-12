@@ -1,4 +1,5 @@
 ---
+import { Picture } from 'astro:assets';
 import Layout from '@layouts/MainSiteLayout.astro';
 
 import boatInMangroves from '@images/boat-in-mangroves.png';
@@ -13,16 +14,16 @@ import savannaFarmland from '@images/savanna-farmland.png';
 import wheatFields from '@images/wheat-fields.png';
 
 const heroImages = [
-  { src: boatInMangroves.src, alt: 'A small boat moving through dense mangrove waterways.' },
-  { src: desertTent.src, alt: 'A tent settlement in a broad desert under clear sky.' },
-  { src: dwarvenMountainEntrance.src, alt: 'A carved entrance set into a rugged mountain face.' },
-  { src: fertileLandsToCity.src, alt: 'Fertile countryside leading toward a distant city.' },
-  { src: forestRoad.src, alt: 'A winding road cutting through dense forest.' },
-  { src: jungleRuin.src, alt: 'Dense jungle growth surrounding old stone structures.' },
-  { src: lakePort.src, alt: 'A lakeside port with boats and low settlement buildings.' },
-  { src: rideOnTheBeach.src, alt: 'Travelers riding along a wide coastline at low tide.' },
-  { src: savannaFarmland.src, alt: 'Open savanna transitioning into cultivated farmlands.' },
-  { src: wheatFields.src, alt: 'Golden wheat fields stretching toward distant hills.' },
+  { image: boatInMangroves, alt: 'A small boat moving through dense mangrove waterways.' },
+  { image: desertTent, alt: 'A tent settlement in a broad desert under clear sky.' },
+  { image: dwarvenMountainEntrance, alt: 'A carved entrance set into a rugged mountain face.' },
+  { image: fertileLandsToCity, alt: 'Fertile countryside leading toward a distant city.' },
+  { image: forestRoad, alt: 'A winding road cutting through dense forest.' },
+  { image: jungleRuin, alt: 'Dense jungle growth surrounding old stone structures.' },
+  { image: lakePort, alt: 'A lakeside port with boats and low settlement buildings.' },
+  { image: rideOnTheBeach, alt: 'Travelers riding along a wide coastline at low tide.' },
+  { image: savannaFarmland, alt: 'Open savanna transitioning into cultivated farmlands.' },
+  { image: wheatFields, alt: 'Golden wheat fields stretching toward distant hills.' },
 ];
 
 // UTC daily rotation: one image for the whole day, changes at 00:00 UTC.
@@ -32,9 +33,16 @@ const heroImage = heroImages[utcDay % heroImages.length];
 
 <Layout title="World of Aletheia" description="A grounded fantasy world shaped by history, consequence, and fragile renewal.">
   <section class="max-w-7xl mx-auto px-4 lg:px-0">
-    <div class="hero min-h-[24rem] rounded-box overflow-hidden shadow-xl" style={`background-image: url(${heroImage.src});`}>
-      <div class="hero-overlay bg-black/45"></div>
-      <div class="hero-content text-neutral-content text-center px-6">
+    <div class="hero min-h-[24rem] rounded-box overflow-hidden shadow-xl relative isolate">
+      <Picture
+        src={heroImage.image}
+        alt={heroImage.alt}
+        widths={[640, 960, 1280, 1600]}
+        formats={['avif', 'webp']}
+        class="absolute inset-0 h-full w-full object-cover"
+      />
+      <div class="hero-overlay bg-black/45 absolute inset-0"></div>
+      <div class="hero-content text-neutral-content text-center px-6 relative z-10">
         <div class="max-w-3xl">
           <h1 class="mb-4 text-4xl md:text-5xl font-bold font-lora">World of Aletheia</h1>
           <p class="mb-6 text-base md:text-lg opacity-95">
