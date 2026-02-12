@@ -86,31 +86,22 @@ Implement a **single Astro project** approach with **internal domain separation*
 ## Phase 2 — API/Service Contracts (Internal First)
 
 ### 2.1 Campaigns service layer
-- [ ] Add internal service interfaces in `src/services/`:
-  - [ ] `CampaignRepository`
-  - [ ] `SessionRepository`
-  - [ ] `CampaignQueryService`
-- [ ] Ensure `SessionRepository` resolves sessions scoped by `campaignSlug` from nested campaign paths.
-- [ ] Replace direct `getCollection()` usage in Campaign pages with service calls.
-- [ ] Keep Astro content collections as current backing store via adapters in `src/adapters/`.
+- [ ] Use Astro content collections directly in Campaign pages (`getCollection`, `getEntry`, `render`).
+- [ ] Keep session resolution scoped by `campaignSlug` from nested campaign paths.
+- [ ] Prefer route-local query logic first; extract tiny shared helpers only when duplication appears in 3+ places.
+- [ ] Do **not** introduce repository/query-service layers by default.
+- [ ] Keep `src/services/` and `src/adapters/` empty unless concrete complexity appears.
 - [ ] Add Obsidian ingestion adapters:
   - [ ] vault markdown file reader
   - [ ] frontmatter normalizer with pass-through metadata
   - [ ] route identity resolver for campaign and session slugs
 
 ### 2.2 Contract definitions
-- [ ] Define typed DTOs for Campaign domain:
-  - [ ] `CampaignSummary`
-  - [ ] `CampaignDetail`
-  - [ ] `SessionSummary`
-  - [ ] `SessionDetail`
-- [ ] Ensure `SessionSummary` and `SessionDetail` include `campaignSlug` and route-safe identifiers.
-- [ ] Add explicit permission/visibility fields to DTOs (do not leak raw frontmatter).
-- [ ] Add API contract version marker (e.g., `v1`) in service boundary.
-- [ ] Add authoring metadata contract fields compatible with Obsidian workflow:
-  - [ ] owner or owners
-  - [ ] sourcePath
-  - [ ] lastIngestedAt
+- [ ] Keep Astro collection schemas as the primary type contract.
+- [ ] Add explicit DTO contracts **only** when a real API boundary is introduced.
+- [ ] If DTOs are introduced later, ensure session DTOs include `campaignSlug` and route-safe identifiers.
+- [ ] If DTOs are introduced later, add explicit permission/visibility fields and a version marker (e.g., `v1`).
+- [ ] If DTOs are introduced later, include authoring metadata fields compatible with Obsidian workflow.
 
 ### 2.3 Read API surface for future composition
 - [ ] Expose stable read endpoints (or endpoint handlers) for campaign data.
@@ -176,10 +167,10 @@ If not triggered, continue one-project model and deepen modular boundaries.
 
 ## Immediate Next Sprint (Suggested)
 
-- [ ] Create centralized services/adapters/contracts folders and move Campaign logic behind service interfaces.
-- [ ] Refactor `/campaigns/**` pages to use service layer.
+- [ ] Simplify Campaign data access to direct Astro content collection usage in `/campaigns/**` pages.
+- [ ] Remove unused services/adapters/contracts abstractions for Campaigns.
 - [ ] Implement nested sessions routes under `/campaigns/:campaignSlug/sessions/**` without legacy `/sessions/**` compatibility.
-- [ ] Add typed DTOs and a v1 contract module.
+- [ ] Defer DTO contract module until an actual API boundary is required.
 - [ ] Draft an ADR in `plans/` for Obsidian-first source of truth and ingestion invariants.
 - [ ] Build an initial ingest spike that reads Obsidian `.md` notes with minimal transformation.
 - [ ] Add one non-critical Campaign island (read-only) as architecture spike.

@@ -4,4 +4,5 @@
  * Data source adapters for external storage/integration.
  */
 
-export * from './campaigns';
+// Intentionally empty for now.
+// Add adapter exports only when a non-native data source is introduced.

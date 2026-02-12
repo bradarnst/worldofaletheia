@@ -1,6 +1,5 @@
 ---
-import { getCollection } from 'astro:content';
-import { astroContentAdapter } from '@adapters/campaigns';
+import { getCollection, getEntry } from 'astro:content';
 import CampaignsLayout from '@layouts/CampaignsLayout.astro';
 
 export async function getStaticPaths() {
@@ -14,18 +13,41 @@ export async function getStaticPaths() {
 // Get the campaign slug from the URL
 const { campaign } = Astro.params;
 
-// Initialize adapter and fetch data
-await astroContentAdapter.initialize();
+const campaignEntry =
+  (await getEntry('campaigns', campaign!)) ??
+  (await getEntry('campaigns', `${campaign}/index`));
 
-// Verify campaign exists
-const campaignExists = await astroContentAdapter.campaignExists(campaign!);
-if (!campaignExists) {
+if (!campaignEntry) {
   return Astro.redirect('/404');
 }
 
-// Get campaign details and sessions
-const campaignDetail = await astroContentAdapter.getCampaignBySlug(campaign!);
-const sessions = await astroContentAdapter.getSessionsByCampaign(campaign!);
+const campaignDetail = {
+  slug: campaignEntry.id.replace(/\/index$/, ''),
+  title: campaignEntry.data.title,
+  excerpt: campaignEntry.data.excerpt,
+};
+
+const allSessions = await getCollection('sessions');
+const sessions = allSessions
+  .filter((entry) => entry.data.campaign === campaign)
+  .map((entry) => {
+    const parts = entry.id.split('/');
+    const sessionSlug = parts[parts.length - 1];
+
+    return {
+      id: entry.id,
+      slug: sessionSlug,
+      title: entry.data.title,
+      date: entry.data.date,
+      duration: entry.data.duration,
+      type: entry.data.type,
+      permissions: entry.data.permissions,
+      excerpt: entry.data.excerpt,
+      tags: entry.data.tags,
+      secret: entry.data.secret,
+      campaignSlug: entry.data.campaign,
+    };
+  });
 
 // Sort sessions by date (newest first)
 const sortedSessions = sessions.sort((a, b) => {

@@ -1,6 +1,5 @@
 ---
-import { getCollection } from 'astro:content';
-import { astroContentAdapter } from '@adapters/campaigns';
+import { getCollection, getEntry, render } from 'astro:content';
 import CampaignsContentLayout from '@layouts/CampaignsContentLayout.astro';
 
 export async function getStaticPaths() {
@@ -20,58 +19,68 @@ export async function getStaticPaths() {
 // Get params from URL
 const { campaign, slug } = Astro.params;
 
-// Initialize adapter
-await astroContentAdapter.initialize();
+const campaignEntry =
+  (await getEntry('campaigns', campaign!)) ??
+  (await getEntry('campaigns', `${campaign}/index`));
 
-// Verify campaign exists
-const campaignExists = await astroContentAdapter.campaignExists(campaign!);
-if (!campaignExists) {
+if (!campaignEntry) {
   return Astro.redirect('/404');
 }
 
-// Get session details
-const session = await astroContentAdapter.getSessionBySlug(campaign!, slug!);
-if (!session) {
+const sessionEntry = await getEntry('sessions', `${campaign}/sessions/${slug}`);
+if (!sessionEntry) {
   return Astro.redirect('/404');
 }
 
-// Get campaign details for context
-const campaignDetail = await astroContentAdapter.getCampaignBySlug(campaign!);
+const session = {
+  id: sessionEntry.id,
+  slug,
+  campaignSlug: sessionEntry.data.campaign,
+  title: sessionEntry.data.title,
+  date: sessionEntry.data.date,
+  duration: sessionEntry.data.duration,
+  type: sessionEntry.data.type,
+  permissions: sessionEntry.data.permissions,
+  excerpt: sessionEntry.data.excerpt,
+  tags: sessionEntry.data.tags,
+  secret: sessionEntry.data.secret,
+  author: sessionEntry.data.author,
+  createdAt: sessionEntry.data.created,
+};
+
+const campaignDetail = {
+  slug: campaignEntry.id.replace(/\/index$/, ''),
+  title: campaignEntry.data.title,
+};
 
 // Get all sessions for navigation
-const allSessions = await astroContentAdapter.getSessionsByCampaign(campaign!);
-const sortedSessions = allSessions.sort((a, b) => {
-  if (!a.date || !b.date) return 0;
-  return a.date.getTime() - b.date.getTime();
-});
+const allSessionEntries = await getCollection('sessions', (entry) => entry.data.campaign === campaign);
+const sortedSessions = allSessionEntries
+  .map((entry) => {
+    const parts = entry.id.split('/');
+    return {
+      id: entry.id,
+      slug: parts[parts.length - 1],
+      title: entry.data.title,
+      date: entry.data.date,
+    };
+  })
+  .sort((a, b) => {
+    if (!a.date || !b.date) return 0;
+    return a.date.getTime() - b.date.getTime();
+  });
 
 // Find current index for prev/next navigation
 const currentIndex = sortedSessions.findIndex(s => s.slug === slug);
 const previousSession = currentIndex > 0 ? sortedSessions[currentIndex - 1] : null;
 const nextSession = currentIndex < sortedSessions.length - 1 ? sortedSessions[currentIndex + 1] : null;
 
-// Create a mock content entry for the layout
-const contentEntry = {
-  id: session.id,
-  collection: 'sessions' as const,
-  data: {
-    title: session.title,
-    excerpt: session.excerpt,
-    author: session.metadata.author,
-    created: session.metadata.createdAt,
-    status: 'published' as const,
-    secret: session.secret,
-    tags: session.tags,
-    permissions: session.permissions,
-    campaign: session.campaignSlug,
-    type: session.type,
-  },
-};
+const { Content } = await render(sessionEntry);
 
 const title = `${session.title} - ${campaignDetail?.title || campaign}`;
 ---
 
-<CampaignsContentLayout content={contentEntry} title={title}>
+<CampaignsContentLayout content={sessionEntry} title={title}>
   <article class="prose max-w-none">
     <!-- Breadcrumb -->
     <nav class="mb-6 text-sm text-gray-600 not-prose">
@@ -125,16 +134,7 @@ const title = `${session.title} - ${campaignDetail?.title || campaign}`;
       </div>
     </header>
 
-    <!-- Session Content Placeholder -->
-    <!-- Note: In a full implementation, we would render the markdown content here -->
-    <div class="bg-gray-50 border-l-4 border-blue-500 p-4 mb-8">
-      <p class="text-gray-600 italic">
-        Session content would be rendered here. This page demonstrates the nested route structure.
-      </p>
-      <p class="text-gray-600 mt-2">
-        Session ID: <code class="bg-gray-200 px-1 rounded">{session.id}</code>
-      </p>
-    </div>
+    <Content />
 
     <!-- Session Navigation -->
     <nav class="mt-12 pt-6 border-t not-prose">

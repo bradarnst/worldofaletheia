@@ -1,15 +1,35 @@
 ---
-import { astroContentAdapter } from '@adapters/campaigns';
+import { getCollection } from 'astro:content';
 import CampaignsLayout from '@layouts/CampaignsLayout.astro';
 import ContentCard from '@components/ContentCard.astro';
 import TagCloud from '@components/TagCloud.astro';
 
-// Initialize adapter
-await astroContentAdapter.initialize();
+const campaigns = await getCollection('campaigns');
+const sessions = await getCollection('sessions');
 
-// Get campaigns using the service layer
-const campaignSummaries = await astroContentAdapter.getCampaigns();
-const publishedCampaigns = campaignSummaries.filter((item) => item.status === 'active' || item.status === 'completed');
+const sessionCounts = new Map<string, number>();
+for (const session of sessions) {
+  const campaignSlug = session.data.campaign;
+  sessionCounts.set(campaignSlug, (sessionCounts.get(campaignSlug) || 0) + 1);
+}
+
+const campaignSummaries = campaigns.map((entry) => {
+  const slug = entry.id.replace(/\/index$/, '');
+
+  return {
+    id: slug,
+    slug,
+    title: entry.data.title,
+    status: entry.data.status,
+    excerpt: entry.data.excerpt,
+    tags: entry.data.tags,
+    sessionCount: sessionCounts.get(slug) || 0,
+  };
+});
+
+const publishedCampaigns = campaignSummaries.filter(
+  (item) => item.status === 'active' || item.status === 'completed'
+);
 
 const allTags = [...new Set(publishedCampaigns.flatMap(item => item.tags))];
 ---
@@ -45,3 +65,4 @@ const allTags = [...new Set(publishedCampaigns.flatMap(item => item.tags))];
     </div>
   </div>
 </CampaignsLayout>
+
