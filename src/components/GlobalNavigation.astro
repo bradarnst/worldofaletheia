@@ -1,3 +1,8 @@
+---
+import { Image } from 'astro:assets';
+import aletheiaLogo from '@images/aletheia-logo.png';
+---
+
 <div class="navbar bg-paper-200  text-ink-200 sticky top-0 z-50 shadow-md border-b border-base-300">
   
   <!-- LEFT: Identity -->
@@ -32,7 +37,7 @@
     
     <!-- Logo & Title -->
     <a href="/" class="btn btn-ghost text-xl font-serif tracking-widest">
-      <img src="/src/images/aletheia-logo.png" class="h-8 w-12 mr-2" />
+      <Image src={aletheiaLogo} alt="World of Aletheia logo" width={48} height={32} class="h-8 w-12 mr-2" />
         World of Aletheia
     </a>
   </div>

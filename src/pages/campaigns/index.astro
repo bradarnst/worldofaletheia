@@ -37,6 +37,21 @@ const allTags = [...new Set(publishedCampaigns.flatMap(item => item.tags))];
 <CampaignsLayout title="Campaigns - World of Aletheia" description="Explore ongoing and completed campaigns in Aletheia">
   <div class="max-w-6xl mx-auto px-4 py-8">
     <div class="mb-12">
+      <h2 class="text-2xl font-bold text-gray-900 mb-6">Campaign Tools</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <a href="/campaigns/sample-campaign/sessions" class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
+          <div class="card-body">
+            <h3 class="card-title font-lora">Sessions</h3>
+            <p class="text-gray-600">Browse session logs and timeline entries by campaign.</p>
+            <div class="card-actions justify-end">
+              <span class="btn btn-primary btn-sm">Explore</span>
+            </div>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <div class="mb-12">
       <h2 class="text-2xl font-bold text-gray-900 mb-6">Latest Campaigns</h2>
       
       {publishedCampaigns.length === 0 ? (
@@ -65,4 +80,3 @@ const allTags = [...new Set(publishedCampaigns.flatMap(item => item.tags))];
     </div>
   </div>
 </CampaignsLayout>
-
