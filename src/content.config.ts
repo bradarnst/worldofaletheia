@@ -3,10 +3,12 @@ import { glob } from 'astro/loaders';
 
 // Base frontmatter schema for all collections
 const baseSchema = z.object({
-  status: z.enum(['draft', 'publish', 'archive']),
+  status: z.enum(['draft', 'publish', 'published', 'archive', 'archived']),
   author: z.string(),
-  created: z.date(),
-  modified: z.date().optional(),
+  created: z.coerce.date().optional(),
+  'created-date': z.coerce.date().optional(),
+  modified: z.coerce.date().optional(),
+  'modified-date': z.coerce.date().optional(),
   secret: z.boolean(),
   tags: z.array(z.string()).default([]),
   campaign: z.string().optional(),

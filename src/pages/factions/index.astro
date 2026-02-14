@@ -5,7 +5,7 @@ import ContentCard from '@components/ContentCard.astro';
 import TagCloud from '@components/TagCloud.astro';
 
 const factions = await getCollection('factions');
-const publishedFactions = factions.filter((item) => item.data.status === 'published');
+const publishedFactions = factions.filter((item) => item.data.status === 'publish');
 
 const allTags = [...new Set(publishedFactions.flatMap(item => item.data.tags))];
 ---

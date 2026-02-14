@@ -5,8 +5,9 @@ import ContentCard from '@components/ContentCard.astro';
 import TagCloud from '@components/TagCloud.astro';
 
 const lore = await getCollection('lore');
+const publishedLore = lore.filter((item) => item.data.status === 'publish');
 
-const allTags = [...new Set(lore.flatMap(item => item.data.tags))];
+const allTags = [...new Set(publishedLore.flatMap(item => item.data.tags))];
 ---
 
 <WorldAletheiaLayout title="Lore - World of Aletheia" description="Explore the rich history, mythology, and world-building of Aletheia">
@@ -14,11 +15,11 @@ const allTags = [...new Set(lore.flatMap(item => item.data.tags))];
     <div class="mb-12">
       <h2 class="text-2xl font-bold text-gray-900 mb-6">Latest Lore</h2>
       
-      {lore.length === 0 ? (
+      {publishedLore.length === 0 ? (
         <p class="text-gray-600">No lore entries found.</p>
       ) : (
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {lore.map((item) => (
+          {publishedLore.map((item) => (
             <ContentCard content={item} />
           ))}
         </div>

@@ -5,7 +5,7 @@ import ContentCard from '@components/ContentCard.astro';
 import TagCloud from '@components/TagCloud.astro';
 
 const bestiary = await getCollection('bestiary');
-const publishedBestiary = bestiary.filter((item) => item.data.status === 'published');
+const publishedBestiary = bestiary.filter((item) => item.data.status === 'publish');
 
 const allTags = [...new Set(publishedBestiary.flatMap(item => item.data.tags))];
 ---

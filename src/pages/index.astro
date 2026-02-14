@@ -40,6 +40,9 @@ type DiscoveryItem = {
   url: string;
 };
 
+const pickCreated = (data: { created?: Date; ['created-date']?: Date }): Date =>
+  data.created ?? data['created-date'] ?? new Date(0);
+
 const [lore, places, sentients, bestiary, flora, factions, systems, campaigns, meta, sessions] = await Promise.all([
   getCollection('lore'),
   getCollection('places'),
@@ -55,82 +58,82 @@ const [lore, places, sentients, bestiary, flora, factions, systems, campaigns, m
 
 const discoveryPool: DiscoveryItem[] = [
   ...lore
-    .filter((item) => item.data.status === 'published')
+    .filter((item) => item.data.status === 'publish')
     .map((item) => ({
       id: `lore:${item.id}`,
       title: item.data.title,
       excerpt: item.data.excerpt,
-      created: item.data.created,
+      created: pickCreated(item.data),
       domain: 'Canon',
       url: `/lore/${item.id}`,
     })),
   ...places
-    .filter((item) => item.data.status === 'published')
+    .filter((item) => item.data.status === 'publish')
     .map((item) => ({
       id: `places:${item.id}`,
       title: item.data.title,
       excerpt: item.data.excerpt,
-      created: item.data.created,
+      created: pickCreated(item.data),
       domain: 'Canon',
       url: `/places/${item.id}`,
     })),
   ...sentients
-    .filter((item) => item.data.status === 'published')
+    .filter((item) => item.data.status === 'publish')
     .map((item) => ({
       id: `sentients:${item.id}`,
       title: item.data.title,
       excerpt: item.data.excerpt,
-      created: item.data.created,
+      created: pickCreated(item.data),
       domain: 'Canon',
       url: `/sentients/${item.id}`,
     })),
   ...bestiary
-    .filter((item) => item.data.status === 'published')
+    .filter((item) => item.data.status === 'publish')
     .map((item) => ({
       id: `bestiary:${item.id}`,
       title: item.data.title,
       excerpt: item.data.excerpt,
-      created: item.data.created,
+      created: pickCreated(item.data),
       domain: 'Canon',
       url: `/bestiary/${item.id}`,
     })),
   ...flora
-    .filter((item) => item.data.status === 'published')
+    .filter((item) => item.data.status === 'publish')
     .map((item) => ({
       id: `flora:${item.id}`,
       title: item.data.title,
       excerpt: item.data.excerpt,
-      created: item.data.created,
+      created: pickCreated(item.data),
       domain: 'Canon',
       url: `/flora/${item.id}`,
     })),
   ...factions
-    .filter((item) => item.data.status === 'published')
+    .filter((item) => item.data.status === 'publish')
     .map((item) => ({
       id: `factions:${item.id}`,
       title: item.data.title,
       excerpt: item.data.excerpt,
-      created: item.data.created,
+      created: pickCreated(item.data),
       domain: 'Canon',
       url: `/factions/${item.id}`,
     })),
   ...systems
-    .filter((item) => item.data.status === 'published')
+    .filter((item) => item.data.status === 'publish')
     .map((item) => ({
       id: `systems:${item.id}`,
       title: item.data.title,
       excerpt: item.data.excerpt,
-      created: item.data.created,
+      created: pickCreated(item.data),
       domain: 'Using',
       url: `/systems/${item.id}`,
     })),
   ...meta
-    .filter((item) => item.data.status === 'published')
+    .filter((item) => item.data.status === 'publish')
     .map((item) => ({
       id: `meta:${item.id}`,
       title: item.data.title,
       excerpt: item.data.excerpt,
-      created: item.data.created,
+      created: pickCreated(item.data),
       domain: 'Using',
       url: `/meta/${item.id}`,
     })),
@@ -142,13 +145,13 @@ const discoveryPool: DiscoveryItem[] = [
         id: `campaigns:${item.id}`,
         title: item.data.title,
         excerpt: item.data.excerpt,
-        created: item.data.created,
+        created: pickCreated(item.data),
         domain: 'Campaigns',
         url: `/campaigns/${campaignSlug}`,
       };
     }),
   ...sessions
-    .filter((item) => item.data.status === 'published')
+    .filter((item) => item.data.status === 'publish')
     .map((item) => {
       const parts = item.id.split('/');
       const campaignSlug = parts[0];
@@ -157,7 +160,7 @@ const discoveryPool: DiscoveryItem[] = [
         id: `sessions:${item.id}`,
         title: item.data.title,
         excerpt: item.data.excerpt,
-        created: item.data.created,
+        created: pickCreated(item.data),
         domain: 'Campaigns',
         url: `/campaigns/${campaignSlug}/sessions/${sessionSlug}`,
       };

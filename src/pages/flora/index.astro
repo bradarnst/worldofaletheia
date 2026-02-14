@@ -5,7 +5,7 @@ import ContentCard from '@components/ContentCard.astro';
 import TagCloud from '@components/TagCloud.astro';
 
 const flora = await getCollection('flora');
-const publishedFlora = flora.filter((item) => item.data.status === 'published');
+const publishedFlora = flora.filter((item) => item.data.status === 'publish');
 
 const allTags = [...new Set(publishedFlora.flatMap(item => item.data.tags))];
 ---

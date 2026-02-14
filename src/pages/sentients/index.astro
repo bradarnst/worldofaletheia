@@ -5,7 +5,7 @@ import ContentCard from '@components/ContentCard.astro';
 import TagCloud from '@components/TagCloud.astro';
 
 const sentients = await getCollection('sentients');
-const publishedSentients = sentients.filter((item) => item.data.status === 'published');
+const publishedSentients = sentients.filter((item) => item.data.status === 'publish');
 
 const allTags = [...new Set(publishedSentients.flatMap(item => item.data.tags))];
 ---
