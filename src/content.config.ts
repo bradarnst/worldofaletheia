@@ -3,9 +3,10 @@ import { glob } from 'astro/loaders';
 
 // Base frontmatter schema for all collections
 const baseSchema = z.object({
-  status: z.enum(['draft', 'published', 'archived']),
+  status: z.enum(['draft', 'publish', 'archive']),
   author: z.string(),
   created: z.date(),
+  modified: z.date().optional(),
   secret: z.boolean(),
   tags: z.array(z.string()).default([]),
   campaign: z.string().optional(),
@@ -51,7 +52,7 @@ const floraSchema = baseSchema.extend({
 
 const factionsSchema = baseSchema.extend({
   title: z.string(),
-  type: z.enum(['guild', 'kingdom', 'cult', 'mercenary', 'criminal']),
+  type: z.enum(['guild', 'criminal', 'government', 'religion', 'military', 'police', 'school', 'order']),
   excerpt: z.string().optional(),
   alignment: z.enum(['lawful', 'neutral', 'chaotic', 'good', 'evil', 'any']).optional(),
 });
