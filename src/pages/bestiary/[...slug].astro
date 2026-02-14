@@ -1,0 +1,26 @@
+---
+import { getCollection, getEntry, render } from 'astro:content';
+import WorldAletheiaContentLayout from '@layouts/WorldAletheiaContentLayout.astro';
+
+export async function getStaticPaths() {
+  const bestiaryCollection = await getCollection('bestiary');
+  return bestiaryCollection.map((item) => ({
+    params: { slug: item.id },
+  }));
+}
+
+const { slug } = Astro.params;
+const entry = await getEntry('bestiary', slug as string);
+
+if (!entry) {
+  throw new Error(`Bestiary entry with slug '${slug}' not found`);
+}
+
+const { Content } = await render(entry);
+---
+
+<WorldAletheiaContentLayout content={entry}>
+  <article class="prose max-w-none">
+    <Content />
+  </article>
+</WorldAletheiaContentLayout>

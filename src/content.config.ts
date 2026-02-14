@@ -36,11 +36,17 @@ const sentientsSchema = baseSchema.extend({
   alignment: z.enum(['lawful', 'neutral', 'chaotic', 'good', 'evil', 'any']).optional(),
 });
 
-const creaturesSchema = baseSchema.extend({
+const bestiarySchema = baseSchema.extend({
   title: z.string(),
   type: z.enum(['monster', 'beast', 'spirit', 'construct', 'elemental']),
   excerpt: z.string().optional(),
   challengeRating: z.number().optional(),
+});
+
+const floraSchema = baseSchema.extend({
+  title: z.string(),
+  type: z.enum(['tree', 'flower', 'fungus', 'herb', 'plant']),
+  excerpt: z.string().optional(),
 });
 
 const factionsSchema = baseSchema.extend({
@@ -92,9 +98,14 @@ const sentients = defineCollection({
   schema: sentientsSchema,
 });
 
-const creatures = defineCollection({
-  loader: glob({ pattern: '**/*.md', base: 'src/content/creatures' }),
-  schema: creaturesSchema,
+const bestiary = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: 'src/content/bestiary' }),
+  schema: bestiarySchema,
+});
+
+const flora = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: 'src/content/flora' }),
+  schema: floraSchema,
 });
 
 const factions = defineCollection({
@@ -148,7 +159,8 @@ export const collections = {
   lore,
   places,
   sentients,
-  creatures,
+  bestiary,
+  flora,
   factions,
   systems,
   campaigns,

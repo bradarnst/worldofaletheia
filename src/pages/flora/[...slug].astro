@@ -3,17 +3,17 @@ import { getCollection, getEntry, render } from 'astro:content';
 import WorldAletheiaContentLayout from '@layouts/WorldAletheiaContentLayout.astro';
 
 export async function getStaticPaths() {
-  const creaturesCollection = await getCollection('creatures');
-  return creaturesCollection.map((item) => ({
+  const floraCollection = await getCollection('flora');
+  return floraCollection.map((item) => ({
     params: { slug: item.id },
   }));
 }
 
 const { slug } = Astro.params;
-const entry = await getEntry('creatures', slug as string);
+const entry = await getEntry('flora', slug as string);
 
 if (!entry) {
-  throw new Error(`Creature with slug '${slug}' not found`);
+  throw new Error(`Flora entry with slug '${slug}' not found`);
 }
 
 const { Content } = await render(entry);

@@ -4,22 +4,22 @@ import WorldAletheiaLayout from '@layouts/WorldAletheiaLayout.astro';
 import ContentCard from '@components/ContentCard.astro';
 import TagCloud from '@components/TagCloud.astro';
 
-const creatures = await getCollection('creatures');
-const publishedCreatures = creatures.filter((item) => item.data.status === 'published');
+const flora = await getCollection('flora');
+const publishedFlora = flora.filter((item) => item.data.status === 'published');
 
-const allTags = [...new Set(publishedCreatures.flatMap(item => item.data.tags))];
+const allTags = [...new Set(publishedFlora.flatMap(item => item.data.tags))];
 ---
 
-<WorldAletheiaLayout title="Creatures - World of Aletheia" description="Explore monsters, beasts, and other creatures of Aletheia">
+<WorldAletheiaLayout title="Flora - World of Aletheia" description="Explore plants, fungi, herbs, and other flora of Aletheia">
   <div class="max-w-6xl mx-auto px-4 py-8">
     <div class="mb-12">
-      <h2 class="text-2xl font-bold text-gray-900 mb-6">Latest Creatures</h2>
+      <h2 class="text-2xl font-bold text-gray-900 mb-6">Latest Flora</h2>
       
-      {publishedCreatures.length === 0 ? (
-        <p class="text-gray-600">No published creature entries found.</p>
+      {publishedFlora.length === 0 ? (
+        <p class="text-gray-600">No published flora entries found.</p>
       ) : (
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {publishedCreatures.map((item) => (
+          {publishedFlora.map((item) => (
             <ContentCard content={item} />
           ))}
         </div>

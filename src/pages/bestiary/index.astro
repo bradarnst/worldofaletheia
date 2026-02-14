@@ -1,0 +1,34 @@
+---
+import { getCollection } from 'astro:content';
+import WorldAletheiaLayout from '@layouts/WorldAletheiaLayout.astro';
+import ContentCard from '@components/ContentCard.astro';
+import TagCloud from '@components/TagCloud.astro';
+
+const bestiary = await getCollection('bestiary');
+const publishedBestiary = bestiary.filter((item) => item.data.status === 'published');
+
+const allTags = [...new Set(publishedBestiary.flatMap(item => item.data.tags))];
+---
+
+<WorldAletheiaLayout title="Bestiary - World of Aletheia" description="Explore monsters, beasts, and other creatures of Aletheia">
+  <div class="max-w-6xl mx-auto px-4 py-8">
+    <div class="mb-12">
+      <h2 class="text-2xl font-bold text-gray-900 mb-6">Latest Bestiary Entries</h2>
+      
+      {publishedBestiary.length === 0 ? (
+        <p class="text-gray-600">No published bestiary entries found.</p>
+      ) : (
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {publishedBestiary.map((item) => (
+            <ContentCard content={item} />
+          ))}
+        </div>
+      )}
+    </div>
+    
+    <div class="mb-12">
+      <h2 class="text-2xl font-bold text-gray-900 mb-6">Popular Tags</h2>
+      <TagCloud tags={allTags} />
+    </div>
+  </div>
+</WorldAletheiaLayout>

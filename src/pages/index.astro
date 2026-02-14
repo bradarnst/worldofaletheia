@@ -40,11 +40,12 @@ type DiscoveryItem = {
   url: string;
 };
 
-const [lore, places, sentients, creatures, factions, systems, campaigns, meta, sessions] = await Promise.all([
+const [lore, places, sentients, bestiary, flora, factions, systems, campaigns, meta, sessions] = await Promise.all([
   getCollection('lore'),
   getCollection('places'),
   getCollection('sentients'),
-  getCollection('creatures'),
+  getCollection('bestiary'),
+  getCollection('flora'),
   getCollection('factions'),
   getCollection('systems'),
   getCollection('campaigns'),
@@ -83,15 +84,25 @@ const discoveryPool: DiscoveryItem[] = [
       domain: 'Canon',
       url: `/sentients/${item.id}`,
     })),
-  ...creatures
+  ...bestiary
     .filter((item) => item.data.status === 'published')
     .map((item) => ({
-      id: `creatures:${item.id}`,
+      id: `bestiary:${item.id}`,
       title: item.data.title,
       excerpt: item.data.excerpt,
       created: item.data.created,
       domain: 'Canon',
-      url: `/creatures/${item.id}`,
+      url: `/bestiary/${item.id}`,
+    })),
+  ...flora
+    .filter((item) => item.data.status === 'published')
+    .map((item) => ({
+      id: `flora:${item.id}`,
+      title: item.data.title,
+      excerpt: item.data.excerpt,
+      created: item.data.created,
+      domain: 'Canon',
+      url: `/flora/${item.id}`,
     })),
   ...factions
     .filter((item) => item.data.status === 'published')
