@@ -1,7 +1,7 @@
 ---
 status: 'publish'
 author: 'brad'
-created: 2026-02-02
+created: 2026-02-02T12:00:00+01:00
 secret: false
 tags: [creation, lattice, gods, unicorn]
 campaign: ''

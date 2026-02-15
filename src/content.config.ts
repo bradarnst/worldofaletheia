@@ -18,13 +18,13 @@ const baseSchema = z.object({
 // Collection-specific schemas
 const loreSchema = baseSchema.extend({
   title: z.string(),
-  type: z.enum(['mythology', 'history', 'geography', 'culture', 'language']),
+  type: z.enum(['mythology', 'history', 'geography', 'culture', 'language', 'warfare', 'domestication', 'magic', 'technology', 'structure','other']),
   excerpt: z.string().optional(),
 });
 
 const placesSchema = baseSchema.extend({
   title: z.string(),
-  type: z.enum(['location', 'landmark', 'dungeon', 'settlement', 'region']),
+  type: z.enum(['location', 'landmark', 'dungeon', 'settlement', 'region', 'inhabitants', 'water']),
   excerpt: z.string().optional(),
   coordinates: z.object({
     x: z.number(),

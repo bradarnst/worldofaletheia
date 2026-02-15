@@ -1,16 +1,14 @@
 ---
+title: The Ironbound
+layer: canon
 created: 2026-02-12T16:07:48+01:00
-created-date: 2026-02-12T16:07:48+01:00
 modified: 2026-02-14T23:28:02+01:00
-modified-date: 2026-02-14T23:28:02+01:00
 collection: factions
 type: order
 status: publish
 secret: false
 author: Brad
-title: The Ironbound
 ---
-## The Ironbound
 
 The **Ironbound** are a distinctive mercenary culture known across much of Aletheia for three things:  
 their armour, their reliability, and their refusal to bend once they have given their word.

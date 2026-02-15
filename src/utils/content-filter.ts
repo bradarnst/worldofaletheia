@@ -7,13 +7,18 @@
  */
 export function shouldIncludeContent(content: any, environment: string = 'production'): boolean {
   // Always include published content in all environments
-  if (content.status === 'published') {
+  if (content.status === 'publish') {
     return true;
+  }
+  
+  if (content.status === 'review') {
+    return true; // Include review content in all environments for testing purposes
   }
   
   // Include draft content only in development and preview environments
   if (content.status === 'draft') {
-    return environment !== 'production';
+    return true; // Include drafts in all environments for testing purposes
+    // return environment !== 'production';
   }
   
   // Include secret content only in development environment
@@ -22,7 +27,7 @@ export function shouldIncludeContent(content: any, environment: string = 'produc
   }
   
   // Include archived content only in development environment
-  if (content.status === 'archived') {
+  if (content.status === 'archive') {
     return environment === 'development';
   }
   
