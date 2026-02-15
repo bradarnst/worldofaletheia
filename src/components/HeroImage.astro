@@ -1,0 +1,66 @@
+---
+import { Picture } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+export interface HeroImageProps {
+  image: ImageMetadata;
+  alt: string;
+  title: string;
+  text?: string;
+  ctaLabel?: string;
+  ctaHref?: string;
+  sectionClass?: string;
+  heightClass?: string;
+  overlayClass?: string;
+  contentClass?: string;
+  titleClass?: string;
+  textClass?: string;
+}
+
+const {
+  image,
+  alt,
+  title,
+  text,
+  ctaLabel,
+  ctaHref,
+  sectionClass = 'max-w-7xl mx-auto px-4 lg:px-0',
+  heightClass = 'min-h-[24rem]',
+  overlayClass = 'bg-black/45',
+  contentClass = 'hero-content text-neutral-content text-center px-6 relative z-10',
+  titleClass = 'mb-4 text-4xl md:text-5xl font-bold font-lora',
+  textClass = 'mb-6 text-base md:text-lg opacity-95',
+} = Astro.props as HeroImageProps;
+
+const safeAlt = alt?.trim() || title;
+const hasCta = Boolean(ctaLabel && ctaHref);
+const hasActionsSlot = Astro.slots.has('actions');
+---
+
+<section class={sectionClass}>
+  <div class={`hero ${heightClass} rounded-box overflow-hidden shadow-xl relative isolate`}>
+    <Picture
+      src={image}
+      alt={safeAlt}
+      widths={[640, 960, 1280, 1600]}
+      formats={['avif', 'webp']}
+      class="absolute inset-0 h-full w-full object-cover"
+    />
+    <div class={`hero-overlay ${overlayClass} absolute inset-0`}></div>
+    <div class={contentClass}>
+      <div class="max-w-3xl">
+        <h1 class={titleClass}>{title}</h1>
+        {text && <p class={textClass}>{text}</p>}
+        {hasActionsSlot ? (
+          <div class="flex flex-wrap justify-center gap-3">
+            <slot name="actions" />
+          </div>
+        ) : hasCta && (
+          <div class="flex flex-wrap justify-center gap-3">
+            <a href={ctaHref} class="btn btn-primary">{ctaLabel}</a>
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
+</section>

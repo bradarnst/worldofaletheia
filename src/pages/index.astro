@@ -1,35 +1,9 @@
 ---
-import { Picture } from 'astro:assets';
 import { getCollection } from 'astro:content';
 import Layout from '@layouts/MainSiteLayout.astro';
+import RandomHeroImage from '@components/RandomHeroImage.astro';
 
-import boatInMangroves from '@images/boat-in-mangroves.png';
-import desertTent from '@images/desert-tent.png';
-import dwarvenMountainEntrance from '@images/dwarven-mountain-entrance.png';
-import fertileLandsToCity from '@images/fertile-lands-to-city.png';
-import forestRoad from '@images/forest-road.png';
-import jungleRuin from '@images/jungle-ruin.png';
-import lakePort from '@images/lake-port.png';
-import rideOnTheBeach from '@images/ride-on-the-beach.png';
-import savannaFarmland from '@images/savanna-farmland.png';
-import wheatFields from '@images/wheat-fields.png';
-
-const heroImages = [
-  { image: boatInMangroves, alt: 'A small boat moving through dense mangrove waterways.' },
-  { image: desertTent, alt: 'A tent settlement in a broad desert under clear sky.' },
-  { image: dwarvenMountainEntrance, alt: 'A carved entrance set into a rugged mountain face.' },
-  { image: fertileLandsToCity, alt: 'Fertile countryside leading toward a distant city.' },
-  { image: forestRoad, alt: 'A winding road cutting through dense forest.' },
-  { image: jungleRuin, alt: 'Dense jungle growth surrounding old stone structures.' },
-  { image: lakePort, alt: 'A lakeside port with boats and low settlement buildings.' },
-  { image: rideOnTheBeach, alt: 'Travelers riding along a wide coastline at low tide.' },
-  { image: savannaFarmland, alt: 'Open savanna transitioning into cultivated farmlands.' },
-  { image: wheatFields, alt: 'Golden wheat fields stretching toward distant hills.' },
-];
-
-// UTC daily rotation: one image for the whole day, changes at 00:00 UTC.
 const utcDay = Math.floor(Date.now() / 86400000);
-const heroImage = heroImages[utcDay % heroImages.length];
 
 type DiscoveryItem = {
   id: string;
@@ -178,31 +152,16 @@ const randomItem = randomPool.length > 0 ? randomPool[randomIndex] : null;
 ---
 
 <Layout title="World of Aletheia" description="A grounded fantasy world shaped by history, consequence, and fragile renewal.">
-  <section class="max-w-7xl mx-auto px-4 lg:px-0">
-    <div class="hero min-h-[24rem] rounded-box overflow-hidden shadow-xl relative isolate">
-      <Picture
-        src={heroImage.image}
-        alt={heroImage.alt}
-        widths={[640, 960, 1280, 1600]}
-        formats={['avif', 'webp']}
-        class="absolute inset-0 h-full w-full object-cover"
-      />
-      <div class="hero-overlay bg-black/45 absolute inset-0"></div>
-      <div class="hero-content text-neutral-content text-center px-6 relative z-10">
-        <div class="max-w-3xl">
-          <h1 class="mb-4 text-4xl md:text-5xl font-bold font-lora">World of Aletheia</h1>
-          <p class="mb-6 text-base md:text-lg opacity-95">
-            A grounded fantasy setting where power has consequences, histories are contested,
-            and life endures in the wake of catastrophe.
-          </p>
-          <div class="flex flex-wrap justify-center gap-3">
-            <a href="/lore" class="btn btn-primary">Start with Lore</a>
-            <a href="/campaigns" class="btn btn-outline btn-neutral">Explore Campaigns</a>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+  <RandomHeroImage
+    seed={utcDay}
+    title="World of Aletheia"
+    text="A grounded fantasy setting where power has consequences, histories are contested, and life endures in the wake of catastrophe."
+  >
+    <Fragment slot="actions">
+      <a href="/lore" class="btn btn-primary">Start with Lore</a>
+      <a href="/campaigns" class="btn btn-outline btn-neutral">Explore Campaigns</a>
+    </Fragment>
+  </RandomHeroImage>
 
   <section class="max-w-7xl mx-auto px-4 lg:px-0 py-8 space-y-6">
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
