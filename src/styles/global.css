@@ -251,7 +251,7 @@ h6 {
 
 /* Links */
 a {
-  color: var(--color-primary-600);
+  color: var(--color-primary-700);
   text-decoration: none;
   transition: color 0.2s ease;
 }

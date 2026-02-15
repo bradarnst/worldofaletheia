@@ -212,7 +212,7 @@ const randomItem = randomPool.length > 0 ? randomPool[randomIndex] : null;
               <p class="text-sm opacity-80">{latestItem.excerpt || 'Newly surfaced from the living record of Aletheia.'}</p>
               <div class="text-xs opacity-70">{latestItem.domain} • {latestItem.created.toLocaleDateString('en-GB')}</div>
               <div class="card-actions justify-end">
-                <a href={latestItem.url} class="btn btn-primary btn-sm">Read Latest</a>
+                <a href={latestItem.url} class="btn btn-primary btn-sm" data-debug-button="latest">Read Latest</a>
               </div>
             </>
           ) : (
@@ -233,7 +233,7 @@ const randomItem = randomPool.length > 0 ? randomPool[randomIndex] : null;
               <p class="text-sm opacity-80">{randomItem.excerpt || 'A rotating selection from the world records of Aletheia.'}</p>
               <div class="text-xs opacity-70">{randomItem.domain} • UTC daily rotation</div>
               <div class="card-actions justify-end">
-                <a href={randomItem.url} class="btn btn-secondary btn-sm">Explore Random</a>
+                <a href={randomItem.url} class="btn btn-primary btn-sm" data-debug-button="random">Explore Random</a>
               </div>
             </>
           ) : (
