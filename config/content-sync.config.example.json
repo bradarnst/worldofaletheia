@@ -1,0 +1,20 @@
+{
+  "vaultRoot": "C:/path/or/linux/path/to/ObsidianVault",
+  "mappings": [
+    { "from": "World/Lore", "to": "src/content/lore" },
+    { "from": "World/Places", "to": "src/content/places" },
+    { "from": "World/Sentients", "to": "src/content/sentients" },
+    { "from": "World/Factions", "to": "src/content/factions" },
+    { "from": "World/Flora", "to": "src/content/flora" },
+    { "from": "World/Bestiary", "to": "src/content/bestiary" },
+    { "from": "World/Systems", "to": "src/content/systems" },
+    { "from": "World/Campaigns", "to": "src/content/campaigns" },
+    { "from": "World/Meta", "to": "src/content/meta" }
+  ],
+  "includeExtensions": [".md"],
+  "backupRoot": ".content-sync-backups",
+  "staleFilePolicy": "prompt",
+  "defaultCommitMessage": "chore(content): sync Obsidian content",
+  "requireCleanWorkingTreeBeforePull": false
+}
+

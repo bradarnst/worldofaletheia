@@ -3,6 +3,7 @@ import { getCollection } from 'astro:content';
 import UsingAletheiaLayout from '@layouts/UsingAletheiaLayout.astro';
 import ContentCard from '@components/ContentCard.astro';
 import TagCloud from '@components/TagCloud.astro';
+import fertileLandsToCity from '@images/fertile-lands-to-city.png';
 
 const meta = await getCollection('meta');
 const publishedMeta = meta.filter((item) => item.data.status === 'publish');
@@ -11,23 +12,28 @@ const allTags = [...new Set(publishedMeta.flatMap(item => item.data.tags))];
 ---
 
 <UsingAletheiaLayout title="Meta - Using Aletheia" description="Behind-the-scenes writing, planning, and notes for the World of Aletheia project">
+  <div class="mb-8 rounded-xl border border-base-300 bg-base-200/60 p-4 text-sm text-ink-700">
+    <div class="font-semibold mb-1">Future-ready discovery</div>
+    <p class="meta-muted">Prepared for future filters by content type, subtype, and tags with alphabetical and grouped views in later phases.</p>
+  </div>
+
   <div class="max-w-6xl mx-auto px-4 py-8">
     <div class="mb-12">
-      <h2 class="text-2xl font-bold text-gray-900 mb-6">Recent Meta Posts</h2>
+      <h2 class="text-2xl font-bold text-ink-950 mb-6">Recent Meta Posts</h2>
 
       {publishedMeta.length === 0 ? (
-        <p class="text-gray-600">No meta entries yet.</p>
+        <p class="meta-muted">No meta entries yet.</p>
       ) : (
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {publishedMeta.map((item) => (
-            <ContentCard content={item} />
+          {publishedMeta.map((item, index) => (
+            <ContentCard content={item} image={index % 2 === 0 ? fertileLandsToCity : undefined} />
           ))}
         </div>
       )}
     </div>
 
     <div>
-      <h2 class="text-2xl font-bold text-gray-900 mb-6">Tags</h2>
+      <h2 class="text-2xl font-bold text-ink-950 mb-6">Tags</h2>
       <TagCloud tags={allTags} />
     </div>
   </div>

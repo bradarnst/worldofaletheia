@@ -81,20 +81,20 @@ const title = `${session.title} - ${campaignDetail?.title || campaign}`;
 ---
 
 <CampaignsContentLayout content={sessionEntry} title={title}>
-  <article class="prose max-w-none">
+  <article class="reading-prose">
     <!-- Breadcrumb -->
-    <nav class="mb-6 text-sm text-gray-600 not-prose">
-      <a href="/campaigns" class="hover:text-blue-600">Campaigns</a>
+    <nav class="mb-6 text-sm meta-muted not-prose">
+      <a href="/campaigns" class="hover:text-primary-700">Campaigns</a>
       <span class="mx-2">/</span>
       {campaignDetail ? (
-        <a href={`/campaigns/${campaign}`} class="hover:text-blue-600">{campaignDetail.title}</a>
+        <a href={`/campaigns/${campaign}`} class="hover:text-primary-700">{campaignDetail.title}</a>
       ) : (
         <span>{campaign}</span>
       )}
       <span class="mx-2">/</span>
-      <a href={`/campaigns/${campaign}/sessions`} class="hover:text-blue-600">Sessions</a>
+      <a href={`/campaigns/${campaign}/sessions`} class="hover:text-primary-700">Sessions</a>
       <span class="mx-2">/</span>
-      <span class="text-gray-900 font-medium">{session.title}</span>
+      <span class="text-ink-900 font-medium">{session.title}</span>
     </nav>
 
     <!-- Session Header -->
@@ -107,9 +107,9 @@ const title = `${session.title} - ${campaignDetail?.title || campaign}`;
         <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-sm">{session.permissions}</span>
       </div>
       
-      <h1 class="text-3xl font-bold text-gray-900 mb-4">{session.title}</h1>
+      <h1 class="text-3xl font-bold text-ink-950 mb-4">{session.title}</h1>
       
-      <div class="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+      <div class="flex flex-wrap items-center gap-4 text-sm meta-muted">
         {session.date && (
           <div class="flex items-center gap-1">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -142,13 +142,13 @@ const title = `${session.title} - ${campaignDetail?.title || campaign}`;
         {previousSession ? (
           <a 
             href={`/campaigns/${campaign}/sessions/${previousSession.slug}`}
-            class="flex items-center text-blue-600 hover:text-blue-800"
+            class="flex items-center text-primary-700 hover:text-primary-800"
           >
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
             </svg>
             <div class="text-left">
-              <div class="text-xs text-gray-500">Previous Session</div>
+              <div class="text-xs meta-muted">Previous Session</div>
               <div class="font-medium">{previousSession.title}</div>
             </div>
           </a>
@@ -158,7 +158,7 @@ const title = `${session.title} - ${campaignDetail?.title || campaign}`;
         
         <a 
           href={`/campaigns/${campaign}/sessions`}
-          class="text-gray-600 hover:text-gray-900 text-sm"
+          class="meta-muted hover:text-ink-900 text-sm"
         >
           All Sessions
         </a>
@@ -166,10 +166,10 @@ const title = `${session.title} - ${campaignDetail?.title || campaign}`;
         {nextSession ? (
           <a 
             href={`/campaigns/${campaign}/sessions/${nextSession.slug}`}
-            class="flex items-center text-blue-600 hover:text-blue-800"
+            class="flex items-center text-primary-700 hover:text-primary-800"
           >
             <div class="text-right">
-              <div class="text-xs text-gray-500">Next Session</div>
+              <div class="text-xs meta-muted">Next Session</div>
               <div class="font-medium">{nextSession.title}</div>
             </div>
             <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

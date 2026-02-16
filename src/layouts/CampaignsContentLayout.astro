@@ -26,14 +26,13 @@ const contentExcerpt = data.excerpt || content.excerpt;
     title={contentTitle}
     author={data.author || content.author}
     created={data.created || content.created}
-    status={data.status || content.status}
     secret={data.secret || content.secret}
     campaign={data.campaign || content.campaign}
     excerpt={contentExcerpt}
     tags={data.tags || content.tags}
   />
   <div class="min-h-screen bg-gradient-to-br from-base-100 to-base-200">
-    <article class="prose prose-sm md:prose-base max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+    <article class="reading-prose py-8 md:py-12">
       <main class="content-container">
         <slot />
       </main>

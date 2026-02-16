@@ -3,6 +3,7 @@ import { getCollection } from 'astro:content';
 import WorldAletheiaLayout from '@layouts/WorldAletheiaLayout.astro';
 import ContentCard from '@components/ContentCard.astro';
 import TagCloud from '@components/TagCloud.astro';
+import lakePort from '@images/lake-port.png';
 
 const places = await getCollection('places');
 const publishedPlaces = places.filter((item) => item.data.status === 'publish');
@@ -11,23 +12,28 @@ const allTags = [...new Set(publishedPlaces.flatMap(item => item.data.tags))];
 ---
 
 <WorldAletheiaLayout title="Places - World of Aletheia" description="Discover locations, landmarks, and settlements across Aletheia">
+  <div class="mb-8 rounded-xl border border-base-300 bg-base-200/60 p-4 text-sm text-ink-700">
+    <div class="font-semibold mb-1">Future-ready discovery</div>
+    <p class="meta-muted">Prepared for future filters by place type, subtype, and tags with alphabetical and grouped views in later phases.</p>
+  </div>
+
   <div class="max-w-6xl mx-auto px-4 py-8">
     <div class="mb-12">
-      <h2 class="text-2xl font-bold text-gray-900 mb-6">Latest Places</h2>
+      <h2 class="text-2xl font-bold text-ink-950 mb-6">Latest Places</h2>
       
       {publishedPlaces.length === 0 ? (
-        <p class="text-gray-600">No places found.</p>
+        <p class="meta-muted">No places found.</p>
       ) : (
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {publishedPlaces.map((item) => (
-            <ContentCard content={item} />
+          {publishedPlaces.map((item, index) => (
+            <ContentCard content={item} image={index % 2 === 0 ? lakePort : undefined} />
           ))}
         </div>
       )}
     </div>
     
     <div class="mb-12">
-      <h2 class="text-2xl font-bold text-gray-900 mb-6">Popular Tags</h2>
+      <h2 class="text-2xl font-bold text-ink-950 mb-6">Popular Tags</h2>
       <TagCloud tags={allTags} />
     </div>
   </div>

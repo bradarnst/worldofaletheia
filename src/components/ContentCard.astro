@@ -1,13 +1,18 @@
 ---
+import { Image } from 'astro:assets';
+
 interface Props {
   content: any;
   showExcerpt?: boolean;
   showTags?: boolean;
   showStatus?: boolean;
   showCampaign?: boolean;
+  image?: any;
+  imageAlt?: string;
+  relationshipHints?: string[];
 }
 
-const { content, showExcerpt = true, showTags = true, showStatus = true, showCampaign = true } = Astro.props;
+const { content, showExcerpt = true, showTags = true, showStatus = false, showCampaign = true, image, imageAlt, relationshipHints = [] } = Astro.props;
 
 // Handle both old and new Astro v6 content structures
 const data = content.data || content;
@@ -15,15 +20,21 @@ const collection = content.collection || '';
 const id = content.id || '';
 ---
 
-<a href={`/${collection}/${id}`} class="card content-card bg-base-100 shadow-md hover:shadow-lg transition-shadow duration-200">
-  <div class="card-body p-6">
+<a href={`/${collection}/${id}`} class="card content-card bg-base-100 shadow-md hover:shadow-lg transition-shadow duration-200 border border-base-300/50 overflow-hidden">
+  {image && (
+    <figure class="h-36 w-full overflow-hidden bg-base-200">
+      <Image src={image} alt={imageAlt || data.title} class="h-full w-full object-cover" />
+    </figure>
+  )}
+
+  <div class="card-body p-5">
     <div class="content-card__header flex justify-between items-start mb-3 gap-3">
-      <h3 class="card-title text-xl font-bold text-base-content">{data.title}</h3>
+      <h3 class="card-title text-xl font-bold text-ink-950 leading-tight">{data.title}</h3>
       {showStatus && <span class="badge badge-info badge-outline whitespace-nowrap">{data.status}</span>}
     </div>
   
     {showCampaign && data.campaign && (
-      <div class="flex items-center text-sm text-secondary opacity-90 mb-3 gap-2">
+      <div class="flex items-center text-sm meta-muted mb-3 gap-2">
         <span class="badge badge-success badge-outline">{data.campaign}</span>
         <span>•</span>
         <span>{data.author}</span>
@@ -31,18 +42,26 @@ const id = content.id || '';
     )}
     
     {showExcerpt && data.excerpt && (
-      <p class="mb-4 text-base-content opacity-95">{data.excerpt}</p>
+      <p class="mb-4 text-ink-800 leading-relaxed">{data.excerpt}</p>
     )}
     
     {showTags && data.tags && data.tags.length > 0 && (
-      <div class="flex flex-wrap gap-2">
-        {data.tags.map((tag: string) => (
-          <span class="badge badge-outline badge-sm text-primary border-primary/35 bg-primary/10">{tag}</span>
+      <div class="flex flex-wrap gap-2 mb-2">
+        {data.tags.slice(0, 4).map((tag: string) => (
+          <span class="tag-chip">{tag}</span>
+        ))}
+      </div>
+    )}
+
+    {relationshipHints.length > 0 && (
+      <div class="flex flex-wrap gap-2 mb-2">
+        {relationshipHints.slice(0, 2).map((hint) => (
+          <span class="badge badge-outline badge-sm text-ink-600 border-base-300 bg-base-100">{hint}</span>
         ))}
       </div>
     )}
     
-    <div class="mt-4 text-sm text-secondary opacity-90">
+    <div class="mt-3 text-sm meta-muted">
       <span>{data.created.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
     </div>
   </div>

@@ -13,6 +13,16 @@ const baseSchema = z.object({
   tags: z.array(z.string()).default([]),
   campaign: z.string().optional(),
   permissions: z.enum(['public', 'player', 'gm', 'author']).default('public'),
+  parentChain: z.array(z.object({
+    label: z.string(),
+    href: z.string(),
+  })).optional(),
+  relationships: z.array(z.object({
+    label: z.string(),
+    href: z.string(),
+    kind: z.enum(['partOf', 'connectedTo']).optional(),
+    reason: z.string().optional(),
+  })).optional(),
 });
 
 // Collection-specific schemas

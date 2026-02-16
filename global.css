@@ -136,7 +136,7 @@ body {
   color: var(--color-ink-900);
   background-color: var(--color-paper-50);
   font-size: var(--font-size-base);
-  line-height: 1.6;
+  line-height: 1.65;
 }
 
 /* Headings */
@@ -228,4 +228,80 @@ a:focus-visible {
   outline: 2px solid var(--color-primary-500);
   outline-offset: 2px;
   border-radius: 2px;
+}
+
+/* ============================================
+   READING EXPERIENCE
+   ============================================ */
+
+.reading-prose {
+  width: min(100%, 72ch);
+  margin-inline: auto;
+  padding-inline: 1rem;
+  font-size: clamp(1.0625rem, 1rem + 0.35vw, 1.125rem);
+  line-height: 1.76;
+  color: var(--color-ink-900);
+}
+
+.reading-prose p,
+.reading-prose ul,
+.reading-prose ol,
+.reading-prose blockquote,
+.reading-prose pre,
+.reading-prose table {
+  margin-block: 1.05em;
+}
+
+.reading-prose h1,
+.reading-prose h2,
+.reading-prose h3,
+.reading-prose h4 {
+  color: var(--color-ink-950);
+  line-height: 1.25;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+}
+
+.reading-prose h1 {
+  font-size: clamp(2rem, 1.8rem + 1vw, 2.5rem);
+}
+
+.reading-prose h2 {
+  font-size: clamp(1.5rem, 1.35rem + 0.65vw, 1.95rem);
+}
+
+.reading-prose h3 {
+  font-size: clamp(1.25rem, 1.15rem + 0.4vw, 1.5rem);
+}
+
+.reading-prose h4 {
+  font-size: clamp(1.125rem, 1.05rem + 0.3vw, 1.3rem);
+}
+
+.reading-prose a {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.reading-prose blockquote {
+  border-left: 3px solid var(--color-primary-300);
+  padding-left: 1rem;
+  color: var(--color-ink-700);
+}
+
+.meta-muted {
+  color: var(--color-ink-500);
+}
+
+.tag-chip {
+  border: 1px solid color-mix(in oklab, var(--color-primary-500) 35%, transparent);
+  background: color-mix(in oklab, var(--color-primary-100) 45%, transparent);
+  color: var(--color-primary-800);
+  border-radius: 9999px;
+  padding: 0.2rem 0.65rem;
+  font-family: var(--font-family-ui);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }

@@ -3,6 +3,7 @@ import { getCollection } from 'astro:content';
 import WorldAletheiaLayout from '@layouts/WorldAletheiaLayout.astro';
 import ContentCard from '@components/ContentCard.astro';
 import TagCloud from '@components/TagCloud.astro';
+import wheatFields from '@images/wheat-fields.png';
 
 const lore = await getCollection('lore');
 const publishedLore = lore.filter((item) => item.data.status === 'publish');
@@ -11,24 +12,30 @@ const allTags = [...new Set(publishedLore.flatMap(item => item.data.tags))];
 ---
 
 <WorldAletheiaLayout title="Lore - World of Aletheia" description="Explore the rich history, mythology, and world-building of Aletheia">
+  <div class="mb-8 rounded-xl border border-base-300 bg-base-200/60 p-4 text-sm text-ink-700">
+    <div class="font-semibold mb-1">Future-ready discovery</div>
+    <p class="meta-muted">This section is structured for future filters by type, subtype, and tags, with alphabetical and grouped views planned in a later phase.</p>
+  </div>
+
   <div class="max-w-6xl mx-auto px-4 py-8">
     <div class="mb-12">
-      <h2 class="text-2xl font-bold text-gray-900 mb-6">Latest Lore</h2>
+      <h2 class="text-2xl font-bold text-ink-950 mb-6">Latest Lore</h2>
       
       {publishedLore.length === 0 ? (
-        <p class="text-gray-600">No lore entries found.</p>
+        <p class="meta-muted">No lore entries found.</p>
       ) : (
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {publishedLore.map((item) => (
-            <ContentCard content={item} />
+          {publishedLore.map((item, index) => (
+            <ContentCard content={item} image={index % 2 === 0 ? wheatFields : undefined} />
           ))}
         </div>
       )}
     </div>
     
     <div class="mb-12">
-      <h2 class="text-2xl font-bold text-gray-900 mb-6">Popular Tags</h2>
+      <h2 class="text-2xl font-bold text-ink-950 mb-6">Popular Tags</h2>
       <TagCloud tags={allTags} />
     </div>
   </div>
 </WorldAletheiaLayout>
+

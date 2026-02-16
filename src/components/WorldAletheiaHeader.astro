@@ -1,4 +1,6 @@
 ---
+import RandomHeroImage from '@components/RandomHeroImage.astro';
+
 interface Props {
   title: string;
   description?: string;
@@ -8,8 +10,14 @@ const { title, description } = Astro.props;
 ---
 
 <header class="bg-base-100 pb-4">
-  <div class="container mx-auto px-4 py-8 text-center">
-    <h1 class="text-4xl font-bold text-gray-900 mb-4">{title}</h1>
-    {description && <p class="text-xl text-gray-600">{description}</p>}
-  </div>
+  <RandomHeroImage
+    title={title}
+    text={description}
+    sectionClass="container mx-auto px-4 py-8"
+    heightClass="min-h-[16rem] md:min-h-[18rem]"
+    overlayClass="bg-black/40"
+    titleClass="mb-3 text-3xl md:text-4xl font-bold"
+    textClass="text-base md:text-lg opacity-95"
+    seed={title}
+  />
 </header>

@@ -21,16 +21,16 @@ const tldr = data.tldr || content.tldr;
 <BaseLayout title={contentTitle} description={contentDescription}>
   <GlobalNavigation />
   <div class="min-h-screen bg-linear-to-br from-base-100 to-base-200">
-    <article class="prose prose-sm md:prose-base max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+    <article class="reading-prose py-8 md:py-12">
       <header class="mb-8">
-        <h1 class="text-4xl font-bold text-gray-900 mb-4">{contentTitle}</h1>
+        <h1 class="text-4xl font-bold text-ink-950 mb-4">{contentTitle}</h1>
         
-        {contentDescription && <p class="text-lg text-gray-600 mb-6">{contentDescription}</p>}
+        {contentDescription && <p class="text-lg text-ink-700 mb-6">{contentDescription}</p>}
         
         {tldr && (
-          <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
-            <p class="text-sm font-medium text-yellow-800">TL;DR</p>
-            <p class="text-yellow-700">{tldr}</p>
+          <div class="bg-warning-50 border-l-4 border-warning-400 p-4 mb-6">
+            <p class="text-sm font-medium text-warning-800">TL;DR</p>
+            <p class="text-warning-700">{tldr}</p>
           </div>
         )}
       </header>

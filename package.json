@@ -7,7 +7,11 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "test": "vitest run"
+    "test": "vitest run",
+    "content:sync": "node ./scripts/content-sync/index.mjs",
+    "content:sync:dry-run": "node ./scripts/content-sync/index.mjs --dry-run",
+    "content:validate": "node ./scripts/content-sync/index.mjs --validate-only",
+    "content:git": "node ./scripts/content-sync/index.mjs --git-only"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^12.6.12",

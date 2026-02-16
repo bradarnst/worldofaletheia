@@ -41,3 +41,55 @@ All commands are run from the root of the project, from a terminal:
 ## 👀 Want to learn more?
 
 Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+
+## Content Sync Workflow (Obsidian -> Repo)
+
+This project now includes a standalone cross-platform Node.js sync flow for moving Obsidian-authored content into [`src/content`](src/content).
+
+### One-time setup
+
+1. Copy [`config/content-sync.config.example.json`](config/content-sync.config.example.json) to `config/content-sync.config.json`.
+2. Edit `vaultRoot` in `config/content-sync.config.json`.
+3. Keep mappings pointing only to `src/content/*` folders.
+
+`config/content-sync.config.json` is ignored by git to keep personal local paths private.
+
+### Main command
+
+- `pnpm content:sync`
+
+What it does:
+1. Pull latest repo changes (`git pull --ff-only`)
+2. Dry-run style diff report (new/updated/stale/unchanged)
+3. If stale files exist, asks you to choose:
+   - `remove` (delete stale repo files)
+   - `backup` (move stale files to `.content-sync-backups/`)
+   - `abort` (stop safely)
+4. Apply sync changes
+5. Validate frontmatter + markdown quality
+6. Commit and push
+
+### Helper commands
+
+- `pnpm content:sync:dry-run` -> analyze only, no file changes
+- `pnpm content:validate` -> run validation only
+- `pnpm content:git` -> pull/commit/push only
+
+### Prompt style and troubleshooting
+
+Messages are short and non-technical, with a support code when something fails:
+
+- What happened
+- Action to take now
+- Support code
+
+Example support codes include:
+- `CONFIG-MISSING`
+- `GIT-PULL-DIVERGED`
+- `VALIDATION-FAILED`
+- `SYNC-RUNTIME-ERROR`
+
+For extra technical details during troubleshooting, run with:
+
+- Linux/macOS: `CONTENT_SYNC_DEBUG=1 pnpm content:sync`
+- PowerShell: `$env:CONTENT_SYNC_DEBUG='1'; pnpm content:sync`

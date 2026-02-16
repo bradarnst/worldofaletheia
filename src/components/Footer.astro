@@ -2,17 +2,17 @@
 const CURRENT_YEAR = new Date().getFullYear();
 ---
 
-<footer class="mt-12 pt-6 border-t border-gray-200">
+<footer class="mt-12 pt-6 border-t border-base-300">
   <div class="flex justify-between items-center">
-    <div class="text-sm text-gray-500">
+    <div class="text-sm meta-muted">
       <slot name="left">
         <span>© {CURRENT_YEAR} World of Aletheia</span>
       </slot>
     </div>
     <div class="flex gap-4">
       <slot name="links">
-        <a href="/" class="text-blue-600 hover:text-blue-800 text-sm">Home</a>
-        <a href="/search" class="text-blue-600 hover:text-blue-800 text-sm">Search</a>
+        <a href="/" class="text-primary-700 hover:text-primary-800 text-sm">Home</a>
+        <a href="/search" class="text-primary-700 hover:text-primary-800 text-sm">Search</a>
       </slot>
     </div>
   </div>
