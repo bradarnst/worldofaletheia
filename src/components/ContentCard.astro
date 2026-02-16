@@ -15,33 +15,35 @@ const collection = content.collection || '';
 const id = content.id || '';
 ---
 
-<a href={`/${collection}/${id}`} class="block p-6 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow duration-200">
-  <div class="flex justify-between items-start mb-3">
-    <h3 class="text-xl font-bold text-gray-900">{data.title}</h3>
-    {showStatus && <span class="px-2 py-1 rounded bg-blue-100 text-blue-800 text-sm">{data.status}</span>}
-  </div>
-  
-  {showCampaign && data.campaign && (
-    <div class="flex items-center text-sm text-gray-500 mb-3">
-      <span class="px-2 py-1 bg-green-100 text-green-800 rounded mr-2">{data.campaign}</span>
-      <span>•</span>
-      <span class="ml-2">{data.author}</span>
+<a href={`/${collection}/${id}`} class="card content-card bg-base-100 shadow-md hover:shadow-lg transition-shadow duration-200">
+  <div class="card-body p-6">
+    <div class="content-card__header flex justify-between items-start mb-3 gap-3">
+      <h3 class="card-title text-xl font-bold text-base-content">{data.title}</h3>
+      {showStatus && <span class="badge badge-info badge-outline whitespace-nowrap">{data.status}</span>}
     </div>
-  )}
   
-  {showExcerpt && data.excerpt && (
-    <p class="text-gray-600 mb-4">{data.excerpt}</p>
-  )}
-  
-  {showTags && data.tags && data.tags.length > 0 && (
-    <div class="flex flex-wrap gap-2">
-      {data.tags.map((tag: string) => (
-        <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs">{tag}</span>
-      ))}
+    {showCampaign && data.campaign && (
+      <div class="flex items-center text-sm text-secondary opacity-90 mb-3 gap-2">
+        <span class="badge badge-success badge-outline">{data.campaign}</span>
+        <span>•</span>
+        <span>{data.author}</span>
+      </div>
+    )}
+    
+    {showExcerpt && data.excerpt && (
+      <p class="mb-4 text-base-content opacity-95">{data.excerpt}</p>
+    )}
+    
+    {showTags && data.tags && data.tags.length > 0 && (
+      <div class="flex flex-wrap gap-2">
+        {data.tags.map((tag: string) => (
+          <span class="badge badge-outline badge-sm text-primary border-primary/35 bg-primary/10">{tag}</span>
+        ))}
+      </div>
+    )}
+    
+    <div class="mt-4 text-sm text-secondary opacity-90">
+      <span>{data.created.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
     </div>
-  )}
-  
-  <div class="mt-4 text-sm text-gray-500">
-    <span>{data.created.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
   </div>
 </a>

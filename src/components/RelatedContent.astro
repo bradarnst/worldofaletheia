@@ -9,31 +9,33 @@ const { content, relatedContent, title = 'Related Content' } = Astro.props;
 ---
 
 <div class="mt-12">
-  <h2 class="text-2xl font-bold text-gray-900 mb-6">{title}</h2>
+  <h2 class="text-2xl font-bold text-base-content mb-6">{title}</h2>
   
   {relatedContent.length === 0 ? (
-    <p class="text-gray-600">No related content found.</p>
+    <p class="opacity-80">No related content found.</p>
   ) : (
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {relatedContent.map((item) => (
-        <a href={item.slug} class="block p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow duration-200">
-          <div class="flex justify-between items-start mb-2">
-            <h3 class="font-bold text-gray-900">{item.title}</h3>
-            <span class="px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs">{item.status}</span>
-          </div>
-          
-          <p class="text-gray-600 text-sm mb-2">{item.excerpt}</p>
-          
-          <div class="flex flex-wrap gap-1 mb-2">
-            {item.tags.slice(0, 3).map((tag: string) => (
-              <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs">{tag}</span>
-            ))}
-          </div>
-          
-          <div class="text-xs text-gray-500">
-            <span>{item.author}</span>
-            <span class="mx-2">•</span>
-            <span>{item.campaign}</span>
+        <a href={item.slug} class="card content-card bg-base-100 shadow-md hover:shadow-lg transition-shadow duration-200">
+          <div class="card-body p-4">
+            <div class="content-card__header flex justify-between items-start mb-2 gap-2">
+              <h3 class="card-title text-base font-bold text-base-content">{item.title}</h3>
+              <span class="badge badge-info badge-outline badge-sm whitespace-nowrap">{item.status}</span>
+            </div>
+            
+            <p class="text-sm mb-2 text-primary opacity-90">{item.excerpt}</p>
+            
+            <div class="flex flex-wrap gap-1 mb-2">
+              {item.tags.slice(0, 3).map((tag: string) => (
+                <span class="badge badge-outline badge-sm text-primary border-primary/35 bg-primary/10">{tag}</span>
+              ))}
+            </div>
+            
+            <div class="text-xs text-secondary opacity-90">
+              <span>{item.author}</span>
+              <span class="mx-2">•</span>
+              <span>{item.campaign}</span>
+            </div>
           </div>
         </a>
       ))}
