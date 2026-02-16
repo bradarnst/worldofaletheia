@@ -11,7 +11,26 @@ export interface Props {
 const { title = 'World of Aletheia', description = 'An immersive tabletop RPG setting where magic, mystery, and adventure await in the Shattered Lands.', showFooter = true } = Astro.props;
 ---
 
-<html lang="en">
+<html lang="en" data-theme="savanna-days">
+  <script is:inline>
+    (() => {
+      const STORAGE_KEY = 'aletheia-theme';
+      const DEFAULT_THEME = 'savanna-days';
+      const ALLOWED_THEMES = ['savanna-days', 'lake-days', 'savanna-nights', 'jungle-nights'];
+
+      const getTheme = () => {
+        try {
+          const saved = localStorage.getItem(STORAGE_KEY);
+          if (saved && ALLOWED_THEMES.includes(saved)) return saved;
+        } catch {
+          // Ignore storage access issues and use fallback
+        }
+        return DEFAULT_THEME;
+      };
+
+      document.documentElement.setAttribute('data-theme', getTheme());
+    })();
+  </script>
   <BaseHead title={title} description={description} />
   <body class="min-h-screen">
     <slot />

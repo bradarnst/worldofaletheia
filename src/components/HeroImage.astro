@@ -49,7 +49,7 @@ const hasActionsSlot = Astro.slots.has('actions');
     <div class={`hero-overlay ${overlayClass} absolute inset-0`}></div>
     <div class={contentClass}>
       <div class="max-w-3xl">
-        <h1 class={titleClass}>{title}</h1>
+        <h1 class={`hero-image-title ${titleClass}`}>{title}</h1>
         {text && <p class={textClass}>{text}</p>}
         {hasActionsSlot ? (
           <div class="flex flex-wrap justify-center gap-3">

@@ -1,9 +1,16 @@
 ---
 import { Image } from 'astro:assets';
 import aletheiaLogo from '@images/aletheia-logo.png';
+
+const themes = [
+  { value: 'savanna-days', label: 'Savanna Days' },
+  { value: 'lake-days', label: 'Lake Days' },
+  { value: 'savanna-nights', label: 'Savanna Nights' },
+  { value: 'jungle-nights', label: 'Jungle Nights' },
+];
 ---
 
-<div class="navbar bg-paper-200  text-ink-200 sticky top-0 z-50 shadow-md border-b border-base-300">
+<div class="navbar nav-readable bg-base-200 text-base-content sticky top-0 z-50 shadow-md border-b border-base-300">
   
   <!-- LEFT: Identity -->
   <div class="navbar-start">
@@ -12,20 +19,28 @@ import aletheiaLogo from '@images/aletheia-logo.png';
       <div tabindex="0" role="button" class="btn btn-ghost lg:hidden">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" /></svg>
       </div>
-      <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-1 p-2 shadow bg-base-100 rounded-box w-52">
+      <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-1 p-2 shadow bg-base-100 rounded-box w-56">
         <!-- Mobile users get everything here -->
-        <li><a href="/" class="hover:text-gray-200" >Home</a></li>
-        <li><a href="/about" class="hover:text-gray-200" >About</a></li>
-        <li><a href="/lore" class="hover:text-gray-200" >Lore</a></li>
-        <li><a href="/sentients" class="hover:text-gray-200" >Sentients</a></li>
-        <li><a href="/places" class="hover:text-gray-200" >Places</a></li>
-        <li><a href="/factions" class="hover:text-gray-200" >Factions</a></li>
-        <li><a href="/bestiary" class="hover:text-gray-200" >Bestiary</a></li>
-        <li><a href="/flora" class="hover:text-gray-200" >Flora</a></li>
-        <li><a href="/campaigns" class="hover:text-gray-200" >Campaigns</a></li>
-        <li><a href="/systems" class="hover:text-gray-200" >Systems</a></li>
-        <li><a href="/meta" class="hover:text-gray-200" >Meta</a></li>
-        <li><a href="/systems/gurps" class="text-secondary hover:text-gray-200">GURPS</a></li>
+        <li><a href="/" class="hover:text-primary" >Home</a></li>
+        <li><a href="/about" class="hover:text-primary" >About</a></li>
+        <li><a href="/lore" class="hover:text-primary" >Lore</a></li>
+        <li><a href="/sentients" class="hover:text-primary" >Sentients</a></li>
+        <li><a href="/places" class="hover:text-primary" >Places</a></li>
+        <li><a href="/factions" class="hover:text-primary" >Factions</a></li>
+        <li><a href="/bestiary" class="hover:text-primary" >Bestiary</a></li>
+        <li><a href="/flora" class="hover:text-primary" >Flora</a></li>
+        <li><a href="/campaigns" class="hover:text-primary" >Campaigns</a></li>
+        <li><a href="/systems" class="hover:text-primary" >Systems</a></li>
+        <li><a href="/meta" class="hover:text-primary" >Meta</a></li>
+        <li><a href="/systems/gurps" class="text-secondary hover:text-primary">GURPS</a></li>
+        <li class="menu-title mt-1"><span>Palette</span></li>
+        <li>
+          <select class="select select-sm select-bordered w-full js-theme-picker" aria-label="Select theme">
+            {themes.map((theme) => (
+              <option value={theme.value}>{theme.label}</option>
+            ))}
+          </select>
+        </li>
         <!-- <li>
           <a>Regions</a>
           <ul class="p-2">
@@ -46,17 +61,33 @@ import aletheiaLogo from '@images/aletheia-logo.png';
   <!-- CENTER: Main Navigation -->
   <div class="navbar-center hidden lg:flex">
     <ul class="menu menu-horizontal p-2 bg-base-100 shadow-lg rounded-t-none">
-      <li><a href="/" class="hover:text-accent-400">Home</a></li>
-      <li><a href="/aletheia-world-canon" class="hover:text-accent-400">World of Aletheia</a></li>
-      <li><a href="/using-aletheia" class="hover:text-accent-400">Using Aletheia</a></li>
-      <li><a href="/campaigns" class="hover:text-accent-400">Campaigns</a></li>
+      <li><a href="/" class="hover:text-accent">Home</a></li>
+      <li><a href="/aletheia-world-canon" class="hover:text-accent">World of Aletheia</a></li>
+      <li><a href="/using-aletheia" class="hover:text-accent">Using Aletheia</a></li>
+      <li><a href="/campaigns" class="hover:text-accent">Campaigns</a></li>
     </ul>
   </div>
 
   <!-- RIGHT: Utilities & The "System" Link -->
   <div class="navbar-end hidden lg:flex">
     <ul class="menu menu-horizontal px-1">
-      <li><a href="/about" class="hover:text-gray-200">About</a></li>
+      <li>
+        <label class="input input-sm input-bordered flex items-center gap-2 pr-2" aria-label="Palette selector">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-4 w-4 opacity-85" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18Z" />
+            <circle cx="8.5" cy="10" r="1" fill="currentColor" />
+            <circle cx="12" cy="7.5" r="1" fill="currentColor" />
+            <circle cx="15.5" cy="10" r="1" fill="currentColor" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 15.5a2.5 2.5 0 0 0 5 0c0-1.1-.9-2-2-2H9.5" />
+          </svg>
+          <select class="bg-transparent js-theme-picker" aria-label="Select theme">
+            {themes.map((theme) => (
+              <option value={theme.value}>{theme.label}</option>
+            ))}
+          </select>
+        </label>
+      </li>
+      <li><a href="/about" class="hover:text-primary">About</a></li>
       
       <!-- The "Regions" Dropdown (For quick jumping when NOT on homepage) -->
       <!-- <li>
@@ -85,3 +116,51 @@ import aletheiaLogo from '@images/aletheia-logo.png';
      <!-- Mobile simplified end -->
   </div>
 </div>
+
+<script is:inline>
+  (() => {
+    const STORAGE_KEY = 'aletheia-theme';
+    const DEFAULT_THEME = 'savanna-days';
+    const ALLOWED_THEMES = ['savanna-days', 'lake-days', 'savanna-nights', 'jungle-nights'];
+
+    const getActiveTheme = () => {
+      const current = document.documentElement.getAttribute('data-theme');
+      if (current && ALLOWED_THEMES.includes(current)) return current;
+
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved && ALLOWED_THEMES.includes(saved)) return saved;
+      } catch {
+        // Ignore storage access errors
+      }
+
+      return DEFAULT_THEME;
+    };
+
+    const applyTheme = (theme) => {
+      if (!ALLOWED_THEMES.includes(theme)) return;
+      document.documentElement.setAttribute('data-theme', theme);
+      try {
+        localStorage.setItem(STORAGE_KEY, theme);
+      } catch {
+        // Ignore storage access errors
+      }
+      document.querySelectorAll('.js-theme-picker').forEach((picker) => {
+        if (picker instanceof HTMLSelectElement) picker.value = theme;
+      });
+    };
+
+    const initialTheme = getActiveTheme();
+    document.querySelectorAll('.js-theme-picker').forEach((picker) => {
+      if (picker instanceof HTMLSelectElement) {
+        picker.value = initialTheme;
+        picker.addEventListener('change', (event) => {
+          const next = (event.currentTarget instanceof HTMLSelectElement)
+            ? event.currentTarget.value
+            : DEFAULT_THEME;
+          applyTheme(next);
+        });
+      }
+    });
+  })();
+</script>
