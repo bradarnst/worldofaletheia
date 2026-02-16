@@ -54,7 +54,7 @@ export async function gitPullFastForwardOnly() {
 }
 
 export async function gitCommitAndPush({ commitMessage }) {
-  const add = await runGit(['add', 'src/content', '.content-sync-backups']);
+  const add = await runGit(['add', 'src/content', 'src/assets', '.content-sync-backups']);
   if (add.code !== 0) {
     throw new Error(`git add failed: ${add.stderr || add.stdout}`);
   }
@@ -83,4 +83,3 @@ export async function gitCommitAndPush({ commitMessage }) {
 
   return { changed: true };
 }
-

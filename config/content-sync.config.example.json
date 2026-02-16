@@ -9,12 +9,13 @@
     { "from": "World/Bestiary", "to": "src/content/bestiary" },
     { "from": "World/Systems", "to": "src/content/systems" },
     { "from": "World/Campaigns", "to": "src/content/campaigns" },
-    { "from": "World/Meta", "to": "src/content/meta" }
+    { "from": "World/Meta", "to": "src/content/meta" },
+    { "from": "World/Assets/Images", "to": "src/assets/images" },
+    { "from": "World/Assets/Docs", "to": "src/assets/docs" }
   ],
-  "includeExtensions": [".md"],
+  "includeExtensions": [".md", ".png", ".jpg", ".jpeg", ".webp", ".pdf"],
   "backupRoot": ".content-sync-backups",
   "staleFilePolicy": "prompt",
   "defaultCommitMessage": "chore(content): sync Obsidian content",
   "requireCleanWorkingTreeBeforePull": false
 }
-

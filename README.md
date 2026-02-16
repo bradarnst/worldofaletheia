@@ -46,6 +46,8 @@ Feel free to check [our documentation](https://docs.astro.build) or jump into ou
 
 This project now includes a standalone cross-platform Node.js sync flow for moving Obsidian-authored content into [`src/content`](src/content).
 
+Full user docs are in [`docs/content-ingestion-user-guide.md`](docs/content-ingestion-user-guide.md).
+
 ### One-time setup
 
 1. Copy [`config/content-sync.config.example.json`](config/content-sync.config.example.json) to `config/content-sync.config.json`.
@@ -68,6 +70,11 @@ What it does:
 4. Apply sync changes
 5. Validate frontmatter + markdown quality
 6. Commit and push
+
+Default structure target:
+- content markdown in `src/content/*`
+- images in `src/assets/images/*`
+- pdf/docs in `src/assets/docs/*`
 
 ### Helper commands
 

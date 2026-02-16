@@ -244,6 +244,66 @@ flowchart TD
 
 Add scheduled checks using system scheduler options such as cron or platform equivalent to review backup folders and trigger a structured review process.
 
+## Asset Strategy Addendum (Approved Direction)
+
+Canonical structure in repo:
+
+- Markdown and structured entries remain under `src/content`
+- Binary/static assets are separate under `src/assets`
+- Images live under `src/assets/images`
+- Other asset types such as PDFs can live under `src/assets/docs` or additional asset subfolders
+
+Reasoning:
+
+- Aligns with Astro-first asset organization under `src`
+- Keeps content and assets clearly separated while preserving one coherent source tree
+- Allows sync scripts to treat markdown and binary content with different validation behavior
+
+## Asset Sync Policy
+
+- Obsidian vault can include an `assets` folder and nested `images` folder
+- Sync mappings explicitly define vault-to-repo destination:
+  - e.g. `Vault/assets/images` -> `src/assets/images`
+  - e.g. `Vault/assets/docs` -> `src/assets/docs`
+- Extension policy (initial):
+  - include: `.md` for content mappings
+  - include for assets mappings: `.png`, `.jpg`, `.jpeg`, `.webp`, `.pdf`
+  - optional include later: `.gif`, `.svg`, `.avif`, `.mp4`, `.webm` as needed
+- Validation policy:
+  - frontmatter/markdown checks apply only to `src/content/**`
+  - no markdown schema checks for `src/assets/**`
+- Stale-file decision applies to both mapped content and mapped asset destinations
+
+## Recommendation: Images inside assets or not
+
+Recommended: keep images inside `src/assets/images`.
+
+Why:
+
+- Matches Astro conventions and your desired hierarchy
+- Simplifies sync configuration and user onboarding
+- Avoids split mental model between `src/images` and other asset roots
+- Keeps future migration to external object storage straightforward
+
+## Future Object Storage Strategy (Not Implemented Now)
+
+Short-term: keep repo-synced assets for editorial simplicity.
+
+Near-future migration options:
+
+1. Cloudflare R2 + public/custom domain URLs
+   - Best fit with current Cloudflare stack
+   - S3-compatible API for tooling flexibility
+2. S3-compatible provider alternative
+   - Similar architecture, different provider economics/performance
+
+Pragmatic migration path:
+
+- Phase A keep current local/repo sync
+- Phase B add optional upload manifest step for selected large assets
+- Phase C rewrite asset references to external URLs at build-time or prebuild
+- Phase D retain repo fallback for critical assets
+
 ## Acceptance Criteria
 
 - Works on Windows and Linux using Node.js only
@@ -251,4 +311,5 @@ Add scheduled checks using system scheduler options such as cron or platform equ
 - Stale file decision explicitly required each run when stale exists
 - Backup location is outside published content tree
 - Validation failures stop commit/push and are understandable to non-technical users
-- Sync touches only mapped content and backup paths, preserving normal Astro/dev workflow
+- Sync touches only mapped content and mapped asset paths, preserving normal Astro/dev workflow
+- Canonical project structure remains `src/content` and `src/assets` with images in `src/assets/images`

@@ -1,5 +1,6 @@
 ---
 import {SEO} from 'astro-seo';
+import aletheiaLogo from '@images/aletheia-logo.png';
 
 export interface Props {
   title: string;
@@ -27,7 +28,7 @@ const { title, description } = Astro.props;
       basic: {
         title: title,
         type: 'website',
-        image: '/images/aletheia-logo.png',
+        image: aletheiaLogo.src,
       },
     }}
   />
