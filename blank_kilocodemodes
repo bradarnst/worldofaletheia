@@ -1,0 +1,7 @@
+# Project-level custom modes for World of Aletheia
+#
+# Note: Code and Architect modes are defined globally and pick up
+# project-specific rules from .kilo/rules-code/ and .kilo/rules-architect/
+# respectively. Only modes unique to this project should be defined here.
+
+customModes: []
