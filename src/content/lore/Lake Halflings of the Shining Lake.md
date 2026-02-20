@@ -25,7 +25,7 @@ Unlike old tales that cast smallfolk as wary of deep water, lake halflings are c
 
 They remain unmistakably halfling in temperament: communal, comfort-minded, and measured. But their horizon is water rather than grass.
 
-![[Halflings on the Shore of The Shining Lake.png]]
+![Halflings on the Shore of The Shining Lake](<../../assets/images/Halflings on the Shore of The Shining Lake.png>)
 
 ---
 

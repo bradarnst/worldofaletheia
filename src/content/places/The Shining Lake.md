@@ -38,7 +38,7 @@ Roughly circular in form, the Shining Lake:
 - Anchors multiple shoreline nations
     
 
-Though very large, it does not possess the continental dominance of the [[The Great Inland Sea]]. It is a regional heart rather than a maritime engine.
+Though very large, it does not possess the continental dominance of the [The Great Inland Sea](/places/the-great-inland-sea). It is a regional heart rather than a maritime engine.
 
 Seasonal storms sweep across its surface, and whitecaps on “the Shine” are well known to lake sailors.
 

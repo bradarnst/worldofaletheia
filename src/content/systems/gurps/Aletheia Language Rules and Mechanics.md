@@ -3,17 +3,16 @@ title: Aletheia Language Rules and Mechanics
 layer: using
 collection: systems
 type: language
-subtype: 
+subtype:
 ttrpg: gurps
 status: draft
 secret: false
 author: Barry
 permissions: public
 created: 2026-02-18 10:20
-modified: 2026-02-18 10:20
+modified: 2026-02-20T17:01:11+01:00
 tags:
-- languages
-
+  - languages
 ---
 ## Language Ability in GURPS
 

@@ -18,7 +18,7 @@ Tea is a cultivated evergreen shrub whose leaves are dried, cured, and infused t
 
 Tea is culturally distinct from kafa. Where kafa is alert, social, and occasionally loud about it, tea is patient, layered, and perfectly comfortable steeping in silence while empires negotiate trade agreements.
 
-![[Tea Plant.png]]
+![Tea Plant](<../../assets/images/Tea Plant.png>)
 
 ---
 

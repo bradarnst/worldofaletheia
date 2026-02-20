@@ -139,7 +139,7 @@ Primary Terrain: Rivers, docks, trade nodes
     
 (As you said: present, important, but not your current concern.)
 
-## [[The Vaelkyn]]
+## [The Vaelkyn](/sentients/the-vaelkyn)
 
 _Unconfirmed_
 

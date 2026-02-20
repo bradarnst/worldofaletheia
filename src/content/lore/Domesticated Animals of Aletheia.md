@@ -311,4 +311,4 @@ However, mounted combat doctrine, cavalry organization, and battlefield integrat
 
 For a deeper treatment of cavalry roles, tactical formations, and regional doctrine, see:
 
-→ [[Mounted Warfare in Aletheia]]
+→ [Mounted Warfare in Aletheia](/lore/mounted-warfare-in-aletheia)

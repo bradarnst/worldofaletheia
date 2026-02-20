@@ -28,9 +28,9 @@ Yet across the grasslands, they are rarely unprepared.
 The Karven has become the defining companion of halfling mobility—a patrol mount, messenger platform, and symbol of quiet vigilance.
 
 For biological details of the species, see:  
-[[Karven]]
+[Karven](/bestiary/karven)
 
-![[Savanna Halfling Karven-Rider on Patrol.png]]
+![Savanna Halfling Karven-Rider on Patrol](<../../assets/images/Savanna Halfling Karven-Rider on Patrol.png>)
 
 ---
 

@@ -16,27 +16,27 @@ created: 2026-02-16T15:00:42-05:00
 
 ## The Main Pantheon
 
-### [[Benedict—Master of War]]
+### [Benedict—Master of War](/sentients/benedict-master-of-war)
 
 Benedict is the god of war, law, and discipline. He governs conflict conducted under rules, structure, and responsibility. Soldiers, officers, and enforcers honour Benedict when force must be used without chaos or cruelty. He teaches that violence must be controlled and accountable, and that discipline prevents destruction. Benedict represents order maintained through training, restraint, and clear command.
 
-### [[Bleys—The Laughing Blade]]
+### [Bleys—The Laughing Blade](/sentients/bleys-the-laughing-blade)
 
 Bleys is the god of courage, loyalty, planning, and shared resolve. He represents bold action supported by preparation, trust, and morale. Adventurers, scouts, and companions honour Bleys before dangerous undertakings and after shared success. He teaches that fear is natural, but courage is a choice strengthened by planning and fellowship. Humour, celebration, and shared stories fall under his influence as sources of resilience.
 
-### [[Caine—The Quiet Shield]]
+### [Caine—The Quiet Shield](/sentients/caine-the-quiet-shield)
 
 Caine is the god of peace, restraint, and defence. He represents vigilance, patience, and the strength required to prevent violence. Guards, peacekeepers, and veterans honour Caine when holding borders, maintaining truces, or standing watch over fragile stability. He teaches that peace is not passive and that restraint is a form of power. Caine embodies endurance and the quiet labour of keeping conflict contained.
 
-### [[Corwin—The One Who Sets Things Right]]
+### [Corwin—The One Who Sets Things Right](/sentients/corwin-the-one-who-sets-things-right)
 
 Corwin is the god of truth, justice, and rightful authority. He represents the belief that power must answer to moral responsibility and that wrongs can be set right. Corwin is honoured by judges, rulers, advocates, and those who seek fairness in law and governance. He teaches that authority without integrity is illegitimate and that justice exists to restore balance rather than to satisfy cruelty. Corwin stands as the moral centre of public life and is widely respected across cultures.
 
-### [[Dara—The Mother]]
+### [Dara—The Mother](/sentients/dara-the-mother)
 
 Dara is the goddess of fertility, motherhood, and the continuity of life. She governs birth, growth, nourishment, and the survival of families and communities across generations. Dara is honoured by parents, farmers, and caregivers seeking health, abundance, and protection for the future. She teaches that life requires patience, care, and endurance. Dara represents growth through nurturing rather than conquest.
 
-### [[Deirdre—The Binding Heart]]
+### [Deirdre—The Binding Heart](/sentients/deirdre-the-binding-heart)
 
 Deirdre is the goddess of love, devotion, and loyalty. She governs bonds freely chosen and sustained through trust, sacrifice, and honesty. Deirdre is honoured in marriage, partnership, reconciliation, and moments when commitment is tested. She teaches that love gives meaning to duty and that loyalty must never excuse harm or falsehood. Deirdre represents the emotional ties that hold families, communities, and alliances together.
 

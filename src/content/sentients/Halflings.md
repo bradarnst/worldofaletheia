@@ -344,8 +344,8 @@ They adjust their tools and routines to the land, but their cultural foundations
 
 Several regional halfling traditions are explored in greater detail:
 
-- _[[Karven Riding Halflings of the Savanna]]_
-- _[[Lake Halflings of the Shining Lake]]_
+- _[Karven Riding Halflings of the Savanna](/lore/karven-riding-halflings-of-the-savanna)_
+- _[Lake Halflings of the Shining Lake](/lore/lake-halflings-of-the-shining-lake)_
 - _(Future: Forest Hedge Circles)_
 
 ---

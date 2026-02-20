@@ -8,7 +8,7 @@ secret: false
 permissions: public
 author: Brad, Barry
 created: 2026-02-15
-modified: 2026-02-17T22:59:30+01:00
+modified: 2026-02-20T16:47:26+01:00
 summary: A working overview of Aletheia’s content structure, including collections, types, and principles for article growth and future type naming.
 ---
 
