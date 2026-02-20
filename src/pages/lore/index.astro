@@ -4,11 +4,12 @@ import WorldAletheiaLayout from '@layouts/WorldAletheiaLayout.astro';
 import ContentCard from '@components/ContentCard.astro';
 import TagCloud from '@components/TagCloud.astro';
 import wheatFields from '@images/wheat-fields.png';
+import { getFilteredCollection } from '@utils/content-filter';
 
 const lore = await getCollection('lore');
-const publishedLore = lore.filter((item) => item.data.status === 'publish');
+const visibleLore = getFilteredCollection(lore);
 
-const allTags = [...new Set(publishedLore.flatMap(item => item.data.tags))];
+const allTags = [...new Set(visibleLore.flatMap(item => item.data.tags))];
 ---
 
 <WorldAletheiaLayout title="Lore - World of Aletheia" description="Explore the rich history, mythology, and world-building of Aletheia">
@@ -21,11 +22,11 @@ const allTags = [...new Set(publishedLore.flatMap(item => item.data.tags))];
     <div class="mb-12">
       <h2 class="text-2xl font-bold text-ink-950 mb-6">Latest Lore</h2>
       
-      {publishedLore.length === 0 ? (
+      {visibleLore.length === 0 ? (
         <p class="meta-muted">No lore entries found.</p>
       ) : (
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {publishedLore.map((item, index) => (
+          {visibleLore.map((item, index) => (
             <ContentCard content={item} image={index % 2 === 0 ? wheatFields : undefined} />
           ))}
         </div>

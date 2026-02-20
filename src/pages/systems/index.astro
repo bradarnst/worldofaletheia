@@ -4,11 +4,12 @@ import UsingAletheiaLayout from '@layouts/UsingAletheiaLayout.astro';
 import ContentCard from '@components/ContentCard.astro';
 import TagCloud from '@components/TagCloud.astro';
 import boatInMangroves from '@images/boat-in-mangroves.png';
+import { getFilteredCollection } from '@utils/content-filter';
 
 const systems = await getCollection('systems');
-const publishedSystems = systems.filter((item) => item.data.status === 'publish');
+const visibleSystems = getFilteredCollection(systems);
 
-const allTags = [...new Set(publishedSystems.flatMap(item => item.data.tags))];
+const allTags = [...new Set(visibleSystems.flatMap(item => item.data.tags))];
 ---
 
 <UsingAletheiaLayout title="Systems - World of Aletheia" description="Explore magic, combat, skill, economy, and social systems of Aletheia">
@@ -21,11 +22,11 @@ const allTags = [...new Set(publishedSystems.flatMap(item => item.data.tags))];
     <div class="mb-12">
       <h2 class="text-2xl font-bold text-ink-950 mb-6">Latest Systems</h2>
       
-      {publishedSystems.length === 0 ? (
+      {visibleSystems.length === 0 ? (
         <p class="meta-muted">No published system entries found.</p>
       ) : (
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {publishedSystems.map((item, index) => (
+          {visibleSystems.map((item, index) => (
             <ContentCard content={item} image={index % 2 === 0 ? boatInMangroves : undefined} />
           ))}
         </div>

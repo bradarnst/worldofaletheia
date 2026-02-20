@@ -4,11 +4,12 @@ import WorldAletheiaLayout from '@layouts/WorldAletheiaLayout.astro';
 import ContentCard from '@components/ContentCard.astro';
 import TagCloud from '@components/TagCloud.astro';
 import dwarvenMountainEntrance from '@images/dwarven-mountain-entrance.png';
+import { getFilteredCollection } from '@utils/content-filter';
 
 const factions = await getCollection('factions');
-const publishedFactions = factions.filter((item) => item.data.status === 'publish');
+const visibleFactions = getFilteredCollection(factions);
 
-const allTags = [...new Set(publishedFactions.flatMap(item => item.data.tags))];
+const allTags = [...new Set(visibleFactions.flatMap(item => item.data.tags))];
 ---
 
 <WorldAletheiaLayout title="Factions - World of Aletheia" description="Discover guilds, kingdoms, cults, and other organizations of Aletheia">
@@ -21,11 +22,11 @@ const allTags = [...new Set(publishedFactions.flatMap(item => item.data.tags))];
     <div class="mb-12">
       <h2 class="text-2xl font-bold text-ink-950 mb-6">Latest Factions</h2>
       
-      {publishedFactions.length === 0 ? (
+      {visibleFactions.length === 0 ? (
         <p class="meta-muted">No published faction entries found.</p>
       ) : (
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {publishedFactions.map((item, index) => (
+          {visibleFactions.map((item, index) => (
             <ContentCard content={item} image={index % 2 === 0 ? dwarvenMountainEntrance : undefined} />
           ))}
         </div>

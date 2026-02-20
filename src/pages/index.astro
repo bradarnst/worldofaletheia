@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content';
 import Layout from '@layouts/MainSiteLayout.astro';
 import RandomHeroImage from '@components/RandomHeroImage.astro';
+import { getFilteredCollection } from '@utils/content-filter';
 
 const utcDay = Math.floor(Date.now() / 86400000);
 
@@ -30,9 +31,18 @@ const [lore, places, sentients, bestiary, flora, factions, systems, campaigns, m
   getCollection('sessions'),
 ]);
 
+const visibleLore = getFilteredCollection(lore);
+const visiblePlaces = getFilteredCollection(places);
+const visibleSentients = getFilteredCollection(sentients);
+const visibleBestiary = getFilteredCollection(bestiary);
+const visibleFlora = getFilteredCollection(flora);
+const visibleFactions = getFilteredCollection(factions);
+const visibleSystems = getFilteredCollection(systems);
+const visibleMeta = getFilteredCollection(meta);
+const visibleSessions = getFilteredCollection(sessions);
+
 const discoveryPool: DiscoveryItem[] = [
-  ...lore
-    .filter((item) => item.data.status === 'publish')
+  ...visibleLore
     .map((item) => ({
       id: `lore:${item.id}`,
       title: item.data.title,
@@ -41,8 +51,7 @@ const discoveryPool: DiscoveryItem[] = [
       domain: 'Canon',
       url: `/lore/${item.id}`,
     })),
-  ...places
-    .filter((item) => item.data.status === 'publish')
+  ...visiblePlaces
     .map((item) => ({
       id: `places:${item.id}`,
       title: item.data.title,
@@ -51,8 +60,7 @@ const discoveryPool: DiscoveryItem[] = [
       domain: 'Canon',
       url: `/places/${item.id}`,
     })),
-  ...sentients
-    .filter((item) => item.data.status === 'publish')
+  ...visibleSentients
     .map((item) => ({
       id: `sentients:${item.id}`,
       title: item.data.title,
@@ -61,8 +69,7 @@ const discoveryPool: DiscoveryItem[] = [
       domain: 'Canon',
       url: `/sentients/${item.id}`,
     })),
-  ...bestiary
-    .filter((item) => item.data.status === 'publish')
+  ...visibleBestiary
     .map((item) => ({
       id: `bestiary:${item.id}`,
       title: item.data.title,
@@ -71,8 +78,7 @@ const discoveryPool: DiscoveryItem[] = [
       domain: 'Canon',
       url: `/bestiary/${item.id}`,
     })),
-  ...flora
-    .filter((item) => item.data.status === 'publish')
+  ...visibleFlora
     .map((item) => ({
       id: `flora:${item.id}`,
       title: item.data.title,
@@ -81,8 +87,7 @@ const discoveryPool: DiscoveryItem[] = [
       domain: 'Canon',
       url: `/flora/${item.id}`,
     })),
-  ...factions
-    .filter((item) => item.data.status === 'publish')
+  ...visibleFactions
     .map((item) => ({
       id: `factions:${item.id}`,
       title: item.data.title,
@@ -91,8 +96,7 @@ const discoveryPool: DiscoveryItem[] = [
       domain: 'Canon',
       url: `/factions/${item.id}`,
     })),
-  ...systems
-    .filter((item) => item.data.status === 'publish')
+  ...visibleSystems
     .map((item) => ({
       id: `systems:${item.id}`,
       title: item.data.title,
@@ -101,8 +105,7 @@ const discoveryPool: DiscoveryItem[] = [
       domain: 'Using',
       url: `/systems/${item.id}`,
     })),
-  ...meta
-    .filter((item) => item.data.status === 'publish')
+  ...visibleMeta
     .map((item) => ({
       id: `meta:${item.id}`,
       title: item.data.title,
@@ -124,8 +127,7 @@ const discoveryPool: DiscoveryItem[] = [
         url: `/campaigns/${campaignSlug}`,
       };
     }),
-  ...sessions
-    .filter((item) => item.data.status === 'publish')
+  ...visibleSessions
     .map((item) => {
       const parts = item.id.split('/');
       const campaignSlug = parts[0];
@@ -247,3 +249,4 @@ const randomItem = randomPool.length > 0 ? randomPool[randomIndex] : null;
     </div>
   </section>
 </Layout>
+

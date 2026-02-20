@@ -4,11 +4,12 @@ import WorldAletheiaLayout from '@layouts/WorldAletheiaLayout.astro';
 import ContentCard from '@components/ContentCard.astro';
 import TagCloud from '@components/TagCloud.astro';
 import jungleRuin from '@images/jungle-ruin.png';
+import { getFilteredCollection } from '@utils/content-filter';
 
 const bestiary = await getCollection('bestiary');
-const publishedBestiary = bestiary.filter((item) => item.data.status === 'publish');
+const visibleBestiary = getFilteredCollection(bestiary);
 
-const allTags = [...new Set(publishedBestiary.flatMap(item => item.data.tags))];
+const allTags = [...new Set(visibleBestiary.flatMap(item => item.data.tags))];
 ---
 
 <WorldAletheiaLayout title="Bestiary - World of Aletheia" description="Explore monsters, beasts, and other creatures of Aletheia">
@@ -21,11 +22,11 @@ const allTags = [...new Set(publishedBestiary.flatMap(item => item.data.tags))];
     <div class="mb-12">
       <h2 class="text-2xl font-bold text-ink-950 mb-6">Latest Bestiary Entries</h2>
       
-      {publishedBestiary.length === 0 ? (
+      {visibleBestiary.length === 0 ? (
         <p class="meta-muted">No published bestiary entries found.</p>
       ) : (
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {publishedBestiary.map((item, index) => (
+          {visibleBestiary.map((item, index) => (
             <ContentCard content={item} image={index % 2 === 0 ? jungleRuin : undefined} />
           ))}
         </div>

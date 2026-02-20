@@ -4,11 +4,12 @@ import WorldAletheiaLayout from '@layouts/WorldAletheiaLayout.astro';
 import ContentCard from '@components/ContentCard.astro';
 import TagCloud from '@components/TagCloud.astro';
 import forestRoad from '@images/forest-road.png';
+import { getFilteredCollection } from '@utils/content-filter';
 
 const sentients = await getCollection('sentients');
-const publishedSentients = sentients.filter((item) => item.data.status === 'publish');
+const visibleSentients = getFilteredCollection(sentients);
 
-const allTags = [...new Set(publishedSentients.flatMap(item => item.data.tags))];
+const allTags = [...new Set(visibleSentients.flatMap(item => item.data.tags))];
 ---
 
 <WorldAletheiaLayout title="Sentients - World of Aletheia" description="Learn about races, species, cultures, and organizations of Aletheia">
@@ -21,11 +22,11 @@ const allTags = [...new Set(publishedSentients.flatMap(item => item.data.tags))]
     <div class="mb-12">
       <h2 class="text-2xl font-bold text-ink-950 mb-6">Latest Sentients</h2>
       
-      {publishedSentients.length === 0 ? (
+      {visibleSentients.length === 0 ? (
         <p class="meta-muted">No published sentient entries found.</p>
       ) : (
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {publishedSentients.map((item, index) => (
+          {visibleSentients.map((item, index) => (
             <ContentCard content={item} image={index % 2 === 0 ? forestRoad : undefined} />
           ))}
         </div>

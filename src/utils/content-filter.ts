@@ -6,28 +6,34 @@
  * @returns boolean - Whether the content should be included
  */
 export function shouldIncludeContent(content: any, environment: string = 'production'): boolean {
-  // Always include published content in all environments
-  if (content.status === 'publish') {
+  const data = content?.data ?? content;
+  if (!data) {
+    return false;
+  }
+
+  // Keep secret content development-only regardless of workflow state.
+  if (data.secret) {
+    return environment === 'development';
+  }
+
+  // Always include published content in all environments.
+  if (data.status === 'publish' || data.status === 'published') {
     return true;
   }
   
-  if (content.status === 'review') {
+  if (data.status === 'review') {
     return true; // Include review content in all environments for testing purposes
   }
   
-  // Include draft content only in development and preview environments
-  if (content.status === 'draft') {
+  // TEMPORARY POLICY: drafts are currently included in all environments and visually flagged in UI.
+  // Decision pending dedicated draft-preview workflow.
+  if (data.status === 'draft') {
     return true; // Include drafts in all environments for testing purposes
     // return environment !== 'production';
   }
-  
-  // Include secret content only in development environment
-  if (content.secret) {
-    return environment === 'development';
-  }
-  
+
   // Include archived content only in development environment
-  if (content.status === 'archive') {
+  if (data.status === 'archive' || data.status === 'archived') {
     return environment === 'development';
   }
   
@@ -53,7 +59,10 @@ export function getFilteredCollection(collection: any[], environment: string = '
  * @returns Filtered content array for the author
  */
 export function getAuthorEntries(collection: any[], author: string): any[] {
-  return collection.filter((item) => item.author === author);
+  return collection.filter((item) => {
+    const data = item?.data ?? item;
+    return data.author === author;
+  });
 }
 
 /**
@@ -64,5 +73,8 @@ export function getAuthorEntries(collection: any[], author: string): any[] {
  * @returns Filtered content array for the campaign
  */
 export function getCampaignEntries(collection: any[], campaign: string): any[] {
-  return collection.filter((item) => item.campaign === campaign);
+  return collection.filter((item) => {
+    const data = item?.data ?? item;
+    return data.campaign === campaign;
+  });
 }
