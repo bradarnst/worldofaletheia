@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { buildWikiLinkIndex, transformObsidianLinks } from './obsidian-links.mjs';
 
 function timestamp() {
   const d = new Date();
@@ -15,10 +16,22 @@ export async function applySync(diff, config, staleAction) {
   const changedFiles = [];
   const backupSession = timestamp();
   const backupRootForRun = path.resolve(config.resolvedBackupRoot, backupSession);
+  const wikiIndex = await buildWikiLinkIndex(config.repoRoot);
 
   for (const rec of [...diff.grouped.new, ...diff.grouped.updated]) {
     await ensureParent(rec.destAbs);
-    await fs.copyFile(rec.sourceAbs, rec.destAbs);
+    const sourceExt = path.extname(rec.sourceAbs).toLowerCase();
+    if (sourceExt === '.md') {
+      const sourceText = await fs.readFile(rec.sourceAbs, 'utf8');
+      const transformed = transformObsidianLinks(sourceText, {
+        destAbs: rec.destAbs,
+        repoRoot: config.repoRoot,
+        wikiIndex,
+      });
+      await fs.writeFile(rec.destAbs, transformed, 'utf8');
+    } else {
+      await fs.copyFile(rec.sourceAbs, rec.destAbs);
+    }
     changedFiles.push(rec.destAbs);
   }
 
@@ -48,4 +61,3 @@ export async function applySync(diff, config, staleAction) {
     backupRootForRun: staleAction === 'backup' && diff.grouped.stale.length ? backupRootForRun : null,
   };
 }
-

@@ -148,6 +148,10 @@ export async function validateContentTree(config) {
       failures.push(`${relPath} has empty wiki link [[ ]]`);
     }
 
+    if (/!\[\[[^\]]+\]\]|\[\[[^\]]+\]\]/.test(text)) {
+      warnings.push(`${relPath} contains Obsidian wiki syntax; run content sync to normalize links/embeds`);
+    }
+
     for (const headingIssue of checkHeadings(text)) {
       warnings.push(`${relPath} ${headingIssue}`);
     }

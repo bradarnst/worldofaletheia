@@ -11,8 +11,30 @@ The command in [`scripts/content-sync/index.mjs`](scripts/content-sync/index.mjs
 3. Show a dry-run report
 4. Ask what to do with stale files (`remove`, `backup`, or `abort`)
 5. Copy/update files
+6. Normalize Obsidian wiki syntax in Markdown (for `src/content/**` mappings):
+   - `[[Page Name]]` -> standard Markdown link with resolved site route
+   - `![[Image Name.png]]` -> standard Markdown image link targeting `src/assets/images`
 6. Validate Markdown/frontmatter (for content folders)
 7. Commit and push
+
+## Obsidian link/embed conversion behavior
+
+During [`pnpm content:sync`](package.json), Markdown files under `src/content/**` are transformed to normalize Obsidian syntax before validation/build.
+
+What is converted:
+
+- `[[Some Article]]` -> `[Some Article](/collection/slug)` (route resolved from known content entries)
+- `![[Some Image.png]]` -> `![Some Image](relative/path/to/src/assets/images/Some Image.png)`
+
+Why this exists:
+
+- Astro content rendering does not natively interpret Obsidian wikilink/embed syntax.
+- Normalizing at sync-time ensures static pages render clickable links and image embeds consistently.
+
+Operational note:
+
+- Existing Markdown already in repo is normalized on the next sync run.
+- If validation warns about remaining wiki syntax, run full sync again and confirm the file is part of a `src/content/**` mapping.
 
 ## One-time setup
 

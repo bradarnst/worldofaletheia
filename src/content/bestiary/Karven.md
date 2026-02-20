@@ -5,7 +5,7 @@ collection: bestiary
 type: animal
 subtype:
 status: draft
-secret: true
+secret: false
 author: Brad
 permissions: public
 created: 2026-02-20 01:13

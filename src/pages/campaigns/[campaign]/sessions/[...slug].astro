@@ -4,30 +4,43 @@ import CampaignsContentLayout from '@layouts/CampaignsContentLayout.astro';
 
 export async function getStaticPaths() {
   const sessionsCollection = await getCollection('sessions');
+  const uniqueParams = new Set<string>();
+  const paths: Array<{ params: { campaign: string; slug: string } }> = [];
 
-  return sessionsCollection.map((item) => {
+  for (const item of sessionsCollection) {
     const parts = item.id.split('/');
-    const campaign = parts[0];
+    const campaign = item.data.campaign;
     const slug = parts[parts.length - 1];
+    const key = `${campaign}:${slug}`;
 
-    return {
-      params: { campaign, slug },
-    };
-  });
+    if (uniqueParams.has(key)) {
+      continue;
+    }
+
+    uniqueParams.add(key);
+    paths.push({ params: { campaign, slug } });
+  }
+
+  return paths;
 }
 
 // Get params from URL
 const { campaign, slug } = Astro.params;
 
-const campaignEntry =
-  (await getEntry('campaigns', campaign!)) ??
-  (await getEntry('campaigns', `${campaign}/index`));
+const campaignEntry = (await getCollection('campaigns')).find((entry) => {
+  const campaignSlug = entry.id.replace(/\/index$/, '');
+  return campaignSlug === campaign || entry.data.campaign === campaign;
+});
 
 if (!campaignEntry) {
   return Astro.redirect('/404');
 }
 
-const sessionEntry = await getEntry('sessions', `${campaign}/sessions/${slug}`);
+const sessionEntry = (await getCollection('sessions')).find((entry) => {
+  const parts = entry.id.split('/');
+  const sessionSlug = parts[parts.length - 1];
+  return entry.data.campaign === campaign && sessionSlug === slug;
+});
 if (!sessionEntry) {
   return Astro.redirect('/404');
 }
@@ -55,7 +68,16 @@ const campaignDetail = {
 
 // Get all sessions for navigation
 const allSessionEntries = await getCollection('sessions', (entry) => entry.data.campaign === campaign);
-const sortedSessions = allSessionEntries
+const uniqueSessionsBySlug = new Map<string, (typeof allSessionEntries)[number]>();
+for (const entry of allSessionEntries) {
+  const parts = entry.id.split('/');
+  const sessionSlug = parts[parts.length - 1];
+  if (!uniqueSessionsBySlug.has(sessionSlug)) {
+    uniqueSessionsBySlug.set(sessionSlug, entry);
+  }
+}
+
+const sortedSessions = Array.from(uniqueSessionsBySlug.values())
   .map((entry) => {
     const parts = entry.id.split('/');
     return {
