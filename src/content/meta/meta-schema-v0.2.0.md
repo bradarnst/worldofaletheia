@@ -10,6 +10,7 @@ author: Brad
 modified: 2026-02-15T11:42:10+01:00
 created: 2026-02-12T16:40:23+01:00
 ---
+# Aletheia Content Schema (v0.2.0)
 
 ## Core Principles
 

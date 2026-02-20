@@ -8,26 +8,26 @@ author: Brad
 status: publish
 secret: false
 created: 2026-02-12T16:07:48+01:00
-modified: 2026-02-15T16:04:16+01:00
+modified: 2026-02-19T21:45:28+01:00
 tags:
   - jungle
 ---
 
-> **Important framing:**  
+> Important framing:  
 > This jungle is vast. Most of it is _not controlled_ by anyone.  
 > Large tracts remain true wilderness: predators, spirits, disease, and ruin-choked green with no permanent sentient presence.
 
 What follows are the _exceptions_, not the rule.
 
-## 1. Lizardfolk — The Continuous Inhabitants
+## Lizardfolk — The Continuous Inhabitants
 
-**Status:** Indigenous, uninterrupted presence  
-**Scale:** Numerous but dispersed  
-**Primary Terrain:** Rivers, wetlands, floodplains, deep jungle margins
+Status: Indigenous, uninterrupted presence  
+Scale: Numerous but dispersed  
+Primary Terrain: Rivers, wetlands, floodplains, deep jungle margins
 
 ### Role in the Jungle
 
-- The only people who **never fully left**
+- The only people who never fully left
 - Organised around waterways, seasons, and ecological balance
 - Long memory, but not myth-driven
 - Do not seek dominance; seek continuity
@@ -44,11 +44,11 @@ What follows are the _exceptions_, not the rule.
 - Cultural memory of pre- and post-Cataclysm jungle life
 - Judges of others, quietly and pragmatically
     
-## 2. Goblins — The Adaptive Inheritors
+## Goblins — The Adaptive Inheritors
 
-**Status:** Long-term settlers (post-human collapse)  
-**Scale:** Numerous, fragmented, resilient  
-**Primary Terrain:** Ruins, overgrown infrastructure, marginal zones
+Status: Long-term settlers (post-human collapse)  
+Scale: Numerous, fragmented, resilient  
+Primary Terrain: Ruins, overgrown infrastructure, marginal zones
 
 ### Role in the Jungle
 
@@ -70,15 +70,15 @@ What follows are the _exceptions_, not the rule.
 - Guides, scavengers, survivors
 - Know _where not to go_ better than anyone
 
-## 3. Orcs — Rotational Territorial Dominants
+## Orcs — Rotational Territorial Dominants
 
-**Status:** Established, expanding  
-**Scale:** Moderate but forceful  
-**Primary Terrain:** Clearings, ridges, river corridors, transition zones
+Status: Established, expanding  
+Scale: Moderate but forceful  
+Primary Terrain: Clearings, ridges, river corridors, transition zones
 
 ### Lifestyle
 
-- **Rotational / circuit nomadism**
+- Rotational / circuit nomadism
 - Semi-permanent return camps
 - Large operational territories rather than dense settlement
 - Assert dominance through movement and presence
@@ -95,16 +95,16 @@ What follows are the _exceptions_, not the rule.
 - Cause of displacement and conflict
 - Prove that the jungle _can_ be taken — at a cost
 
-## 4. Hobgoblins — External Controllers
+## Hobgoblins — External Controllers
 
-**Status:** Peripheral but strategic  
-**Scale:** Limited, disciplined  
-**Primary Terrain:** Savanna, grassland, seasonal forest (edges)
+Status: Peripheral but strategic  
+Scale: Limited, disciplined  
+Primary Terrain: Savanna, grassland, seasonal forest (edges)
 
 ### Jungle Presence
 
-- Permanent bases **outside** the jungle
-- Rotational deployments **into** jungle strongpoints
+- Permanent bases outside the jungle
+- Rotational deployments into jungle strongpoints
 - High attrition, strict discipline, morale strain
     
 ### Role
@@ -119,11 +119,11 @@ What follows are the _exceptions_, not the rule.
 - Brittleness of imposed control
 - Tactical actors, not ecological ones
     
-## 5. Humans — River-Bound Exploiters (Secondary Focus)
+## Humans — River-Bound Exploiters (Secondary Focus)
 
-**Status:** Recent returners (centuries)  
-**Scale:** Sparse, clustered  
-**Primary Terrain:** Rivers, docks, trade nodes
+Status: Recent returners (centuries)  
+Scale: Sparse, clustered  
+Primary Terrain: Rivers, docks, trade nodes
 
 ### Role
 
@@ -139,43 +139,55 @@ What follows are the _exceptions_, not the rule.
     
 (As you said: present, important, but not your current concern.)
 
-## 6. The Vaelkyn — Burdened Custodians
+## [[The Vaelkyn]]
 
-**Status:** Near-extinct remnant species  
-**Scale:** Extremely rare (3–5 groups)  
-**Primary Terrain:** Specific ruin-complexes and lattice-scarred sites
+_Unconfirmed_
 
-### Core Nature
+Scale: Extremely rare; most accounts disputed  
+Primary Terrain: Deep jungle; occasionally associated with older ruins
 
-- Freed from enslavement, but bound by duty
-- Haunted by ancestral guilt
-- Fear leaving due to perceived weakening
-- Hate staying because of what it represents
+### What Is Reported
 
-### Role
-
-- Watchers, not rulers
-- Intervene only when corruption risks escalation
-- Protect power they wish were gone
-
-### Tragedy
-
-- They do not know how to destroy the evil
-- Believe doing so requires power, knowledge, or artifacts they lack
-- Would help outsiders destroy it — even if it ends them
-- **Unknown truth:** most could survive if weaned off ruin influence
+- Tall, long-limbed figures glimpsed at the edge of sight
     
+- Appear suddenly and vanish just as quickly
+    
+- Descriptions vary too widely to confirm details
+    
+- Rare sightings sometimes occur near Black Empire ruins
+    
+- A handful of reports place them briefly near jungle settlements
+    
+- Encounters are isolated; no agreed pattern of behaviour
+    
+
+### Reputation
+
+- Treated as dangerous by those who believe in them
+    
+- Goblins avoid certain places without explanation
+    
+- Some orc bands mark particular clearings as ill-
+omened
+    
+- River-settlers dismiss most accounts as exaggeration
+    
+- More often spoken of in warning than in certainty
+    
+
 ### Narrative Function
 
-- Living moral consequence of the Cataclysm
-- Guardians of uncertainty
-- Proof that survival is not the same as healing
+- Persistent jungle rumour with recurring elements
     
+- Associated loosely with the deeper scars of the Black Empire
+    
+- A reminder that some parts of the jungle are not merely wild
+
 ## 7. Everyone Else: The Jungle Itself
 
-**Status:** Vast, dominant  
-**Scale:** Overwhelming  
-**Contents:**
+Status: Vast, dominant  
+Scale: Overwhelming  
+Contents:
 
 - Predators
 - Diseased zones

@@ -28,7 +28,7 @@ const baseSchema = z.object({
 // Collection-specific schemas
 const loreSchema = baseSchema.extend({
   title: z.string(),
-  type: z.enum(['mythology', 'history', 'geography', 'culture', 'language', 'warfare', 'domestication', 'magic', 'technology', 'structure','other']),
+  type: z.enum(['cosmology', 'religion', 'economy','history', 'geography', 'food_and_drink','culture', 'language', 'warfare', 'domestication', 'magic', 'technology', 'structure','other']),
   excerpt: z.string().optional(),
 });
 
@@ -51,14 +51,14 @@ const sentientsSchema = baseSchema.extend({
 
 const bestiarySchema = baseSchema.extend({
   title: z.string(),
-  type: z.enum(['monster', 'beast', 'spirit', 'construct', 'elemental']),
+  type: z.enum(['monster', 'animal','beast', 'spirit', 'construct', 'elemental']),
   excerpt: z.string().optional(),
   challengeRating: z.number().optional(),
 });
 
 const floraSchema = baseSchema.extend({
   title: z.string(),
-  type: z.enum(['tree', 'flower', 'fungus', 'herb', 'plant']),
+  type: z.enum(['tree', 'flower', 'fungus', 'herb', 'plant', 'crop']),
   excerpt: z.string().optional(),
 });
 
@@ -71,7 +71,7 @@ const factionsSchema = baseSchema.extend({
 
 const systemsSchema = baseSchema.extend({
   title: z.string(),
-  type: z.enum(['magic', 'combat', 'skill', 'economy', 'social']),
+  type: z.enum(['magic', 'combat', 'skill', 'language', 'character','economy', 'social']),
   excerpt: z.string().optional(),
 });
 

@@ -1,13 +1,13 @@
 ---
 title: The Ironbound
 layer: canon
-created: 2026-02-12T16:07:48+01:00
-modified: 2026-02-14T23:28:02+01:00
 collection: factions
 type: order
 status: publish
 secret: false
 author: Brad
+modified: 2026-02-16T04:15:06+01:00
+created: 2026-02-12T16:07:48+01:00
 ---
 
 The **Ironbound** are a distinctive mercenary culture known across much of Aletheia for three things:  

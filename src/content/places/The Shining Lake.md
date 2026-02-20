@@ -7,9 +7,11 @@ subtype: lake
 author: Brad
 status: publish
 secret: false
-modified: 2026-02-15T01:54:50+01:00
+modified: 2026-02-16T18:22:12+01:00
 created: 2026-02-13T01:41:43+01:00
 ---
+
+# The Shining Lake
 
 _Light, Relief, and Western Gathering Waters_
 

@@ -10,6 +10,7 @@ secret: false
 modified: 2026-02-15T01:54:25+01:00
 created: 2026-02-13T00:59:05+01:00
 ---
+# The Central Isthmus  
 *Wealth, Flow, and the Architecture of Influence*
 
 ## Overview

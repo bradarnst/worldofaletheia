@@ -2,15 +2,20 @@
 title: The Calendar of Aletheia
 layer: canon
 collection: lore
-type: structure
+type: culture
 status: draft
 secret: false
 permissions: public
 author: Brad
-modified: 2026-02-15T15:24:39+01:00
-created: 2026-02-13T14:29:49+01:00
+modified: 2026-02-16T18:22:12+01:00
+created: 2026-02-12T16:40:23+01:00
+tags:
+- calendar
+- dates
+- festival
 ---
 
+# The Calendar of Aletheia
 
 The calendar used across most of Aletheia is solar in structure, lunar in symbolism, and practical in daily life. It is older than the Cataclysm and was widely re-established afterward with little alteration. While local variations exist, the underlying system is remarkably consistent across regions.
 

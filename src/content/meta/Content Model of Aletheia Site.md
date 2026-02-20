@@ -8,7 +8,7 @@ secret: false
 permissions: public
 author: Brad, Barry
 created: 2026-02-15
-modified: 2026-02-15T16:02:53+01:00
+modified: 2026-02-17T22:59:30+01:00
 summary: A working overview of Aletheia’s content structure, including collections, types, and principles for article growth and future type naming.
 ---
 
@@ -22,7 +22,7 @@ This is a working model. It is stable enough to build upon, but flexible enough 
 
 ---
 
-# Structural Overview
+## Structural Overview
 
 Aletheia’s content operates on three structural levels:
 
@@ -37,13 +37,13 @@ They identify its structural focus.
 
 ---
 
-# Canon Collections and Types (Current Understanding)
+## Canon Collections and Types (Current Understanding)
 
 Below is our present working model for Canon content.
 
 ---
 
-## Sentients — Agency and Identity
+### Sentients — Agency and Identity
 
 The Sentients collection contains beings capable of agency, identity, and intentional action.
 
@@ -64,7 +64,7 @@ Agency defines this collection.
 
 ---
 
-## Bestiary — Species and Encounterable Creatures
+### Bestiary — Species and Encounterable Creatures
 
 The Bestiary contains biological or constructed beings treated primarily at the species level.
 
@@ -84,7 +84,7 @@ If a species possesses structured culture and agency, it may instead belong in S
 
 ---
 
-## Flora — Plant and Plant-Like Life
+### Flora — Plant and Plant-Like Life
 
 The Flora collection contains plant-based life.
 
@@ -98,7 +98,7 @@ If a plant develops agency, it ceases to be Flora and becomes Sentient.
 
 ---
 
-## Places — Space and Geography
+### Places — Space and Geography
 
 Places defines spatial reality. It answers:
 
@@ -118,7 +118,7 @@ It does not describe institutions (those belong in Factions).
 
 ---
 
-## Factions — Organized Power and Institutions
+### Factions — Organized Power and Institutions
 
 Factions contains structured groups with collective agency.
 
@@ -142,7 +142,7 @@ Orders are oath-bound institutions defined by internal code rather than territor
 
 ---
 
-## Lore — Knowledge, Domains, and World Structures
+### Lore — Knowledge, Domains, and World Structures
 
 Lore contains conceptual and systemic knowledge about the world.
 
@@ -179,7 +179,7 @@ The type identifies the article’s **center of gravity**, not its full content 
 
 ---
 
-# The “Center of Gravity” Principle
+## The “Center of Gravity” Principle
 
 An article’s type defines its primary structural focus.
 
@@ -198,7 +198,7 @@ Types define emphasis, not purity.
 
 ---
 
-# Article Evolution Model
+## Article Evolution Model
 
 Aletheia’s structure supports organic growth.
 
@@ -224,7 +224,7 @@ No article must begin perfectly scoped.
 
 ---
 
-# Guidelines for Naming New Types
+## Guidelines for Naming New Types
 
 When considering a new type, apply two tests.
 
@@ -242,7 +242,7 @@ If not, it may be better handled as a tag or subsection.
 
 ---
 
-## Prefer Concrete Domain Nouns
+### Prefer Concrete Domain Nouns
 
 Types should be:
 
@@ -267,7 +267,7 @@ The goal is clarity, not taxonomy for its own sake.
 
 ---
 
-# Controlled Growth
+## Controlled Growth
 
 The list of types is not immutable.
 
@@ -284,7 +284,7 @@ They are not improvised casually.
 
 ---
 
-# Final Orientation
+## Final Orientation
 
 The content model of Aletheia is designed to:
 
