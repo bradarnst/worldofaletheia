@@ -12,6 +12,7 @@ export interface HeroImageProps {
   sectionClass?: string;
   heightClass?: string;
   overlayClass?: string;
+  mediaClass?: string;
   contentClass?: string;
   titleClass?: string;
   textClass?: string;
@@ -26,7 +27,8 @@ const {
   ctaHref,
   sectionClass = 'max-w-7xl mx-auto px-4 lg:px-0',
   heightClass = 'min-h-[24rem]',
-  overlayClass = 'bg-black/45',
+  overlayClass = 'bg-transparent',
+  mediaClass = '',
   contentClass = 'hero-content text-neutral-content text-center px-6 relative z-10',
   titleClass = 'mb-4 text-4xl md:text-5xl font-bold font-lora',
   textClass = 'mb-6 text-base md:text-lg opacity-95',
@@ -37,16 +39,16 @@ const hasCta = Boolean(ctaLabel && ctaHref);
 const hasActionsSlot = Astro.slots.has('actions');
 ---
 
-<section class={sectionClass}>
+<section class={sectionClass} data-hero-title={title} data-hero-overlay={overlayClass} data-hero-media-class={mediaClass}>
   <div class={`hero ${heightClass} rounded-box overflow-hidden shadow-xl relative isolate`}>
     <Picture
       src={image}
       alt={safeAlt}
       widths={[640, 960, 1280, 1600]}
       formats={['avif', 'webp']}
-      class="absolute inset-0 h-full w-full object-cover"
+      class={`hero-image-media ${mediaClass} absolute inset-0 h-full w-full object-cover`}
     />
-    <div class={`hero-overlay ${overlayClass} absolute inset-0`}></div>
+    <div class={`hero-overlay ${overlayClass} absolute inset-0 opacity-0 pointer-events-none`} aria-hidden="true"></div>
     <div class={contentClass}>
       <div class="max-w-3xl">
         <h1 class={`hero-image-title ${titleClass}`}>{title}</h1>

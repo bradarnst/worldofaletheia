@@ -59,6 +59,14 @@ const selected = sourceImages.length > 0
   : { image: defaultImages[0].image, alt: '' };
 
 const safeAlt = selected.alt?.trim() || props.title;
+const darkerHeroImages = new Set<ImageMetadata>([
+  boatInMangroves,
+  dwarvenMountainEntrance,
+  forestRoad,
+  jungleRuin,
+  lakePort,
+]);
+const mediaClass = darkerHeroImages.has(selected.image) ? 'hero-image-media--dark' : '';
 ---
 
 <HeroImage
@@ -71,6 +79,7 @@ const safeAlt = selected.alt?.trim() || props.title;
   sectionClass={props.sectionClass}
   heightClass={props.heightClass}
   overlayClass={props.overlayClass}
+  mediaClass={mediaClass}
   contentClass={props.contentClass}
   titleClass={props.titleClass}
   textClass={props.textClass}
