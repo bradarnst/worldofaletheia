@@ -14,18 +14,19 @@
     "content:git": "node ./scripts/content-sync/index.mjs --git-only"
   },
   "dependencies": {
-    "@astrojs/cloudflare": "^12.6.12",
+    "@astrojs/cloudflare": "13.0.0-beta.8",
     "@astrojs/tailwind": "^6.0.2",
-    "@tailwindcss/vite": "^4.1.18",
-    "astro": "^6.0.0-beta.3",
+    "@tailwindcss/vite": "^4.2.0",
+    "astro": "6.0.0-beta.14",
     "astro-seo": "^1.1.0",
     "fuse.js": "^7.1.0",
-    "tailwindcss": "^4.1.18"
+    "tailwindcss": "^4.2.0"
   },
   "devDependencies": {
-    "daisyui": "^5.5.14",
+    "daisyui": "^5.5.19",
+    "miniflare": "4.20260219.0",
     "sharp": "^0.34.5",
     "vitest": "^4.0.18",
-    "wrangler": "^4.60.0"
+    "wrangler": "^4.67.0"
   }
 }

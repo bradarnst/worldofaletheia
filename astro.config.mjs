@@ -5,6 +5,9 @@ import tailwindcss from '@tailwindcss/vite';
 
 import cloudflare from '@astrojs/cloudflare';
 
+// @ts-ignore - process is available in Node when evaluating Astro config
+const isDevCommand = process.argv.includes('dev');
+
 // https://astro.build/config
 export default defineConfig({
   integrations: [],
@@ -13,5 +16,5 @@ export default defineConfig({
     plugins: [tailwindcss()],
   },
 
-  adapter: cloudflare(),
+  adapter: isDevCommand ? undefined : cloudflare(),
 });

@@ -132,12 +132,9 @@ const systems = defineCollection({
 });
 
 // Campaigns collection - only campaign overview files (index.md), NOT sessions
-// Pattern: any .md file directly in campaign subdirectories, but not in sessions subdirs
+// Use explicit index pattern to avoid beta glob-negation regressions.
 const campaigns = defineCollection({
-  loader: glob({ 
-    pattern: ['**/*.md', '!**/sessions/*.md'], 
-    base: 'src/content/campaigns' 
-  }),
+  loader: glob({ pattern: '*/index.md', base: 'src/content/campaigns' }),
   schema: campaignsSchema,
 });
 

@@ -1,6 +1,6 @@
 {
 	"compatibility_date": "2026-01-24",
-	"compatibility_flags": ["global_fetch_strictly_public"],
+	"compatibility_flags": ["global_fetch_strictly_public", "nodejs_compat"],
 	"name": "world-of-aletheia",
 	"route": {
 		"pattern": "worldofaletheia.com/*",

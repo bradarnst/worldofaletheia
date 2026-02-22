@@ -33,7 +33,7 @@ const campaignEntry = (await getCollection('campaigns')).find((entry) => {
 });
 
 if (!campaignEntry) {
-  return Astro.redirect('/404');
+  throw new Error(`Campaign not found for slug "${campaign}"`);
 }
 
 const sessionEntry = (await getCollection('sessions')).find((entry) => {
@@ -42,7 +42,7 @@ const sessionEntry = (await getCollection('sessions')).find((entry) => {
   return entry.data.campaign === campaign && sessionSlug === slug;
 });
 if (!sessionEntry) {
-  return Astro.redirect('/404');
+  throw new Error(`Session not found for campaign "${campaign}" and slug "${slug}"`);
 }
 
 const session = {
