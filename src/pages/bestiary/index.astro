@@ -3,7 +3,7 @@ import { getCollection } from 'astro:content';
 import WorldAletheiaLayout from '@layouts/WorldAletheiaLayout.astro';
 import ContentCard from '@components/ContentCard.astro';
 import TagCloud from '@components/TagCloud.astro';
-import jungleRuin from '@images/jungle-ruin.png';
+import wheatFields from '@images/wheat-fields.png';
 import { getFilteredCollection } from '@utils/content-filter';
 
 const bestiary = await getCollection('bestiary');
@@ -27,7 +27,7 @@ const allTags = [...new Set(visibleBestiary.flatMap(item => item.data.tags))];
       ) : (
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {visibleBestiary.map((item, index) => (
-            <ContentCard content={item} image={index % 2 === 0 ? jungleRuin : undefined} />
+            <ContentCard content={item} image={index % 2 === 0 ? wheatFields : undefined} />
           ))}
         </div>
       )}
