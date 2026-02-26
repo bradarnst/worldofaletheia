@@ -6,7 +6,6 @@ import { buildSyncDiff } from './fs-diff.mjs';
 import { askStaleFileAction } from './prompt.mjs';
 import { applySync } from './apply-sync.mjs';
 import { validateContentTree } from './validate.mjs';
-import { ensureGitReady, gitCommitAndPush, gitPullFastForwardOnly } from './git-stage.mjs';
 import {
   fail,
   info,
@@ -18,12 +17,11 @@ import {
   warn,
 } from './utils.mjs';
 
-function parseArgs(argv) {
+export function parseArgs(argv) {
   const flags = new Set(argv.slice(2));
   return {
     dryRun: flags.has('--dry-run'),
     validateOnly: flags.has('--validate-only'),
-    gitOnly: flags.has('--git-only'),
   };
 }
 
@@ -69,24 +67,7 @@ async function runValidateOnly(config) {
   ok(`Validation passed for ${validation.checkedFiles} file(s).`);
 }
 
-async function runGitOnly(config) {
-  step('Git update and publish');
-  await ensureGitReady(config);
-  await gitPullFastForwardOnly();
-  const result = await gitCommitAndPush({ commitMessage: config.defaultCommitMessage });
-  if (!result.changed) {
-    info('No content changes to commit.');
-    return;
-  }
-  ok('Changes committed and pushed.');
-}
-
 async function runFullSync(config, { dryRun }) {
-  step('Git update');
-  await ensureGitReady(config);
-  await gitPullFastForwardOnly();
-  ok('Repository is up to date.');
-
   step('Scan and diff');
   const diff = await buildSyncDiff(config);
   printDiffReport(diff, config.repoRoot);
@@ -136,14 +117,6 @@ async function runFullSync(config, { dryRun }) {
   if (validation.warnings.length) {
     warn(`Validation warnings: ${validation.warnings.length}`);
   }
-
-  step('Commit and push');
-  const gitResult = await gitCommitAndPush({ commitMessage: config.defaultCommitMessage });
-  if (!gitResult.changed) {
-    info('No content changes to commit.');
-    return;
-  }
-  ok('Content sync committed and pushed.');
 }
 
 async function main() {
@@ -154,11 +127,6 @@ async function main() {
 
     if (args.validateOnly) {
       await runValidateOnly(config);
-      return;
-    }
-
-    if (args.gitOnly) {
-      await runGitOnly(config);
       return;
     }
 
@@ -173,4 +141,3 @@ async function main() {
 }
 
 main();
-

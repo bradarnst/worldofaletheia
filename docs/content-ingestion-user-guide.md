@@ -6,16 +6,16 @@ This guide explains how to run the Obsidian-to-repo ingestion scripts in a simpl
 
 The command in [`scripts/content-sync/index.mjs`](scripts/content-sync/index.mjs) does this sequence:
 
-1. Pull latest remote changes
-2. Compare Obsidian folders to mapped repo folders
-3. Show a dry-run report
-4. Ask what to do with stale files (`remove`, `backup`, or `abort`)
-5. Copy/update files
-6. Normalize Obsidian wiki syntax in Markdown (for `src/content/**` mappings):
+1. Compare Obsidian folders to mapped repo folders
+2. Show a dry-run report
+3. Ask what to do with stale files (`remove`, `backup`, or `abort`)
+4. Copy/update files
+5. Normalize Obsidian wiki syntax in Markdown (for `src/content/**` mappings):
    - `[[Page Name]]` -> standard Markdown link with resolved site route
    - `![[Image Name.png]]` -> standard Markdown image link targeting `src/assets/images`
 6. Validate Markdown/frontmatter (for content folders)
-7. Commit and push
+
+Git operations are intentionally **not** part of default ingestion. Commit/push is manual.
 
 ## Obsidian link/embed conversion behavior
 
@@ -113,12 +113,6 @@ pnpm content:sync:dry-run
 pnpm content:validate
 ```
 
-### Git stage only
-
-```bash
-pnpm content:git
-```
-
 ## Stale file decision (important)
 
 If a file exists in repo mapped folders but no longer exists in Obsidian, script asks:
@@ -139,8 +133,6 @@ Detailed operator runbook for parser/ingestion issues:
 |---|---|---|
 | `CONFIG-MISSING` | `config/content-sync.config.json` not found | Copy example config and set `vaultRoot` |
 | `CONFIG-JSON-INVALID` | Config JSON has syntax error | Fix JSON format and retry |
-| `GIT-PULL-DIVERGED` | Fast-forward pull failed | Stop and resolve git divergence before syncing |
-| `GIT-WORKTREE-NOT-CLEAN` | Local changes block pull (if enabled) | Commit or stash local work |
 | `VALIDATION-FAILED` | Markdown/frontmatter validation failed | Fix listed files, rerun sync |
 | `SYNC-STALE-ABORTED` | User chose abort at stale prompt | Re-run and choose remove or backup |
 | `SYNC-RUNTIME-ERROR` | General runtime failure | Re-run with debug and inspect details |

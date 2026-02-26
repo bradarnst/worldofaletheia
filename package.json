@@ -10,8 +10,7 @@
     "test": "vitest run",
     "content:sync": "node ./scripts/content-sync/index.mjs",
     "content:sync:dry-run": "node ./scripts/content-sync/index.mjs --dry-run",
-    "content:validate": "node ./scripts/content-sync/index.mjs --validate-only",
-    "content:git": "node ./scripts/content-sync/index.mjs --git-only"
+    "content:validate": "node ./scripts/content-sync/index.mjs --validate-only"
   },
   "dependencies": {
     "@astrojs/cloudflare": "13.0.0-beta.8",
