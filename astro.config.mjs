@@ -10,6 +10,7 @@ const isDevCommand = process.argv.includes('dev');
 
 // https://astro.build/config
 export default defineConfig({
+  output: 'server',
   integrations: [],
 
   vite: {
