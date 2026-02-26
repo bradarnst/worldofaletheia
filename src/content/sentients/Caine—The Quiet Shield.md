@@ -9,13 +9,15 @@ secret: false
 tags:
   - deity
 subtype: greater_deity
-modified: 2026-02-19T10:01:09+01:00
+modified: 2026-02-24T17:04:42-05:00
 created: 2026-02-17T19:46:52-05:00
 ---
 
-> **Caine: The Quiet Shield**  
+## Caine: The Quiet Shield 
+
 Often called _Lord of Peace_ or _The One Who Holds the Line_
 
+![Caine Vatar](<../../assets/images/Caine Vatar.png>)
 **Domains and Aspects**
 
 Peace, restraint, protection, endurance, resolution without violence

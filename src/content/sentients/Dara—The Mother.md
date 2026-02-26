@@ -9,13 +9,15 @@ secret: false
 tags:
   - deity
 subtype: greater_deity
-modified: 2026-02-19T10:01:25+01:00
+modified: 2026-02-24T21:26:51-05:00
 created: 2026-02-17T19:49:17-05:00
 ---
+## Dara: The Mother
 
->**Dara: The Mother**  
 Often called _Bearer of Life_ or _She Who Endures_
 
+
+![Dara Glass](<../../assets/images/Dara Glass.png>)
 **Domains and Aspects**
 
 Fertility, motherhood, birth, growth, nurturing, continuity of life

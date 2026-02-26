@@ -9,13 +9,13 @@ secret: false
 tags:
   - deity
 subtype: greater_deity
-modified: 2026-02-19T10:01:34+01:00
+modified: 2026-02-24T23:20:45-05:00
 created: 2026-02-17T19:44:32-05:00
 ---
-
-**Deirdre: The Binding Heart**  
+## Deirdre: The Binding Heart
 Often called _Lady of Love_ or _She Who Makes Justice Worth Bearing_
 
+![Deirder Botticelli](<../../assets/images/Deirder Botticelli.png>)
 **Domains and Aspects**
 
 Love, devotion, loyalty, emotional bonds, compassion, chosen attachment

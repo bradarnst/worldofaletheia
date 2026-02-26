@@ -9,14 +9,14 @@ secret: false
 tags:
   - deity
 subtype: greater_deity
-modified: 2026-02-19T10:01:00+01:00
+modified: 2026-02-24T12:35:55-05:00
 created: 2026-02-17T19:45:39-05:00
 ---
-
->**Brand: The God Who Betrays**
+## Brand: The God Who Betrays
 
 Often called _The Breaker_ or _Lord of Ruin_
 
+![Brand byzantine](<../../assets/images/Brand byzantine.png>)
 **Domains and Aspects**
 
 Chaos, destruction, corruption, betrayal, unraveling, forbidden change

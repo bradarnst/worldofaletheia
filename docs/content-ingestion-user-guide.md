@@ -131,6 +131,10 @@ If a file exists in repo mapped folders but no longer exists in Obsidian, script
 
 When something fails, messages are intentionally short and include a support code.
 
+Detailed operator runbook for parser/ingestion issues:
+
+- [`docs/runbook/obsidian-content-sync-troubleshooting.md`](docs/runbook/obsidian-content-sync-troubleshooting.md)
+
 | Support code | Meaning | Recovery action |
 |---|---|---|
 | `CONFIG-MISSING` | `config/content-sync.config.json` not found | Copy example config and set `vaultRoot` |

@@ -7,7 +7,7 @@ status: publish
 secret: false
 permissions: public
 author: Brad
-modified: 2026-02-16T04:15:13+01:00
+modified: 2026-02-21T19:38:30+01:00
 created: 2026-02-12T23:48:42+01:00
 ---
 
@@ -430,6 +430,61 @@ The overall trajectory is upward—but never toward magical saturation.
 
 No single region monopolizes excellence.  
 But climate, ore access, and wealth remain decisive factors.
+
+---
+
+## The Ironbound
+
+The Ironbound are a secular martial order whose identity is inseparable from their armour. Unlike most regional forces, they are shaped less by climate than by discipline and craft.
+
+A hardened breastplate is the minimum expression of Ironbound status. Full harness is common in temperate or open terrain, though reduced configurations are adopted for jungle or extreme heat deployments.
+
+### Armour
+
+Ironbound armour emphasizes:
+
+- Structural integrity
+    
+- High impact resistance
+    
+- Clean, uniform silhouette
+    
+- Longevity over ornament
+    
+
+The Order maintains its own forge-masters, craftsmen whose metallurgical skill rivals dwarven standards. These smiths are also trained alchemists, applying controlled refinement during the forging process itself.
+
+On rare occasions, armour is forged from Cataclysm-altered ore—metal subtly transformed by lattice flux. When worked at forge-time using Ironbound methods, such material offers:
+
+- Superior stopping power without excessive weight
+    
+- Exceptional resistance to deformation
+    
+- Limited resistance to disruptive arcane effects
+    
+
+These processes are closely guarded. Despite considerable interest from other master smiths, no external tradition has successfully reproduced Ironbound results.
+
+---
+
+### Weapons
+
+Ironbound weaponry favors reliability and versatility.
+
+Common arms include:
+
+- Longswords or arming swords
+    
+- Polearms for reach and control
+    
+- Compact crossbows
+    
+- Warhammers carried by select specialists
+    
+
+Bladed weapons remain primary. Blunt-force tools are present where heavy armour or reinforced targets are expected, but are not universal issue.
+
+As with their armour, weapons are maintained, reforged, and retained over long service.
 
 ---
 

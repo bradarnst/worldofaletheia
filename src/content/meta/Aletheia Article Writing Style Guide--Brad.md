@@ -5,11 +5,11 @@ collection: meta
 type: guide
 subtype: content
 status: publish
-secret: false
+secret: true
 author: Brad
 permissions: public
 created: 2026-02-20 00:00
-modified: 2026-02-20T12:38:04+01:00
+modified: 2026-02-26T22:03:32+01:00
 tags:
   - worldBuilding
   - guide
@@ -37,7 +37,7 @@ Clarity always takes precedence over mystery.
 
 ---
 
-## 2. Narrative Voice (Revised)
+## 2. Narrative Voice
 
 Voice:  
 A knowledgeable, confident narrator — best imagined as:
@@ -69,7 +69,7 @@ The goal is to sound informed.
 
 ---
 
-## 3. Tone (Revised)
+## 3. Tone
 
 Approachable, confident, and lightly wry.
 
@@ -108,6 +108,33 @@ A well-placed witty or slightly sarcastic observation is encouraged if it:
 
 Clarity always comes first.  
 But clarity does not require blandness.
+
+### Avoid Vague Fantasy Terminology
+
+Do not invent terminology unless:
+
+- It is mechanically meaningful, or
+    
+- It is intentionally humorous, or
+    
+- It clarifies something at the table
+    
+
+Avoid catalogue-style fantasy phrasing such as:
+
+- “heavy arming sword”
+    
+- “battle-forged steel”
+    
+- “master-crafted blade”
+    
+
+If a real-world term exists and communicates clearly (longsword, crossbow, breastplate), use it.
+
+```ad-note
+title: Important Note
+If you wouldn’t say it naturally while explaining something at the table, don’t write it into canon.
+```
 
 ---
 
@@ -227,7 +254,7 @@ Think:
 
 ---
 
-## 9. Personal Style Layer (Rewritten to Be the Default)
+## 9. Personal Style Layer
 
 ### Default Authorial Voice (Brad)
 

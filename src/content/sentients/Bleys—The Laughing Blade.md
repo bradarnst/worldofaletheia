@@ -9,12 +9,12 @@ secret: false
 tags:
   - deity
 subtype: greater_deity
-modified: 2026-02-19T10:00:50+01:00
+modified: 2026-02-23T20:44:12-05:00
 created: 2026-02-17T19:39:21-05:00
 ---
 **Bleys: The Laughing Blade**  
 Often called _Lord of the Bold Step_ or _The Loyal Friend_
-
+![Bleys Celebration](<../../assets/images/Bleys Celebration.png>)
 **Domains and Aspects**
 
 Courage, loyalty, comradeship, bold action, planning, morale

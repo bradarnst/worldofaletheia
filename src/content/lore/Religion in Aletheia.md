@@ -9,7 +9,7 @@ secret: false
 author: Barry
 permissions: public
 created: 2026-02-18 20:42
-modified: 2026-02-19T10:49:21+01:00
+modified: 2026-02-19T12:54:03-05:00
 ---
 ## Nature of the Gods
 
@@ -79,12 +79,12 @@ A person’s faith becomes a problem only when it causes harm, disorder, or open
 
 ·       Intervention by religious or civic authorities
 
-## The Cataclysm and the Nature of Magic
+## The Gods, The Lattice, and the Cataclysm
 
 Long ago, the world suffered a great Cataclysm. Civilizations fell, knowledge was lost, and the forces that shape magic were damaged. Many ancient wonders come from this earlier age, when magic was stronger and less restrained.
 
 Magic is understood to flow through an unseen structure often called the **Lattice**. Most people know the term only vaguely, if at all. Educated individuals recognize it as the underlying structure that magic depends on.
 
-Religious teaching holds that the gods are closely connected to this structure. They are believed to guide, shape, and stabilize divine power so that it can be used safely. Miracles are trusted because they are thought to be governed by divine wisdom rather than mortal will.
+Religious teaching holds that the gods are closely connected to the Lattice. They are believed to guide, shape, and stabilize divine power so that it can be used safely. Miracles and divine magic are trusted because they are thought to be governed by divine wisdom rather than mortal will.
 
 The Cataclysm is remembered as a time of imbalance and excess. Religious tradition emphasizes restraint, balance, and continuity as lessons drawn from that age.

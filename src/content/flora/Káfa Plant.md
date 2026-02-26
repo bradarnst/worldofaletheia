@@ -16,7 +16,7 @@ modified: 2026-02-20T14:41:27+01:00
 
 **Káfa** is a perennial evergreen shrub cultivated for its seeds.
 
-![Kafa-Plant](../../assets/images/Kafa-Plant.png)
+![Kafa-Plant](<../../assets/images/Kafa-Plant.png>)
 
 It is one of the most economically significant agricultural plants in several temperate and subtropical regions of Aletheia. While the beverage derived from its roasted seeds is culturally influential (see: _Káfa_), this article concerns the plant itself — its structure, cultivation, and geographic distribution.
 

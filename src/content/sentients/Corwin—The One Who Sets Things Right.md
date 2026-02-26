@@ -9,15 +9,16 @@ secret: false
 tags:
   - deity
 subtype: greater_deity
-modified: 2026-02-19T10:01:18+01:00
+modified: 2026-02-24T21:00:43-05:00
 created: 2026-02-17T19:47:40-05:00
 ---
 
-> TO BE WRITTEN
-**Corwin: The One Who Sets Things Right**
+## Corwin: The One Who Sets Things Right
 
 Often titled _Bearer of Truth_ or _Light of Justice_
 
+
+![Corwin Judgement](<../../assets/images/Corwin Judgement.png>)
 **Domains and Aspects**
 
 Truth, justice, honour, rightful order, wrongs made right

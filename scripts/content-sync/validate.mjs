@@ -4,15 +4,83 @@ import path from 'node:path';
 const REQUIRED_KEYS = ['title', 'type', 'status', 'author', 'secret'];
 const ALLOWED_STATUS = ['draft', 'publish', 'published', 'archive', 'archived'];
 
+function extractInlineHashtags(text) {
+  const tags = [];
+  const regex = /(^|[\s([{'"`])#([A-Za-z0-9][A-Za-z0-9_\/-]*)/gm;
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    tags.push(match[2]);
+  }
+  return tags;
+}
+
+function normalizeTagValue(value) {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const trimmed = value.trim().replace(/^['"]|['"]$/g, '').replace(/^#/, '');
+  if (!trimmed) {
+    return null;
+  }
+
+  return trimmed.toLowerCase();
+}
+
+function dedupeAndSortTags(values) {
+  return [...new Set(values.map(normalizeTagValue).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+}
+
+function parseBracketTagArray(raw) {
+  const inner = raw.slice(1, -1).trim();
+  if (!inner) {
+    return [];
+  }
+  return inner
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+export function normalizeObsidianTags({ frontmatterTags, inlineTags = [] }) {
+  let frontmatterValues = [];
+
+  if (frontmatterTags == null || frontmatterTags === '') {
+    frontmatterValues = [];
+  } else if (Array.isArray(frontmatterTags)) {
+    frontmatterValues = frontmatterTags;
+  } else if (typeof frontmatterTags === 'string') {
+    const raw = frontmatterTags.trim();
+
+    if (!raw) {
+      frontmatterValues = [];
+    } else if (raw.startsWith('[') || raw.endsWith(']')) {
+      if (!(raw.startsWith('[') && raw.endsWith(']'))) {
+        return { ok: false, reason: 'mismatched bracket array' };
+      }
+      frontmatterValues = parseBracketTagArray(raw);
+    } else if (raw.includes(',')) {
+      frontmatterValues = raw.split(',').map((item) => item.trim());
+    } else {
+      frontmatterValues = [raw];
+    }
+  } else {
+    return { ok: false, reason: 'unsupported tags type' };
+  }
+
+  const normalized = dedupeAndSortTags([...frontmatterValues, ...inlineTags]);
+  return { ok: true, tags: normalized };
+}
+
 function parseFrontmatter(text) {
   const trimmed = text.trimStart();
   if (!trimmed.startsWith('---\n') && !trimmed.startsWith('---\r\n')) {
-    return { hasFrontmatter: false, data: {} };
+    return { hasFrontmatter: false, data: {}, body: text };
   }
 
   const lines = text.split(/\r?\n/);
   if (lines[0] !== '---') {
-    return { hasFrontmatter: false, data: {} };
+    return { hasFrontmatter: false, data: {}, body: text };
   }
 
   let endIndex = -1;
@@ -24,31 +92,56 @@ function parseFrontmatter(text) {
   }
 
   if (endIndex === -1) {
-    return { hasFrontmatter: true, malformed: true, data: {} };
+    return { hasFrontmatter: true, malformed: true, data: {}, body: '' };
   }
 
   const frontmatterLines = lines.slice(1, endIndex);
+  const body = lines.slice(endIndex + 1).join('\n');
   const data = {};
 
-  for (const line of frontmatterLines) {
+  for (let i = 0; i < frontmatterLines.length; i += 1) {
+    const line = frontmatterLines[i];
     const idx = line.indexOf(':');
     if (idx <= 0) {
       continue;
     }
     const key = line.slice(0, idx).trim();
     const raw = line.slice(idx + 1).trim();
+
+    if (key === 'tags' && raw === '') {
+      const listItems = [];
+      let cursor = i + 1;
+      while (cursor < frontmatterLines.length) {
+        const candidate = frontmatterLines[cursor];
+        const listMatch = /^\s*-\s*(.+?)\s*$/.exec(candidate);
+        if (listMatch) {
+          listItems.push(listMatch[1]);
+          cursor += 1;
+          continue;
+        }
+
+        if (/^\s+/.test(candidate)) {
+          break;
+        }
+
+        break;
+      }
+
+      if (listItems.length > 0) {
+        data[key] = listItems;
+        i = cursor - 1;
+        continue;
+      }
+    }
+
     data[key] = raw;
   }
 
-  return { hasFrontmatter: true, malformed: false, data };
+  return { hasFrontmatter: true, malformed: false, data, body };
 }
 
 function isBooleanLike(value) {
   return value === 'true' || value === 'false';
-}
-
-function isArrayLikeYaml(value) {
-  return value.startsWith('[') && value.endsWith(']');
 }
 
 function checkHeadings(content) {
@@ -140,8 +233,14 @@ export async function validateContentTree(config) {
       failures.push(`${relPath} invalid status value ${parsed.data.status}`);
     }
 
-    if (Object.hasOwn(parsed.data, 'tags') && !isArrayLikeYaml(parsed.data.tags)) {
-      failures.push(`${relPath} invalid tags format (expected array like [a, b])`);
+    const inlineTags = extractInlineHashtags(parsed.body || '');
+    const normalizedTags = normalizeObsidianTags({
+      frontmatterTags: parsed.data.tags,
+      inlineTags,
+    });
+
+    if (!normalizedTags.ok) {
+      failures.push(`${relPath} invalid tags format (${normalizedTags.reason})`);
     }
 
     if (text.includes('[[ ]]')) {

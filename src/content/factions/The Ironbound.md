@@ -6,7 +6,7 @@ type: order
 status: publish
 secret: false
 author: Brad
-modified: 2026-02-16T04:15:06+01:00
+modified: 2026-02-21T19:52:14+01:00
 created: 2026-02-12T16:07:48+01:00
 ---
 
@@ -17,7 +17,7 @@ If someone points to a heavily armoured warrior and says, _“He’s Ironbound,�
 
 ---
 
-### What the Ironbound Are (and Are Not)
+## What the Ironbound Are (and Are Not)
 
 At the simplest level, the Ironbound are **professional mercenaries**. They accept contracts, are paid for violence, and operate independently of kingdoms, churches, and wizard institutions.
 
@@ -38,7 +38,7 @@ Most rulers treat them like a dangerous but reliable tool. Most common folk see 
 
 ---
 
-### Reputation and Public Perception
+## Reputation and Public Perception
 
 Everyone knows three things about the Ironbound:
 
@@ -56,7 +56,7 @@ What most people _do not_ know is **why** they behave this way. That gap between
 
 ---
 
-### The Oath
+## The Oath
 
 All Ironbound are bound by a single overarching commitment known simply as **the Oath**.
 
@@ -78,7 +78,7 @@ It is not a debate-ending slogan so much as a statement of fact. From their pers
 
 How strictly this is enforced internally is known. Who enforces it, and how punishment works, is less clear to outsiders.
 
-#### Breaking the Oath
+### Breaking the Oath
 
 Among the Ironbound, breaking the Oath is not treated as a personal failure. It is treated as a **structural threat**.
 
@@ -101,7 +101,7 @@ Outsiders often mistake this severity for cruelty. The Ironbound consider it res
 
 ---
 
-### Origins and the Cataclysm
+## Origins and the Cataclysm
 
 The Ironbound existed **before the Cataclysm**, but under a different name and structure. At that time, they were an elite mercenary company employed in a large, decisive conflict near what are now the Shattered Lands.
 
@@ -124,13 +124,13 @@ This history is broadly known, though details are debated and often politicized.
 
 ---
 
-### Armour and Materials
+## Armour and Materials
 
 Ironbound armour is immediately recognizable to trained eyes.
 
 It is **exceptionally well-made steel**, reinforced with a rare mineral found only in parts of the Shattered Lands. This material did not exist before the Cataclysm; it formed where the underlying structure of magic (often called the Lattice) was violently altered but not destroyed.
 
-#### What the Armour Does
+### What the Armour Does
 
 - It **resists unstable, coercive, or large-scale magical effects**.
     
@@ -141,7 +141,7 @@ It is **exceptionally well-made steel**, reinforced with a rare mineral found on
 
 In practical terms: battlefield-level magic is dampened, not erased. The armour protects its wearer—and the surrounding reality—from magical excess.
 
-#### How It Is Made
+### How It Is Made
 
 What most Ironbound know about the creation of their armour is limited and deliberate.
 
@@ -160,7 +160,33 @@ Every Ironbound is bound by oath to protect this knowledge. Most never learn mor
 
 ---
 
-### Forgemasters and Steelwrights
+## Forged Under the Lattice
+
+The Ironbound do not merely commission good armour. They build it differently.
+
+Their forge-masters are trained not only in metallurgy, but in applied lattice theory and controlled alchemical integration. During the Cataclysm, certain regions of the world experienced intense lattice distortion. In a very small number of sites, this distortion altered the properties of exposed metals. Most such sites are unstable, dangerous, or exhausted. A handful remain known only to the Ironbound.
+
+Metal taken from these locations cannot simply be shaped into equipment. Its properties are unpredictable unless properly stabilized during forging. The Ironbound do not reveal how this stabilization is achieved.
+
+The result is armour that:
+
+- resists magical interference more effectively than standard steel
+    
+- holds structural integrity under stress beyond its apparent weight class
+    
+- disrupts certain forms of arcane resonance
+    
+
+The armour is not itself enchanted in the conventional sense. It does not glow. It does not carry spells. It does not radiate power.
+
+It is simply harder to affect.
+
+Dwarven masterwork may rival its craftsmanship.  
+But only Ironbound forge-masters can create Ironbound armour.
+
+And they are not teaching anyone else how.
+
+## Forgemasters and Steelwrights
 
 Those within the Ironbound who work the forge are collectively known as **Steelwrights**. This includes apprentices, senior craftsmen, and the small number of masters who oversee the creation and maintenance of Ironbound armour.
 
@@ -176,7 +202,7 @@ The Ironbound do not correct these assumptions.
 
 ---
 
-### Foundlings and Membership
+## Foundlings and Membership
 
 Ironbound are **not hereditary**.
 
@@ -188,7 +214,7 @@ Outsiders sometimes accuse the Ironbound of indoctrination. Ironbound generally 
 
 ---
 
-### How Others Deal with the Ironbound
+## How Others Deal with the Ironbound
 
 - **Rulers** negotiate carefully and prefer written, narrowly defined contracts.
     
@@ -213,7 +239,7 @@ Ironbound do not remain after a contract is fulfilled. They take payment, recove
 
 ---
 
-### What Is Known, Debated, and Unknown
+## What Is Known, Debated, and Unknown
 
 **Known**
 
@@ -317,7 +343,7 @@ Ironbound do not negotiate around these refusals. If a contract violates the Oat
 
 ---
 
-### Proxy Wrongdoing, Escalation, and Judgment
+## Proxy Wrongdoing, Escalation, and Judgment
 
 The Ironbound state openly that the line between legitimate force and proxy wrongdoing is not always clean.
 
@@ -339,7 +365,7 @@ When asked why they accepted—or refused—a particular contract, Ironbound rar
 
 ---
 
-### Using the Ironbound in Play
+## Using the Ironbound in Play
 
 For players, the Ironbound are best understood as **reliable, limited-scope force**. They are predictable once engaged, but difficult to influence beforehand.
 
