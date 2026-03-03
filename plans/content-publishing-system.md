@@ -8,6 +8,22 @@ This document outlines a comprehensive content publishing system for the World o
 - Obsidian-based Markdown content workflow
 - Cloudflare Workers deployment via GitHub Actions
 
+### 2026-03 Active Policy Shift (Phase 1)
+
+The currently active direction for implementation prioritization is:
+
+1. **Canon** and **Using Aletheia** are public-by-default domains.
+2. **Campaigns** are the first enforced auth boundary.
+3. Campaign root/index blurbs remain public, while per-campaign content may be gated.
+4. `secret` is no longer treated as the primary long-term protection mechanism for main-site domains.
+5. Protection is expected to move to authenticated request-time checks for campaign content.
+
+This policy shift is intentionally incremental and aligned with Astro-native/YAGNI decisions. See:
+
+- [`plans/campaign-permissions-phased-enhancement-plan.md`](plans/campaign-permissions-phased-enhancement-plan.md)
+- [`plans/adrs/0001-obsidian-first-content-architecture.md`](plans/adrs/0001-obsidian-first-content-architecture.md)
+- [`plans/adrs/0004-campaigns-astro-native-content-access-policy.md`](plans/adrs/0004-campaigns-astro-native-content-access-policy.md)
+
 ---
 
 ## Part 1: Secret Content Architecture Analysis

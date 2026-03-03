@@ -14,3 +14,4 @@ This was done to unblock content visibility while a dedicated draft-preview work
 - [ ] If drafts remain visible, define UX copy and badge style guidance for all list/detail templates
 - [ ] Document the final policy in project docs and ADRs if scope is architectural
 - [ ] Add a `content:sync` force/reprocess mode (e.g. `--reprocess-markdown`) so unchanged markdown can be re-normalized without touching source vault files
+- [ ] Add honor-system metadata guidance for future `gm-only` labeling in Canon/Using (no hard auth gate yet)
