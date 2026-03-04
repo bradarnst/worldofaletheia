@@ -1,7 +1,30 @@
 {
 	"compatibility_date": "2026-01-24",
-	"compatibility_flags": ["global_fetch_strictly_public", "nodejs_compat"],
+	"compatibility_flags": [
+		"global_fetch_strictly_public",
+		"nodejs_compat"
+	],
 	"name": "world-of-aletheia",
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "world-of-aletheia",
+			"database_id": "38825456-2299-45de-a25e-ee1b98bea6ec"
+		},
+		{
+			"binding": "world_of_aletheia",
+			"database_name": "world-of-aletheia",
+			"database_id": "38825456-2299-45de-a25e-ee1b98bea6ec"
+		}
+	],
+	"vars": {
+		"BETTER_AUTH_URL": "https://worldofaletheia.com",
+		"EMAIL_WORKER_ROUTE_MODE": "dry-run",
+		"EMAIL_WORKER_ENDPOINT": "https://REPLACE_WITH_EMAIL_WORKER_ENDPOINT",
+		"EMAIL_FROM": "noreply@worldofaletheia.com",
+		"EMAIL_REPLY_TO": "support@worldofaletheia.com",
+		"CONTACT_TO_EMAIL": "gm@worldofaletheia.com"
+	},
 	"route": {
 		"pattern": "worldofaletheia.com/*",
 		"zone_name": "worldofaletheia.com"
@@ -13,5 +36,29 @@
 	},
 	"observability": {
 		"enabled": true
+	},
+	"env": {
+		"staging": {
+			"vars": {
+				"BETTER_AUTH_URL": "https://staging.worldofaletheia.com",
+				"EMAIL_WORKER_ROUTE_MODE": "dry-run",
+				"EMAIL_WORKER_ENDPOINT": "https://REPLACE_WITH_STAGING_EMAIL_WORKER_ENDPOINT",
+				"EMAIL_FROM": "noreply@worldofaletheia.com",
+				"EMAIL_REPLY_TO": "support@worldofaletheia.com",
+				"CONTACT_TO_EMAIL": "gm@worldofaletheia.com"
+			},
+			"d1_databases": [
+				{
+					"binding": "DB",
+					"database_name": "world-of-aletheia-staging",
+					"database_id": "500030de-a6b3-47dc-8ab7-dd51128f35c8"
+				},
+		{
+			"binding": "world_of_aletheia_staging",
+			"database_name": "world-of-aletheia-staging",
+			"database_id": "500030de-a6b3-47dc-8ab7-dd51128f35c8"
+		}
+			]
+		}
 	}
 }

@@ -1,8 +1,14 @@
 ---
 import { getCollection, getEntry, render } from 'astro:content';
 import CampaignsContentLayout from '@layouts/CampaignsContentLayout.astro';
-import { canViewCampaignContent, createCampaignAccessResolver } from '@utils/campaign-access';
+import { canViewCampaignContentAsync, createCampaignAccessResolverFromRequest } from '@utils/campaign-access';
 import { getCampaignMembershipConfigForEnv } from '@utils/campaign-membership-config';
+
+interface RuntimeLocals {
+  runtime?: {
+    env?: Record<string, unknown>;
+  };
+}
 
 const { slug } = Astro.params;
 const entry =
@@ -16,11 +22,19 @@ if (!entry) {
 const { Content } = await render(entry);
 
 const campaignSlug = entry.id.replace(/\/index$/, '');
-const accessResolver = createCampaignAccessResolver({
-  cookieHeader: Astro.request.headers.get('cookie'),
-  membershipConfigRaw: import.meta.env.CAMPAIGN_MEMBERSHIPS || getCampaignMembershipConfigForEnv(),
+const runtimeEnv = (Astro.locals as RuntimeLocals).runtime?.env;
+const membershipConfigRaw =
+  typeof runtimeEnv?.CAMPAIGN_MEMBERSHIPS === 'string' && runtimeEnv.CAMPAIGN_MEMBERSHIPS.length > 0
+    ? runtimeEnv.CAMPAIGN_MEMBERSHIPS
+    : getCampaignMembershipConfigForEnv();
+const allowLegacyEnvFallback = Astro.url.hostname === 'localhost' || Astro.url.hostname === '127.0.0.1';
+const accessResolver = createCampaignAccessResolverFromRequest({
+  request: Astro.request,
+  locals: Astro.locals,
+  membershipConfigRaw,
+  allowLegacyEnvFallback,
 });
-const canView = canViewCampaignContent({
+const canView = await canViewCampaignContentAsync({
   visibility: entry.data.visibility,
   campaignSlug,
   access: accessResolver,
@@ -36,9 +50,11 @@ const canView = canViewCampaignContent({
     <article class="reading-prose">
       <h2>Restricted campaign content</h2>
       <p>
-        This campaign entry is visible to campaign members only. Use a valid session cookie tied to this campaign
-        in the local access map to view it.
+        This campaign entry is visible to campaign members only. Sign in with your Google account and ensure your
+        account is a member of this campaign.
       </p>
+      <p><a href={`/login?next=${encodeURIComponent(Astro.url.pathname)}`}>Sign in to continue</a></p>
     </article>
   )}
 </CampaignsContentLayout>
+

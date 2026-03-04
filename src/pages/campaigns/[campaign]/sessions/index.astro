@@ -1,8 +1,14 @@
 ---
 import { getCollection, getEntry } from 'astro:content';
 import CampaignsLayout from '@layouts/CampaignsLayout.astro';
-import { canViewCampaignContent, createCampaignAccessResolver } from '@utils/campaign-access';
+import { canViewCampaignContentAsync, createCampaignAccessResolverFromRequest } from '@utils/campaign-access';
 import { getCampaignMembershipConfigForEnv } from '@utils/campaign-membership-config';
+
+interface RuntimeLocals {
+  runtime?: {
+    env?: Record<string, unknown>;
+  };
+}
 
 export async function getStaticPaths() {
   const campaignsCollection = await getCollection('campaigns');
@@ -30,20 +36,34 @@ const campaignDetail = {
 };
 
 const allSessions = await getCollection('sessions');
-const accessResolver = createCampaignAccessResolver({
-  cookieHeader: Astro.request.headers.get('cookie'),
-  membershipConfigRaw: import.meta.env.CAMPAIGN_MEMBERSHIPS || getCampaignMembershipConfigForEnv(),
+const runtimeEnv = (Astro.locals as RuntimeLocals).runtime?.env;
+const membershipConfigRaw =
+  typeof runtimeEnv?.CAMPAIGN_MEMBERSHIPS === 'string' && runtimeEnv.CAMPAIGN_MEMBERSHIPS.length > 0
+    ? runtimeEnv.CAMPAIGN_MEMBERSHIPS
+    : getCampaignMembershipConfigForEnv();
+const allowLegacyEnvFallback = Astro.url.hostname === 'localhost' || Astro.url.hostname === '127.0.0.1';
+const accessResolver = createCampaignAccessResolverFromRequest({
+  request: Astro.request,
+  locals: Astro.locals,
+  membershipConfigRaw,
+  allowLegacyEnvFallback,
 });
 
-const sessions = allSessions
-  .filter((entry) => entry.data.campaign === campaign)
-  .filter((entry) => {
-    return canViewCampaignContent({
+const campaignSessions = allSessions.filter((entry) => entry.data.campaign === campaign);
+const sessionsWithVisibility = await Promise.all(
+  campaignSessions.map(async (entry) => {
+    const canView = await canViewCampaignContentAsync({
       visibility: entry.data.visibility,
       campaignSlug: campaign!,
       access: accessResolver,
     });
-  })
+    return { entry, canView };
+  }),
+);
+
+const sessions = sessionsWithVisibility
+  .filter((item) => item.canView)
+  .map((item) => item.entry)
   .map((entry) => {
     const parts = entry.id.split('/');
     const sessionSlug = parts[parts.length - 1];

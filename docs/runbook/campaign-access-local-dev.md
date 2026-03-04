@@ -1,6 +1,8 @@
-# Campaign Access (Phase 2 local/dev gate)
+# Campaign Access (legacy local/dev fallback)
 
-This runbook describes the temporary Phase 2 local/dev access gate for campaign content.
+This runbook describes the legacy local/dev fallback gate for campaign content.
+
+Primary Phase 2.1 operational flow now lives in [`docs/runbook/phase-2-1-auth-google-d1-cloudflare-email.md`](docs/runbook/phase-2-1-auth-google-d1-cloudflare-email.md).
 
 ## Scope
 
@@ -10,10 +12,12 @@ This runbook describes the temporary Phase 2 local/dev access gate for campaign 
   - [`/campaigns/[campaign]/sessions/[...slug]`](src/pages/campaigns/[campaign]/sessions/[...slug].astro)
 - Non-campaign domains stay public-by-default and do not use this gate.
 
-## Model
+## Model (fallback only)
 
 - `visibility: public` → visible to everyone
 - `visibility: campaignMembers` → requires local/dev session + membership mapping
+
+This path is intended for localhost-only fallback behavior when real auth/session/D1 integration is unavailable.
 
 ## Configuration
 
@@ -63,6 +67,6 @@ aletheia-dev-session=dev123
 
 3. Open campaign/session routes. `campaignMembers` content is visible only when mapping matches.
 
-## Future replacement
+## Current replacement status
 
-The gate is intentionally isolated in [`campaign-access.ts`](src/utils/campaign-access.ts) so Better Auth + D1 can replace resolver internals without changing campaign route authorization calls.
+Phase 2.1 has replaced primary resolver internals with Better Auth session + D1 membership checks. The local cookie map path remains only as an explicit development fallback in [`createCampaignAccessResolverFromRequest()`](src/utils/campaign-access.ts:154).

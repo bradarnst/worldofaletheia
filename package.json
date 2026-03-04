@@ -8,6 +8,8 @@
     "preview": "astro preview",
     "astro": "astro",
     "test": "vitest run",
+    "db:migrate:local": "wrangler d1 execute DB --local --file ./migrations/0001_campaign_memberships.sql",
+    "db:seed:memberships:local": "mkdir -p ./.wrangler && node ./scripts/seed-campaign-memberships.mjs > ./.wrangler/campaign-memberships.seed.sql && wrangler d1 execute DB --local --file ./.wrangler/campaign-memberships.seed.sql",
     "content:sync": "node ./scripts/content-sync/index.mjs",
     "content:sync:dry-run": "node ./scripts/content-sync/index.mjs --dry-run",
     "content:validate": "node ./scripts/content-sync/index.mjs --validate-only"

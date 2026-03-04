@@ -1,0 +1,24 @@
+---
+import MainSiteLayout from '@layouts/MainSiteLayout.astro';
+
+const nextRaw = Astro.url.searchParams.get('next') ?? '/campaigns';
+const isSafeInternalPath = nextRaw.startsWith('/') && !nextRaw.startsWith('//');
+const next = isSafeInternalPath ? nextRaw : '/campaigns';
+const callbackURL = new URL(next, Astro.url.origin).toString();
+---
+
+<MainSiteLayout title="Login - World of Aletheia" description="Sign in to access campaign member content.">
+  <section class="max-w-xl mx-auto py-12">
+    <h1 class="text-3xl font-bold mb-4">Sign in</h1>
+    <p class="mb-6">
+      Campaign member-only content requires an authenticated account with campaign membership in the access table.
+    </p>
+
+    <form action="/api/auth/sign-in/social" method="POST" class="space-y-3">
+      <input type="hidden" name="provider" value="google" />
+      <input type="hidden" name="callbackURL" value={callbackURL} />
+      <button type="submit" class="btn btn-primary w-full">Continue with Google</button>
+    </form>
+  </section>
+</MainSiteLayout>
+

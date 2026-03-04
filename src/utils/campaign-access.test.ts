@@ -1,7 +1,31 @@
-import { describe, expect, it } from 'vitest';
-import { canViewCampaignContent, createCampaignAccessResolver, getCampaignContentVisibility } from './campaign-access';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('../lib/auth-session', () => ({
+  getRequestSession: vi.fn(),
+}));
+
+vi.mock('../lib/campaign-membership-repo', () => ({
+  createCampaignMembershipRepoFromLocals: vi.fn(),
+}));
+
+import {
+  canViewCampaignContent,
+  canViewCampaignContentAsync,
+  createCampaignAccessResolver,
+  createCampaignAccessResolverFromRequest,
+  getCampaignContentVisibility,
+} from './campaign-access';
+import { getRequestSession } from '../lib/auth-session';
+import { createCampaignMembershipRepoFromLocals } from '../lib/campaign-membership-repo';
+
+const getRequestSessionMock = vi.mocked(getRequestSession);
+const createRepoMock = vi.mocked(createCampaignMembershipRepoFromLocals);
 
 describe('campaign access resolver', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+  });
+
   it('allows public visibility without membership', () => {
     const resolver = createCampaignAccessResolver({
       cookieHeader: null,
@@ -213,5 +237,73 @@ describe('campaign access resolver', () => {
         access: resolver,
       }),
     ).toBe('public');
+  });
+
+  it('allows campaignMembers content when authenticated user has membership in D1', async () => {
+    getRequestSessionMock.mockResolvedValue({
+      user: { id: 'user-1', email: 'user@example.com', name: 'User One' },
+      session: { id: 'session-1', userId: 'user-1', expiresAt: '' },
+    });
+    createRepoMock.mockReturnValue({
+      isUserMemberOfCampaign: vi.fn().mockResolvedValue(true),
+      listCampaignMemberships: vi.fn(),
+      seedFromMembershipMap: vi.fn(),
+    } as unknown as ReturnType<typeof createCampaignMembershipRepoFromLocals>);
+
+    const resolver = createCampaignAccessResolverFromRequest({
+      request: new Request('https://example.com/campaigns/brad', {
+        headers: { cookie: 'better-auth.session_token=abc123' },
+      }),
+      locals: {},
+      membershipConfigRaw: undefined,
+    });
+
+    await expect(
+      canViewCampaignContentAsync({
+        visibility: 'campaignMembers',
+        campaignSlug: 'brad',
+        access: resolver,
+      }),
+    ).resolves.toBe(true);
+  });
+
+  it('denies campaignMembers content when session resolution fails and fallback is disabled', async () => {
+    getRequestSessionMock.mockResolvedValue(null);
+
+    const resolver = createCampaignAccessResolverFromRequest({
+      request: new Request('https://example.com/campaigns/brad'),
+      locals: {},
+      membershipConfigRaw: JSON.stringify({ dev123: { campaigns: ['brad'] } }),
+      allowLegacyEnvFallback: false,
+    });
+
+    await expect(
+      canViewCampaignContentAsync({
+        visibility: 'campaignMembers',
+        campaignSlug: 'brad',
+        access: resolver,
+      }),
+    ).resolves.toBe(false);
+  });
+
+  it('uses legacy map fallback when session missing and fallback is explicitly enabled', async () => {
+    getRequestSessionMock.mockResolvedValue(null);
+
+    const resolver = createCampaignAccessResolverFromRequest({
+      request: new Request('https://example.com/campaigns/brad', {
+        headers: { cookie: 'aletheia-dev-session=dev123' },
+      }),
+      locals: {},
+      membershipConfigRaw: JSON.stringify({ dev123: { campaigns: ['brad'] } }),
+      allowLegacyEnvFallback: true,
+    });
+
+    await expect(
+      canViewCampaignContentAsync({
+        visibility: 'campaignMembers',
+        campaignSlug: 'brad',
+        access: resolver,
+      }),
+    ).resolves.toBe(true);
   });
 });

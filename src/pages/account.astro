@@ -1,0 +1,52 @@
+---
+import MainSiteLayout from '@layouts/MainSiteLayout.astro';
+import { getRequestSession } from '../lib/auth-session';
+import { createCampaignMembershipRepoFromLocals } from '../lib/campaign-membership-repo';
+
+const session = await getRequestSession(Astro.request, Astro.locals);
+
+let memberships: string[] = [];
+if (session) {
+  try {
+    const repo = createCampaignMembershipRepoFromLocals(Astro.locals);
+    const records = await repo.listCampaignMemberships(session.user.id);
+    memberships = records.map((record) => record.campaignSlug);
+  } catch (error) {
+    console.error('account.membership.lookup_failed', {
+      message: error instanceof Error ? error.message : 'unknown error',
+    });
+  }
+}
+---
+
+<MainSiteLayout title="Account - World of Aletheia" description="Session and campaign membership overview.">
+  <section class="max-w-2xl mx-auto py-12">
+    <h1 class="text-3xl font-bold mb-4">Account</h1>
+
+    {session ? (
+      <>
+        <p class="mb-2"><strong>User:</strong> {session.user.name} ({session.user.email})</p>
+        <p class="mb-6"><strong>Session ID:</strong> {session.session.id}</p>
+
+        <h2 class="text-xl font-semibold mb-2">Campaign memberships</h2>
+        {memberships.length === 0 ? (
+          <p>No campaign memberships are currently assigned.</p>
+        ) : (
+          <ul class="list-disc pl-5">
+            {memberships.map((slug) => (
+              <li>{slug}</li>
+            ))}
+          </ul>
+        )}
+
+        <p class="mt-6"><a href="/logout">Sign out</a></p>
+      </>
+    ) : (
+      <>
+        <p class="mb-4">No active session found.</p>
+        <p><a href="/login">Sign in</a></p>
+      </>
+    )}
+  </section>
+</MainSiteLayout>
+

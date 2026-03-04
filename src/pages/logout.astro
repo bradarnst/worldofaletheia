@@ -1,0 +1,29 @@
+---
+const returnTo = '/campaigns';
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Signing out…</title>
+  </head>
+  <body>
+    <p>Signing out…</p>
+    <script>
+      (async () => {
+        try {
+          await fetch('/api/auth/sign-out', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+          });
+        } catch {
+          // Ignore client-side sign-out errors and continue to redirect.
+        }
+
+        window.location.replace('/campaigns');
+      })();
+    </script>
+  </body>
+</html>
+

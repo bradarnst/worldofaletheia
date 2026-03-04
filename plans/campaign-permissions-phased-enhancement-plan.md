@@ -6,7 +6,7 @@
 - **Status:**
   - Phase 1 implemented (policy, schema, UI metadata, tests)
   - Phase 2 implemented as local/dev MVP gate (config+cookie membership resolver)
-  - Phase 2.1 pending (Better Auth + D1 + real login UX replacement)
+  - Phase 2.1 implemented (Better Auth + D1 + Google login UX + contact/email relay path)
 - **Scope:** Planning / policy alignment before implementation
 
 ## Context
@@ -97,9 +97,25 @@ Delivered in Phase 2:
   - [`src/pages/campaigns/[campaign]/sessions/[...slug].astro`](src/pages/campaigns/[campaign]/sessions/[...slug].astro)
 - local/dev operational doc in [`docs/runbook/campaign-access-local-dev.md`](docs/runbook/campaign-access-local-dev.md)
 
-### Phase 2.1 — Better Auth + D1 Replacement (next)
+### Phase 2.1 — Better Auth + D1 Replacement
 
 Goal: replace temporary local/dev gate internals with production-grade auth/session/membership while preserving current route authorization call sites.
+
+Implementation note (2026-03-04): completed in code and runbooks.
+
+Delivered in Phase 2.1:
+
+- Better Auth route integration via [`src/pages/api/auth/[...all].ts`](src/pages/api/auth/[...all].ts)
+- auth/session helpers in [`src/lib/auth.ts`](src/lib/auth.ts) and [`src/lib/auth-session.ts`](src/lib/auth-session.ts)
+- D1 membership repository in [`src/lib/campaign-membership-repo.ts`](src/lib/campaign-membership-repo.ts)
+- campaign membership migration in [`migrations/0001_campaign_memberships.sql`](migrations/0001_campaign_memberships.sql)
+- campaign route gating moved to request-time auth session + D1 membership checks while preserving policy seam in [`src/utils/campaign-access.ts`](src/utils/campaign-access.ts)
+- login/logout/account routes:
+  - [`src/pages/login.astro`](src/pages/login.astro)
+  - [`src/pages/logout.astro`](src/pages/logout.astro)
+  - [`src/pages/account.astro`](src/pages/account.astro)
+- contact relay API in [`src/pages/api/contact.ts`](src/pages/api/contact.ts) with adapter in [`src/lib/email.ts`](src/lib/email.ts)
+- operations runbook in [`docs/runbook/phase-2-1-auth-google-d1-cloudflare-email.md`](docs/runbook/phase-2-1-auth-google-d1-cloudflare-email.md)
 
 Planned replacement scope:
 
