@@ -32,6 +32,10 @@ function normalizeMembershipConfig(rawConfig) {
   return normalized;
 }
 
+function toSqlString(value) {
+  return `'${String(value).replaceAll("'", "''")}'`;
+}
+
 function createInsertStatements(config) {
   const nowIso = new Date().toISOString();
   const statements = [];
@@ -41,7 +45,7 @@ function createInsertStatements(config) {
       const id = `${userId}:${campaignSlug}`.replace(/[^a-zA-Z0-9:_-]/g, '_');
       statements.push(
         `INSERT OR IGNORE INTO campaign_memberships (id, user_id, campaign_slug, role, created_at)
-VALUES ('${id}', '${userId}', '${campaignSlug}', 'member', '${nowIso}');`,
+VALUES (${toSqlString(id)}, ${toSqlString(userId)}, ${toSqlString(campaignSlug)}, 'member', ${toSqlString(nowIso)});`,
       );
     }
   }

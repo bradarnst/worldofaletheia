@@ -171,28 +171,39 @@ export function createCampaignAccessResolverFromRequest(options: {
   });
 
   let resolvedSessionPromise: Promise<RequestSession | null> | null = null;
+  const membershipByCampaign = new Map<string, Promise<boolean>>();
 
   return {
     async hasCampaignAccess(campaignSlug: string): Promise<boolean> {
-      if (!resolvedSessionPromise) {
-        resolvedSessionPromise = getRequestSession(request, locals);
+      const existing = membershipByCampaign.get(campaignSlug);
+      if (existing) {
+        return existing;
       }
 
-      const session = await resolvedSessionPromise;
-      if (!session) {
-        return allowLegacyEnvFallback ? legacyResolver.hasCampaignAccess(campaignSlug) : false;
-      }
+      const decision = (async () => {
+        if (!resolvedSessionPromise) {
+          resolvedSessionPromise = getRequestSession(request, locals);
+        }
 
-      try {
-        const repo = createCampaignMembershipRepoFromLocals(locals);
-        return await repo.isUserMemberOfCampaign(session.user.id, campaignSlug);
-      } catch (error) {
-        console.error('campaign.membership.query_failed', {
-          message: error instanceof Error ? error.message : 'unknown error',
-          campaignSlug,
-        });
-        return allowLegacyEnvFallback ? legacyResolver.hasCampaignAccess(campaignSlug) : false;
-      }
+        const session = await resolvedSessionPromise;
+        if (!session) {
+          return allowLegacyEnvFallback ? legacyResolver.hasCampaignAccess(campaignSlug) : false;
+        }
+
+        try {
+          const repo = createCampaignMembershipRepoFromLocals(locals);
+          return await repo.isUserMemberOfCampaign(session.user.id, campaignSlug);
+        } catch (error) {
+          console.error('campaign.membership.query_failed', {
+            message: error instanceof Error ? error.message : 'unknown error',
+            campaignSlug,
+          });
+          return allowLegacyEnvFallback ? legacyResolver.hasCampaignAccess(campaignSlug) : false;
+        }
+      })();
+
+      membershipByCampaign.set(campaignSlug, decision);
+      return decision;
     },
   };
 }
