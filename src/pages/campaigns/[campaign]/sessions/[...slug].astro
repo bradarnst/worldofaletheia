@@ -53,10 +53,9 @@ const session = {
   date: sessionEntry.data.date,
   duration: sessionEntry.data.duration,
   type: sessionEntry.data.type,
-  permissions: sessionEntry.data.permissions,
+  visibility: sessionEntry.data.visibility,
   excerpt: sessionEntry.data.excerpt,
   tags: sessionEntry.data.tags,
-  secret: sessionEntry.data.secret,
   author: sessionEntry.data.author,
   createdAt: sessionEntry.data.created,
 };
@@ -123,10 +122,9 @@ const title = `${session.title} - ${campaignDetail?.title || campaign}`;
     <header class="mb-8 not-prose">
       <div class="flex items-center gap-2 mb-2">
         <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm uppercase">{session.type}</span>
-        {session.secret && (
-          <span class="px-2 py-1 bg-red-100 text-red-800 rounded text-sm">Secret</span>
+        {session.visibility && (
+          <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-sm">{session.visibility}</span>
         )}
-        <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-sm">{session.permissions}</span>
       </div>
       
       <h1 class="text-3xl font-bold text-ink-950 mb-4">{session.title}</h1>

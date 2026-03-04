@@ -41,10 +41,9 @@ const sessions = allSessions
       date: entry.data.date,
       duration: entry.data.duration,
       type: entry.data.type,
-      permissions: entry.data.permissions,
+      visibility: entry.data.visibility,
       excerpt: entry.data.excerpt,
       tags: entry.data.tags,
-      secret: entry.data.secret,
       campaignSlug: entry.data.campaign,
     };
   });
@@ -122,8 +121,8 @@ const title = campaignDetail ? `${campaignDetail.title} - Sessions` : 'Campaign 
                       <span>{Math.floor(session.duration / 60)}h {session.duration % 60}m</span>
                     )}
                     <span class="px-2 py-0.5 bg-gray-100 rounded text-xs uppercase">{session.type}</span>
-                    {session.secret && (
-                      <span class="px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs">Secret</span>
+                    {session.visibility && (
+                      <span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">{session.visibility}</span>
                     )}
                   </div>
                 </div>

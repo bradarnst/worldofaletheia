@@ -3,13 +3,12 @@ interface Props {
   title: string;
   author?: string;
   created?: Date;
-  secret?: boolean;
   campaign?: string;
   excerpt?: string;
   tags?: string[];
 }
 
-const { title, author, created, secret, campaign, excerpt, tags } = Astro.props;
+const { title, author, created, campaign, excerpt, tags } = Astro.props;
 ---
 
 <header class="bg-base-100 pb-4">
@@ -22,7 +21,6 @@ const { title, author, created, secret, campaign, excerpt, tags } = Astro.props;
       {author && <span>By {author}</span>}
       {author && created && <span>•</span>}
       {created && <span>{created.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>}
-      {secret && <span class="px-2 py-1 rounded bg-red-100 text-red-800">Secret</span>}
       {campaign && <span class="px-2 py-1 rounded bg-green-100 text-green-800">{campaign}</span>}
     </div>
     

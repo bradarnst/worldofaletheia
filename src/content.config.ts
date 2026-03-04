@@ -9,10 +9,15 @@ const baseSchema = z.object({
   'created-date': z.coerce.date().optional(),
   modified: z.coerce.date().optional(),
   'modified-date': z.coerce.date().optional(),
-  secret: z.boolean(),
+  // Deprecated: retained only for backward compatibility with existing content files.
+  // Access control enforcement must ignore this field.
+  secret: z.boolean().optional().default(false),
   tags: z.array(z.string()).default([]),
   campaign: z.string().optional(),
-  permissions: z.enum(['public', 'player', 'gm', 'author']).default('public'),
+  // Single access-control input for campaign content.
+  visibility: z.enum(['public', 'campaignMembers']).default('public'),
+  // Deprecated role label metadata: never used as an authorization gate.
+  permissions: z.enum(['public', 'player', 'gm', 'author']).optional().default('public'),
   parentChain: z.array(z.object({
     label: z.string(),
     href: z.string(),

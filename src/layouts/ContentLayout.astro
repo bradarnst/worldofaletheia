@@ -27,7 +27,6 @@ const contentDescription = description || data.excerpt || content.excerpt;
           <span>By {data.author || content.author}</span>
           <span>•</span>
           <span>{(data.created || content.created).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
-          {(data.secret || content.secret) && <span class="px-2 py-1 rounded bg-red-100 text-red-800">Secret</span>}
           {(data.campaign || content.campaign) && <span class="px-2 py-1 rounded bg-green-100 text-green-800">{data.campaign || content.campaign}</span>}
         </div>
         

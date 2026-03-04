@@ -11,10 +11,7 @@ export function shouldIncludeContent(content: any, environment: string = 'produc
     return false;
   }
 
-  // Keep secret content development-only regardless of workflow state.
-  if (data.secret) {
-    return environment === 'development';
-  }
+  // Deprecated policy: secret is ignored for access control.
 
   // Always include published content in all environments.
   if (data.status === 'publish' || data.status === 'published') {

@@ -3,14 +3,13 @@ interface Props {
   title: string;
   author?: string;
   created?: Date;
-  secret?: boolean;
   excerpt?: string;
   tags?: string[];
   parentChain?: Array<{ label: string; href: string }>;
   relationships?: Array<{ label: string; href: string; kind?: 'partOf' | 'connectedTo' }>;
 }
 
-const { title, author, created, secret, excerpt, tags, parentChain = [], relationships = [] } = Astro.props;
+const { title, author, created, excerpt, tags, parentChain = [], relationships = [] } = Astro.props;
 const partOf = relationships.filter((rel) => rel.kind === 'partOf');
 const connectedTo = relationships.filter((rel) => rel.kind !== 'partOf');
 ---
@@ -40,7 +39,6 @@ const connectedTo = relationships.filter((rel) => rel.kind !== 'partOf');
       {author && <span>By {author}</span>}
       {author && created && <span>•</span>}
       {created && <span>{created.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>}
-      {secret && <span class="px-2 py-1 rounded bg-red-100 text-red-800">Secret</span>}
     </div>
     
     {tags && tags.length > 0 && (

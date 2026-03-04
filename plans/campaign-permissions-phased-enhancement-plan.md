@@ -3,7 +3,7 @@
 ## Status
 
 - **Date:** 2026-03-02
-- **Status:** Proposed
+- **Status:** Phase 1 implemented (policy, schema, UI metadata, tests)
 - **Scope:** Planning / policy alignment before implementation
 
 ## Context
@@ -65,6 +65,8 @@ Goal: align current policy without overhauling architecture.
 - Deprecate `secret` completely and ignore it for access decisions.
 - Define `visibility` as the single access-control input.
 - Clarify GM labels are discoverability metadata, not a protection layer.
+
+Implementation note (2026-03-04): completed in code/docs.
 
 ### Phase 2 — Campaign Auth MVP (authentication + membership gate)
 
