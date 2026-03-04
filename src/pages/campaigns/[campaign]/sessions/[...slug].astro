@@ -1,6 +1,7 @@
 ---
 import { getCollection, getEntry, render } from 'astro:content';
 import CampaignsContentLayout from '@layouts/CampaignsContentLayout.astro';
+import { canViewCampaignContent, createCampaignAccessResolver } from '@utils/campaign-access';
 
 export async function getStaticPaths() {
   const sessionsCollection = await getCollection('sessions');
@@ -98,6 +99,16 @@ const nextSession = currentIndex < sortedSessions.length - 1 ? sortedSessions[cu
 
 const { Content } = await render(sessionEntry);
 
+const accessResolver = createCampaignAccessResolver({
+  cookieHeader: Astro.request.headers.get('cookie'),
+  membershipConfigRaw: import.meta.env.CAMPAIGN_MEMBERSHIPS,
+});
+const canViewSession = canViewCampaignContent({
+  visibility: sessionEntry.data.visibility,
+  campaignSlug: campaign!,
+  access: accessResolver,
+});
+
 const title = `${session.title} - ${campaignDetail?.title || campaign}`;
 ---
 
@@ -154,7 +165,17 @@ const title = `${session.title} - ${campaignDetail?.title || campaign}`;
       </div>
     </header>
 
-    <Content />
+    {canViewSession ? (
+      <Content />
+    ) : (
+      <section>
+        <h2>Restricted campaign session</h2>
+        <p>
+          This session is restricted to campaign members. Use a valid session cookie tied to this campaign
+          in the local access map to view the session notes.
+        </p>
+      </section>
+    )}
 
     <!-- Session Navigation -->
     <nav class="mt-12 pt-6 border-t not-prose">

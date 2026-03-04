@@ -1,6 +1,7 @@
 ---
 import { getCollection, getEntry } from 'astro:content';
 import CampaignsLayout from '@layouts/CampaignsLayout.astro';
+import { canViewCampaignContent, createCampaignAccessResolver } from '@utils/campaign-access';
 
 export async function getStaticPaths() {
   const campaignsCollection = await getCollection('campaigns');
@@ -28,8 +29,20 @@ const campaignDetail = {
 };
 
 const allSessions = await getCollection('sessions');
+const accessResolver = createCampaignAccessResolver({
+  cookieHeader: Astro.request.headers.get('cookie'),
+  membershipConfigRaw: import.meta.env.CAMPAIGN_MEMBERSHIPS,
+});
+
 const sessions = allSessions
   .filter((entry) => entry.data.campaign === campaign)
+  .filter((entry) =>
+    canViewCampaignContent({
+      visibility: entry.data.visibility,
+      campaignSlug: campaign!,
+      access: accessResolver,
+    }),
+  )
   .map((entry) => {
     const parts = entry.id.split('/');
     const sessionSlug = parts[parts.length - 1];

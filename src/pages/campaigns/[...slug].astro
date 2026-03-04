@@ -1,6 +1,7 @@
 ---
 import { getCollection, getEntry, render } from 'astro:content';
 import CampaignsContentLayout from '@layouts/CampaignsContentLayout.astro';
+import { canViewCampaignContent, createCampaignAccessResolver } from '@utils/campaign-access';
 
 export async function getStaticPaths() {
   const campaignsCollection = await getCollection('campaigns');
@@ -19,10 +20,31 @@ if (!entry) {
 }
 
 const { Content } = await render(entry);
+
+const campaignSlug = entry.id.replace(/\/index$/, '');
+const accessResolver = createCampaignAccessResolver({
+  cookieHeader: Astro.request.headers.get('cookie'),
+  membershipConfigRaw: import.meta.env.CAMPAIGN_MEMBERSHIPS,
+});
+const canView = canViewCampaignContent({
+  visibility: entry.data.visibility,
+  campaignSlug,
+  access: accessResolver,
+});
 ---
 
 <CampaignsContentLayout content={entry}>
-  <article class="reading-prose">
-    <Content />
-  </article>
+  {canView ? (
+    <article class="reading-prose">
+      <Content />
+    </article>
+  ) : (
+    <article class="reading-prose">
+      <h2>Restricted campaign content</h2>
+      <p>
+        This campaign entry is visible to campaign members only. Use a valid session cookie tied to this campaign
+        in the local access map to view it.
+      </p>
+    </article>
+  )}
 </CampaignsContentLayout>

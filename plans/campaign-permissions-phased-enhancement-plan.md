@@ -82,6 +82,8 @@ MVP authorization rule:
 - `public` campaign entries: visible to all
 - `campaignMembers` entries: authenticated campaign members only
 
+Implementation note (2026-03-04): local/dev MVP gate completed with config+cookie resolver and campaign-route enforcement. Better Auth + D1 wiring deferred to Phase 2.1 replacement.
+
 ### Phase 3 — Discoverability metadata UX (optional near-term)
 
 Goal: improve browsing/discovery without changing security behavior.
