@@ -28,6 +28,25 @@ Set `CAMPAIGN_MEMBERSHIPS` as JSON in your environment:
 
 The gate reads cookie `aletheia-dev-session=<sessionId>` and checks if that session id is mapped to the campaign slug.
 
+Campaign visibility defaults are now maintained in [`src/content/campaigns/access.config.json`](src/content/campaigns/access.config.json).
+
+- This file is validated at runtime through [`normalizeCampaignAccessConfig()`](src/utils/campaign-access-config.ts:18).
+- Safe default is empty config (no overrides).
+- Existing frontmatter `visibility` remains the source of truth when no valid campaign override exists.
+- Security precedence is fail-safe: config may tighten to `campaignMembers`, but never downgrade `campaignMembers` content to `public`.
+
+Config format:
+
+```json
+{
+  "campaigns": {
+    "brad": { "visibility": "campaignMembers" },
+    "barry": { "visibility": "public" },
+    "sample-campaign": { "visibility": "public" }
+  }
+}
+```
+
 ## Example (local)
 
 1. Set env:
@@ -47,4 +66,3 @@ aletheia-dev-session=dev123
 ## Future replacement
 
 The gate is intentionally isolated in [`campaign-access.ts`](src/utils/campaign-access.ts) so Better Auth + D1 can replace resolver internals without changing campaign route authorization calls.
-

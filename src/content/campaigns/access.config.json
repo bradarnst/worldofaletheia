@@ -1,0 +1,22 @@
+{
+  "memberships": {
+    "jim": {
+      "campaigns": ["brad"]
+    },
+    "fred": {
+      "campaigns": ["brad", "barry"]
+    },
+    "martha": {
+      "campaigns": ["brad"]
+    },
+    "tom": {
+      "campaigns": ["barry"]
+    },
+    "nancy": {
+      "campaigns": ["barry"]
+    },
+    "bob": {
+      "campaigns": ["barry"]
+    }
+  }
+}

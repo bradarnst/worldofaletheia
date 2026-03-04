@@ -3,7 +3,10 @@
 ## Status
 
 - **Date:** 2026-03-02
-- **Status:** Phase 1 implemented (policy, schema, UI metadata, tests)
+- **Status:**
+  - Phase 1 implemented (policy, schema, UI metadata, tests)
+  - Phase 2 implemented as local/dev MVP gate (config+cookie membership resolver)
+  - Phase 2.1 pending (Better Auth + D1 + real login UX replacement)
 - **Scope:** Planning / policy alignment before implementation
 
 ## Context
@@ -82,7 +85,36 @@ MVP authorization rule:
 - `public` campaign entries: visible to all
 - `campaignMembers` entries: authenticated campaign members only
 
-Implementation note (2026-03-04): local/dev MVP gate completed with config+cookie resolver and campaign-route enforcement. Better Auth + D1 wiring deferred to Phase 2.1 replacement.
+Implementation note (2026-03-04): local/dev MVP gate completed with config+cookie resolver and campaign-route enforcement.
+
+Delivered in Phase 2:
+
+- campaign-only resolver module and policy gate in [`canViewCampaignContent()`](src/utils/campaign-access.ts:71)
+- membership resolver seam in [`createCampaignAccessResolver()`](src/utils/campaign-access.ts:83)
+- route enforcement on:
+  - [`src/pages/campaigns/[...slug].astro`](src/pages/campaigns/[...slug].astro)
+  - [`src/pages/campaigns/[campaign]/sessions/index.astro`](src/pages/campaigns/[campaign]/sessions/index.astro)
+  - [`src/pages/campaigns/[campaign]/sessions/[...slug].astro`](src/pages/campaigns/[campaign]/sessions/[...slug].astro)
+- local/dev operational doc in [`docs/runbook/campaign-access-local-dev.md`](docs/runbook/campaign-access-local-dev.md)
+
+### Phase 2.1 — Better Auth + D1 Replacement (next)
+
+Goal: replace temporary local/dev gate internals with production-grade auth/session/membership while preserving current route authorization call sites.
+
+Planned replacement scope:
+
+- integrate Better Auth session handling
+- persist campaign membership in Cloudflare D1
+- implement login/logout/session UX and flow
+- replace env/cookie-map resolver internals behind [`createCampaignAccessResolver()`](src/utils/campaign-access.ts:83)
+- keep `visibility` authorization semantics unchanged (`public` vs `campaignMembers`)
+
+Deferred from Phase 2 to 2.1:
+
+- Better Auth wiring
+- D1 persistence
+- real login UI/UX
+- OAuth/provider flows
 
 ### Phase 3 — Discoverability metadata UX (optional near-term)
 

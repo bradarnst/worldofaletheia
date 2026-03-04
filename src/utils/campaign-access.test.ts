@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canViewCampaignContent, createCampaignAccessResolver } from './campaign-access';
+import { canViewCampaignContent, createCampaignAccessResolver, getCampaignContentVisibility } from './campaign-access';
 
 describe('campaign access resolver', () => {
   it('allows public visibility without membership', () => {
@@ -134,5 +134,84 @@ describe('campaign access resolver', () => {
         access: resolver,
       }),
     ).toBe(false);
+  });
+
+  it('uses content visibility when campaign access config is missing', () => {
+    const resolver = createCampaignAccessResolver({
+      cookieHeader: null,
+      membershipConfigRaw: undefined,
+    });
+
+    expect(
+      getCampaignContentVisibility({
+        campaignSlug: 'brad',
+        contentVisibility: 'campaignMembers',
+        access: resolver,
+      }),
+    ).toBe('campaignMembers');
+
+    expect(
+      getCampaignContentVisibility({
+        campaignSlug: 'barry',
+        contentVisibility: 'public',
+        access: resolver,
+      }),
+    ).toBe('public');
+  });
+
+  it('applies per-campaign config when it tightens visibility to campaignMembers', () => {
+    const resolver = createCampaignAccessResolver({
+      cookieHeader: null,
+      membershipConfigRaw: undefined,
+      campaignAccessConfigRaw: JSON.stringify({
+        campaigns: {
+          brad: { visibility: 'campaignMembers' },
+        },
+      }),
+    });
+
+    expect(
+      getCampaignContentVisibility({
+        campaignSlug: 'brad',
+        contentVisibility: 'public',
+        access: resolver,
+      }),
+    ).toBe('campaignMembers');
+  });
+
+  it('does not allow config to downgrade campaignMembers content to public', () => {
+    const resolver = createCampaignAccessResolver({
+      cookieHeader: null,
+      membershipConfigRaw: undefined,
+      campaignAccessConfigRaw: JSON.stringify({
+        campaigns: {
+          brad: { visibility: 'public' },
+        },
+      }),
+    });
+
+    expect(
+      getCampaignContentVisibility({
+        campaignSlug: 'brad',
+        contentVisibility: 'campaignMembers',
+        access: resolver,
+      }),
+    ).toBe('campaignMembers');
+  });
+
+  it('ignores invalid campaign access config shape and preserves content visibility', () => {
+    const resolver = createCampaignAccessResolver({
+      cookieHeader: null,
+      membershipConfigRaw: undefined,
+      campaignAccessConfigRaw: JSON.stringify({ campaigns: ['bad-shape'] }),
+    });
+
+    expect(
+      getCampaignContentVisibility({
+        campaignSlug: 'brad',
+        contentVisibility: 'public',
+        access: resolver,
+      }),
+    ).toBe('public');
   });
 });
