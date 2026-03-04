@@ -3,8 +3,8 @@
 ## Executive Summary
 
 This document outlines a comprehensive content publishing system for the World of Aletheia worldbuilding site, designed to handle:
-- Multi-author content with author-specific secrets
-- Three-tier visibility system: draft, published, and secret
+- Multi-author content with campaign-scoped gated access
+- Editorial status workflow plus visibility-based campaign access control
 - Obsidian-based Markdown content workflow
 - Cloudflare Workers deployment via GitHub Actions
 
@@ -15,14 +15,24 @@ The currently active direction for implementation prioritization is:
 1. **Canon** and **Using Aletheia** are public-by-default domains.
 2. **Campaigns** are the first enforced auth boundary.
 3. Campaign root/index blurbs remain public, while per-campaign content may be gated.
-4. `secret` is no longer treated as the primary long-term protection mechanism for main-site domains.
-5. Protection is expected to move to authenticated request-time checks for campaign content.
+4. `secret` is fully deprecated and ignored for access decisions.
+5. `visibility` is the single access-control mechanism for campaign materials (`public` | `campaignMembers`).
+6. GM labels are discoverability/filter metadata only, never authorization.
+7. Protection is expected to move to authenticated request-time checks for campaign content.
 
 This policy shift is intentionally incremental and aligned with Astro-native/YAGNI decisions. See:
 
 - [`plans/campaign-permissions-phased-enhancement-plan.md`](plans/campaign-permissions-phased-enhancement-plan.md)
 - [`plans/adrs/0001-obsidian-first-content-architecture.md`](plans/adrs/0001-obsidian-first-content-architecture.md)
 - [`plans/adrs/0004-campaigns-astro-native-content-access-policy.md`](plans/adrs/0004-campaigns-astro-native-content-access-policy.md)
+
+### Policy Supersession Note
+
+If older sections below mention `secret`, role-threshold enforcement (`gm`/`player`) as security, or parallel ACL semantics under `permissions`, those are historical notes only. Implementation guidance is now:
+
+- use `visibility` as the only access-control input for campaign content
+- ignore `secret` for access control
+- treat GM labels (`gm`, `gm-data`, `gm-info`) as metadata for discovery/filtering only
 
 ---
 
