@@ -14,8 +14,6 @@ const baseSchema = z.object({
   secret: z.boolean().optional().default(false),
   tags: z.array(z.string()).default([]),
   campaign: z.string().optional(),
-  // Single access-control input for campaign content.
-  visibility: z.enum(['public', 'campaignMembers']).default('public'),
   // Deprecated role label metadata: never used as an authorization gate.
   permissions: z.enum(['public', 'player', 'gm', 'author']).optional().default('public'),
   parentChain: z.array(z.object({
@@ -86,6 +84,8 @@ const campaignsSchema = baseSchema.omit({ status: true }).extend({
   type: z.enum(['campaign', 'adventure', 'quest', 'story']),
   excerpt: z.string().optional(),
   status: z.enum(['planning', 'active', 'completed', 'on-hold', 'cancelled']),
+  // Campaign-domain-only access control field.
+  visibility: z.enum(['public', 'campaignMembers']),
   start: z.date().optional(),
   end: z.date().optional(),
 });
@@ -96,6 +96,8 @@ const sessionsSchema = baseSchema.extend({
   type: z.enum(['session', 'encounter', 'battle', 'roleplay']),
   excerpt: z.string().optional(),
   campaign: z.string(),
+  // Campaign-domain-only access control field.
+  visibility: z.enum(['public', 'campaignMembers']),
   date: z.date().optional(),
   duration: z.number().optional(), // in minutes
 });

@@ -12,6 +12,7 @@ export function shouldIncludeContent(content: any, environment: string = 'produc
   }
 
   // Deprecated policy: secret is ignored for access control.
+  // Visibility is campaign-domain auth metadata and is intentionally not enforced here.
 
   // Always include published content in all environments.
   if (data.status === 'publish' || data.status === 'published') {
