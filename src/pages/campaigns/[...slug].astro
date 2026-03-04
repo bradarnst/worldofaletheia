@@ -5,6 +5,9 @@ import { canViewCampaignContent, createCampaignAccessResolver } from '@utils/cam
 
 export async function getStaticPaths() {
   const campaignsCollection = await getCollection('campaigns');
+  if (campaignsCollection.length === 0) {
+    return [];
+  }
   return campaignsCollection.map((item) => ({
     params: { slug: item.id.replace(/\/index$/, '') },
   }));
@@ -16,7 +19,7 @@ const entry =
   (await getEntry('campaigns', `${slug}/index`));
 
 if (!entry) {
-  throw new Error(`Campaign with slug '${slug}' not found`);
+  return Astro.redirect('/campaigns');
 }
 
 const { Content } = await render(entry);
