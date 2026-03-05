@@ -16,7 +16,7 @@ const entry =
   (await getEntry('campaigns', `${slug}/index`));
 
 if (!entry) {
-  return Astro.redirect('/campaigns');
+  throw Astro.redirect('/campaigns');
 }
 
 const { Content } = await render(entry);

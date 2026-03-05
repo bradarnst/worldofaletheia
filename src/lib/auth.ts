@@ -38,20 +38,30 @@ function buildAuthOptions(env: Record<string, unknown>): BetterAuthOptions {
     trustedOrigins.push(`https://${cfPagesUrl}`);
   }
 
+  const googleClientId = getOptionalString(env, 'GOOGLE_CLIENT_ID');
+  const googleClientSecret = getOptionalString(env, 'GOOGLE_CLIENT_SECRET');
+
+  const socialProviders =
+    googleClientId && googleClientSecret
+      ? {
+          google: {
+            clientId: googleClientId,
+            clientSecret: googleClientSecret,
+          },
+          // Provider map is intentionally shaped for additive provider rollout in later phases.
+        }
+      : undefined;
+
   return {
     baseURL,
     secret: getRequiredString(env, 'BETTER_AUTH_SECRET'),
     database: getD1BindingFromRuntimeEnv(env) as BetterAuthOptions['database'],
     trustedOrigins,
-    socialProviders: {
-      google: {
-        clientId: getRequiredString(env, 'GOOGLE_CLIENT_ID'),
-        clientSecret: getRequiredString(env, 'GOOGLE_CLIENT_SECRET'),
-      },
-      // Provider map is intentionally shaped for additive provider rollout in later phases.
-    },
+    socialProviders,
     emailAndPassword: {
-      enabled: false,
+      enabled: true,
+      autoSignIn: true,
+      requireEmailVerification: false,
     },
     emailVerification: {
       sendVerificationEmail: async (data: {

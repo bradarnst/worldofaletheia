@@ -8,17 +8,69 @@ const callbackURL = new URL(next, Astro.url.origin).toString();
 ---
 
 <MainSiteLayout title="Login - World of Aletheia" description="Sign in to access campaign member content.">
-  <section class="max-w-xl mx-auto py-12">
-    <h1 class="text-3xl font-bold mb-4">Sign in</h1>
-    <p class="mb-6">
-      Campaign member-only content requires an authenticated account with campaign membership in the access table.
-    </p>
+  <section class="max-w-xl mx-auto py-12 space-y-8">
+    <div>
+      <h1 class="text-3xl font-bold mb-4">Sign in</h1>
+      <p class="mb-6">
+        Campaign member-only content requires an authenticated account with campaign membership in the access table.
+      </p>
 
-    <form action="/api/auth/sign-in/social" method="POST" class="space-y-3">
-      <input type="hidden" name="provider" value="google" />
-      <input type="hidden" name="callbackURL" value={callbackURL} />
-      <button type="submit" class="btn btn-primary w-full">Continue with Google</button>
-    </form>
+      <form action="/api/auth/sign-in/social" method="POST" class="space-y-3">
+        <input type="hidden" name="provider" value="google" />
+        <input type="hidden" name="callbackURL" value={callbackURL} />
+        <button type="submit" class="btn btn-primary w-full">Continue with Google</button>
+      </form>
+    </div>
+
+    <div class="divider">or</div>
+
+    <div class="space-y-6">
+      <form action="/api/auth/sign-in/email" method="POST" class="space-y-3">
+        <h2 class="text-xl font-semibold">Sign in with email</h2>
+        <label class="form-control w-full">
+          <span class="label-text">Email</span>
+          <input type="email" name="email" required class="input input-bordered w-full" autocomplete="email" />
+        </label>
+        <label class="form-control w-full">
+          <span class="label-text">Password</span>
+          <input
+            type="password"
+            name="password"
+            required
+            class="input input-bordered w-full"
+            minlength="8"
+            autocomplete="current-password"
+          />
+        </label>
+        <input type="hidden" name="callbackURL" value={callbackURL} />
+        <button type="submit" class="btn btn-outline w-full">Sign in with email</button>
+      </form>
+
+      <form action="/api/auth/sign-up/email" method="POST" class="space-y-3">
+        <h2 class="text-xl font-semibold">Create account with email</h2>
+        <label class="form-control w-full">
+          <span class="label-text">Name</span>
+          <input type="text" name="name" required class="input input-bordered w-full" autocomplete="name" />
+        </label>
+        <label class="form-control w-full">
+          <span class="label-text">Email</span>
+          <input type="email" name="email" required class="input input-bordered w-full" autocomplete="email" />
+        </label>
+        <label class="form-control w-full">
+          <span class="label-text">Password</span>
+          <input
+            type="password"
+            name="password"
+            required
+            class="input input-bordered w-full"
+            minlength="8"
+            autocomplete="new-password"
+          />
+        </label>
+        <input type="hidden" name="callbackURL" value={callbackURL} />
+        <button type="submit" class="btn btn-secondary w-full">Create account</button>
+      </form>
+    </div>
   </section>
 </MainSiteLayout>
 
