@@ -26,3 +26,7 @@ config/content-sync.config.json
 
 # content sync backups
 .content-sync-backups/
+
+# wrangler local runtime artifacts
+.wrangler/state/
+.wrangler/tmp/

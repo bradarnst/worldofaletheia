@@ -10,11 +10,6 @@
 			"binding": "DB",
 			"database_name": "world-of-aletheia",
 			"database_id": "38825456-2299-45de-a25e-ee1b98bea6ec"
-		},
-		{
-			"binding": "world_of_aletheia",
-			"database_name": "world-of-aletheia",
-			"database_id": "38825456-2299-45de-a25e-ee1b98bea6ec"
 		}
 	],
 	"vars": {
@@ -50,12 +45,7 @@
 					"binding": "DB",
 					"database_name": "world-of-aletheia-staging",
 					"database_id": "500030de-a6b3-47dc-8ab7-dd51128f35c8"
-				},
-		{
-			"binding": "world_of_aletheia_staging",
-			"database_name": "world-of-aletheia-staging",
-			"database_id": "500030de-a6b3-47dc-8ab7-dd51128f35c8"
-		}
+				}
 			]
 		}
 	}
