@@ -21,9 +21,9 @@ interface EmailEnv {
   emailFrom?: string;
   emailReplyTo?: string;
   contactToEmail?: string;
-  routeMode?: string;
-  endpoint?: string;
-  apiKey?: string;
+  mailjetApiKey?: string;
+  mailjetSecretKey?: string;
+  mailjetSandboxMode?: string;
 }
 
 function readEnvString(env: Record<string, unknown>, key: string): string | undefined {
@@ -41,9 +41,9 @@ function getEnv(overrides?: Record<string, unknown>): EmailEnv {
       emailFrom: readEnvString(overrides, 'EMAIL_FROM'),
       emailReplyTo: readEnvString(overrides, 'EMAIL_REPLY_TO'),
       contactToEmail: readEnvString(overrides, 'CONTACT_TO_EMAIL'),
-      routeMode: readEnvString(overrides, 'EMAIL_WORKER_ROUTE_MODE'),
-      endpoint: readEnvString(overrides, 'EMAIL_WORKER_ENDPOINT'),
-      apiKey: readEnvString(overrides, 'EMAIL_WORKER_API_KEY'),
+      mailjetApiKey: readEnvString(overrides, 'MAILJET_API_KEY'),
+      mailjetSecretKey: readEnvString(overrides, 'MAILJET_SECRET_KEY'),
+      mailjetSandboxMode: readEnvString(overrides, 'MAILJET_SANDBOX_MODE'),
     };
   }
 
@@ -51,36 +51,65 @@ function getEnv(overrides?: Record<string, unknown>): EmailEnv {
     emailFrom: import.meta.env.EMAIL_FROM,
     emailReplyTo: import.meta.env.EMAIL_REPLY_TO,
     contactToEmail: import.meta.env.CONTACT_TO_EMAIL,
-    routeMode: import.meta.env.EMAIL_WORKER_ROUTE_MODE,
-    endpoint: import.meta.env.EMAIL_WORKER_ENDPOINT,
-    apiKey: import.meta.env.EMAIL_WORKER_API_KEY,
+    mailjetApiKey: import.meta.env.MAILJET_API_KEY,
+    mailjetSecretKey: import.meta.env.MAILJET_SECRET_KEY,
+    mailjetSandboxMode: import.meta.env.MAILJET_SANDBOX_MODE,
   };
 }
 
-class CloudflareRouteEmailProvider implements EmailProvider {
+function isSandboxEnabled(value: string | undefined): boolean {
+  return value === 'on' || value === 'true' || value === '1';
+}
+
+function createMailjetAuthorizationHeader(apiKey: string, secretKey: string): string {
+  const encoded = btoa(`${apiKey}:${secretKey}`);
+  return `Basic ${encoded}`;
+}
+
+function toMailjetRecipientList(csvEmails: string | undefined): Array<{ Email: string }> {
+  if (!csvEmails) {
+    return [];
+  }
+
+  return csvEmails
+    .split(',')
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0)
+    .map((email) => ({ Email: email }));
+}
+
+class MailjetEmailProvider implements EmailProvider {
   async sendVerificationEmail(input: SendVerificationEmailInput): Promise<void> {
     const env = getEnv(input.env);
-    if (env.routeMode === 'dry-run') {
-      return;
+    if (!env.mailjetApiKey || !env.mailjetSecretKey || !env.emailFrom) {
+      throw new Error('MAILJET_API_KEY, MAILJET_SECRET_KEY and EMAIL_FROM are required for verification email');
     }
 
-    if (!env.endpoint || !env.emailFrom) {
-      throw new Error('EMAIL_WORKER_ENDPOINT and EMAIL_FROM are required when email route mode is not dry-run');
-    }
-
-    const response = await fetch(env.endpoint, {
+    const response = await fetch('https://api.mailjet.com/v3.1/send', {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
-        ...(env.apiKey ? { authorization: `Bearer ${env.apiKey}` } : {}),
+        authorization: createMailjetAuthorizationHeader(env.mailjetApiKey, env.mailjetSecretKey),
       },
       body: JSON.stringify({
-        type: 'verification',
-        from: env.emailFrom,
-        to: input.email,
-        replyTo: env.emailReplyTo,
-        subject: 'Verify your Aletheia account',
-        text: `Use this link to verify your account: ${input.verificationUrl}`,
+        SandboxMode: isSandboxEnabled(env.mailjetSandboxMode),
+        Messages: [
+          {
+            From: {
+              Email: env.emailFrom,
+            },
+            To: [{ Email: input.email }],
+            ...(env.emailReplyTo
+              ? {
+                  ReplyTo: {
+                    Email: env.emailReplyTo,
+                  },
+                }
+              : {}),
+            Subject: 'Verify your Aletheia account',
+            TextPart: `Use this link to verify your account: ${input.verificationUrl}`,
+          },
+        ],
       }),
     });
 
@@ -91,31 +120,39 @@ class CloudflareRouteEmailProvider implements EmailProvider {
 
   async sendContactEmail(input: SendContactEmailInput): Promise<void> {
     const env = getEnv(input.env);
-    if (env.routeMode === 'dry-run') {
-      return;
+    if (!env.mailjetApiKey || !env.mailjetSecretKey || !env.contactToEmail || !env.emailFrom) {
+      throw new Error('MAILJET_API_KEY, MAILJET_SECRET_KEY, EMAIL_FROM and CONTACT_TO_EMAIL are required for contact relay');
     }
 
-    if (!env.endpoint || !env.contactToEmail || !env.emailFrom) {
-      throw new Error('EMAIL_WORKER_ENDPOINT, EMAIL_FROM and CONTACT_TO_EMAIL are required for contact relay');
+    const recipients = toMailjetRecipientList(env.contactToEmail);
+    if (recipients.length === 0) {
+      throw new Error('CONTACT_TO_EMAIL must contain at least one valid recipient email');
     }
 
-    const response = await fetch(env.endpoint, {
+    const response = await fetch('https://api.mailjet.com/v3.1/send', {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
-        ...(env.apiKey ? { authorization: `Bearer ${env.apiKey}` } : {}),
+        authorization: createMailjetAuthorizationHeader(env.mailjetApiKey, env.mailjetSecretKey),
       },
       body: JSON.stringify({
-        type: 'contact',
-        from: env.emailFrom,
-        to: env.contactToEmail,
-        replyTo: input.email,
-        subject: `Aletheia contact form: ${input.name}`,
-        text: input.message,
-        metadata: {
-          requestId: input.requestId,
-          senderName: input.name,
-        },
+        SandboxMode: isSandboxEnabled(env.mailjetSandboxMode),
+        Messages: [
+          {
+            From: {
+              Email: env.emailFrom,
+            },
+            To: recipients,
+            ReplyTo: {
+              Email: input.email,
+            },
+            Subject: `Aletheia contact form: ${input.name}`,
+            TextPart: input.message,
+            Headers: {
+              'X-Aletheia-Request-Id': input.requestId,
+            },
+          },
+        ],
       }),
     });
 
@@ -125,7 +162,7 @@ class CloudflareRouteEmailProvider implements EmailProvider {
   }
 }
 
-const provider: EmailProvider = new CloudflareRouteEmailProvider();
+const provider: EmailProvider = new MailjetEmailProvider();
 
 export async function sendVerificationEmail(input: SendVerificationEmailInput): Promise<void> {
   await provider.sendVerificationEmail(input);

@@ -9,13 +9,12 @@ interface ImportMetaEnv {
   readonly EMAIL_FROM?: string;
   readonly EMAIL_REPLY_TO?: string;
   readonly CONTACT_TO_EMAIL?: string;
-  readonly EMAIL_WORKER_ROUTE_MODE?: 'dry-run' | 'live';
-  readonly EMAIL_WORKER_ENDPOINT?: string;
-  readonly EMAIL_WORKER_API_KEY?: string;
+  readonly MAILJET_API_KEY?: string;
+  readonly MAILJET_SECRET_KEY?: string;
+  readonly MAILJET_SANDBOX_MODE?: 'on' | 'off';
   readonly CF_PAGES_URL?: string;
 }
 
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
-

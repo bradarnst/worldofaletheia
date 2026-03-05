@@ -1,4 +1,4 @@
-# Phase 2.1 Runbook — Better Auth + Google OAuth + Cloudflare D1 + Cloudflare Email
+# Phase 2.1 Runbook — Better Auth + Google OAuth + Cloudflare D1 + Mailjet Email
 
 This runbook is the execution path for Phase 2.1 auth and campaign membership enforcement.
 
@@ -7,18 +7,18 @@ This runbook is the execution path for Phase 2.1 auth and campaign membership en
 Runtime vars (non-secret):
 
 - `BETTER_AUTH_URL`
-- `EMAIL_WORKER_ROUTE_MODE` (`dry-run` or `live`)
-- `EMAIL_WORKER_ENDPOINT`
 - `EMAIL_FROM`
 - `EMAIL_REPLY_TO` (optional)
 - `CONTACT_TO_EMAIL`
+- `MAILJET_SANDBOX_MODE` (`on` or `off`)
 
 Secrets:
 
 - `BETTER_AUTH_SECRET`
 - `GOOGLE_CLIENT_ID`
 - `GOOGLE_CLIENT_SECRET`
-- `EMAIL_WORKER_API_KEY`
+- `MAILJET_API_KEY`
+- `MAILJET_SECRET_KEY`
 
 Cloudflare bindings:
 
@@ -67,7 +67,6 @@ Generate values:
 
 ```bash
 openssl rand -base64 32   # BETTER_AUTH_SECRET
-openssl rand -hex 32      # EMAIL_WORKER_API_KEY
 ```
 
 Set production secrets:
@@ -76,7 +75,8 @@ Set production secrets:
 wrangler secret put BETTER_AUTH_SECRET
 wrangler secret put GOOGLE_CLIENT_ID
 wrangler secret put GOOGLE_CLIENT_SECRET
-wrangler secret put EMAIL_WORKER_API_KEY
+wrangler secret put MAILJET_API_KEY
+wrangler secret put MAILJET_SECRET_KEY
 ```
 
 Set staging secrets:
@@ -85,7 +85,8 @@ Set staging secrets:
 wrangler secret put BETTER_AUTH_SECRET --env staging
 wrangler secret put GOOGLE_CLIENT_ID --env staging
 wrangler secret put GOOGLE_CLIENT_SECRET --env staging
-wrangler secret put EMAIL_WORKER_API_KEY --env staging
+wrangler secret put MAILJET_API_KEY --env staging
+wrangler secret put MAILJET_SECRET_KEY --env staging
 ```
 
 ## 6) Local verification checklist
@@ -97,7 +98,7 @@ wrangler secret put EMAIL_WORKER_API_KEY --env staging
    - unauthenticated: restricted routes show restricted message
    - authenticated non-member: restricted routes remain blocked
    - authenticated member: restricted routes render content
-5. Test contact relay in dry-run mode:
+5. Test contact relay with Mailjet sandbox mode:
    - `POST /api/contact` with valid JSON returns `{ "ok": true }`
 
 ## 7) Troubleshooting
@@ -115,8 +116,8 @@ wrangler secret put EMAIL_WORKER_API_KEY --env staging
 
 ### Contact endpoint returns `503 unavailable`
 
-- Confirm `EMAIL_WORKER_ENDPOINT`, `EMAIL_FROM`, `CONTACT_TO_EMAIL` are configured.
-- Confirm `EMAIL_WORKER_API_KEY` matches expected key in email worker.
+- Confirm `MAILJET_API_KEY`, `MAILJET_SECRET_KEY`, `EMAIL_FROM`, `CONTACT_TO_EMAIL` are configured.
+- Confirm `MAILJET_SANDBOX_MODE` is set to `on` if you want non-delivery testing behavior.
 - Check server logs for `contact.relay.failed` with request ID.
 
 ## 8) Rollback notes
@@ -124,4 +125,3 @@ wrangler secret put EMAIL_WORKER_API_KEY --env staging
 - Membership migration is additive and non-destructive.
 - Application rollback path is code-only revert of auth route/resolver updates.
 - As emergency local fallback, `CAMPAIGN_MEMBERSHIPS` map can still be enabled for localhost-only development behavior.
-

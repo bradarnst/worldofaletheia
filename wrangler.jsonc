@@ -19,11 +19,10 @@
 	],
 	"vars": {
 		"BETTER_AUTH_URL": "https://worldofaletheia.com",
-		"EMAIL_WORKER_ROUTE_MODE": "dry-run",
-		"EMAIL_WORKER_ENDPOINT": "https://REPLACE_WITH_EMAIL_WORKER_ENDPOINT",
-		"EMAIL_FROM": "noreply@worldofaletheia.com",
-		"EMAIL_REPLY_TO": "support@worldofaletheia.com",
-		"CONTACT_TO_EMAIL": "gm@worldofaletheia.com"
+		"MAILJET_SANDBOX_MODE": "on",
+		"EMAIL_FROM": "gm@worldofaletheia.com",
+		"EMAIL_REPLY_TO": "gm@worldofaletheia.com",
+		"CONTACT_TO_EMAIL": "brad@worldofaletheia.com,barry@worldofaletheia.com"
 	},
 	"route": {
 		"pattern": "worldofaletheia.com/*",
@@ -41,11 +40,10 @@
 		"staging": {
 			"vars": {
 				"BETTER_AUTH_URL": "https://staging.worldofaletheia.com",
-				"EMAIL_WORKER_ROUTE_MODE": "dry-run",
-				"EMAIL_WORKER_ENDPOINT": "https://REPLACE_WITH_STAGING_EMAIL_WORKER_ENDPOINT",
-				"EMAIL_FROM": "noreply@worldofaletheia.com",
-				"EMAIL_REPLY_TO": "support@worldofaletheia.com",
-				"CONTACT_TO_EMAIL": "gm@worldofaletheia.com"
+				"MAILJET_SANDBOX_MODE": "on",
+				"EMAIL_FROM": "gm@worldofaletheia.com",
+				"EMAIL_REPLY_TO": "gm@worldofaletheia.com",
+				"CONTACT_TO_EMAIL": "brad@worldofaletheia.com,barry@worldofaletheia.com"
 			},
 			"d1_databases": [
 				{
