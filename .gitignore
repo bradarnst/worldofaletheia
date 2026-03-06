@@ -30,3 +30,6 @@ config/content-sync.config.json
 # wrangler local runtime artifacts
 .wrangler/state/
 .wrangler/tmp/
+
+# private operator SQL artifacts (may contain real identity/assignment data)
+.wrangler/operators/

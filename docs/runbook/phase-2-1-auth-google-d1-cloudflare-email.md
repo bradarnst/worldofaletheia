@@ -200,134 +200,163 @@ This command builds Astro Cloudflare server output, applies local D1 migration/s
 - Application rollback path is code-only revert of auth route/resolver updates.
 - As emergency local fallback, `CAMPAIGN_MEMBERSHIPS` map can still be enabled for localhost-only development behavior.
 
-## 12) Operator Runbook — Production account and assignment operations (Option A)
+## 12) Operator SOP — Active MVP path (Option A2: Wrangler-applied D1 SQL files)
 
-This section defines a manual operator workflow for production-safe account assignment management using Wrangler + D1.
+This is the **active production workflow** for account ingestion and campaign assignment management.
 
-### 12.1 Scope and data handling rules
+### 12.1 Identity evidence policy and privacy rules
 
-- Use this flow for **membership and GM assignment operations** in staging/production.
-- Keep real identity/assignment data in D1 and private operator tooling only.
-- Do not commit real user identifiers, email addresses, or assignment snapshots to Git.
-- Repository SQL examples must use placeholders only.
+1. Real account and assignment data must live only in D1 + private operator files.
+2. Do not store real identifiers in tracked repo files.
+3. Any claim about production identities/assignments is valid only when supported by production query output.
+4. Placeholder names in SQL templates are not identity assertions.
 
-### 12.2 Operator prerequisites
+### 12.2 Prerequisites (required before any operation)
 
-1. Wrangler authenticated to correct Cloudflare account:
+Run:
 
 ```bash
 pnpm wrangler whoami
-```
-
-2. Target databases visible:
-
-```bash
 pnpm wrangler d1 list
 pnpm wrangler d1 info world-of-aletheia
 pnpm wrangler d1 info world-of-aletheia-staging
 ```
 
-3. Schema present before assignment operations:
+Expected:
+
+- Correct Cloudflare account
+- Both target databases visible
+
+Migrate required schema (one-time per env):
 
 ```bash
-pnpm wrangler d1 execute DB --remote --command "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;"
-pnpm wrangler d1 execute DB --remote --env staging --command "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;"
+pnpm db:migrate:local
+pnpm db:migrate:gm:local
+pnpm db:migrate:gm:staging
+pnpm db:migrate:gm:prod
 ```
 
-Expected minimum:
+### 12.3 Environment selection safeguard
 
-- Better Auth core tables (names depend on installed Better Auth schema)
-- `campaign_memberships`
-- if enabled, `campaign_gm_assignments`
-
-### 12.3 Preferred execution mode (A2): SQL file + Wrangler
-
-Use a private/ignored path for operation SQL files.
-
-Recommended local ignored path:
-
-- `./.wrangler/operators/`
-
-Example execute commands:
+Always run preflight first and verify output target before apply:
 
 ```bash
-pnpm wrangler d1 execute DB --remote --file ./.wrangler/operators/op-prod.sql
-pnpm wrangler d1 execute DB --remote --env staging --file ./.wrangler/operators/op-staging.sql
+pnpm run ops:a2:preflight:staging
+pnpm run ops:a2:preflight:prod
 ```
 
-### 12.4 Command templates
+If preflight does not show expected tables, stop and fix migrations first.
 
-#### Grant campaign membership
+### 12.4 Option A2 execution model
 
-```sql
-INSERT INTO campaign_memberships (id, user_id, campaign_slug, role, created_at)
-VALUES ('<userId>:<campaignSlug>', '<userId>', '<campaignSlug>', 'member', '<ISO8601>')
-ON CONFLICT(user_id, campaign_slug) DO UPDATE SET
-  role = excluded.role,
-  updated_at = '<ISO8601>';
-```
-
-#### Revoke campaign membership
-
-```sql
-DELETE FROM campaign_memberships
-WHERE user_id = '<userId>' AND campaign_slug = '<campaignSlug>';
-```
-
-#### Set/update GM assignment (if table exists)
-
-```sql
-INSERT INTO campaign_gm_assignments (campaign_slug, user_id, created_at, updated_at)
-VALUES ('<campaignSlug>', '<userId>', '<ISO8601>', '<ISO8601>')
-ON CONFLICT(campaign_slug) DO UPDATE SET
-  user_id = excluded.user_id,
-  updated_at = '<ISO8601>';
-```
-
-#### Revoke GM assignment (if table exists)
-
-```sql
-DELETE FROM campaign_gm_assignments
-WHERE campaign_slug = '<campaignSlug>';
-```
-
-### 12.5 Verification queries (required after each operation)
-
-#### Membership verification
+Use SQL templates from [`scripts/operator-sql/templates/`](scripts/operator-sql/templates/) and execute copied files from private gitignored path:
 
 ```bash
-pnpm wrangler d1 execute DB --remote --command "SELECT user_id,campaign_slug,role,created_at,updated_at FROM campaign_memberships ORDER BY campaign_slug,user_id;"
+mkdir -p ./.wrangler/operators
+cp ./scripts/operator-sql/templates/membership-grant.sql ./.wrangler/operators/op.sql
 ```
 
-#### Membership count check
+Edit placeholders, then apply:
 
 ```bash
-pnpm wrangler d1 execute DB --remote --command "SELECT COUNT(*) AS memberships FROM campaign_memberships;"
+OP_FILE=./.wrangler/operators/op.sql pnpm run ops:a2:apply:staging
+OP_FILE=./.wrangler/operators/op.sql pnpm run ops:a2:apply:prod
 ```
 
-#### GM assignment verification (if table exists)
+### 12.5 Deterministic operation templates
+
+Available templates:
+
+- membership grant/upsert: [`scripts/operator-sql/templates/membership-grant.sql`](scripts/operator-sql/templates/membership-grant.sql)
+- membership revoke: [`scripts/operator-sql/templates/membership-revoke.sql`](scripts/operator-sql/templates/membership-revoke.sql)
+- membership role update: [`scripts/operator-sql/templates/membership-role-update.sql`](scripts/operator-sql/templates/membership-role-update.sql)
+- GM assignment upsert: [`scripts/operator-sql/templates/gm-assignment-upsert.sql`](scripts/operator-sql/templates/gm-assignment-upsert.sql)
+- GM assignment revoke: [`scripts/operator-sql/templates/gm-assignment-revoke.sql`](scripts/operator-sql/templates/gm-assignment-revoke.sql)
+- auth account link upsert: [`scripts/operator-sql/templates/account-link-upsert.sql`](scripts/operator-sql/templates/account-link-upsert.sql)
+- auth account link revoke: [`scripts/operator-sql/templates/account-link-revoke.sql`](scripts/operator-sql/templates/account-link-revoke.sql)
+
+### 12.6 Create user/account records when needed
+
+Preferred account creation path:
+
+1. Use normal Better Auth sign-up/login flow in staging then production.
+2. Use manual account-table templates only for corrective linking operations.
+
+If identity is ambiguous, resolve before any assignment:
 
 ```bash
-pnpm wrangler d1 execute DB --remote --command "SELECT campaign_slug,user_id,created_at,updated_at FROM campaign_gm_assignments ORDER BY campaign_slug;"
+cp ./scripts/operator-sql/identity-resolution.sql ./.wrangler/operators/resolve.sql
+# fill <email>/<name>
+OP_FILE=./.wrangler/operators/resolve.sql pnpm run ops:a2:resolve:prod
 ```
 
-### 12.6 Safe-ops checklist (every run)
+### 12.7 Post-operation verification (mandatory)
 
-1. Confirm target environment (`staging` vs `production`) before execute.
-2. Preview SQL in editor and verify placeholders have expected values.
-3. Execute exactly once.
-4. Run required verification queries.
-5. Record private operator log entry (timestamp, operator, env, action type, success/failure).
-6. Do not paste full PII-bearing query results into public channels or Git commits.
+Run after every apply:
 
-### 12.7 Failure handling
+```bash
+pnpm run ops:a2:verify:staging
+pnpm run ops:a2:verify:prod
+```
 
-- If SQL fails: do not retry blindly; inspect error and re-run only corrected statement.
-- If verification query fails: stop and resolve DB/runtime access before further ops.
-- If unexpected row changes occur: restore expected state with explicit corrective SQL and re-verify.
+Periodic audit:
 
-### 12.8 Environment variable policy for Option A
+```bash
+pnpm run ops:a2:audit:staging
+pnpm run ops:a2:audit:prod
+```
 
-- Allowed for non-sensitive defaults only (target env flags, command convenience).
-- Do not store real user identifiers/emails/assignment payloads in persistent shell env files.
-- Prefer runtime prompt/input and private SQL files that are gitignored.
+### 12.8 Transaction and integrity expectations
+
+- Each operation file should target one clear action.
+- Upsert templates are idempotent for repeat-safe execution where feasible.
+- For destructive operations (revoke), verify affected rows immediately.
+- Do not batch unrelated mutations in one file.
+
+### 12.9 Failure handling and incident recovery
+
+If apply command fails:
+
+1. Stop and fix SQL/runtime issue.
+2. Re-run preflight.
+3. Re-apply corrected file once.
+
+If wrong assignment applied:
+
+1. Execute corresponding revoke template.
+2. Re-apply correct assignment template.
+3. Run verify and audit scripts.
+4. Record incident in private ops log (timestamp, env, action, resolution).
+
+If identity mismatch discovered after change:
+
+1. Revoke incorrect mapping.
+2. Resolve identity with `identity-resolution.sql`.
+3. Re-apply to verified user id only.
+
+### 12.10 Rollback guidance for mistaken assignments
+
+Use deterministic inverse operations:
+
+- membership grant ↔ membership revoke
+- GM upsert ↔ GM revoke
+- account-link upsert ↔ account-link revoke
+
+Always verify with:
+
+```bash
+pnpm run ops:a2:verify:prod
+pnpm run ops:a2:audit:prod
+```
+
+### 12.11 Complete operator execution sequence (new operator safe-start)
+
+1. Run account/database preflight commands.
+2. Run environment preflight SQL.
+3. Copy template into private operator file.
+4. Fill placeholders.
+5. Apply to staging.
+6. Verify staging output.
+7. Apply to production.
+8. Verify production output.
+9. Record private ops log entry.

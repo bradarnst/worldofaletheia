@@ -27,18 +27,18 @@ This document is intentionally a fresh production design request.
 
 ---
 
-## Option A — Manual Ops Runbook + Direct D1 SQL (No New UI)
+## Option A2 — Active MVP path: Manual Ops Runbook + Wrangler-applied D1 SQL files (No New UI)
 
 ### Description
 
-Use manual, authenticated operator commands (Wrangler + D1 SQL) to:
+Use manual, authenticated operator commands (Wrangler + D1 SQL files) to:
 
 - ingest production users when needed,
 - assign campaign memberships,
 - assign GM/owner privileges,
 - revoke access.
 
-Store assignment data only in D1 tables. Keep runbook in repo, but no real user data in repo.
+Store assignment data only in D1 tables. Keep runbook and SQL templates in repo with placeholders only, and keep real operation files in private gitignored paths.
 
 ### Pros
 
@@ -66,6 +66,19 @@ Store assignment data only in D1 tables. Keep runbook in repo, but no real user 
 ### Implementation Speed
 
 - Very fast (same day to 1–2 days).
+
+### A2 implementation details (active)
+
+1. Preflight and verification scripts are executed via Wrangler command wrappers in `package.json`.
+2. SQL operation templates are stored in `scripts/operator-sql/templates/` with placeholders only.
+3. Operators copy a template into `./.wrangler/operators/`, replace placeholders, then execute with:
+   - `OP_FILE=./.wrangler/operators/op.sql pnpm run ops:a2:apply:staging`
+   - `OP_FILE=./.wrangler/operators/op.sql pnpm run ops:a2:apply:prod`
+4. Post-operation verification is mandatory:
+   - `pnpm run ops:a2:verify:staging`
+   - `pnpm run ops:a2:verify:prod`
+5. Periodic audit snapshot:
+   - `pnpm run ops:a2:audit:prod`
 
 ---
 
@@ -178,7 +191,7 @@ Use external managed tooling for user lifecycle and role assignment.
 
 ## Recommended MVP Path
 
-### Recommendation: **Option A now**, with a planned migration to **Option B**
+### Recommendation: **Option A2 now**, with a planned migration to **Option B**
 
 Why this is best for current stage:
 
@@ -191,7 +204,7 @@ Why this is best for current stage:
 ### MVP Source-of-Truth Policy
 
 1. Auth identities: Better Auth tables in D1.
-2. Access assignments: D1 tables only.
+2. Access assignments: D1 tables only (`campaign_memberships`, `campaign_gm_assignments`).
 3. Repository docs: process only, no real user data.
 4. Runtime authorization: read from D1, deny-by-default on read errors.
 
@@ -233,9 +246,13 @@ Minimum table set for authorization decisions:
 1. `campaign_memberships(user_id, campaign_slug, role, created_at, updated_at)`
 2. `campaign_gm_assignments(campaign_slug, user_id, created_at, updated_at)` (recommended now or immediate next)
 
-## Step 3 — Create a private operator runbook
+## Step 3 — Use the repository operator SOP + private execution files
 
-Create/maintain a runbook that includes:
+Primary operator SOP is in:
+
+- `docs/runbook/phase-2-1-auth-google-d1-cloudflare-email.md` (Section 12)
+
+Private operator process includes:
 
 1. Add account flow.
 2. Grant membership flow.
@@ -243,7 +260,7 @@ Create/maintain a runbook that includes:
 4. Revoke account flow.
 5. Verification queries.
 
-Important: runbook contains commands/templates only; no real identities committed.
+Important: repository files contain only placeholders; no real identities committed.
 
 ## Step 4 — Ingest first real accounts privately
 
@@ -278,10 +295,11 @@ Store private operational snapshot outside repo (secure notes/vault):
 ## Immediate “Do This First” Checklist
 
 1. Run Step 0 commands.
-2. Run Step 1 table verification query.
-3. If tables missing, apply schema migrations before any account ingestion.
-4. Create private operator runbook entries for add/grant/revoke.
-5. Ingest initial real accounts and assignments in staging, validate, then repeat in production.
+2. Run `pnpm run ops:a2:preflight:staging` and `pnpm run ops:a2:preflight:prod`.
+3. If tables missing, apply migrations before account ingestion.
+4. Copy SQL template to private `./.wrangler/operators/` file and execute via `ops:a2:apply:*`.
+5. Verify via `ops:a2:verify:*`; audit via `ops:a2:audit:*`.
+6. Ingest initial real accounts and assignments in staging, validate, then repeat in production.
 
 ---
 
