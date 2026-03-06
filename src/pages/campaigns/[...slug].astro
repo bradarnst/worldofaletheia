@@ -1,27 +1,22 @@
 ---
-import { getCollection, getEntry, render } from 'astro:content';
+import { getCollection, render } from 'astro:content';
 import CampaignsContentLayout from '@layouts/CampaignsContentLayout.astro';
 import { canViewCampaignContentAsync, createCampaignAccessResolverFromRequest } from '@utils/campaign-access';
+import { getCloudflareRuntimeEnv } from '@utils/cloudflare-env';
 import { getCampaignGmAssignmentsForEnv, getCampaignMembershipConfigForEnv } from '@utils/campaign-membership-config';
-
-interface RuntimeLocals {
-  runtime?: {
-    env?: Record<string, unknown>;
-  };
-}
 
 const { slug } = Astro.params;
 const campaigns = await getCollection('campaigns');
 const entry = campaigns.find((item) => item.id.split('/')[0] === slug);
 
 if (!entry) {
-  throw Astro.redirect('/campaigns');
+  return Astro.redirect('/campaigns');
 }
 
 const { Content } = await render(entry);
 
 const campaignSlug = entry.id.split('/')[0];
-const runtimeEnv = (Astro.locals as RuntimeLocals).runtime?.env;
+const runtimeEnv = await getCloudflareRuntimeEnv();
 const membershipConfigRaw =
   typeof runtimeEnv?.CAMPAIGN_MEMBERSHIPS === 'string' && runtimeEnv.CAMPAIGN_MEMBERSHIPS.length > 0
     ? runtimeEnv.CAMPAIGN_MEMBERSHIPS

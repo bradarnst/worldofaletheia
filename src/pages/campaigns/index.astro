@@ -14,7 +14,7 @@ for (const session of sessions) {
 }
 
 const campaignSummaries = campaigns.map((entry) => {
-  const slug = entry.id.replace(/\/index$/, '');
+  const slug = entry.id.split('/')[0];
 
   return {
     id: slug,

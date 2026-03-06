@@ -1,18 +1,13 @@
 ---
-import { getCollection, getEntry } from 'astro:content';
+import { getCollection } from 'astro:content';
 import CampaignsLayout from '@layouts/CampaignsLayout.astro';
 import {
   canViewCampaignContentAsync,
   createCampaignAccessResolverFromRequest,
   resolveCampaignContentVisibility,
 } from '@utils/campaign-access';
+import { getCloudflareRuntimeEnv } from '@utils/cloudflare-env';
 import { getCampaignGmAssignmentsForEnv, getCampaignMembershipConfigForEnv } from '@utils/campaign-membership-config';
-
-interface RuntimeLocals {
-  runtime?: {
-    env?: Record<string, unknown>;
-  };
-}
 
 export async function getStaticPaths() {
   const campaignsCollection = await getCollection('campaigns');
@@ -39,7 +34,7 @@ const campaignDetail = {
 };
 
 const allSessions = await getCollection('sessions');
-const runtimeEnv = (Astro.locals as RuntimeLocals).runtime?.env;
+const runtimeEnv = await getCloudflareRuntimeEnv();
 const membershipConfigRaw =
   typeof runtimeEnv?.CAMPAIGN_MEMBERSHIPS === 'string' && runtimeEnv.CAMPAIGN_MEMBERSHIPS.length > 0
     ? runtimeEnv.CAMPAIGN_MEMBERSHIPS
@@ -197,4 +192,3 @@ const title = campaignDetail ? `${campaignDetail.title} - Sessions` : 'Campaign 
     </div>
   </div>
 </CampaignsLayout>
-

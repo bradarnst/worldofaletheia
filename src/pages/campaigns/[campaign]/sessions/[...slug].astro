@@ -6,13 +6,8 @@ import {
   createCampaignAccessResolverFromRequest,
   resolveCampaignContentVisibility,
 } from '@utils/campaign-access';
+import { getCloudflareRuntimeEnv } from '@utils/cloudflare-env';
 import { getCampaignGmAssignmentsForEnv, getCampaignMembershipConfigForEnv } from '@utils/campaign-membership-config';
-
-interface RuntimeLocals {
-  runtime?: {
-    env?: Record<string, unknown>;
-  };
-}
 
 export async function getStaticPaths() {
   const sessionsCollection = await getCollection('sessions');
@@ -110,7 +105,7 @@ const nextSession = currentIndex < sortedSessions.length - 1 ? sortedSessions[cu
 
 const { Content } = await render(sessionEntry);
 
-const runtimeEnv = (Astro.locals as RuntimeLocals).runtime?.env;
+const runtimeEnv = await getCloudflareRuntimeEnv();
 const membershipConfigRaw =
   typeof runtimeEnv?.CAMPAIGN_MEMBERSHIPS === 'string' && runtimeEnv.CAMPAIGN_MEMBERSHIPS.length > 0
     ? runtimeEnv.CAMPAIGN_MEMBERSHIPS
