@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-const REQUIRED_KEYS = ['title', 'type', 'status', 'author', 'secret'];
+const REQUIRED_KEYS = ['title', 'type', 'status', 'author'];
 const ALLOWED_STATUS = ['draft', 'publish', 'published', 'archive', 'archived'];
 
 function extractInlineHashtags(text) {
@@ -140,10 +140,6 @@ function parseFrontmatter(text) {
   return { hasFrontmatter: true, malformed: false, data, body };
 }
 
-function isBooleanLike(value) {
-  return value === 'true' || value === 'false';
-}
-
 function checkHeadings(content) {
   const lines = content.split(/\r?\n/);
   let previous = 0;
@@ -223,10 +219,6 @@ export async function validateContentTree(config) {
       if (!Object.hasOwn(parsed.data, key)) {
         failures.push(`${relPath} missing required key ${key}`);
       }
-    }
-
-    if (Object.hasOwn(parsed.data, 'secret') && !isBooleanLike(parsed.data.secret)) {
-      failures.push(`${relPath} invalid secret value (expected true/false)`);
     }
 
     if (Object.hasOwn(parsed.data, 'status') && !ALLOWED_STATUS.includes(parsed.data.status.replace(/['"]/g, ''))) {

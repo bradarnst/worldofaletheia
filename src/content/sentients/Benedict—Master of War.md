@@ -17,7 +17,7 @@ created: 2026-02-17T19:43:20-05:00
 Often titled _Master of War_ or _The Steady Hand_
 
 
-![Vatarese Benedict](<../../assets/images/Vatarese Benedict.png>)
+![Vatarese Benedict](<../../assets/images/assets/images/Vatarese Benedict.png>)
 **Domains and Aspects**
 
 War, discipline, law, strategy, restraint, order through structure

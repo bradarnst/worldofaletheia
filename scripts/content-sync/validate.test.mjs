@@ -43,7 +43,6 @@ title: Copper Bit
 type: economy
 status: draft
 author: Brad
-secret: true
 tags:
   - money
   - copper
@@ -72,7 +71,6 @@ title: Copper Bit
 type: economy
 status: draft
 author: Brad
-secret: true
 ---
 
 Currency #money and #copper are discussed here.`;

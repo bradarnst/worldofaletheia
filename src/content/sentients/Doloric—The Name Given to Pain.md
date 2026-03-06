@@ -9,11 +9,13 @@ secret: false
 author: Barry
 permissions: public
 created: 2026-02-25 20:19
-modified: 2026-02-25T20:20:28-05:00
+modified: 2026-02-25T20:48:46-05:00
 ---
 ## Doloric: The Name Given to Pain
 Often referred to as _The Shadow of Suffering_
 
+
+![Doloric Symbolist](<../../assets/images/Doloric Symbolist.png>)
 **Domains and Aspects**
 
 Suffering, pain, cruelty misattributed to purpose, collective trauma, endurance without meaning
