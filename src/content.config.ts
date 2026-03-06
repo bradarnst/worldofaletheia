@@ -16,6 +16,14 @@ const baseSchema = z.object({
   campaign: z.string().optional(),
   // Deprecated role label metadata: never used as an authorization gate.
   permissions: z.enum(['public', 'player', 'gm', 'author']).optional().default('public'),
+  // Informational only for non-campaign domains (Canon/Using).
+  // Never used by authorization checks.
+  gmResource: z.boolean().optional().default(false),
+  // Legacy informational fields from previous metadata style.
+  // Preserved for transition and normalized to gmResource by calling code when needed.
+  gm: z.boolean().optional(),
+  'gm-date': z.string().optional(),
+  'gm-info': z.string().optional(),
   parentChain: z.array(z.object({
     label: z.string(),
     href: z.string(),
@@ -85,7 +93,7 @@ const campaignsSchema = baseSchema.omit({ status: true }).extend({
   excerpt: z.string().optional(),
   status: z.enum(['planning', 'active', 'completed', 'on-hold', 'cancelled']),
   // Campaign-domain-only access control field.
-  visibility: z.enum(['public', 'campaignMembers']),
+  visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('gm'),
   start: z.date().optional(),
   end: z.date().optional(),
 });
@@ -93,11 +101,11 @@ const campaignsSchema = baseSchema.omit({ status: true }).extend({
 // Session schema - for nested session files
 const sessionsSchema = baseSchema.extend({
   title: z.string(),
-  type: z.enum(['session', 'encounter', 'battle', 'roleplay']),
+  type: z.enum(['session', 'encounter', 'battle','note' ]),
   excerpt: z.string().optional(),
   campaign: z.string(),
   // Campaign-domain-only access control field.
-  visibility: z.enum(['public', 'campaignMembers']),
+  visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('campaignMembers'),
   date: z.date().optional(),
   duration: z.number().optional(), // in minutes
 });
@@ -141,7 +149,7 @@ const systems = defineCollection({
 // Campaigns collection - only campaign overview files (index.md), NOT sessions
 // Use explicit index pattern to avoid beta glob-negation regressions.
 const campaigns = defineCollection({
-  loader: glob({ pattern: '*/index.md', base: 'src/content/campaigns' }),
+  loader: glob({ pattern: '*/*.md', base: 'src/content/campaigns' }),
   schema: campaignsSchema,
 });
 

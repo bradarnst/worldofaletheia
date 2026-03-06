@@ -18,5 +18,9 @@
     "bob": {
       "campaigns": ["barry"]
     }
+  },
+  "gmAssignments": {
+    "brad": { "userId": "jim" },
+    "barry": { "userId": "tom" }
   }
 }

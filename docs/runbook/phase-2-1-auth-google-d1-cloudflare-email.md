@@ -11,6 +11,7 @@ Runtime vars (non-secret):
 - `EMAIL_REPLY_TO` (optional)
 - `CONTACT_TO_EMAIL`
 - `MAILJET_SANDBOX_MODE` (`on` or `off`)
+- `CAMPAIGN_GM_ASSIGNMENTS` (optional JSON override for campaign → GM mapping)
 
 Secrets:
 
@@ -60,6 +61,11 @@ pnpm db:seed:memberships:local
 ```
 
 The seed is idempotent (`INSERT OR IGNORE`) and will not overwrite existing membership rows.
+
+GM assignment source (no DB seed required):
+
+- `gmAssignments` in [`src/content/campaigns/access.config.json`](src/content/campaigns/access.config.json)
+- optional env override through `CAMPAIGN_GM_ASSIGNMENTS`
 
 ## 5) Secret provisioning
 
@@ -121,6 +127,12 @@ MAILJET_SANDBOX_MODE=on
 EOF
 ```
 
+If needed for local override, add:
+
+```bash
+CAMPAIGN_GM_ASSIGNMENTS={"brad":{"userId":"jim"},"barry":{"userId":"tom"}}
+```
+
 2. Ensure local DB schema is current:
 
 ```bash
@@ -148,8 +160,9 @@ This command builds Astro Cloudflare server output, applies local D1 migration/s
 3. Complete sign-in (Google or email/password), then open `/account`.
 4. Verify campaign access behavior:
    - unauthenticated: restricted routes show restricted message
-   - authenticated non-member: restricted routes remain blocked
-   - authenticated member: restricted routes render content
+   - authenticated non-member: `campaignMembers` and `gm` routes remain blocked
+   - authenticated member: `campaignMembers` routes render
+   - authenticated campaign GM: `gm` and `campaignMembers` routes render
 5. Test contact relay with Mailjet sandbox mode:
    - `POST /api/contact` with valid JSON returns `{ "ok": true }`
 
@@ -172,6 +185,7 @@ This command builds Astro Cloudflare server output, applies local D1 migration/s
 
 - Confirm user session exists at `/account`.
 - Confirm `campaign_memberships` row exists for `(user_id, campaign_slug)`.
+- For `visibility: gm`, confirm campaign slug has `gmAssignments[campaignSlug].userId` configured.
 - In local-only fallback mode, confirm `CAMPAIGN_MEMBERSHIPS` JSON shape matches [`src/utils/campaign-membership-config.ts`](src/utils/campaign-membership-config.ts).
 
 ### Contact endpoint returns `503 unavailable`

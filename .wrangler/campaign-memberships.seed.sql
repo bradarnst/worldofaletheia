@@ -1,14 +1,14 @@
 INSERT OR IGNORE INTO campaign_memberships (id, user_id, campaign_slug, role, created_at)
-VALUES ('jim:brad', 'jim', 'brad', 'member', '2026-03-06T11:29:43.372Z');
+VALUES ('jim:brad', 'jim', 'brad', 'member', '2026-03-06T15:28:51.826Z');
 INSERT OR IGNORE INTO campaign_memberships (id, user_id, campaign_slug, role, created_at)
-VALUES ('fred:brad', 'fred', 'brad', 'member', '2026-03-06T11:29:43.372Z');
+VALUES ('fred:brad', 'fred', 'brad', 'member', '2026-03-06T15:28:51.826Z');
 INSERT OR IGNORE INTO campaign_memberships (id, user_id, campaign_slug, role, created_at)
-VALUES ('fred:barry', 'fred', 'barry', 'member', '2026-03-06T11:29:43.372Z');
+VALUES ('fred:barry', 'fred', 'barry', 'member', '2026-03-06T15:28:51.826Z');
 INSERT OR IGNORE INTO campaign_memberships (id, user_id, campaign_slug, role, created_at)
-VALUES ('martha:brad', 'martha', 'brad', 'member', '2026-03-06T11:29:43.372Z');
+VALUES ('martha:brad', 'martha', 'brad', 'member', '2026-03-06T15:28:51.826Z');
 INSERT OR IGNORE INTO campaign_memberships (id, user_id, campaign_slug, role, created_at)
-VALUES ('tom:barry', 'tom', 'barry', 'member', '2026-03-06T11:29:43.372Z');
+VALUES ('tom:barry', 'tom', 'barry', 'member', '2026-03-06T15:28:51.826Z');
 INSERT OR IGNORE INTO campaign_memberships (id, user_id, campaign_slug, role, created_at)
-VALUES ('nancy:barry', 'nancy', 'barry', 'member', '2026-03-06T11:29:43.372Z');
+VALUES ('nancy:barry', 'nancy', 'barry', 'member', '2026-03-06T15:28:51.826Z');
 INSERT OR IGNORE INTO campaign_memberships (id, user_id, campaign_slug, role, created_at)
-VALUES ('bob:barry', 'bob', 'barry', 'member', '2026-03-06T11:29:43.372Z');
+VALUES ('bob:barry', 'bob', 'barry', 'member', '2026-03-06T15:28:51.826Z');

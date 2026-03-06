@@ -4,11 +4,16 @@ interface MembershipEntry {
   campaigns: string[];
 }
 
-export interface CampaignMembershipConfig {
-  memberships: Record<string, MembershipEntry>;
+interface GmAssignmentEntry {
+  userId: string;
 }
 
-const EMPTY_CONFIG: CampaignMembershipConfig = { memberships: {} };
+export interface CampaignMembershipConfig {
+  memberships: Record<string, MembershipEntry>;
+  gmAssignments: Record<string, GmAssignmentEntry>;
+}
+
+const EMPTY_CONFIG: CampaignMembershipConfig = { memberships: {}, gmAssignments: {} };
 
 export function normalizeCampaignMembershipConfig(rawConfig: unknown): CampaignMembershipConfig {
   if (!rawConfig || typeof rawConfig !== 'object' || Array.isArray(rawConfig)) {
@@ -39,7 +44,24 @@ export function normalizeCampaignMembershipConfig(rawConfig: unknown): CampaignM
     memberships[userId] = { campaigns };
   }
 
-  return { memberships };
+  const gmAssignmentsRaw = (rawConfig as { gmAssignments?: unknown }).gmAssignments;
+  const gmAssignments: Record<string, GmAssignmentEntry> = {};
+  if (gmAssignmentsRaw && typeof gmAssignmentsRaw === 'object' && !Array.isArray(gmAssignmentsRaw)) {
+    for (const [campaignSlug, value] of Object.entries(gmAssignmentsRaw)) {
+      if (!campaignSlug || !value || typeof value !== 'object' || Array.isArray(value)) {
+        continue;
+      }
+
+      const userId = (value as { userId?: unknown }).userId;
+      if (typeof userId !== 'string' || userId.length === 0) {
+        continue;
+      }
+
+      gmAssignments[campaignSlug] = { userId };
+    }
+  }
+
+  return { memberships, gmAssignments };
 }
 
 export function getCampaignMembershipConfigForEnv(): string {
@@ -47,3 +69,7 @@ export function getCampaignMembershipConfigForEnv(): string {
   return JSON.stringify(normalized.memberships);
 }
 
+export function getCampaignGmAssignmentsForEnv(): string {
+  const normalized = normalizeCampaignMembershipConfig(membershipConfigJson);
+  return JSON.stringify(normalized.gmAssignments);
+}

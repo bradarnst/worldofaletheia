@@ -2,7 +2,19 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 const REQUIRED_KEYS = ['title', 'type', 'status', 'author'];
-const ALLOWED_STATUS = ['draft', 'publish', 'published', 'archive', 'archived'];
+const ALLOWED_STATUS = [
+  'draft',
+  'publish',
+  'published',
+  'archive',
+  'archived',
+  // Campaign-domain lifecycle statuses.
+  'planning',
+  'active',
+  'completed',
+  'on-hold',
+  'cancelled',
+];
 
 function extractInlineHashtags(text) {
   const tags = [];

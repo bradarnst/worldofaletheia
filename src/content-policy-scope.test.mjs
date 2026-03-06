@@ -13,10 +13,12 @@ describe('campaign visibility policy scope', () => {
 
     const campaignsSchemaBlock = source.match(/const campaignsSchema = baseSchema\.omit\(\{ status: true \}\)\.extend\(\{([\s\S]*?)\}\);/);
     expect(campaignsSchemaBlock).toBeTruthy();
-    expect(campaignsSchemaBlock[1]).toContain("visibility: z.enum(['public', 'campaignMembers'])");
+    expect(campaignsSchemaBlock[1]).toContain("visibility: z.enum(['public', 'campaignMembers', 'gm'])");
+    expect(campaignsSchemaBlock[1]).toContain("default('gm')");
 
     const sessionsSchemaBlock = source.match(/const sessionsSchema = baseSchema\.extend\(\{([\s\S]*?)\}\);/);
     expect(sessionsSchemaBlock).toBeTruthy();
-    expect(sessionsSchemaBlock[1]).toContain("visibility: z.enum(['public', 'campaignMembers'])");
+    expect(sessionsSchemaBlock[1]).toContain("visibility: z.enum(['public', 'campaignMembers', 'gm'])");
+    expect(sessionsSchemaBlock[1]).toContain("default('campaignMembers')");
   });
 });

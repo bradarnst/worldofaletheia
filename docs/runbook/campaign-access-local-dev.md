@@ -18,7 +18,8 @@ Plain `pnpm dev` is the fast lane for UI/content iteration and is not authoritat
 ## Model (fallback only)
 
 - `visibility: public` → visible to everyone
-- `visibility: campaignMembers` → requires local/dev session + membership mapping
+- `visibility: campaignMembers` → requires local/dev session + membership mapping (GM also allowed)
+- `visibility: gm` → requires local/dev session id matching campaign GM assignment
 
 This path is intended for localhost-only fallback behavior when real auth/session/D1 integration is unavailable.
 
@@ -34,6 +35,17 @@ Set `CAMPAIGN_MEMBERSHIPS` as JSON in your environment:
 ```
 
 The gate reads cookie `aletheia-dev-session=<sessionId>` and checks if that session id is mapped to the campaign slug.
+
+Set `CAMPAIGN_GM_ASSIGNMENTS` as JSON in your environment for GM-only checks:
+
+```json
+{
+  "brad": { "userId": "dev123" },
+  "barry": { "userId": "dev999" }
+}
+```
+
+The gate compares `aletheia-dev-session=<sessionId>` to `gmAssignments[campaignSlug].userId`.
 
 Campaign visibility defaults are now maintained in [`src/content/campaigns/access.config.json`](src/content/campaigns/access.config.json).
 

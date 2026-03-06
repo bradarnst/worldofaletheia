@@ -1,187 +1,114 @@
-# Campaign Visibility & Access Control — Phased Enhancement Plan
+# Campaign Visibility & Access Control — Corrected Phase 2.1 + Phase 3 Implementation Plan
 
 ## Status
 
-- **Date:** 2026-03-02
+- **Date:** 2026-03-06
 - **Status:**
-  - Phase 1 implemented (policy, schema, UI metadata, tests)
-  - Phase 2 implemented as local/dev MVP gate (config+cookie membership resolver)
-  - Phase 2.1 implemented (Better Auth + D1 + Google login UX + contact/email relay path)
-- **Scope:** Planning / policy alignment before implementation
+  - Phase 1 implemented (policy + schema groundwork)
+  - Phase 2.1 corrected and extended (Better Auth + D1 + campaign GM enforcement model)
+  - Phase 3 implemented for metadata separation (enforced campaign visibility vs informational canon GM marker)
 
-## Context
+## Why this update was required
 
-World of Aletheia is currently effectively public, with build filtering implemented in [`shouldIncludeContent()`](src/utils/content-filter.ts:8) and content metadata defined in [`baseSchema`](src/content.config.ts:5).
+The previous plan and implementation centered campaign protection on `visibility: public | campaignMembers` with optional GM-style tags as non-security metadata.
 
-Current intent has been refined:
+This created a gap for campaign-secret material: there was no canonical enforced GM-only access level.
 
-1. **Canon** and **Using Aletheia** are public-by-default domains.
-2. **Campaigns** need real access control for protected materials.
-3. Build-time source separation is helpful for workflow but not a hard secrecy boundary.
-4. Implementation should stay incremental and aligned with Astro-native/YAGNI decisions.
-5. `secret` is **fully deprecated immediately** and must be ignored as an access mechanism.
-6. Access control must use **one mechanism only**.
+This revision corrects that model and standardizes campaign protection to:
 
-This plan translates that intent into a pragmatic, low-complexity sequence.
+- **enforced** `visibility: public | campaignMembers | gm`
+- **default visibility = `gm`** for campaign overview entries
+- **default visibility = `campaignMembers`** for session entries
 
-## Target Access Model
+## Corrected target model
 
-### Domain-level policy
+### 1) Campaign enforcement (security boundary)
 
-- **Canon + Using Aletheia:** public by default (no hard secrecy requirement).
-- **Campaigns root index / blurbs:** public.
-- **Per-campaign content:** can be either public or campaign-member-gated.
+For campaign-scoped entries (campaign overviews and sessions), authorization enforcement uses exactly one field:
 
-### Single access mechanism: `visibility`
+- `visibility: 'public' | 'campaignMembers' | 'gm'`
 
-Use one field for access control across campaign content:
+Rules:
 
-- `visibility: 'public' | 'campaignMembers'`
+- `public` → visible to all
+- `campaignMembers` → visible to campaign members and campaign GM
+- `gm` → visible only to campaign GM
 
-This replaces access semantics previously spread across overlapping concepts. `visibility` is the sole enforcement input for authz decisions.
+Default by content type:
 
-### Campaign visibility levels (MVP)
+- campaign overviews: `visibility` defaults to `gm`
+- sessions: `visibility` defaults to `campaignMembers`
 
-- `public`
-- `campaignMembers`
+Precedence rule for session pages:
 
-Optional future level (deferred):
+- session-level visibility is authoritative when explicitly set
+- campaign-level visibility can only tighten an explicitly `public` session fallback
+- campaign-level defaults must not rewrite an explicit session-level `campaignMembers` value
 
-- additional scoped values (for example `campaignLeads` or `inviteOnly`) only when concrete product need appears
+### 2) GM identity resolution (implemented now)
 
-### Non-security discoverability metadata
+GM assignment is sourced from `src/content/campaigns/access.config.json` via explicit mapping:
 
-GM-oriented labeling is **metadata only** and not authorization:
+- `gmAssignments: { [campaignSlug]: { userId: string } }`
 
-- Suggested metadata tags: `gm`, `gm-data`, `gm-info`
-- Use for filtering/discovery UX only
-- Never used by auth checks
+Runtime access checks read this mapping and compare against authenticated session user id.
 
-## Phase Plan
+Until a dashboard exists, this config file is the source of truth.
 
-### Phase 1 — Policy Shift (documentation + conventions)
+### 3) Canon/Using GM marker (informational only)
 
-Goal: align current policy without overhauling architecture.
+A separate marker is used for non-campaign discoverability and labeling:
 
-- Document that campaign auth is the first enforced protection boundary.
-- Clarify that non-campaign domains are public-by-default.
-- Deprecate `secret` completely and ignore it for access decisions.
-- Define `visibility` as the single access-control input.
-- Clarify GM labels are discoverability metadata, not a protection layer.
+- `gmResource: boolean`
 
-Implementation note (2026-03-04): completed in code/docs.
+This marker is **never** used in authorization decisions.
 
-### Phase 2 — Campaign Auth MVP (authentication + membership gate)
+Legacy fields (`gm`, `gm-date`, `gm-info`) remain tolerated for transition and should be normalized toward `gmResource` over time.
 
-Goal: deployed-but-gated campaign experience.
+## Implementation notes
 
-- Add Better Auth-based login/session.
-- Add campaign membership store (`user ↔ campaign ↔ role`).
-- Enforce membership checks on protected campaign routes.
-- Keep campaign root pages public.
+### Enforced campaign model
 
-MVP authorization rule:
+- Campaign schemas support `public | campaignMembers | gm`
+- Campaign `visibility` defaults to `gm`
+- Session `visibility` defaults to `campaignMembers`
+- Campaign route checks enforce `gm` and `campaignMembers` semantics
+- Campaign member checks continue to use Better Auth session + D1 membership, with dev fallback only where explicitly enabled
 
-- `public` campaign entries: visible to all
-- `campaignMembers` entries: authenticated campaign members only
+### GM assignment config
 
-Implementation note (2026-03-04): local/dev MVP gate completed with config+cookie resolver and campaign-route enforcement.
+`src/content/campaigns/access.config.json` now includes:
 
-Delivered in Phase 2:
+- `memberships` map (existing)
+- `gmAssignments` map (new)
 
-- campaign-only resolver module and policy gate in [`canViewCampaignContent()`](src/utils/campaign-access.ts:71)
-- membership resolver seam in [`createCampaignAccessResolver()`](src/utils/campaign-access.ts:83)
-- route enforcement on:
-  - [`src/pages/campaigns/[...slug].astro`](src/pages/campaigns/[...slug].astro)
-  - [`src/pages/campaigns/[campaign]/sessions/index.astro`](src/pages/campaigns/[campaign]/sessions/index.astro)
-  - [`src/pages/campaigns/[campaign]/sessions/[...slug].astro`](src/pages/campaigns/[campaign]/sessions/[...slug].astro)
-- local/dev operational doc in [`docs/runbook/campaign-access-local-dev.md`](docs/runbook/campaign-access-local-dev.md)
+### Backward compatibility
 
-### Phase 2.1 — Better Auth + D1 Replacement
+- Existing membership config shape preserved
+- Legacy metadata fields tolerated for transition
+- Access enforcement remains centralized through campaign access resolver seam
 
-Goal: replace temporary local/dev gate internals with production-grade auth/session/membership while preserving current route authorization call sites.
+## Guardrails
 
-Implementation note (2026-03-04): completed in code and runbooks.
+1. Campaign protection is enforced only by campaign `visibility` + campaign GM/membership resolution.
+2. Canon/Using GM marker (`gmResource`) remains informational only.
+3. `secret` and `permissions` are not authorization gates.
+4. Default visibility policy is asymmetric by content type (`gm` for campaigns, `campaignMembers` for sessions).
 
-Delivered in Phase 2.1:
+## Validation expectations
 
-- Better Auth route integration via [`src/pages/api/auth/[...all].ts`](src/pages/api/auth/[...all].ts)
-- auth/session helpers in [`src/lib/auth.ts`](src/lib/auth.ts) and [`src/lib/auth-session.ts`](src/lib/auth-session.ts)
-- D1 membership repository in [`src/lib/campaign-membership-repo.ts`](src/lib/campaign-membership-repo.ts)
-- campaign membership migration in [`migrations/0001_campaign_memberships.sql`](migrations/0001_campaign_memberships.sql)
-- campaign route gating moved to request-time auth session + D1 membership checks while preserving policy seam in [`src/utils/campaign-access.ts`](src/utils/campaign-access.ts)
-- login/logout/account routes:
-  - [`src/pages/login.astro`](src/pages/login.astro)
-  - [`src/pages/logout.astro`](src/pages/logout.astro)
-  - [`src/pages/account.astro`](src/pages/account.astro)
-- contact relay API in [`src/pages/api/contact.ts`](src/pages/api/contact.ts) with adapter in [`src/lib/email.ts`](src/lib/email.ts)
-- operations runbook in [`docs/runbook/phase-2-1-auth-google-d1-cloudflare-email.md`](docs/runbook/phase-2-1-auth-google-d1-cloudflare-email.md)
+1. Campaign entries without explicit `visibility` resolve to `gm`.
+2. Session entries without explicit `visibility` resolve to `campaignMembers`.
+3. Explicit session `campaignMembers` visibility is not overwritten by campaign default `gm`.
+4. Non-GM users are denied `gm` campaign content.
+5. Campaign members (and GM) can access `campaignMembers` content.
+6. `gmResource` in non-campaign content does not alter auth behavior.
 
-Planned replacement scope:
+## Related references
 
-- integrate Better Auth session handling
-- persist campaign membership in Cloudflare D1
-- implement login/logout/session UX and flow
-- replace env/cookie-map resolver internals behind [`createCampaignAccessResolver()`](src/utils/campaign-access.ts:83)
-- keep `visibility` authorization semantics unchanged (`public` vs `campaignMembers`)
-
-Deferred from Phase 2 to 2.1:
-
-- Better Auth wiring
-- D1 persistence
-- real login UI/UX
-- OAuth/provider flows
-
-### Phase 3 — Discoverability metadata UX (optional near-term)
-
-Goal: improve browsing/discovery without changing security behavior.
-
-- Introduce UI affordances for metadata tags (`gm`, `gm-data`, `gm-info`).
-- Add optional filters/chips for readers who want GM-oriented content.
-- Keep all GM-oriented content viewable according to `visibility`, not tag value.
-
-### Phase 4 — Item-level ACL (optional, deferred)
-
-Goal: selective sharing per entry/user.
-
-- Introduce per-user allow/deny behavior only when operational tooling exists.
-- Build/admin UX becomes prerequisite (GM dashboard or equivalent).
-
-### Phase 5 — Commercialization-ready boundary (future, not required now)
-
-Goal: keep migration path open without building platform complexity today.
-
-- Keep campaign slug and membership model as proto-tenant boundary.
-- If needed later, extract Campaigns access logic behind API/service boundary.
-- Preserve Obsidian-first authoring and current content contracts to avoid migration churn.
-
-## Implementation Guardrails
-
-1. Keep Astro-native content access for reads (consistent with ADR-0004).
-2. Avoid introducing repositories/services/contracts until concrete triggers are met.
-3. Do not require deploy-time multi-build orchestration for MVP campaign gating.
-4. Treat source-vault separation as workflow organization, not cryptographic secrecy.
-5. Do not use role labels (GM/player) as authorization controls.
-
-## MVP Definition of Done
-
-1. Public campaign index pages remain public.
-2. Protected campaign entries are deployed but inaccessible without auth + membership.
-3. Non-campaign domains remain public-by-default.
-4. `secret` is documented as deprecated/ignored.
-5. `visibility` is documented as the single access-control mechanism.
-6. Policy docs and TODOs reflect this as the active direction.
-
-## Deferred Work (explicit)
-
-- GM metadata filters in Canon/Using are discoverability-only and deferred.
-- Per-user item-level ACL is deferred.
-- Full campaign-domain extraction is deferred.
-
-## Related References
-
-- [`AGENTS.md`](AGENTS.md)
-- [`plans/adrs/0001-obsidian-first-content-architecture.md`](plans/adrs/0001-obsidian-first-content-architecture.md)
-- [`plans/adrs/0004-campaigns-astro-native-content-access-policy.md`](plans/adrs/0004-campaigns-astro-native-content-access-policy.md)
-- [`plans/content-publishing-system.md`](plans/content-publishing-system.md)
-- [`plans/draft-visibility-follow-up-todo.md`](plans/draft-visibility-follow-up-todo.md)
+- `src/content.config.ts`
+- `src/utils/campaign-access.ts`
+- `src/utils/campaign-membership-config.ts`
+- `src/content/campaigns/access.config.json`
+- `docs/runbook/phase-2-1-auth-google-d1-cloudflare-email.md`
+- `docs/runbook/campaign-access-local-dev.md`

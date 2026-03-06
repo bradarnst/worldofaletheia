@@ -1,8 +1,12 @@
 ---
 import { getCollection, getEntry } from 'astro:content';
 import CampaignsLayout from '@layouts/CampaignsLayout.astro';
-import { canViewCampaignContentAsync, createCampaignAccessResolverFromRequest } from '@utils/campaign-access';
-import { getCampaignMembershipConfigForEnv } from '@utils/campaign-membership-config';
+import {
+  canViewCampaignContentAsync,
+  createCampaignAccessResolverFromRequest,
+  resolveCampaignContentVisibility,
+} from '@utils/campaign-access';
+import { getCampaignGmAssignmentsForEnv, getCampaignMembershipConfigForEnv } from '@utils/campaign-membership-config';
 
 interface RuntimeLocals {
   runtime?: {
@@ -14,7 +18,7 @@ export async function getStaticPaths() {
   const campaignsCollection = await getCollection('campaigns');
 
   return campaignsCollection.map((item) => ({
-    params: { campaign: item.id.replace(/\/index$/, '') },
+    params: { campaign: item.id.split('/')[0] },
   }));
 }
 
@@ -22,15 +26,14 @@ export async function getStaticPaths() {
 const { campaign } = Astro.params;
 
 const campaignEntry =
-  (await getEntry('campaigns', campaign!)) ??
-  (await getEntry('campaigns', `${campaign}/index`));
+  (await getCollection('campaigns')).find((entry) => entry.id.split('/')[0] === campaign);
 
 if (!campaignEntry) {
   throw new Error(`Campaign not found for slug "${campaign}"`);
 }
 
 const campaignDetail = {
-  slug: campaignEntry.id.replace(/\/index$/, ''),
+  slug: campaignEntry.id.split('/')[0],
   title: campaignEntry.data.title,
   excerpt: campaignEntry.data.excerpt,
 };
@@ -41,19 +44,29 @@ const membershipConfigRaw =
   typeof runtimeEnv?.CAMPAIGN_MEMBERSHIPS === 'string' && runtimeEnv.CAMPAIGN_MEMBERSHIPS.length > 0
     ? runtimeEnv.CAMPAIGN_MEMBERSHIPS
     : getCampaignMembershipConfigForEnv();
+const gmAssignmentsConfigRaw =
+  typeof runtimeEnv?.CAMPAIGN_GM_ASSIGNMENTS === 'string' && runtimeEnv.CAMPAIGN_GM_ASSIGNMENTS.length > 0
+    ? runtimeEnv.CAMPAIGN_GM_ASSIGNMENTS
+    : getCampaignGmAssignmentsForEnv();
 const allowLegacyEnvFallback = Astro.url.hostname === 'localhost' || Astro.url.hostname === '127.0.0.1';
 const accessResolver = createCampaignAccessResolverFromRequest({
   request: Astro.request,
   locals: Astro.locals,
   membershipConfigRaw,
+  gmAssignmentsConfigRaw,
   allowLegacyEnvFallback,
 });
 
 const campaignSessions = allSessions.filter((entry) => entry.data.campaign === campaign);
 const sessionsWithVisibility = await Promise.all(
   campaignSessions.map(async (entry) => {
+    const effectiveVisibility = resolveCampaignContentVisibility({
+      campaignSlug: campaign!,
+      contentVisibility: entry.data.visibility,
+      campaignVisibility: campaignEntry.data.visibility,
+    });
     const canView = await canViewCampaignContentAsync({
-      visibility: entry.data.visibility,
+      visibility: effectiveVisibility,
       campaignSlug: campaign!,
       access: accessResolver,
     });
@@ -184,3 +197,4 @@ const title = campaignDetail ? `${campaignDetail.title} - Sessions` : 'Campaign 
     </div>
   </div>
 </CampaignsLayout>
+

@@ -27,6 +27,8 @@ describe('shouldIncludeContent', () => {
     expect(shouldIncludeContent({ status: 'published', permissions: 'gm' }, 'production')).toBe(true);
     expect(shouldIncludeContent({ status: 'published', tags: ['gm-data'] }, 'production')).toBe(true);
     expect(shouldIncludeContent({ status: 'published', tags: ['gm-info'] }, 'production')).toBe(true);
+    expect(shouldIncludeContent({ status: 'published', gmResource: true }, 'production')).toBe(true);
+    expect(shouldIncludeContent({ status: 'published', gm: true, 'gm-info': 'notes' }, 'production')).toBe(true);
   });
 
   it('returns false for missing content data', () => {
