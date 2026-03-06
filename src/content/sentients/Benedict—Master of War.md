@@ -9,15 +9,15 @@ secret: false
 tags:
   - deity
 subtype: greater_deity
-modified: 2026-02-25T07:54:11-05:00
+modified: 2026-03-06T01:44:30+01:00
 created: 2026-02-17T19:43:20-05:00
 ---
 
 **Benedict: Master of War**  
 Often titled _Master of War_ or _The Steady Hand_
 
+![Vatarese Benedict](<../../assets/images/Vatarese Benedict.png>)
 
-![Vatarese Benedict](<../../assets/images/assets/images/Vatarese Benedict.png>)
 **Domains and Aspects**
 
 War, discipline, law, strategy, restraint, order through structure

@@ -61,7 +61,7 @@ const bestiarySchema = baseSchema.extend({
 
 const floraSchema = baseSchema.extend({
   title: z.string(),
-  type: z.enum(['tree', 'flower', 'fungus', 'herb', 'plant', 'crop']),
+  type: z.enum(['tree', 'flower', 'fungus', 'herb', 'fruit', 'plant', 'crop']),
   excerpt: z.string().optional(),
 });
 
