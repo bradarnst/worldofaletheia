@@ -139,7 +139,7 @@ pnpm db:seed:memberships:local
 pnpm dev:cf:auth
 ```
 
-This command builds Astro worker output, applies local D1 migration/seed scripts, then starts Wrangler dev against the built worker.
+This command builds Astro Cloudflare server output, applies local D1 migration/seed scripts, then starts Wrangler dev against [`entry.mjs`](dist/server/entry.mjs) with generated config [`wrangler.json`](dist/server/wrangler.json).
 
 ## 8) Auth/session verification checklist (parity lane)
 

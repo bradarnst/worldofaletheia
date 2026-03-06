@@ -8,7 +8,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "dev:cf:build": "astro build",
-    "dev:cf": "wrangler dev ./dist/_worker.js --local",
+    "dev:cf": "wrangler dev ./dist/server/entry.mjs --config ./dist/server/wrangler.json --local",
     "dev:cf:auth": "pnpm dev:cf:build && pnpm db:migrate:local && pnpm db:seed:memberships:local && pnpm dev:cf",
     "astro": "astro",
     "test": "vitest run",
