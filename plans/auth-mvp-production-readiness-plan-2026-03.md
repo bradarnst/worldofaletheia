@@ -6,6 +6,12 @@
 - Scope: MVP production readiness for Better Auth + D1 + campaign RBAC
 - Decision posture: static-first, incremental, low-ops-risk
 
+### Evidence and identity disclaimer
+
+- Any personal names shown in repository config examples (for example in `src/content/campaigns/access.config.json`) are treated in this plan as **fictional/example identifiers only**.
+- These names are **not** treated as verified real users, real identities, or production accounts unless confirmed by explicit production query output.
+- This plan distinguishes repository observations from production-verified facts; where production query evidence is missing, status is marked **unverified**.
+
 ## 1) Current State Assessment (from repository + live diagnostics)
 
 ### 1.1 What is already implemented
@@ -45,7 +51,7 @@
 
 ---
 
-## 2) Precise RBAC Assessment (including user-specific assignments)
+## 2) Precise RBAC Assessment (repository-only examples vs production-verified facts)
 
 ### 2.1 Runtime enforcement model that exists today
 
@@ -80,16 +86,17 @@ Current assignment inputs:
    - Not configured in `src/lib/auth.ts`
    - No platform-wide user roles (e.g., admin/editor) are currently active in auth runtime
 
-### 2.3 Explicit assignment status for Andy / specific users
+### 2.3 Repository example data vs production assignment facts
 
-- Current repository assignment entries include `jim`, `fred`, `martha`, `tom`, `nancy`, `bob` in `src/content/campaigns/access.config.json`.
-- **No assignment entry exists for `andy` (or `Andy`) in repository config.**
-- Since production DB currently has zero tables, there are also no persisted production assignments yet.
+- Repository config currently contains example assignment keys in `src/content/campaigns/access.config.json` (for memberships and GM mappings).
+- These keys are treated as repository/bootstrap sample data in this plan and are not interpreted as real-person identity assertions.
+- Production assignment status is **unverified** unless confirmed by successful production DB queries.
+- Current verified runtime fact: both staging and production D1 instances reported `num_tables = 0` at the time of diagnostics, so no persisted assignment records were queryable then.
 
 Conclusion:
 - Campaign RBAC logic exists and is wired.
-- Assignment data exists only in bootstrap JSON (not production-safe as long-term source of truth).
-- No current assignment for Andy.
+- Assignment configuration currently exists in repo/env bootstrap form.
+- Real production assignment state must be established only from successful production query output.
 
 ---
 
@@ -362,9 +369,9 @@ Do **not** roll back by deleting D1 auth tables.
 MVP is done only when all are true:
 
 1. Staging and production D1 each have auth core tables + `campaign_memberships` table.
-2. Exactly two real initial users (you + brother) exist in production auth user table.
-3. No test users exist in production tables.
-4. Required campaign memberships for those two users exist in D1.
+2. The planned initial production users are present in the production auth user table, and this is confirmed by production query output captured in release notes/runbook.
+3. Any claim about presence or absence of test users is based on explicit production query output; without that output, status remains unverified.
+4. Required campaign memberships for the planned initial users exist in D1 and are confirmed by production query output.
 5. GM checks work for configured campaigns.
 6. `/api/auth/get-session` does not return 500 in staging/prod.
 7. `/login`, `/account`, `/logout` work end-to-end in production.

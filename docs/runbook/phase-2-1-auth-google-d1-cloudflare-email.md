@@ -199,3 +199,135 @@ This command builds Astro Cloudflare server output, applies local D1 migration/s
 - Membership migration is additive and non-destructive.
 - Application rollback path is code-only revert of auth route/resolver updates.
 - As emergency local fallback, `CAMPAIGN_MEMBERSHIPS` map can still be enabled for localhost-only development behavior.
+
+## 12) Operator Runbook — Production account and assignment operations (Option A)
+
+This section defines a manual operator workflow for production-safe account assignment management using Wrangler + D1.
+
+### 12.1 Scope and data handling rules
+
+- Use this flow for **membership and GM assignment operations** in staging/production.
+- Keep real identity/assignment data in D1 and private operator tooling only.
+- Do not commit real user identifiers, email addresses, or assignment snapshots to Git.
+- Repository SQL examples must use placeholders only.
+
+### 12.2 Operator prerequisites
+
+1. Wrangler authenticated to correct Cloudflare account:
+
+```bash
+pnpm wrangler whoami
+```
+
+2. Target databases visible:
+
+```bash
+pnpm wrangler d1 list
+pnpm wrangler d1 info world-of-aletheia
+pnpm wrangler d1 info world-of-aletheia-staging
+```
+
+3. Schema present before assignment operations:
+
+```bash
+pnpm wrangler d1 execute DB --remote --command "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;"
+pnpm wrangler d1 execute DB --remote --env staging --command "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;"
+```
+
+Expected minimum:
+
+- Better Auth core tables (names depend on installed Better Auth schema)
+- `campaign_memberships`
+- if enabled, `campaign_gm_assignments`
+
+### 12.3 Preferred execution mode (A2): SQL file + Wrangler
+
+Use a private/ignored path for operation SQL files.
+
+Recommended local ignored path:
+
+- `./.wrangler/operators/`
+
+Example execute commands:
+
+```bash
+pnpm wrangler d1 execute DB --remote --file ./.wrangler/operators/op-prod.sql
+pnpm wrangler d1 execute DB --remote --env staging --file ./.wrangler/operators/op-staging.sql
+```
+
+### 12.4 Command templates
+
+#### Grant campaign membership
+
+```sql
+INSERT INTO campaign_memberships (id, user_id, campaign_slug, role, created_at)
+VALUES ('<userId>:<campaignSlug>', '<userId>', '<campaignSlug>', 'member', '<ISO8601>')
+ON CONFLICT(user_id, campaign_slug) DO UPDATE SET
+  role = excluded.role,
+  updated_at = '<ISO8601>';
+```
+
+#### Revoke campaign membership
+
+```sql
+DELETE FROM campaign_memberships
+WHERE user_id = '<userId>' AND campaign_slug = '<campaignSlug>';
+```
+
+#### Set/update GM assignment (if table exists)
+
+```sql
+INSERT INTO campaign_gm_assignments (campaign_slug, user_id, created_at, updated_at)
+VALUES ('<campaignSlug>', '<userId>', '<ISO8601>', '<ISO8601>')
+ON CONFLICT(campaign_slug) DO UPDATE SET
+  user_id = excluded.user_id,
+  updated_at = '<ISO8601>';
+```
+
+#### Revoke GM assignment (if table exists)
+
+```sql
+DELETE FROM campaign_gm_assignments
+WHERE campaign_slug = '<campaignSlug>';
+```
+
+### 12.5 Verification queries (required after each operation)
+
+#### Membership verification
+
+```bash
+pnpm wrangler d1 execute DB --remote --command "SELECT user_id,campaign_slug,role,created_at,updated_at FROM campaign_memberships ORDER BY campaign_slug,user_id;"
+```
+
+#### Membership count check
+
+```bash
+pnpm wrangler d1 execute DB --remote --command "SELECT COUNT(*) AS memberships FROM campaign_memberships;"
+```
+
+#### GM assignment verification (if table exists)
+
+```bash
+pnpm wrangler d1 execute DB --remote --command "SELECT campaign_slug,user_id,created_at,updated_at FROM campaign_gm_assignments ORDER BY campaign_slug;"
+```
+
+### 12.6 Safe-ops checklist (every run)
+
+1. Confirm target environment (`staging` vs `production`) before execute.
+2. Preview SQL in editor and verify placeholders have expected values.
+3. Execute exactly once.
+4. Run required verification queries.
+5. Record private operator log entry (timestamp, operator, env, action type, success/failure).
+6. Do not paste full PII-bearing query results into public channels or Git commits.
+
+### 12.7 Failure handling
+
+- If SQL fails: do not retry blindly; inspect error and re-run only corrected statement.
+- If verification query fails: stop and resolve DB/runtime access before further ops.
+- If unexpected row changes occur: restore expected state with explicit corrective SQL and re-verify.
+
+### 12.8 Environment variable policy for Option A
+
+- Allowed for non-sensitive defaults only (target env flags, command convenience).
+- Do not store real user identifiers/emails/assignment payloads in persistent shell env files.
+- Prefer runtime prompt/input and private SQL files that are gitignored.
