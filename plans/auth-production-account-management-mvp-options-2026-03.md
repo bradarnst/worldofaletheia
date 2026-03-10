@@ -232,7 +232,7 @@ Success criteria:
 
 1. Ensure Better Auth core tables exist (user/session/account/verification).
 2. Ensure campaign authorization tables exist (at least memberships; plus GM assignment table if adopted now).
-3. Apply canonical email hardening with explicit conflict capture (`auth_email_conflicts`) before uniqueness-dependent ops.
+3. Apply canonical email hardening with fail-fast collision detection before uniqueness-dependent ops.
 
 Required ordered migration sequence:
 
@@ -301,7 +301,6 @@ Store private operational snapshot outside repo (secure notes/vault):
 
 Also record:
 
-- canonical conflict open count,
 - duplicate canonical email group count,
 - null/empty email row count.
 
@@ -329,7 +328,7 @@ MVP is done when:
 5. Staging and production validation scenarios pass.
 6. No identity or assignment details are committed to GitHub.
 7. Canonical email policy (`trim(lower(email))`) is enforced with deterministic canonical-first lookup.
-8. Collision policy is explicit: conflicts logged, no auto-merge/delete, operator adjudication required.
+8. Collision policy is explicit: fail-fast by default, with approved `--force` override when intentional overwrite is required.
 
 ---
 

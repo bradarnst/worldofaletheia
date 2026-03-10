@@ -50,7 +50,7 @@ Launch production with:
 1. Identity/auth tables: Better Auth tables in D1.
 2. Membership assignments: `campaign_memberships` in D1.
 3. GM assignments: `campaign_gm_assignments` in D1.
-4. Canonical email identity: `user.email_canonical = trim(lower(email))` with collision capture in `auth_email_conflicts`.
+4. Canonical email identity: `user.email_canonical = trim(lower(email))` with fail-fast collision detection in migration workflow.
 
 ### Operator mechanism
 
@@ -109,7 +109,7 @@ Repository components:
    - GM upsert ↔ GM revoke
    - account-link upsert ↔ account-link revoke
 4. Verify after every correction.
-5. For canonical email collisions: never auto-merge/delete; adjudicate manually from `auth_email_conflicts`, then re-run preflight/verify/audit.
+5. For canonical email collisions: fail fast by default; resolve manually or use approved `--force` override, then re-run preflight/verify/audit.
 
 ---
 

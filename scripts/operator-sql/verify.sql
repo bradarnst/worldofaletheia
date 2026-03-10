@@ -38,10 +38,6 @@ FROM session;
 SELECT 'auth_verification_total' AS metric, COUNT(*) AS value
 FROM verification;
 
-SELECT 'auth_email_conflicts_open' AS metric, COUNT(*) AS value
-FROM auth_email_conflicts
-WHERE status = 'open';
-
 SELECT 'null_or_empty_email_rows' AS metric, COUNT(*) AS value
 FROM "user"
 WHERE email IS NULL OR trim(email) = '';
@@ -64,7 +60,6 @@ FROM (
 SELECT id,
        email,
        email_canonical,
-       canonical_conflict,
        emailVerified,
        createdAt,
        updatedAt

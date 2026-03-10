@@ -44,30 +44,22 @@ wrangler d1 create world-of-aletheia-staging
 
 Copy resulting database IDs into [`wrangler.jsonc`](wrangler.jsonc).
 
-Run local migration:
+Run local migration plan dry-run first:
 
 ```bash
-pnpm db:migrate:local
+pnpm db:migrate:plan:local:dry-run
 ```
 
-Apply full ordered schema sequence (staging first, then production):
+Apply full ordered schema sequence (staging first, then production) via a single migration runner:
 
 ```bash
-# 1) campaign memberships
-pnpm db:migrate:memberships:staging
-pnpm db:migrate:memberships:prod
+# dry-run first (no writes)
+pnpm db:migrate:plan:staging:dry-run
+pnpm db:migrate:plan:prod:dry-run
 
-# 2) campaign GM assignments
-pnpm db:migrate:gm:staging
-pnpm db:migrate:gm:prod
-
-# 3) Better Auth core tables
-pnpm db:migrate:auth:staging
-pnpm db:migrate:auth:prod
-
-# 4) email canonical hardening + conflict capture
-pnpm db:migrate:email-hardening:staging
-pnpm db:migrate:email-hardening:prod
+# apply after clean dry-run
+pnpm db:migrate:plan:staging
+pnpm db:migrate:plan:prod
 ```
 
 Ordered migration files are:
@@ -80,8 +72,14 @@ Ordered migration files are:
 Policy constraints:
 
 - Canonical email is `trim(lower(email))`.
-- Canonical collisions are written to `auth_email_conflicts`.
-- No auto-merge or auto-delete of user rows is permitted in migration or operator flow.
+- Canonical collisions are fail-fast by default (migration runner exits with explicit collision output).
+- No persistent conflict-backlog table is used.
+
+Conflict-handling behavior in migration runner:
+
+1. By default, if conflicts are detected (canonical-email collisions or schema/object conflicts), execution stops with actionable error output.
+2. `--force` allows continuing despite conflicts and performs intentional collision overwrite behavior for duplicate canonical emails prior to apply.
+3. This behavior is identical across local/staging/production wrappers.
 
 ## 4) Membership seed bootstrap (optional)
 
@@ -169,7 +167,7 @@ CAMPAIGN_GM_ASSIGNMENTS={"brad":{"userId":"jim"},"barry":{"userId":"tom"}}
 2. Ensure local DB schema is current:
 
 ```bash
-pnpm db:migrate:local
+pnpm db:migrate:plan:local
 ```
 
 3. Optionally seed membership bootstrap data:
@@ -263,19 +261,24 @@ Expected:
 Migrate required schema (one-time per env):
 
 ```bash
-pnpm db:migrate:local
-pnpm db:migrate:gm:local
-pnpm db:migrate:auth:local
-pnpm db:migrate:email-hardening:local
-pnpm db:migrate:memberships:staging
-pnpm db:migrate:gm:staging
-pnpm db:migrate:auth:staging
-pnpm db:migrate:email-hardening:staging
-pnpm db:migrate:memberships:prod
-pnpm db:migrate:gm:prod
-pnpm db:migrate:auth:prod
-pnpm db:migrate:email-hardening:prod
+pnpm db:migrate:plan:local:dry-run
+pnpm db:migrate:plan:local
+
+pnpm db:migrate:plan:staging:dry-run
+pnpm db:migrate:plan:staging
+
+pnpm db:migrate:plan:prod:dry-run
+pnpm db:migrate:plan:prod
 ```
+
+Force mode examples:
+
+```bash
+pnpm db:migrate:plan:staging:force
+pnpm db:migrate:plan:prod:force
+```
+
+Use force only when conflicts are understood, documented, and intentionally overridden.
 
 ### 12.3 Environment selection safeguard
 
@@ -287,6 +290,8 @@ pnpm run ops:a2:preflight:prod
 ```
 
 If preflight does not show expected tables, stop and fix migrations first.
+
+If migration dry-run reports conflicts, do not apply until resolved unless an approved force override is required.
 
 ### 12.4 Option A2 execution model
 
@@ -385,10 +390,9 @@ If identity mismatch discovered after change:
 
 If canonical email collisions are reported:
 
-1. Stop uniqueness-dependent user operations for impacted identities.
-2. Review rows in `auth_email_conflicts` via audit output.
-3. Adjudicate manually using controlled `user-email-update.sql` updates.
-4. Re-run preflight, verify, and audit before continuing.
+1. Stop and resolve manually, or run approved `--force` path.
+2. Under force, duplicate identities are deterministically rewritten to unique forced aliases before migration apply.
+3. Re-run preflight, verify, and audit after apply.
 
 ### 12.12 Acceptance criteria and readiness checks
 
@@ -403,7 +407,7 @@ All of the following must hold before declaring the Option A2 auth/email path pr
    - `user`, `account`, `session`, `verification`
    - canonical email + provider/account uniqueness indexes
 4. Operator identity resolution is deterministic under canonical email policy (canonical-first, name fallback only).
-5. Canonical collisions are explicitly handled through `auth_email_conflicts` with no destructive rollback assumptions.
+5. Canonical collisions are explicitly handled through immediate fail-fast-or-force behavior with no conflict backlog table.
 
 ### 12.10 Rollback guidance for mistaken assignments
 

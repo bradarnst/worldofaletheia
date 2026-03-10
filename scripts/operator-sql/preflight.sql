@@ -7,8 +7,7 @@ WHERE type = 'table'
     'user',
     'account',
     'session',
-    'verification',
-    'auth_email_conflicts'
+    'verification'
   )
 ORDER BY name;
 
@@ -27,11 +26,6 @@ WHERE EXISTS (
   SELECT 1 FROM pragma_table_info('user') WHERE name = 'email_canonical'
 );
 
-SELECT 'column_exists' AS check_name, 'user.canonical_conflict' AS value
-WHERE EXISTS (
-  SELECT 1 FROM pragma_table_info('user') WHERE name = 'canonical_conflict'
-);
-
 SELECT 'column_exists' AS check_name, 'verification.expiresAt' AS value
 WHERE EXISTS (
   SELECT 1 FROM pragma_table_info('verification') WHERE name = 'expiresAt'
@@ -44,7 +38,7 @@ WHERE type = 'index'
     'idx_account_provider_account_unique',
     'idx_session_user_id',
     'idx_verification_identifier_value_unique',
-    'idx_user_email_canonical_unique_non_conflict'
+    'idx_user_email_canonical_unique'
   )
 ORDER BY name;
 

@@ -6,7 +6,6 @@ CREATE TABLE IF NOT EXISTS "user" (
   name TEXT,
   email TEXT NOT NULL,
   email_canonical TEXT,
-  canonical_conflict INTEGER NOT NULL DEFAULT 0 CHECK (canonical_conflict IN (0, 1)),
   emailVerified INTEGER NOT NULL DEFAULT 0 CHECK (emailVerified IN (0, 1)),
   image TEXT,
   createdAt TEXT NOT NULL,

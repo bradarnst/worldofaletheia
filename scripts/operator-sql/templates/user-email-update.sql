@@ -4,11 +4,10 @@
 UPDATE "user"
 SET email = trim(lower('<email>')),
     email_canonical = trim(lower('<email>')),
-    canonical_conflict = 0,
     updatedAt = '<ISO8601>'
 WHERE id = '<userId>';
 
 -- Verify target row after update.
-SELECT id, email, email_canonical, canonical_conflict, updatedAt
+SELECT id, email, email_canonical, updatedAt
 FROM "user"
 WHERE id = '<userId>';

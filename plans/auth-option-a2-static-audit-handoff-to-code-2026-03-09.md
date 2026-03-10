@@ -124,11 +124,9 @@ Implementation guidance (non-destructive):
 
 No auto-merge, no auto-delete.
 
-- Introduce `auth_email_conflicts` table (or equivalent) during hardening migration.
-- If duplicates collide on canonical email:
-  - write conflict rows
-  - stop short of final uniqueness enforcement
-  - require operator adjudication runbook step
+- Detect canonical-email collisions up front.
+- Fail migration execution immediately when collisions exist.
+- Allow continuation only through explicit `--force` override with documented operator approval.
 
 ---
 

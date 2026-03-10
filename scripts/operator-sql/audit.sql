@@ -26,13 +26,6 @@ SELECT 'auth_verification_table_present' AS check_name,
          WHERE type = 'table' AND name = 'verification'
        ) AS value;
 
-SELECT 'auth_email_conflicts_table_present' AS check_name,
-       EXISTS(
-         SELECT 1
-         FROM sqlite_master
-         WHERE type = 'table' AND name = 'auth_email_conflicts'
-       ) AS value;
-
 SELECT 'auth_user_email_column_present' AS check_name,
        EXISTS(
          SELECT 1 FROM pragma_table_info('user') WHERE name = 'email'
@@ -60,11 +53,11 @@ SELECT 'auth_account_provider_account_unique_index_present' AS check_name,
          WHERE type = 'index' AND name = 'idx_account_provider_account_unique'
        ) AS value;
 
-SELECT 'auth_user_email_canonical_unique_non_conflict_index_present' AS check_name,
+SELECT 'auth_user_email_canonical_unique_index_present' AS check_name,
        EXISTS(
          SELECT 1
-         FROM sqlite_master
-         WHERE type = 'index' AND name = 'idx_user_email_canonical_unique_non_conflict'
+          FROM sqlite_master
+         WHERE type = 'index' AND name = 'idx_user_email_canonical_unique'
        ) AS value;
 
 SELECT 'auth_session_user_index_present' AS check_name,
@@ -103,26 +96,9 @@ FROM (
   HAVING COUNT(*) > 1
 );
 
-SELECT 'auth_email_conflicts_open' AS metric,
-       COUNT(*) AS value
-FROM auth_email_conflicts
-WHERE status = 'open';
-
-SELECT canonical_email,
-       winning_user_id,
-       conflicting_user_id,
-       winning_email_raw,
-       conflicting_email_raw,
-       detected_at,
-       status,
-       resolved_at
-FROM auth_email_conflicts
-ORDER BY detected_at DESC, canonical_email ASC;
-
 SELECT id,
        email,
        email_canonical,
-       canonical_conflict,
        emailVerified,
        createdAt,
        updatedAt
