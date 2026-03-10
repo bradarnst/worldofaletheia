@@ -33,10 +33,11 @@ Launch production with:
 - Auth runtime plumbing exists in `src/lib/auth.ts`, `src/lib/auth-session.ts`, `src/pages/api/auth/[...all].ts`.
 - Campaign authorization seam exists in `src/utils/campaign-access.ts`.
 - Membership persistence table exists in `migrations/0001_campaign_memberships.sql`.
+- Auth core + email hardening migration artifacts exist in `migrations/0003_auth_core.sql` and `migrations/0004_auth_email_hardening.sql`.
 
 ### Outstanding/active implementation focus
 
-1. Auth core schema migration artifact remains required in repo and in remote DBs.
+1. Apply auth/email hardening migrations to staging then production with preflight evidence.
 2. Runtime GM lookup should be aligned to D1 table source for production.
 3. Operator workflow must be the canonical production process (implemented in runbook + scripts).
 
@@ -49,6 +50,7 @@ Launch production with:
 1. Identity/auth tables: Better Auth tables in D1.
 2. Membership assignments: `campaign_memberships` in D1.
 3. GM assignments: `campaign_gm_assignments` in D1.
+4. Canonical email identity: `user.email_canonical = trim(lower(email))` with collision capture in `auth_email_conflicts`.
 
 ### Operator mechanism
 
@@ -69,9 +71,14 @@ Repository components:
 
 1. `pnpm wrangler whoami`
 2. `pnpm wrangler d1 list`
-3. `pnpm run ops:a2:preflight:staging`
-4. `pnpm run ops:a2:preflight:prod`
-5. Apply missing migrations before any assignment changes.
+3. Apply migrations in strict order on staging, then production:
+   - `0001_campaign_memberships.sql`
+   - `0002_campaign_gm_assignments.sql`
+   - `0003_auth_core.sql`
+   - `0004_auth_email_hardening.sql`
+4. `pnpm run ops:a2:preflight:staging`
+5. `pnpm run ops:a2:preflight:prod`
+6. If preflight shows missing shape/indexes, stop and fix migration state before any assignment changes.
 
 ### Phase B — Identity resolution and operation prep
 
@@ -102,6 +109,7 @@ Repository components:
    - GM upsert ↔ GM revoke
    - account-link upsert ↔ account-link revoke
 4. Verify after every correction.
+5. For canonical email collisions: never auto-merge/delete; adjudicate manually from `auth_email_conflicts`, then re-run preflight/verify/audit.
 
 ---
 
@@ -118,6 +126,7 @@ MVP is done only when all are true:
 3. Campaign assignment updates and revocations are deterministic/idempotent where feasible.
 4. Production assignment claims are backed by production query output.
 5. No real identity/assignment data appears in tracked repository files.
+6. Canonical email lookup is deterministic (canonical-first) and collision policy is explicit and non-destructive.
 
 ---
 
@@ -126,4 +135,3 @@ MVP is done only when all are true:
 1. Update runtime GM resolution path to D1-first in `src/utils/campaign-access.ts`.
 2. Add auth core migration artifact if still missing.
 3. Consider protected admin API (Option B) only after repeated manual-op pain.
-

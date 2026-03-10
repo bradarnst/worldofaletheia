@@ -232,6 +232,14 @@ Success criteria:
 
 1. Ensure Better Auth core tables exist (user/session/account/verification).
 2. Ensure campaign authorization tables exist (at least memberships; plus GM assignment table if adopted now).
+3. Apply canonical email hardening with explicit conflict capture (`auth_email_conflicts`) before uniqueness-dependent ops.
+
+Required ordered migration sequence:
+
+1. `migrations/0001_campaign_memberships.sql`
+2. `migrations/0002_campaign_gm_assignments.sql`
+3. `migrations/0003_auth_core.sql`
+4. `migrations/0004_auth_email_hardening.sql`
 
 Verify with:
 
@@ -259,6 +267,7 @@ Private operator process includes:
 3. Grant/revoke GM flow.
 4. Revoke account flow.
 5. Verification queries.
+6. Canonical collision adjudication flow (manual, non-destructive).
 
 Important: repository files contain only placeholders; no real identities committed.
 
@@ -290,6 +299,12 @@ Store private operational snapshot outside repo (secure notes/vault):
 - assignment counts,
 - date/operator.
 
+Also record:
+
+- canonical conflict open count,
+- duplicate canonical email group count,
+- null/empty email row count.
+
 ---
 
 ## Immediate “Do This First” Checklist
@@ -313,6 +328,8 @@ MVP is done when:
 4. Protected route checks read D1-backed assignments and enforce deny-by-default.
 5. Staging and production validation scenarios pass.
 6. No identity or assignment details are committed to GitHub.
+7. Canonical email policy (`trim(lower(email))`) is enforced with deterministic canonical-first lookup.
+8. Collision policy is explicit: conflicts logged, no auto-merge/delete, operator adjudication required.
 
 ---
 

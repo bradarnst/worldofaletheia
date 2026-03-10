@@ -50,6 +50,39 @@ Run local migration:
 pnpm db:migrate:local
 ```
 
+Apply full ordered schema sequence (staging first, then production):
+
+```bash
+# 1) campaign memberships
+pnpm db:migrate:memberships:staging
+pnpm db:migrate:memberships:prod
+
+# 2) campaign GM assignments
+pnpm db:migrate:gm:staging
+pnpm db:migrate:gm:prod
+
+# 3) Better Auth core tables
+pnpm db:migrate:auth:staging
+pnpm db:migrate:auth:prod
+
+# 4) email canonical hardening + conflict capture
+pnpm db:migrate:email-hardening:staging
+pnpm db:migrate:email-hardening:prod
+```
+
+Ordered migration files are:
+
+1. `migrations/0001_campaign_memberships.sql`
+2. `migrations/0002_campaign_gm_assignments.sql`
+3. `migrations/0003_auth_core.sql`
+4. `migrations/0004_auth_email_hardening.sql`
+
+Policy constraints:
+
+- Canonical email is `trim(lower(email))`.
+- Canonical collisions are written to `auth_email_conflicts`.
+- No auto-merge or auto-delete of user rows is permitted in migration or operator flow.
+
 ## 4) Membership seed bootstrap (optional)
 
 Seed source: [`src/content/campaigns/access.config.json`](src/content/campaigns/access.config.json)
@@ -232,8 +265,16 @@ Migrate required schema (one-time per env):
 ```bash
 pnpm db:migrate:local
 pnpm db:migrate:gm:local
+pnpm db:migrate:auth:local
+pnpm db:migrate:email-hardening:local
+pnpm db:migrate:memberships:staging
 pnpm db:migrate:gm:staging
+pnpm db:migrate:auth:staging
+pnpm db:migrate:email-hardening:staging
+pnpm db:migrate:memberships:prod
 pnpm db:migrate:gm:prod
+pnpm db:migrate:auth:prod
+pnpm db:migrate:email-hardening:prod
 ```
 
 ### 12.3 Environment selection safeguard
@@ -290,6 +331,14 @@ cp ./scripts/operator-sql/identity-resolution.sql ./.wrangler/operators/resolve.
 OP_FILE=./.wrangler/operators/resolve.sql pnpm run ops:a2:resolve:prod
 ```
 
+Additional optional operator templates for controlled auth maintenance:
+
+- user upsert: `scripts/operator-sql/templates/user-upsert.sql`
+- user email update: `scripts/operator-sql/templates/user-email-update.sql`
+- verification upsert: `scripts/operator-sql/templates/verification-upsert.sql`
+
+These are intended for corrective operations only; normal sign-up/sign-in remains preferred.
+
 ### 12.7 Post-operation verification (mandatory)
 
 Run after every apply:
@@ -333,6 +382,28 @@ If identity mismatch discovered after change:
 1. Revoke incorrect mapping.
 2. Resolve identity with `identity-resolution.sql`.
 3. Re-apply to verified user id only.
+
+If canonical email collisions are reported:
+
+1. Stop uniqueness-dependent user operations for impacted identities.
+2. Review rows in `auth_email_conflicts` via audit output.
+3. Adjudicate manually using controlled `user-email-update.sql` updates.
+4. Re-run preflight, verify, and audit before continuing.
+
+### 12.12 Acceptance criteria and readiness checks
+
+All of the following must hold before declaring the Option A2 auth/email path production-ready:
+
+1. `/login` presents Google and email/password forms and email auth endpoints are reachable.
+2. Better Auth runtime is email-capable with verification optional mode (currently disabled):
+   - `requireEmailVerification = false`
+   - `sendOnSignUp = false`
+   - `sendOnSignIn = false`
+3. D1 has all required tables and indexes validated by `ops:a2:preflight:*`:
+   - `user`, `account`, `session`, `verification`
+   - canonical email + provider/account uniqueness indexes
+4. Operator identity resolution is deterministic under canonical email policy (canonical-first, name fallback only).
+5. Canonical collisions are explicitly handled through `auth_email_conflicts` with no destructive rollback assumptions.
 
 ### 12.10 Rollback guidance for mistaken assignments
 

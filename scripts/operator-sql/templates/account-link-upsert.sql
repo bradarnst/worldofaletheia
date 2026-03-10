@@ -1,6 +1,9 @@
 -- Link an existing auth user to an OAuth provider account in Better Auth account table.
 -- Replace placeholders before execution.
 -- NOTE: Use only when manual account-link correction is required.
+-- Precondition checks (run first, expect exactly 1 matching row each):
+-- SELECT id, email, email_canonical FROM "user" WHERE id = '<userId>';
+-- SELECT id, providerId, accountId, userId FROM account WHERE providerId = '<providerId>' AND accountId = '<providerAccountId>';
 
 INSERT INTO account (
   id,
@@ -37,3 +40,9 @@ ON CONFLICT(id) DO UPDATE SET
   providerId = excluded.providerId,
   userId = excluded.userId,
   updatedAt = excluded.updatedAt;
+
+-- Postcondition verification query:
+SELECT id, providerId, accountId, userId, createdAt, updatedAt
+FROM account
+WHERE providerId = '<providerId>'
+  AND accountId = '<providerAccountId>';

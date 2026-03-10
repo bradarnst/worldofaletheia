@@ -22,6 +22,9 @@ pnpm run ops:a2:verify:staging
 
 Template files:
 
+- `templates/user-upsert.sql`
+- `templates/user-email-update.sql`
+- `templates/verification-upsert.sql`
 - `templates/membership-grant.sql`
 - `templates/membership-revoke.sql`
 - `templates/membership-role-update.sql`
@@ -37,3 +40,8 @@ Validation/support files:
 - `audit.sql`
 - `identity-resolution.sql`
 
+Execution policy notes:
+
+1. Email identity lookup is canonical-first: `trim(lower(email))`.
+2. If canonical collisions exist, they are recorded in `auth_email_conflicts` and must be adjudicated manually before relying on unique-canonical-email assumptions.
+3. Never auto-merge or delete conflicting identities via operator templates.
