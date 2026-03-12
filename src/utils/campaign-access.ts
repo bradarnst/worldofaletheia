@@ -342,18 +342,35 @@ export function createCampaignAccessResolverFromRequest(options: {
           };
         }
 
+        let repo: ReturnType<typeof createCampaignMembershipRepoFromLocals>;
+        let isMember = false;
         try {
-          const repo = createCampaignMembershipRepoFromLocals(locals);
-          const isMember = await repo.isUserMemberOfCampaign(session.user.id, campaignSlug);
-          const gmUserId = legacyResolver.getCampaignGmUserId(campaignSlug);
-          const isGm = typeof gmUserId === 'string' && gmUserId.length > 0 ? session.user.id === gmUserId : false;
+          repo = createCampaignMembershipRepoFromLocals(locals);
+          isMember = await repo.isUserMemberOfCampaign(session.user.id, campaignSlug);
+        } catch (error) {
+          console.error('campaign.membership.query_failed', {
+            message: error instanceof Error ? error.message : 'unknown error',
+            campaignSlug,
+          });
+          if (!allowLegacyEnvFallback) {
+            return { isMember: false, isGm: false };
+          }
+
+          return {
+            isMember: legacyResolver.hasCampaignAccess(campaignSlug),
+            isGm: legacyResolver.isCampaignGm(campaignSlug),
+          };
+        }
+
+        try {
+          const isGm = await repo.isUserGmOfCampaign(session.user.id, campaignSlug);
 
           return {
             isMember,
             isGm,
           };
         } catch (error) {
-          console.error('campaign.membership.query_failed', {
+          console.error('campaign.gm.query_failed', {
             message: error instanceof Error ? error.message : 'unknown error',
             campaignSlug,
           });

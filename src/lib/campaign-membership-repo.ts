@@ -1,8 +1,12 @@
-import { type D1DatabaseLike, getD1BindingFromLocals, type D1PreparedStatementLike } from './d1';
+import { type D1DatabaseLike, getD1BindingFromLocals } from './d1';
 
 interface MembershipRow {
   user_id: string;
   campaign_slug: string;
+}
+
+interface GmAssignmentRow {
+  user_id: string;
 }
 
 export interface CampaignMembership {
@@ -53,6 +57,34 @@ export class CampaignMembershipRepo {
     }));
   }
 
+  async isUserGmOfCampaign(userId: string, campaignSlug: string): Promise<boolean> {
+    const row = await this.db
+      .prepare(
+        `SELECT user_id
+         FROM campaign_gm_assignments
+         WHERE campaign_slug = ?1 AND user_id = ?2
+         LIMIT 1`,
+      )
+      .bind(campaignSlug, userId)
+      .first<GmAssignmentRow>();
+
+    return Boolean(row);
+  }
+
+  async listCampaignGms(campaignSlug: string): Promise<string[]> {
+    const result = await this.db
+      .prepare(
+        `SELECT user_id
+         FROM campaign_gm_assignments
+         WHERE campaign_slug = ?1
+         ORDER BY user_id ASC`,
+      )
+      .bind(campaignSlug)
+      .all<GmAssignmentRow>();
+
+    return result.results.map((row) => row.user_id);
+  }
+
   async seedFromMembershipMap(memberships: Record<string, { campaigns: string[] }>): Promise<void> {
     const statement = this.db.prepare(
       `INSERT OR IGNORE INTO campaign_memberships
@@ -77,4 +109,3 @@ export class CampaignMembershipRepo {
 export function createCampaignMembershipRepoFromLocals(locals: unknown): CampaignMembershipRepo {
   return new CampaignMembershipRepo(getD1BindingFromLocals(locals));
 }
-

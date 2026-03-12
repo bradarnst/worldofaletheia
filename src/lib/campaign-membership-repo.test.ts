@@ -86,4 +86,32 @@ describe('CampaignMembershipRepo', () => {
 
     await expect(repo.isUserMemberOfCampaign('user-1', 'brad')).rejects.toThrow('db unavailable');
   });
+
+  it('returns true when gm assignment row exists', async () => {
+    const repo = new CampaignMembershipRepo(
+      createDbMock({
+        first: async () => ({ user_id: 'gm-user' }),
+      }),
+    );
+
+    await expect(repo.isUserGmOfCampaign('gm-user', 'brad')).resolves.toBe(true);
+  });
+
+  it('returns false when gm assignment row does not exist', async () => {
+    const repo = new CampaignMembershipRepo(createDbMock({ first: async () => null }));
+
+    await expect(repo.isUserGmOfCampaign('member-user', 'brad')).resolves.toBe(false);
+  });
+
+  it('lists gm user ids for a campaign', async () => {
+    const repo = new CampaignMembershipRepo(
+      createDbMock({
+        all: async () => ({
+          results: [{ user_id: 'gm-a' }, { user_id: 'gm-b' }],
+        }),
+      }),
+    );
+
+    await expect(repo.listCampaignGms('brad')).resolves.toEqual(['gm-a', 'gm-b']);
+  });
 });

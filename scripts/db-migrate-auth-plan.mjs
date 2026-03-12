@@ -7,6 +7,7 @@ const orderedMigrations = [
   './migrations/0002_campaign_gm_assignments.sql',
   './migrations/0003_auth_core.sql',
   './migrations/0004_auth_email_hardening.sql',
+  './migrations/0005_campaign_gm_assignments_multi.sql',
 ];
 
 function parseArgs(argv) {

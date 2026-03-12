@@ -295,6 +295,8 @@ describe('campaign access resolver', () => {
     });
     createRepoMock.mockReturnValue({
       isUserMemberOfCampaign: vi.fn().mockResolvedValue(false),
+      isUserGmOfCampaign: vi.fn().mockResolvedValue(true),
+      listCampaignGms: vi.fn(),
       listCampaignMemberships: vi.fn(),
       seedFromMembershipMap: vi.fn(),
     } as unknown as ReturnType<typeof createCampaignMembershipRepoFromLocals>);
@@ -305,9 +307,6 @@ describe('campaign access resolver', () => {
       }),
       locals: {},
       membershipConfigRaw: undefined,
-      gmAssignmentsConfigRaw: JSON.stringify({
-        brad: { userId: 'gm-user' },
-      }),
     });
 
     await expect(
@@ -326,6 +325,8 @@ describe('campaign access resolver', () => {
     });
     createRepoMock.mockReturnValue({
       isUserMemberOfCampaign: vi.fn().mockResolvedValue(true),
+      isUserGmOfCampaign: vi.fn().mockResolvedValue(false),
+      listCampaignGms: vi.fn(),
       listCampaignMemberships: vi.fn(),
       seedFromMembershipMap: vi.fn(),
     } as unknown as ReturnType<typeof createCampaignMembershipRepoFromLocals>);
@@ -336,9 +337,6 @@ describe('campaign access resolver', () => {
       }),
       locals: {},
       membershipConfigRaw: undefined,
-      gmAssignmentsConfigRaw: JSON.stringify({
-        brad: { userId: 'gm-user' },
-      }),
     });
 
     await expect(
@@ -357,6 +355,8 @@ describe('campaign access resolver', () => {
     });
     createRepoMock.mockReturnValue({
       isUserMemberOfCampaign: vi.fn().mockResolvedValue(true),
+      isUserGmOfCampaign: vi.fn().mockResolvedValue(false),
+      listCampaignGms: vi.fn(),
       listCampaignMemberships: vi.fn(),
       seedFromMembershipMap: vi.fn(),
     } as unknown as ReturnType<typeof createCampaignMembershipRepoFromLocals>);
@@ -372,6 +372,130 @@ describe('campaign access resolver', () => {
     await expect(
       canViewCampaignContentAsync({
         visibility: 'campaignMembers',
+        campaignSlug: 'brad',
+        access: resolver,
+      }),
+    ).resolves.toBe(true);
+  });
+
+  it('allows multiple gm users for the same campaign in async resolver', async () => {
+    createRepoMock.mockReturnValue({
+      isUserMemberOfCampaign: vi.fn().mockResolvedValue(false),
+      isUserGmOfCampaign: vi.fn(async (userId: string) => userId === 'gm-a' || userId === 'gm-b'),
+      listCampaignGms: vi.fn(),
+      listCampaignMemberships: vi.fn(),
+      seedFromMembershipMap: vi.fn(),
+    } as unknown as ReturnType<typeof createCampaignMembershipRepoFromLocals>);
+
+    getRequestSessionMock.mockResolvedValueOnce({
+      user: { id: 'gm-a', email: 'gma@example.com', name: 'GM A' },
+      session: { id: 'session-a', userId: 'gm-a', expiresAt: '' },
+    });
+
+    const resolverA = createCampaignAccessResolverFromRequest({
+      request: new Request('https://example.com/campaigns/brad', {
+        headers: { cookie: 'better-auth.session_token=session-a' },
+      }),
+      locals: {},
+      membershipConfigRaw: undefined,
+    });
+
+    getRequestSessionMock.mockResolvedValueOnce({
+      user: { id: 'gm-b', email: 'gmb@example.com', name: 'GM B' },
+      session: { id: 'session-b', userId: 'gm-b', expiresAt: '' },
+    });
+
+    const resolverB = createCampaignAccessResolverFromRequest({
+      request: new Request('https://example.com/campaigns/brad', {
+        headers: { cookie: 'better-auth.session_token=session-b' },
+      }),
+      locals: {},
+      membershipConfigRaw: undefined,
+    });
+
+    await expect(
+      canViewCampaignContentAsync({
+        visibility: 'gm',
+        campaignSlug: 'brad',
+        access: resolverA,
+      }),
+    ).resolves.toBe(true);
+
+    await expect(
+      canViewCampaignContentAsync({
+        visibility: 'gm',
+        campaignSlug: 'brad',
+        access: resolverB,
+      }),
+    ).resolves.toBe(true);
+  });
+
+  it('denies access when gm query fails and fallback is disabled', async () => {
+    getRequestSessionMock.mockResolvedValue({
+      user: { id: 'gm-user', email: 'gm@example.com', name: 'GM User' },
+      session: { id: 'session-1', userId: 'gm-user', expiresAt: '' },
+    });
+    createRepoMock.mockReturnValue({
+      isUserMemberOfCampaign: vi.fn().mockResolvedValue(true),
+      isUserGmOfCampaign: vi.fn().mockRejectedValue(new Error('db unavailable')),
+      listCampaignGms: vi.fn(),
+      listCampaignMemberships: vi.fn(),
+      seedFromMembershipMap: vi.fn(),
+    } as unknown as ReturnType<typeof createCampaignMembershipRepoFromLocals>);
+
+    const resolver = createCampaignAccessResolverFromRequest({
+      request: new Request('https://example.com/campaigns/brad', {
+        headers: { cookie: 'better-auth.session_token=abc123' },
+      }),
+      locals: {},
+      membershipConfigRaw: JSON.stringify({ dev123: { campaigns: ['brad'] } }),
+      gmAssignmentsConfigRaw: JSON.stringify({ brad: { userId: 'dev123' } }),
+      allowLegacyEnvFallback: false,
+    });
+
+    await expect(
+      canViewCampaignContentAsync({
+        visibility: 'campaignMembers',
+        campaignSlug: 'brad',
+        access: resolver,
+      }),
+    ).resolves.toBe(false);
+  });
+
+  it('falls back to legacy maps when gm query fails and fallback is enabled', async () => {
+    getRequestSessionMock.mockResolvedValue({
+      user: { id: 'dev123', email: 'dev@example.com', name: 'Dev User' },
+      session: { id: 'session-1', userId: 'dev123', expiresAt: '' },
+    });
+    createRepoMock.mockReturnValue({
+      isUserMemberOfCampaign: vi.fn().mockResolvedValue(false),
+      isUserGmOfCampaign: vi.fn().mockRejectedValue(new Error('db unavailable')),
+      listCampaignGms: vi.fn(),
+      listCampaignMemberships: vi.fn(),
+      seedFromMembershipMap: vi.fn(),
+    } as unknown as ReturnType<typeof createCampaignMembershipRepoFromLocals>);
+
+    const resolver = createCampaignAccessResolverFromRequest({
+      request: new Request('https://example.com/campaigns/brad', {
+        headers: { cookie: 'aletheia-dev-session=dev123; better-auth.session_token=abc123' },
+      }),
+      locals: {},
+      membershipConfigRaw: JSON.stringify({ dev123: { campaigns: ['brad'] } }),
+      gmAssignmentsConfigRaw: JSON.stringify({ brad: { userId: 'dev123' } }),
+      allowLegacyEnvFallback: true,
+    });
+
+    await expect(
+      canViewCampaignContentAsync({
+        visibility: 'campaignMembers',
+        campaignSlug: 'brad',
+        access: resolver,
+      }),
+    ).resolves.toBe(true);
+
+    await expect(
+      canViewCampaignContentAsync({
+        visibility: 'gm',
         campaignSlug: 'brad',
         access: resolver,
       }),

@@ -11,7 +11,7 @@ Runtime vars (non-secret):
 - `EMAIL_REPLY_TO` (optional)
 - `CONTACT_TO_EMAIL`
 - `MAILJET_SANDBOX_MODE` (`on` or `off`)
-- `CAMPAIGN_GM_ASSIGNMENTS` (optional JSON override for campaign → GM mapping)
+- `CAMPAIGN_GM_ASSIGNMENTS` (optional local/dev-only fallback JSON override for campaign → GM mapping)
 
 Secrets:
 
@@ -68,6 +68,7 @@ Ordered migration files are:
 2. `migrations/0002_campaign_gm_assignments.sql`
 3. `migrations/0003_auth_core.sql`
 4. `migrations/0004_auth_email_hardening.sql`
+5. `migrations/0005_campaign_gm_assignments_multi.sql`
 
 Policy constraints:
 
@@ -93,10 +94,11 @@ pnpm db:seed:memberships:local
 
 The seed is idempotent (`INSERT OR IGNORE`) and will not overwrite existing membership rows.
 
-GM assignment source (no DB seed required):
+GM assignment source-of-truth:
 
-- `gmAssignments` in [`src/content/campaigns/access.config.json`](src/content/campaigns/access.config.json)
-- optional env override through `CAMPAIGN_GM_ASSIGNMENTS`
+- staging/prod: D1 `campaign_gm_assignments`
+- local/dev fallback only: `gmAssignments` in [`src/content/campaigns/access.config.json`](src/content/campaigns/access.config.json)
+- local/dev fallback only: optional env override through `CAMPAIGN_GM_ASSIGNMENTS`
 
 ## 5) Secret provisioning
 
@@ -158,7 +160,7 @@ MAILJET_SANDBOX_MODE=on
 EOF
 ```
 
-If needed for local override, add:
+If needed for local/dev fallback override, add:
 
 ```bash
 CAMPAIGN_GM_ASSIGNMENTS={"brad":{"userId":"jim"},"barry":{"userId":"tom"}}
@@ -194,6 +196,13 @@ This command builds Astro Cloudflare server output, applies local D1 migration/s
    - authenticated non-member: `campaignMembers` and `gm` routes remain blocked
    - authenticated member: `campaignMembers` routes render
    - authenticated campaign GM: `gm` and `campaignMembers` routes render
+   - verify GM rows in D1 for expected campaign/user pairs:
+
+   ```sql
+   SELECT campaign_slug, user_id, created_at, updated_at
+   FROM campaign_gm_assignments
+   ORDER BY campaign_slug ASC, user_id ASC;
+   ```
 5. Test contact relay with Mailjet sandbox mode:
    - `POST /api/contact` with valid JSON returns `{ "ok": true }`
 
@@ -216,7 +225,7 @@ This command builds Astro Cloudflare server output, applies local D1 migration/s
 
 - Confirm user session exists at `/account`.
 - Confirm `campaign_memberships` row exists for `(user_id, campaign_slug)`.
-- For `visibility: gm`, confirm campaign slug has `gmAssignments[campaignSlug].userId` configured.
+- For `visibility: gm`, confirm `campaign_gm_assignments` has a row for `(campaign_slug, user_id)` in D1.
 - In local-only fallback mode, confirm `CAMPAIGN_MEMBERSHIPS` JSON shape matches [`src/utils/campaign-membership-config.ts`](src/utils/campaign-membership-config.ts).
 
 ### Contact endpoint returns `503 unavailable`
