@@ -5,11 +5,9 @@ collection: lore
 type: magic
 subtype:
 status: draft
-secret: true
 author: Brad
-permissions: public
 created: 2026-02-19 22:36
-modified: 2026-02-19T22:39:21+01:00
+modified: 2026-03-07T17:04:03+01:00
 ---
 
 University Wizards represent the most formal, structured, and widely recognised approach to magic in Aletheia. Their practice is defined by disciplined study, careful progression, and a shared belief that magic is safest and most effective when **understood before it is attempted**.

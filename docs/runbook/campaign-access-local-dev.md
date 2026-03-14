@@ -2,7 +2,7 @@
 
 This runbook describes the legacy local/dev fallback gate for campaign content.
 
-Primary Phase 2.1 operational flow now lives in [`docs/runbook/phase-2-1-auth-google-d1-cloudflare-email.md`](docs/runbook/phase-2-1-auth-google-d1-cloudflare-email.md).
+Primary Phase 2.1 operational flow now lives in [`docs/runbook/phase-2-1-auth-google-d1-mailjet-email.md`](docs/runbook/phase-2-1-auth-google-d1-mailjet-email.md).
 
 Auth/session testing should use the Cloudflare parity lane documented in that runbook (`pnpm dev:cf:auth`).
 Plain `pnpm dev` is the fast lane for UI/content iteration and is not authoritative for Better Auth runtime behavior.

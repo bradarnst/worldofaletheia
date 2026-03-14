@@ -1,4 +1,4 @@
-# Phase 2.1 Execution Plan — Better Auth 1.5.3 + Cloudflare D1 + Google OAuth + Cloudflare Email
+# Phase 2.1 Execution Plan — Better Auth 1.5.3 + Cloudflare D1 + Google OAuth + Mailjet Email
 
 ## Status
 
@@ -7,7 +7,7 @@
 - **Primary Scope:** Phase 2.1 replacement of local/dev membership gate internals with production auth/session/membership
 - **Source-of-truth docs:**
   - [`plans/campaign-permissions-phased-enhancement-plan.md`](plans/campaign-permissions-phased-enhancement-plan.md)
-  - [`plans/adrs/0006-cloudflare-email-for-auth-verification-and-contact-relay.md`](plans/adrs/0006-cloudflare-email-for-auth-verification-and-contact-relay.md)
+  - [`plans/adrs/0006-mailjet-email-for-auth-verification-and-contact-relay.md`](plans/adrs/0006-mailjet-email-for-auth-verification-and-contact-relay.md)
 
 ---
 
@@ -28,7 +28,7 @@ This phase delivers **production-safe auth** and **campaign membership enforceme
 
 - **Enabled now:** Google OAuth only
 - **Deferred:** Discord OAuth (additive later)
-- **Email path:** Cloudflare Email Routing + Email Workers (per ADR-0006)
+- **Email path:** Mailjet HTTP API (per ADR-0006)
 
 ---
 
@@ -145,7 +145,7 @@ This phase delivers **production-safe auth** and **campaign membership enforceme
 
 16. **Add** [`src/lib/email.ts`](src/lib/email.ts)
     - provider-agnostic adapter interface.
-    - concrete Cloudflare Email Worker/Route implementation.
+    - concrete Mailjet API implementation.
     - methods:
       - `sendVerificationEmail(...)`
       - `sendContactEmail(...)`
@@ -165,7 +165,7 @@ This phase delivers **production-safe auth** and **campaign membership enforceme
     - add env-specific vars placeholders for auth + email routes.
     - keep existing compatibility flags.
 
-20. **Add** [`docs/runbook/phase-2-1-auth-google-d1-cloudflare-email.md`](docs/runbook/phase-2-1-auth-google-d1-cloudflare-email.md)
+20. **Add** [`docs/runbook/phase-2-1-auth-google-d1-mailjet-email.md`](docs/runbook/phase-2-1-auth-google-d1-mailjet-email.md)
     - setup steps by env.
     - migration + rollback commands.
     - operational checks and troubleshooting.
@@ -240,17 +240,19 @@ Use Better Auth migration generation for required auth tables (users/accounts/se
 - `DISCORD_CLIENT_ID`
 - `DISCORD_CLIENT_SECRET`
 
-### Email (Cloudflare path)
+### Email (Mailjet path)
 
 - `EMAIL_FROM`
 - `EMAIL_REPLY_TO` (optional)
 - `CONTACT_TO_EMAIL`
-- `EMAIL_WORKER_ROUTE_MODE` (if adapter has strategy switch)
+- `MAILJET_API_KEY`
+- `MAILJET_SECRET_KEY`
+- `MAILJET_SANDBOX_MODE` (`on` or `off`)
 
 ## 4.2 Cloudflare bindings
 
 - `DB` (D1)
-- Any Email Worker route/binding required by selected Cloudflare email implementation path
+- No additional email runtime bindings required beyond outbound HTTPS; Mailjet credentials are env-based
 
 ## 4.3 Env profiles
 
@@ -309,7 +311,7 @@ Use Better Auth migration generation for required auth tables (users/accounts/se
 ## 6.1 Verification email path
 
 - Triggered by Better Auth verification callback.
-- Delivered through Cloudflare email adapter in [`src/lib/email.ts`](src/lib/email.ts).
+- Delivered through Mailjet adapter in [`src/lib/email.ts`](src/lib/email.ts).
 - Template includes:
   - action URL
   - expiry information
@@ -320,7 +322,7 @@ Use Better Auth migration generation for required auth tables (users/accounts/se
 - POST to [`/api/contact`](src/pages/api/contact.ts).
 - Validate payload (name/email/message/honeypot).
 - Rate-limit by IP/fingerprint (simple low-volume guard).
-- Relay to `CONTACT_TO_EMAIL` via Cloudflare email path.
+- Relay to `CONTACT_TO_EMAIL` via Mailjet API path.
 
 ## 6.3 Failure handling
 
@@ -439,7 +441,7 @@ All must be true:
 2. `visibility` semantics unchanged.
 3. Google OAuth login/logout fully operational.
 4. D1 membership governs `campaignMembers` access.
-5. Cloudflare email verification path operational.
+5. Mailjet verification email path operational.
 6. Contact relay operational.
 7. Automated test set and build pass.
 8. Runbook complete and verified in staging.
@@ -468,7 +470,7 @@ All must be true:
 
 7. Add email adapter and verification callbacks.
 8. Add contact relay endpoint.
-9. Configure Cloudflare email route in staging.
+9. Configure Mailjet credentials and sandbox behavior in staging.
 
 **Dependency:** email routing must be configured before end-to-end verification.
 
@@ -517,7 +519,7 @@ All must be true:
 1. Better Auth 1.5.3 remains selected and acceptable.
 2. Cloudflare D1 binding is available as `DB` in all deploy environments.
 3. Google OAuth app credentials can be provisioned for local/staging/prod redirect URLs.
-4. Cloudflare Email Routing/Workers are available in your Cloudflare account plan.
+4. Mailjet account access and API credentials are available for local/staging/production.
 5. Low traffic profile remains true in near term.
 
 ## 13.2 Open decisions to confirm before coding starts

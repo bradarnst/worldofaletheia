@@ -204,7 +204,7 @@ Then Option A2 operations:
 
 Update these docs to final production guidance:
 
-1. `docs/runbook/phase-2-1-auth-google-d1-cloudflare-email.md`
+1. `docs/runbook/phase-2-1-auth-google-d1-mailjet-email.md`
 2. `plans/auth-mvp-production-readiness-plan-2026-03.md`
 3. `plans/auth-production-account-management-mvp-options-2026-03.md`
 

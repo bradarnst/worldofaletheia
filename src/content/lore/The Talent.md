@@ -5,11 +5,9 @@ collection: lore
 type: magic
 subtype:
 status: draft
-secret: false
 author: Brad
-permissions: public
 created: 2026-02-19 23:48
-modified: 2026-02-20T12:49:34+01:00
+modified: 2026-03-07T17:03:55+01:00
 ---
 
 The Talent is the name most commonly given to a living being’s capacity to sense, engage with, and work through the Lattice. While its expressions vary widely, all true magic — whether scholarly, divine, instinctive, or craft-based — depends upon it in some degree.

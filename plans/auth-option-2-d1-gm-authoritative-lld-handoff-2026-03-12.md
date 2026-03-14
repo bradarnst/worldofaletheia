@@ -37,7 +37,7 @@ This creates mismatch risk between D1 state and runtime authorization behavior.
 - `src/lib/campaign-membership-repo.ts`
 - `scripts/operator-sql/templates/gm-assignment-upsert.sql`
 - `scripts/operator-sql/templates/gm-assignment-revoke.sql`
-- `docs/runbook/phase-2-1-auth-google-d1-cloudflare-email.md`
+- `docs/runbook/phase-2-1-auth-google-d1-mailjet-email.md`
 
 ## Target State
 
@@ -158,7 +158,7 @@ WHERE campaign_slug = '<campaignSlug>'
 
 ## Documentation Changes
 
-### `docs/runbook/phase-2-1-auth-google-d1-cloudflare-email.md`
+### `docs/runbook/phase-2-1-auth-google-d1-mailjet-email.md`
 
 Update policy:
 

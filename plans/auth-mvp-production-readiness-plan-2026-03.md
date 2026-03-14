@@ -60,7 +60,7 @@ Repository components:
 
 - Migration: `migrations/0002_campaign_gm_assignments.sql`
 - Operator SQL bundle: `scripts/operator-sql/`
-- SOP: `docs/runbook/phase-2-1-auth-google-d1-cloudflare-email.md` (Section 12)
+- SOP: `docs/runbook/phase-2-1-auth-google-d1-mailjet-email.md` (Section 12)
 - Command wrappers: `package.json` `ops:a2:*` scripts
 
 ---

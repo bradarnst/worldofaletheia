@@ -110,5 +110,5 @@ Legacy fields (`gm`, `gm-date`, `gm-info`) remain tolerated for transition and s
 - `src/utils/campaign-access.ts`
 - `src/utils/campaign-membership-config.ts`
 - `src/content/campaigns/access.config.json`
-- `docs/runbook/phase-2-1-auth-google-d1-cloudflare-email.md`
+- `docs/runbook/phase-2-1-auth-google-d1-mailjet-email.md`
 - `docs/runbook/campaign-access-local-dev.md`

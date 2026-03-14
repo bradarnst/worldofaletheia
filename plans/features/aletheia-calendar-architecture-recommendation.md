@@ -13,7 +13,7 @@ This recommendation is intentionally aligned with:
 
 - Obsidian-first content flow in [`0001-obsidian-first-content-architecture.md`](plans/adrs/0001-obsidian-first-content-architecture.md)
 - Astro-native, no-premature-abstraction policy in [`0004-campaigns-astro-native-content-access-policy.md`](plans/adrs/0004-campaigns-astro-native-content-access-policy.md)
-- Cloudflare-first deployment direction in [`0006-cloudflare-email-for-auth-verification-and-contact-relay.md`](plans/adrs/0006-cloudflare-email-for-auth-verification-and-contact-relay.md)
+- Cloudflare-first deployment direction in [`0006-mailjet-email-for-auth-verification-and-contact-relay.md`](plans/adrs/0006-mailjet-email-for-auth-verification-and-contact-relay.md)
 - Progressive interactivity expectations (Astro Islands) documented in [`AGENTS.md`](AGENTS.md)
 
 Given those constraints, the calendar should start as an Astro-native feature with selective runtime endpoints, not as a standalone microservice.

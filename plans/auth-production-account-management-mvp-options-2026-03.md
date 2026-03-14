@@ -258,7 +258,7 @@ Minimum table set for authorization decisions:
 
 Primary operator SOP is in:
 
-- `docs/runbook/phase-2-1-auth-google-d1-cloudflare-email.md` (Section 12)
+- `docs/runbook/phase-2-1-auth-google-d1-mailjet-email.md` (Section 12)
 
 Private operator process includes:
 
