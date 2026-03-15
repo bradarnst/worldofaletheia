@@ -82,7 +82,8 @@ const factionsSchema = baseSchema.extend({
 
 const systemsSchema = baseSchema.extend({
   title: z.string(),
-  type: z.enum(['magic', 'combat', 'skill', 'language', 'character','economy', 'social']),
+  type: z.enum(['general', 'gurps']),
+  subtype: z.enum(['magic', 'combat', 'skill', 'language', 'character', 'economy', 'social', 'equipment']),
   excerpt: z.string().optional(),
 });
 

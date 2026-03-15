@@ -2,9 +2,8 @@
 title: Character Ideas
 layer: using
 collection: systems
-type: character
-subtype:
-ttrpg: gurps
+type: gurps
+subtype: character
 status: draft
 secret: false
 author: Brad

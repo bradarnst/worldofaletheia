@@ -2,9 +2,8 @@
 title: Aletheia Language Rules and Mechanics
 layer: using
 collection: systems
-type: language
-subtype:
-ttrpg: gurps
+type: gurps
+subtype: language
 status: draft
 secret: false
 author: Barry
