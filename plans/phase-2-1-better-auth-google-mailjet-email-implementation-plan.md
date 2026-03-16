@@ -2,8 +2,8 @@
 
 ## Status
 
-- **Date:** 2026-03-04
-- **Status:** Implementation-ready (detailed execution plan)
+- **Date:** 2026-03-15
+- **Status:** Implemented (staging + production)
 - **Primary Scope:** Phase 2.1 replacement of local/dev membership gate internals with production auth/session/membership
 - **Source-of-truth docs:**
   - [`plans/campaign-permissions-phased-enhancement-plan.md`](plans/campaign-permissions-phased-enhancement-plan.md)
@@ -549,4 +549,3 @@ Phase 2.1 is complete only when:
 2. Campaign route request-time gating remains intact and verified.
 3. Local/staging/prod runbook steps are validated and documented.
 4. [`plans/campaign-permissions-phased-enhancement-plan.md`](plans/campaign-permissions-phased-enhancement-plan.md) status is updated from “pending” to “implemented” for Phase 2.1 deliverables.
-

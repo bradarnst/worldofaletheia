@@ -5,7 +5,7 @@
 - **Date:** 2026-03-06
 - **Status:**
   - Phase 1 implemented (policy + schema groundwork)
-  - Phase 2.1 corrected and extended (Better Auth + D1 + campaign GM enforcement model)
+  - Phase 2.1 implemented (Better Auth + D1 + campaign GM enforcement model live in staging + production)
   - Phase 3 implemented for metadata separation (enforced campaign visibility vs informational canon GM marker)
 
 ## Why this update was required
