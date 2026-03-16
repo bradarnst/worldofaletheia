@@ -2,8 +2,9 @@
 
 ## Status
 
-- Date: 2026-03-06
+- Date: 2026-03-15
 - Scope: MVP production readiness for Better Auth + D1 + campaign RBAC
+- Status: Implemented (staging + production) via Option A2 runbook
 - Active path: **Option A2** (Wrangler-applied D1 SQL files)
 - Posture: static-first, low-risk, operator-driven
 
@@ -35,11 +36,11 @@ Launch production with:
 - Membership persistence table exists in `migrations/0001_campaign_memberships.sql`.
 - Auth core + email hardening migration artifacts exist in `migrations/0003_auth_core.sql` and `migrations/0004_auth_email_hardening.sql`.
 
-### Outstanding/active implementation focus
+### Verification evidence (2026-03-15)
 
-1. Apply auth/email hardening migrations to staging then production with preflight evidence.
-2. Runtime GM lookup should be aligned to D1 table source for production.
-3. Operator workflow must be the canonical production process (implemented in runbook + scripts).
+1. Auth + email hardening migrations (`0001`–`0004`) applied in staging and production with `ops:a2:preflight/apply/verify/audit` wrappers per runbook.
+2. Runtime GM lookup now reads D1 (`campaign_gm_assignments`) in staging/production; legacy config path remains dev-only fallback (see Option 2 LLD).
+3. Operator workflow for Option A2 documented in `docs/runbook/phase-2-1-auth-google-d1-mailjet-email.md` and executed during rollout; private logs capture staging + production evidence.
 
 ---
 
