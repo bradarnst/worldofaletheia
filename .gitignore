@@ -3,6 +3,10 @@ dist/
 # generated types
 .astro/
 
+# content  and assets (can always get content from Obsidian source)
+src/content/
+src/assets/
+
 # dependencies
 node_modules/
 
