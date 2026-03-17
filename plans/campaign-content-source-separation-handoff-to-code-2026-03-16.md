@@ -36,6 +36,19 @@ Key constraints:
 3. Keep Better Auth + D1 authz as authority for protected campaign access.
 4. Deny-by-default on protected content read failures.
 
+## Cloudflare Storage and Media Decisions (Implementation Defaults)
+
+1. Use **R2** as canonical campaign private content storage for markdown, images, and occasional PDFs.
+2. Use **D1** for authz and content-index metadata only; do not store blobs in D1.
+3. Do not use KV as primary campaign content storage.
+4. Serve protected campaign assets through authorized request paths; no direct public private-asset URLs.
+
+### Image Strategy
+
+- **Default (in scope):** pre-generate image variants during sync and store variants in R2.
+- **Optional (not required):** Worker on-the-fly resizing if variant management becomes painful.
+- **Optional (not required):** Cloudflare Images product if traffic/transform economics justify it.
+
 ## Target Runtime Flow
 
 ```mermaid
@@ -88,12 +101,12 @@ flowchart LR
 - Protected campaign pages are rendered from private storage.
 - Unauthorized users cannot fetch or infer protected campaign content.
 
-## Phase 3 - Protected Images and Full-Screen UX
+## Phase 3 - Protected Images and Full-Screen UX (optional enhancement phase)
 
 ### Deliverables
 
 - Add protected campaign image endpoint/path.
-- Add resize strategy for thumbnails/detail/full-screen variants.
+- Add resize strategy for thumbnails/detail/full-screen variants (default: pre-generated variants in R2).
 - Ensure full-screen image view works for authorized users.
 
 ### Notes
@@ -158,6 +171,6 @@ flowchart LR
 - Existing `/campaigns/**` route structure remains intact.
 - Operational and developer docs match implemented behavior.
 
-## Follow-on (separate workstream)
+## Follow-on (optional separate workstreams)
 
 - Revisit Option 3 unified membership roles once storage separation is stable and verified.

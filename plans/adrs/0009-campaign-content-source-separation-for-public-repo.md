@@ -18,6 +18,7 @@ Project context and constraints:
 - Campaigns are expected to evolve toward possible extraction but are currently in one Astro app.
 - Current architecture guidance favors Astro-native simplicity and YAGNI (`0004-campaigns-astro-native-content-access-policy`).
 - Cloudflare stack is already active (Workers, D1), making Cloudflare storage a practical extension.
+- Storage product decision required before code handoff to avoid implementation ambiguity.
 
 ## Decision Drivers
 
@@ -53,6 +54,7 @@ Campaign private content is stored in private cloud storage and resolved at requ
 - Preserves existing route and UX structure.
 - Establishes a concrete seam for future extraction.
 - Supports protected image delivery and resizing strategies.
+- Keeps advanced image products optional for cost control at current scale.
 
 **Cons**
 
@@ -79,10 +81,13 @@ Move campaigns to a separate app/repository and compose routes at edge/proxy lev
 ### Decision Details
 
 1. Campaign private markdown/assets are moved out of Git-tracked repository content.
-2. Campaign access remains enforced through Better Auth + D1 checks before content fetch.
-3. Storage/read failures use deny-by-default behavior for protected campaign content.
-4. Public canonical domains remain repo-backed in this phase.
-5. Full app/service split is deferred until explicit split triggers are met.
+2. **Cloudflare R2** is the canonical storage layer for campaign private markdown, images, and occasional PDFs.
+3. Campaign access remains enforced through Better Auth + D1 checks before content fetch.
+4. Storage/read failures use deny-by-default behavior for protected campaign content.
+5. Public canonical domains remain repo-backed in this phase.
+6. Image delivery defaults to pre-generated variants stored in R2.
+7. Worker on-the-fly resizing and Cloudflare Images are explicitly optional future upgrades only.
+8. Full app/service split is deferred until explicit split triggers are met.
 
 ```mermaid
 flowchart LR
@@ -112,6 +117,7 @@ flowchart LR
 
 - No immediate requirement to change interactive UI framework decisions.
 - No immediate requirement to migrate all non-campaign content out of repository.
+- No requirement to implement Worker dynamic resizing or Cloudflare Images unless future needs justify them.
 
 ## Links
 

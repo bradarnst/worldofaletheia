@@ -20,6 +20,44 @@ Current route-level authorization is necessary but not sufficient for this requi
 4. Resolve campaign content at request-time behind Better Auth + D1 authorization checks.
 5. Preserve optionality for later full campaign app extraction.
 
+## Cloudflare Storage Decision (Locked Before Code Handoff)
+
+### Primary Storage and Access Model
+
+- Use **Cloudflare R2** as canonical storage for campaign private content:
+  - markdown source content
+  - campaign images
+  - occasional PDFs
+- Keep **D1** as source of truth for identity and authorization decisions (Better Auth + campaign membership/GM rules).
+- Serve campaign content through Worker/Astro request-time paths only after authz checks.
+- Do not expose direct public URLs for protected campaign assets.
+
+### Cost and Product Selection Rationale
+
+- **R2** is the best cost/complexity fit for mostly markdown + images + occasional PDFs.
+- **D1** remains relational metadata/authz storage only, not blob storage.
+- **KV** is not selected for campaign source content storage.
+- Keep product surface small by default: avoid adding Cloudflare Images unless required later.
+
+### Image Handling Strategy (Default + Optional Upgrades)
+
+- **Default (selected):** pre-generate image variants during sync (for example `thumb`, `detail`, `fullscreen`) and store variants in R2.
+- **Optional later (not required):** Worker on-the-fly image resizing if pre-generated variants become operationally limiting.
+- **Optional later (not required):** Cloudflare Images product if traffic/transform volume justifies managed image pipeline costs.
+
+### Storage Path Conventions
+
+- `campaigns/{campaignSlug}/index.md`
+- `campaigns/{campaignSlug}/sessions/{sessionSlug}.md`
+- `campaigns/{campaignSlug}/assets/images/original/...`
+- `campaigns/{campaignSlug}/assets/images/variants/{size}/...`
+- `campaigns/{campaignSlug}/assets/docs/...pdf`
+
+### Optionality Clarification
+
+- Runtime storage separation and pre-generated R2 variants are in-scope now.
+- Any additional image delivery phase beyond that is explicitly optional and should be adopted only if concrete pain appears.
+
 ## Why This Direction
 
 - Satisfies the immediate confidentiality requirement before public-repo release.
@@ -74,10 +112,10 @@ Current route-level authorization is necessary but not sufficient for this requi
 - Enforce deny-by-default on resolver/storage errors.
 - Keep existing campaign route URLs and IA.
 
-### Phase 3 - Protected assets and image delivery (should change soon)
+### Phase 3 - Protected assets and image delivery (should change soon; advanced phases optional)
 
 - Serve campaign images through authorized path (no direct public private-asset URLs).
-- Add resize strategy (pre-generated variants or on-the-fly resizing).
+- Add resize strategy using pre-generated variants in R2 (default).
 - Support full-screen image view while preserving auth boundaries.
 
 ### Phase 4 - Hardening and cleanup (consider after initial rollout)
@@ -102,7 +140,7 @@ Current route-level authorization is necessary but not sufficient for this requi
 - [ ] Add protected image delivery path and resizing strategy for campaign media.
 - [ ] Exclude protected campaign content from public search indexing.
 
-## Consider for Future
+## Consider for Future (Optional)
 
 - [ ] Evaluate moving all content sources to cloud storage (public + protected) if benefits justify migration.
 - [ ] Evaluate full campaigns app/service extraction when split triggers are met.
