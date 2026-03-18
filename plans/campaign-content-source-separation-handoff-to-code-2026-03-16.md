@@ -49,6 +49,34 @@ Key constraints:
 - **Optional (not required):** Worker on-the-fly resizing if variant management becomes painful.
 - **Optional (not required):** Cloudflare Images product if traffic/transform economics justify it.
 
+## Manual Cloudflare R2 Setup (before running cloud sync)
+
+1. **Create the bucket** (one time per environment):
+   ```bash
+   pnpm wrangler r2 bucket create woa-campaign-private
+   pnpm wrangler r2 bucket list
+   ```
+   Ensure the created bucket name matches `campaignCloud.bucket`.
+2. **Disable public r2.dev URL** (recommended):
+   ```bash
+   pnpm wrangler r2 bucket dev-url disable woa-campaign-private
+   ```
+3. **Create an R2 API token** scoped to this bucket (Cloudflare Dashboard → R2 → Manage API tokens). Record the Access Key ID and Secret Access Key locally (do **not** commit). Export them before running sync:
+   ```bash
+   export R2_ACCESS_KEY_ID="<access-key>"
+   export R2_SECRET_ACCESS_KEY="<secret-key>"
+   ```
+   These env var names match the defaults referenced by `campaignCloud.accessKeyIdEnv` and `.secretAccessKeyEnv`.
+4. **Capture the account ID** via `pnpm wrangler whoami` or the Cloudflare dashboard; use it for `campaignCloud.accountId`.
+5. **Update `config/content-sync.config.json`:**
+   - Set `campaignCloud.bucket`, `campaignCloud.accountId`, and confirm env var names.
+   - Mark campaign mappings with `{ "target": "cloud" }` and set their `to` prefix (for example `"campaigns"`).
+6. **Verify credentials** by running a dry run:
+   ```bash
+   pnpm content:sync --dry-run
+   ```
+   If credentials or bucket details are missing you will see a clear error from the config loader.
+
 ## Target Runtime Flow
 
 ```mermaid

@@ -6,6 +6,7 @@ import { buildSyncDiff } from './fs-diff.mjs';
 import { askStaleFileAction } from './prompt.mjs';
 import { applySync } from './apply-sync.mjs';
 import { validateContentTree } from './validate.mjs';
+import { createCampaignCloudAdapter } from './cloud-storage.mjs';
 import {
   fail,
   info,
@@ -25,6 +26,17 @@ export function parseArgs(argv) {
   };
 }
 
+function describeRecordPath(record, repoRoot) {
+  if (record.mapping.target === 'repo') {
+    const base = record.destAbs || record.sourceAbs;
+    if (!base) {
+      return record.relativePath;
+    }
+    return normalizePathForDisplay(path.relative(repoRoot, base));
+  }
+  return `cloud://${record.cloudKey || record.relativePath}`;
+}
+
 function printDiffReport(diff, repoRoot) {
   info(`Dry-run report: ${diff.counts.new} new, ${diff.counts.updated} updated, ${diff.counts.stale} stale, ${diff.counts.unchanged} unchanged.`);
 
@@ -32,7 +44,7 @@ function printDiffReport(diff, repoRoot) {
     if (!rows.length) return;
     console.log(`\n${label}:`);
     for (const row of rows.slice(0, 20)) {
-      const p = normalizePathForDisplay(path.relative(repoRoot, row.destAbs || row.sourceAbs));
+      const p = describeRecordPath(row, repoRoot);
       console.log(`- ${p}`);
     }
     if (rows.length > 20) {
@@ -67,9 +79,9 @@ async function runValidateOnly(config) {
   ok(`Validation passed for ${validation.checkedFiles} file(s).`);
 }
 
-async function runFullSync(config, { dryRun }) {
+async function runFullSync(config, { dryRun, services }) {
   step('Scan and diff');
-  const diff = await buildSyncDiff(config);
+  const diff = await buildSyncDiff(config, services);
   printDiffReport(diff, config.repoRoot);
 
   if (dryRun) {
@@ -89,7 +101,7 @@ async function runFullSync(config, { dryRun }) {
   }
 
   step('Apply sync');
-  const applyResult = await applySync(diff, config, staleAction);
+  const applyResult = await applySync(diff, config, staleAction, services);
   ok(`Applied sync changes to ${applyResult.changedFiles.length} path(s).`);
   if (applyResult.backupRootForRun) {
     info(`Backup created at ${normalizePathForDisplay(path.relative(config.repoRoot, applyResult.backupRootForRun))}`);
@@ -123,14 +135,19 @@ async function main() {
   const args = parseArgs(process.argv);
 
   try {
-    const config = await loadConfig();
+    const config = await loadConfig({ requireCloudCredentials: !args.validateOnly });
 
     if (args.validateOnly) {
       await runValidateOnly(config);
       return;
     }
 
-    await runFullSync(config, { dryRun: args.dryRun });
+    const services = {};
+    if (config.hasCloudMappings) {
+      services.cloud = createCampaignCloudAdapter(config.campaignCloud);
+    }
+
+    await runFullSync(config, { dryRun: args.dryRun, services });
   } catch (error) {
     fail('Content sync failed.');
     console.log('Action: check the message above and retry.');

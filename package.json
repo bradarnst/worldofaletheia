@@ -39,6 +39,7 @@
   "dependencies": {
     "@astrojs/cloudflare": "13.0.0-beta.8",
     "@astrojs/tailwind": "^6.0.2",
+    "@aws-sdk/client-s3": "^3.1010.0",
     "@tailwindcss/vite": "^4.2.0",
     "astro": "6.0.0-beta.14",
     "astro-seo": "^1.1.0",

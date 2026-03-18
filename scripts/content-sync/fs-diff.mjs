@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 import { normalizePathForDisplay } from './utils.mjs';
 
 async function pathExists(target) {
@@ -41,58 +42,140 @@ async function filesAreEqual(sourcePath, destPath) {
   return src.equals(dst);
 }
 
-export async function buildSyncDiff(config) {
+async function fileMd5Hex(filePath) {
+  const data = await fs.readFile(filePath);
+  return createHash('md5').update(data).digest('hex');
+}
+
+function isPlainMd5Hash(value) {
+  return typeof value === 'string' && /^[a-f0-9]{32}$/i.test(value);
+}
+
+function buildRemoteKey(prefix, relativePath) {
+  const trimmedPrefix = prefix ? prefix.replace(/^\/+|\/+$/g, '') : '';
+  const trimmedRelative = relativePath.replace(/^\/+/, '');
+  if (!trimmedPrefix) {
+    return trimmedRelative;
+  }
+  return trimmedRelative ? `${trimmedPrefix}/${trimmedRelative}` : trimmedPrefix;
+}
+
+export async function buildSyncDiff(config, services = {}) {
   const records = [];
 
   for (const mapping of config.mappings) {
     const sourceRoot = path.resolve(config.vaultRoot, mapping.from);
-    const destRoot = path.resolve(config.repoRoot, mapping.to);
-
     const sourceFiles = await walkFiles(sourceRoot, config.includeExtensions);
-    const destFiles = await walkFiles(destRoot, config.includeExtensions);
 
+    if (mapping.target === 'repo') {
+      const destRoot = path.resolve(config.repoRoot, mapping.to);
+      const destFiles = await walkFiles(destRoot, config.includeExtensions);
+      const sourceRel = new Map(
+        sourceFiles.map((abs) => [normalizePathForDisplay(path.relative(sourceRoot, abs)), abs]),
+      );
+      const destRel = new Map(
+        destFiles.map((abs) => [normalizePathForDisplay(path.relative(destRoot, abs)), abs]),
+      );
+      const allRel = new Set([...sourceRel.keys(), ...destRel.keys()]);
+      for (const rel of allRel) {
+        const sourceAbs = sourceRel.get(rel) || null;
+        const destAbs = destRel.get(rel) || null;
+
+        if (sourceAbs && !destAbs) {
+          records.push({
+            type: 'new',
+            relativePath: rel,
+            sourceAbs,
+            destAbs: path.resolve(destRoot, rel),
+            mapping,
+          });
+          continue;
+        }
+
+        if (sourceAbs && destAbs) {
+          const equal = await filesAreEqual(sourceAbs, destAbs);
+          records.push({
+            type: equal ? 'unchanged' : 'updated',
+            relativePath: rel,
+            sourceAbs,
+            destAbs,
+            mapping,
+          });
+          continue;
+        }
+
+        if (!sourceAbs && destAbs) {
+          records.push({
+            type: 'stale',
+            relativePath: rel,
+            sourceAbs: null,
+            destAbs,
+            mapping,
+          });
+        }
+      }
+      continue;
+    }
+
+    const cloud = services.cloud;
+    if (!cloud) {
+      throw new Error('Cloud mappings require campaign cloud configuration.');
+    }
+
+    const remoteObjects = await cloud.listObjects(mapping.to, config.includeExtensions);
     const sourceRel = new Map(
       sourceFiles.map((abs) => [normalizePathForDisplay(path.relative(sourceRoot, abs)), abs]),
     );
-    const destRel = new Map(
-      destFiles.map((abs) => [normalizePathForDisplay(path.relative(destRoot, abs)), abs]),
-    );
-
-    const allRel = new Set([...sourceRel.keys(), ...destRel.keys()]);
+    const remoteRel = new Map(remoteObjects);
+    const allRel = new Set([...sourceRel.keys(), ...remoteRel.keys()]);
 
     for (const rel of allRel) {
       const sourceAbs = sourceRel.get(rel) || null;
-      const destAbs = destRel.get(rel) || null;
+      const remoteMeta = remoteRel.get(rel) || null;
+      const cloudKey = buildRemoteKey(mapping.to, rel);
 
-      if (sourceAbs && !destAbs) {
+      if (sourceAbs && !remoteMeta) {
         records.push({
           type: 'new',
           relativePath: rel,
           sourceAbs,
-          destAbs: path.resolve(destRoot, rel),
+          destAbs: null,
+          cloudKey,
           mapping,
         });
         continue;
       }
 
-      if (sourceAbs && destAbs) {
-        const equal = await filesAreEqual(sourceAbs, destAbs);
+      if (sourceAbs && remoteMeta) {
+        const remoteHash = remoteMeta.etag;
+        let equal = false;
+
+        if (isPlainMd5Hash(remoteHash)) {
+          const localHash = await fileMd5Hex(sourceAbs);
+          equal = localHash === remoteHash;
+        } else if (typeof remoteMeta.size === 'number') {
+          const sourceStat = await fs.stat(sourceAbs);
+          equal = sourceStat.size === remoteMeta.size;
+        }
+
         records.push({
           type: equal ? 'unchanged' : 'updated',
           relativePath: rel,
           sourceAbs,
-          destAbs,
+          destAbs: null,
+          cloudKey,
           mapping,
         });
         continue;
       }
 
-      if (!sourceAbs && destAbs) {
+      if (!sourceAbs && remoteMeta) {
         records.push({
           type: 'stale',
           relativePath: rel,
           sourceAbs: null,
-          destAbs,
+          destAbs: null,
+          cloudKey,
           mapping,
         });
       }
