@@ -159,7 +159,9 @@ I am available for architecture-heavy consulting and implementation leadership, 
 This section will point to my portfolio/CV contact links.
 
 [LinkedIn](https://www.linkedin.com/in/bradarnst/)
+
 [CV/Portfolio Site](https://brad.nexusseven.com)
+
 
 ## License
 
