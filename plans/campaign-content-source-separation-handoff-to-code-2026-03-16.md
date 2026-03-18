@@ -56,12 +56,24 @@ Key constraints:
    pnpm wrangler r2 bucket create woa-campaign-private
    pnpm wrangler r2 bucket list
    ```
-   Ensure the created bucket name matches `campaignCloud.bucket`.
+   Use this exact same bucket name in `campaignCloud.bucket`.
+   In this example, set `campaignCloud.bucket` to `woa-campaign-private`.
 2. **Disable public r2.dev URL** (recommended):
    ```bash
    pnpm wrangler r2 bucket dev-url disable woa-campaign-private
    ```
-3. **Create an R2 API token** scoped to this bucket (Cloudflare Dashboard → R2 → Manage API tokens). Record the Access Key ID and Secret Access Key locally (do **not** commit). Export them before running sync:
+3. **Create R2 S3 credentials (Access Key ID + Secret Access Key)** scoped to this bucket:
+   - In Cloudflare Dashboard, go to **R2 object storage**.
+   - Open **Manage R2 API tokens**.
+   - Create an **Account API token** or **User API token** with object read/write scope for your target bucket.
+   - After creation, copy both values shown by Cloudflare:
+     - **Access Key ID**
+     - **Secret Access Key**
+
+   These are the credentials consumed by this project's S3 client for `pnpm content:sync`.
+   They are different from a single global Cloudflare API token string.
+
+   Export them before running sync:
    ```bash
    export R2_ACCESS_KEY_ID="<access-key>"
    export R2_SECRET_ACCESS_KEY="<secret-key>"

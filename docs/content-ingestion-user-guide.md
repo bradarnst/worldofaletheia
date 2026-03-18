@@ -93,6 +93,55 @@ Minimal example:
 }
 ```
 
+### 4) Optional: sync campaign content to Cloudflare R2
+
+Use this when you want campaign files to publish to R2 instead of `src/content/campaigns`.
+
+1. Create a bucket (example bucket name):
+
+```bash
+pnpm wrangler r2 bucket create woa-campaign-private
+pnpm wrangler r2 bucket list
+```
+
+2. In `config/content-sync.config.json`, mark the campaign mapping as cloud-targeted and set `campaignCloud.bucket` to the exact same bucket name:
+
+```json
+{
+  "mappings": [
+    { "from": "World/Campaigns", "to": "campaigns", "target": "cloud" }
+  ],
+  "campaignCloud": {
+    "bucket": "woa-campaign-private",
+    "accountId": "<your-cloudflare-account-id>",
+    "accessKeyIdEnv": "R2_ACCESS_KEY_ID",
+    "secretAccessKeyEnv": "R2_SECRET_ACCESS_KEY"
+  }
+}
+```
+
+3. Generate R2 S3 credentials in Cloudflare Dashboard:
+   - Go to **R2 object storage** -> **Manage R2 API tokens**.
+   - Create an R2 token scoped to the bucket (object read/write).
+   - Copy both values shown after creation:
+     - Access Key ID
+     - Secret Access Key
+
+   This sync script uses an S3 client, so it needs this key pair. A single generic Cloudflare API token string is not enough for this flow.
+
+4. Export the key pair in your shell before sync:
+
+```bash
+export R2_ACCESS_KEY_ID="<access-key-id>"
+export R2_SECRET_ACCESS_KEY="<secret-access-key>"
+```
+
+5. Verify:
+
+```bash
+pnpm content:sync:dry-run
+```
+
 ## Day-to-day commands
 
 ### Main command

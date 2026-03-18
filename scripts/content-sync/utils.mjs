@@ -33,6 +33,9 @@ export function isDebugEnabled() {
 }
 
 export function printErrorDetails(error) {
+  const message = error instanceof Error ? error.message : String(error);
+  console.log(`Reason: ${message}`);
+
   if (!isDebugEnabled()) {
     return;
   }
@@ -40,4 +43,3 @@ export function printErrorDetails(error) {
   console.log('\n[debug] technical details:');
   console.log(error?.stack || String(error));
 }
-

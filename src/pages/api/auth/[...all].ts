@@ -11,7 +11,10 @@ const REQUIRED_AUTH_ENV_KEYS = [
 function getAuthEnvDiagnostics(locals: unknown) {
   const runtimeEnv =
     locals && typeof locals === 'object'
-      ? ((locals as { runtime?: { env?: Record<string, unknown> } }).runtime?.env ?? null)
+      ? ((locals as { cfContext?: { env?: Record<string, unknown> }; runtime?: { env?: Record<string, unknown> } })
+          .cfContext?.env ??
+        (locals as { runtime?: { env?: Record<string, unknown> } }).runtime?.env ??
+        null)
       : null;
 
   const hasDbBinding =
@@ -49,4 +52,3 @@ export const ALL: APIRoute = async ({ request, locals }) => {
     });
   }
 };
-

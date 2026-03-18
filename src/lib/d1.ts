@@ -14,7 +14,23 @@ interface RuntimeLike {
 }
 
 interface LocalsLike {
+  cfContext?: RuntimeLike;
   runtime?: RuntimeLike;
+}
+
+function getRuntimeEnvFromLocals(locals: unknown): Record<string, unknown> | null {
+  const typedLocals = (locals as LocalsLike | undefined) ?? {};
+
+  if (typedLocals.cfContext?.env) {
+    return typedLocals.cfContext.env;
+  }
+
+  // Backward-compatible fallback for older adapter/runtime combinations.
+  if (typedLocals.runtime?.env) {
+    return typedLocals.runtime.env;
+  }
+
+  return null;
 }
 
 function isD1DatabaseLike(candidate: unknown): candidate is D1DatabaseLike {
@@ -40,12 +56,12 @@ export function getD1BindingFromRuntimeEnv(runtimeEnv: unknown): D1DatabaseLike 
 }
 
 export function getD1BindingFromLocals(locals: unknown): D1DatabaseLike {
-  const runtime = (locals as LocalsLike | undefined)?.runtime;
-  if (!runtime?.env) {
-    throw new Error('Cloudflare runtime env is unavailable in Astro.locals.runtime.env');
+  const runtimeEnv = getRuntimeEnvFromLocals(locals);
+  if (!runtimeEnv) {
+    throw new Error('Cloudflare runtime env is unavailable in Astro.locals.cfContext.env');
   }
 
-  return getD1BindingFromRuntimeEnv(runtime.env);
+  return getD1BindingFromRuntimeEnv(runtimeEnv);
 }
 
 export function tryGetD1BindingFromLocals(locals: unknown): D1DatabaseLike | null {
@@ -55,4 +71,3 @@ export function tryGetD1BindingFromLocals(locals: unknown): D1DatabaseLike | nul
     return null;
   }
 }
-

@@ -4,6 +4,9 @@ import { getD1BindingFromLocals, getD1BindingFromRuntimeEnv } from './d1';
 import { sendVerificationEmail } from './email';
 
 interface LocalsLike {
+  cfContext?: {
+    env?: Record<string, unknown>;
+  };
   runtime?: {
     env?: Record<string, unknown>;
   };
@@ -97,7 +100,7 @@ export function getAuth(locals: unknown) {
     return existing;
   }
 
-  const runtimeEnv = typedLocals.runtime?.env;
+  const runtimeEnv = typedLocals.cfContext?.env ?? typedLocals.runtime?.env;
   if (!runtimeEnv) {
     throw new Error('Cloudflare runtime environment is required for auth initialization');
   }

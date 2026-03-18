@@ -48,5 +48,22 @@
 				}
 			]
 		}
-	}
+	},
+	"r2_buckets": [
+		{
+			"bucket_name": "woa-campaign-private",
+			"binding": "woa_campaign_private",
+			"remote": true
+		},
+		{
+			"bucket_name": "woa-campaign-private",
+			"binding": "campaignCloudbucket",
+			"remote": true
+		},
+		{
+			"bucket_name": "woa-campaign-private",
+			"binding": "woa_campaign_private",
+			"remote": true
+		}
+	]
 }
