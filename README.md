@@ -1,102 +1,163 @@
-# Astro Starter Kit: Minimal
+# World of Aletheia
 
-```sh
-pnpm create astro@latest -- --template minimal
+A live worldbuilding and campaign platform for tabletop RPG play.
+
+**Live site:** [worldofaletheia.com](https://worldofaletheia.com)
+
+This started as a practical tool for my table (my brother and I as GMs, plus our players), not a demo project. It then evolved into something worth publishing: both the product and the architecture behind it.
+
+## What This Project Is
+
+World of Aletheia is a production Astro site with three active domains:
+
+- **Canon**: setting reference content (lore, places, sentients, flora, bestiary, factions)
+- **Using Aletheia**: systems and play documentation
+- **Campaigns**: active campaign/session domain, designed for progressively richer interactive tooling
+
+The core design goal is simple: keep publishing fast and reliable for content, while creating a clean runway for campaign features that need authenticated runtime behavior.
+
+## Content Authoring Workflow (Obsidian-First)
+
+This project follows an **Obsidian-first source-of-truth model**.
+
+- Canonical content is authored in an Obsidian vault
+- The website repo is the publish/deploy target, not the primary writing surface
+- Markdown + frontmatter are synchronized into this repo through the content sync workflow
+
+Current practical setup:
+
+- Multiple authors write in Obsidian
+- Obsidian's Git plugin is used for vault sync/backup/versioning
+- A local working copy of this repo is used by the sync pipeline for simplicity and deterministic builds
+
+This is a workflow choice, not a hard product limitation:
+
+- Other sync/backup approaches can work, as long as they preserve markdown/frontmatter structure expected by the pipeline
+
+Reference decision: `plans/adrs/0001-obsidian-first-content-architecture.md`
+
+## Why This Repo Is Public
+
+- Share the product implementation openly for anyone curious how this is built
+- Share architecture decisions and trade-offs, not just code snapshots
+- Include the project in my portfolio for freelance and long-term contract work
+
+Short version: this is real software used by real humans, with enough scars to be useful.
+
+## Product Focus
+
+Current priorities:
+
+- Stable, readable content publishing
+- Campaign access control and private campaign content boundaries
+- Expandability toward campaign tooling beyond static pages
+
+Planned near-term roadmap:
+
+- **Custom calendar** (in active design/implementation planning)
+- **Player character and NPC organization capabilities**
+- **Potential interactive maps**
+
+Useful planning references:
+
+- `plans/features/aletheia-calendar-architecture-recommendation.md`
+- `plans/features/aletheia_calendar_developer_handoff.md`
+- `plans/adrs/0009-campaign-content-source-separation-for-public-repo.md`
+
+## Architecture Snapshot
+
+This is an Astro-first architecture with static content where possible and runtime complexity only where needed.
+
+```mermaid
+flowchart LR
+  O[Obsidian authoring vault] --> G[Git-based vault sync or backup]
+  G --> S[Content sync pipeline]
+  S --> R[src/content and assets]
+  R --> B[Astro build]
+  B --> D[Cloudflare deploy]
+
+  U[Authenticated campaign request] --> A[Auth check Better Auth + D1]
+  A -->|allow| C[Campaign resolver]
+  C --> P[Private campaign storage path]
+  A -->|deny| X[403 or redirect]
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+If you like decision records more than mystery architecture, see `plans/adrs/`.
 
-## 🚀 Project Structure
+## Tech Stack and Infrastructure
 
-Inside of your Astro project, you'll see the following folders and files:
+- **Framework:** Astro (static-first, Islands when interaction is justified)
+- **Styling:** Tailwind CSS + DaisyUI
+- **Runtime/deploy:** Cloudflare (Workers/Pages flow, Wrangler tooling)
+- **Auth/data:** Better Auth + Cloudflare D1
+- **Content pipeline:** Obsidian-first sync tooling in `scripts/content-sync/`
+- **Testing:** Vitest
+- **Package manager:** pnpm
 
-```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
+## Authorship and AI Collaboration
+
+I own the architecture, technical direction, decision-making, reviews, approvals, and overall product outcomes.
+
+Implementation is **AI-assisted by design**:
+
+- Primary coding agent workflow: **Kilo Code** via **Kilo Gateway**
+- Model ecosystem includes providers such as **OpenAI**, **Anthropic**, and **Google**
+- I use agents as force multipliers, not as autopilot; architectural intent and acceptance criteria are human-led
+
+Or put differently: the AI writes plenty of lines, but it does not get final say in system design.
+
+## Developer Setup (Concise)
+
+Prereqs:
+
+- Node.js 20+
+- pnpm
+- Cloudflare account + Wrangler (for cloud-backed/auth flows)
+
+Install and run:
+
+```bash
+pnpm install
+pnpm dev
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+Build/test:
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+```bash
+pnpm build
+pnpm test
+```
 
-Any static assets, like images, can be placed in the `public/` directory.
+Content workflow helpers:
 
-## 🧞 Commands
+```bash
+pnpm content:sync
+pnpm content:sync:dry-run
+pnpm content:validate
+```
 
-All commands are run from the root of the project, from a terminal:
+For local config setup, copy `config/content-sync.config.example.json` to `config/content-sync.config.json` and set your `vaultRoot`.
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `pnpm install`             | Installs dependencies                            |
-| `pnpm dev`             | Starts local dev server at `localhost:4321`      |
-| `pnpm build`           | Build your production site to `./dist/`          |
-| `pnpm preview`         | Preview your build locally, before deploying     |
-| `pnpm astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `pnpm astro -- --help` | Get help using the Astro CLI                     |
+More detailed docs:
 
-## 👀 Want to learn more?
+- `docs/content-ingestion-user-guide.md`
+- `docs/runbook/obsidian-content-sync-troubleshooting.md`
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+A more end-user-friendly setup guide may be added later if there is enough outside interest.
 
-## Content Sync Workflow (Obsidian -> Repo)
+## Contributing
 
-This project now includes a standalone cross-platform Node.js sync flow for moving Obsidian-authored content into [`src/content`](src/content).
+- Issues are welcome
+- PRs are considered selectively to preserve architectural coherence
 
-Full user docs are in [`docs/content-ingestion-user-guide.md`](docs/content-ingestion-user-guide.md).
+## Work With Me
 
-### One-time setup
+I am available for architecture-heavy consulting and implementation leadership, especially where product direction and system design need to stay tightly coupled.
 
-1. Copy [`config/content-sync.config.example.json`](config/content-sync.config.example.json) to `config/content-sync.config.json`.
-2. Edit `vaultRoot` in `config/content-sync.config.json`.
-3. Keep mappings pointing only to `src/content/*` folders.
+This section will point to my portfolio/CV contact links.
 
-`config/content-sync.config.json` is ignored by git to keep personal local paths private.
+## License
 
-### Main command
+MIT.
 
-- `pnpm content:sync`
-
-What it does:
-1. Pull latest repo changes (`git pull --ff-only`)
-2. Dry-run style diff report (new/updated/stale/unchanged)
-3. If stale files exist, asks you to choose:
-   - `remove` (delete stale repo files)
-   - `backup` (move stale files to `.content-sync-backups/`)
-   - `abort` (stop safely)
-4. Apply sync changes
-5. Validate frontmatter + markdown quality
-6. Commit and push
-
-Default structure target:
-- content markdown in `src/content/*`
-- images in `src/assets/images/*`
-- pdf/docs in `src/assets/docs/*`
-
-### Helper commands
-
-- `pnpm content:sync:dry-run` -> analyze only, no file changes
-- `pnpm content:validate` -> run validation only
-- `pnpm content:git` -> pull/commit/push only
-
-### Prompt style and troubleshooting
-
-Messages are short and non-technical, with a support code when something fails:
-
-- What happened
-- Action to take now
-- Support code
-
-Example support codes include:
-- `CONFIG-MISSING`
-- `GIT-PULL-DIVERGED`
-- `VALIDATION-FAILED`
-- `SYNC-RUNTIME-ERROR`
-
-For extra technical details during troubleshooting, run with:
-
-- Linux/macOS: `CONTENT_SYNC_DEBUG=1 pnpm content:sync`
-- PowerShell: `$env:CONTENT_SYNC_DEBUG='1'; pnpm content:sync`
+(If this repository is newly public and the license file is not yet present, add a standard MIT `LICENSE` file before broad distribution.)
