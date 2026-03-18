@@ -6,6 +6,8 @@ A live worldbuilding and campaign platform for tabletop RPG play.
 
 This started as a practical tool for my table (my brother and I as GMs, plus our players), not a demo project. It then evolved into something worth publishing: both the product and the architecture behind it.
 
+![Home page with Savanna Nights theme](./screenshots/home-savanna-nights-theme.webp)
+
 ## What This Project Is
 
 World of Aletheia is a production Astro site with three active domains:
@@ -156,8 +158,10 @@ I am available for architecture-heavy consulting and implementation leadership, 
 
 This section will point to my portfolio/CV contact links.
 
+[LinkedIn](https://www.linkedin.com/in/bradarnst/)
+[CV/Portfolio Site](https://brad.nexusseven.com)
+
 ## License
 
 MIT.
 
-(If this repository is newly public and the license file is not yet present, add a standard MIT `LICENSE` file before broad distribution.)
