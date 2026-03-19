@@ -73,6 +73,12 @@ Keep a single query facade but no full repository stack.
 3. Do not introduce repositories, query services, adapters, or standalone contracts for Campaign reads by default.
 4. Keep `src/services/`, `src/adapters/`, and `src/contracts/` minimal or empty unless a concrete trigger occurs.
 
+### Clarification: Astro Live Collections and Cloud Sources
+
+Using Astro live collections/custom loaders to read cloud-backed content is **not** a violation of this ADR by itself.
+
+This ADR prohibits speculative repository/service layering when Astro-native primitives are sufficient. If a second active data source exists (for example local filesystem plus R2), implementing the minimum Astro-native loader/resolver required to select/read that source is within policy and aligns with YAGNI.
+
 ### Triggers for Reintroducing Abstractions
 
 Introduce a shared service or contract layer only when at least one of the following is true:

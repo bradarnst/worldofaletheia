@@ -40,7 +40,7 @@ const baseSchema = z.object({
 // Collection-specific schemas
 const loreSchema = baseSchema.extend({
   title: z.string(),
-  type: z.enum(['cosmology', 'religion', 'economy','history', 'geography', 'food_and_drink','culture', 'language', 'warfare', 'domestication', 'magic', 'technology', 'structure','other']),
+  type: z.enum(['cosmology', 'religion', 'economy', 'history', 'geography', 'food_and_drink', 'culture', 'language', 'warfare', 'domestication', 'magic', 'technology', 'structure', 'other']),
   excerpt: z.string().optional(),
 });
 
@@ -63,7 +63,7 @@ const sentientsSchema = baseSchema.extend({
 
 const bestiarySchema = baseSchema.extend({
   title: z.string(),
-  type: z.enum(['monster', 'animal','beast', 'spirit', 'construct', 'elemental']),
+  type: z.enum(['monster', 'animal', 'beast', 'spirit', 'construct', 'elemental']),
   excerpt: z.string().optional(),
   challengeRating: z.number().optional(),
 });
@@ -91,9 +91,10 @@ const systemsSchema = baseSchema.extend({
 // Campaign schema - only for campaign overview files (not sessions)
 const campaignsSchema = baseSchema.omit({ status: true }).extend({
   title: z.string(),
-  type: z.enum(['campaign', 'adventure', 'quest', 'story']),
+  type: z.enum(['barry', 'brad']),
+  subtype: z.enum(['bestiary', 'adventures', 'hooks', 'scenes', 'factions', 'flora', 'lore', 'meta', 'places', 'sentients', 'characters', 'general']),
   excerpt: z.string().optional(),
-  status: z.enum(['planning', 'active', 'completed', 'on-hold', 'cancelled']),
+  // status: z.enum(['planning', 'active', 'completed', 'on-hold', 'cancelled']),
   // Campaign-domain-only access control field.
   visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('gm'),
   start: z.date().optional(),
@@ -103,7 +104,7 @@ const campaignsSchema = baseSchema.omit({ status: true }).extend({
 // Session schema - for nested session files
 const sessionsSchema = baseSchema.extend({
   title: z.string(),
-  type: z.enum(['session', 'encounter', 'battle','note' ]),
+  type: z.enum(['session', 'encounter', 'battle', 'note']),
   excerpt: z.string().optional(),
   campaign: z.string(),
   // Campaign-domain-only access control field.

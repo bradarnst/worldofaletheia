@@ -1,69 +1,59 @@
 {
-	"compatibility_date": "2026-01-24",
-	"compatibility_flags": [
-		"global_fetch_strictly_public",
-		"nodejs_compat"
-	],
-	"name": "world-of-aletheia",
-	"d1_databases": [
-		{
-			"binding": "DB",
-			"database_name": "world-of-aletheia",
-			"database_id": "38825456-2299-45de-a25e-ee1b98bea6ec"
-		}
-	],
-	"vars": {
-		"BETTER_AUTH_URL": "https://worldofaletheia.com",
-		"MAILJET_SANDBOX_MODE": "on",
-		"EMAIL_FROM": "gm@worldofaletheia.com",
-		"EMAIL_REPLY_TO": "gm@worldofaletheia.com",
-		"CONTACT_TO_EMAIL": "brad@worldofaletheia.com,barry@worldofaletheia.com"
-	},
-	"route": {
-		"pattern": "worldofaletheia.com/*",
-		"zone_name": "worldofaletheia.com"
-	},
-	// "main": "@astrojs/cloudflare/entrypoints/server",
-	"assets": {
-		"directory": "./dist",
-		// "binding": "ASSETS"
-	},
-	"observability": {
-		"enabled": true
-	},
-	"env": {
-		"staging": {
-			"vars": {
-				"BETTER_AUTH_URL": "https://staging.worldofaletheia.com",
-				"MAILJET_SANDBOX_MODE": "on",
-				"EMAIL_FROM": "gm@worldofaletheia.com",
-				"EMAIL_REPLY_TO": "gm@worldofaletheia.com",
-				"CONTACT_TO_EMAIL": "brad@worldofaletheia.com,barry@worldofaletheia.com"
-			},
-			"d1_databases": [
-				{
-					"binding": "DB",
-					"database_name": "world-of-aletheia-staging",
-					"database_id": "500030de-a6b3-47dc-8ab7-dd51128f35c8"
-				}
-			]
-		}
-	},
-	"r2_buckets": [
-		{
-			"bucket_name": "woa-campaign-private",
-			"binding": "woa_campaign_private",
-			"remote": true
-		},
-		{
-			"bucket_name": "woa-campaign-private",
-			"binding": "campaignCloudbucket",
-			"remote": true
-		},
-		{
-			"bucket_name": "woa-campaign-private",
-			"binding": "woa_campaign_private",
-			"remote": true
-		}
-	]
+  "compatibility_date": "2026-01-24",
+  "compatibility_flags": [
+    "global_fetch_strictly_public",
+    "nodejs_compat"
+  ],
+  "name": "world-of-aletheia",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "world-of-aletheia",
+      "database_id": "38825456-2299-45de-a25e-ee1b98bea6ec"
+    }
+  ],
+  "vars": {
+    "BETTER_AUTH_URL": "https://worldofaletheia.com",
+    "MAILJET_SANDBOX_MODE": "on",
+    "EMAIL_FROM": "gm@worldofaletheia.com",
+    "EMAIL_REPLY_TO": "gm@worldofaletheia.com",
+    "CONTACT_TO_EMAIL": "brad@worldofaletheia.com,barry@worldofaletheia.com"
+  },
+  "route": {
+    "pattern": "worldofaletheia.com/*",
+    "zone_name": "worldofaletheia.com"
+  },
+  // "main": "@astrojs/cloudflare/entrypoints/server",
+  "assets": {
+    "directory": "./dist",
+    // "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "env": {
+    "staging": {
+      "vars": {
+        "BETTER_AUTH_URL": "https://staging.worldofaletheia.com",
+        "MAILJET_SANDBOX_MODE": "on",
+        "EMAIL_FROM": "gm@worldofaletheia.com",
+        "EMAIL_REPLY_TO": "gm@worldofaletheia.com",
+        "CONTACT_TO_EMAIL": "brad@worldofaletheia.com,barry@worldofaletheia.com"
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "world-of-aletheia-staging",
+          "database_id": "500030de-a6b3-47dc-8ab7-dd51128f35c8"
+        }
+      ]
+    }
+  },
+  "r2_buckets": [
+    {
+      "bucket_name": "woa-campaign-private",
+      "binding": "woa_campaign_private",
+      "remote": true
+    }
+  ]
 }
