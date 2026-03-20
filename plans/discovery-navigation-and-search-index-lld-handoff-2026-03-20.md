@@ -57,9 +57,46 @@ flowchart LR
   X -->|Phase C| FTS[(D1 FTS)]
 ```
 
-## Data Model (D1)
+## Cross-Phase Contracts
 
-## Phase A minimum tables
+### Identity Rules
+
+- `id` is immutable identity from manifest contract.
+- `slug` is route identity and may change over time.
+- Upserts are keyed by `id`.
+- Stale rows are removed by manifest reconciliation.
+
+### Query Policy
+
+#### Discovery/List Inputs
+
+- `collection` (required)
+- `type` (optional)
+- `subtype` (optional)
+- `tags` (optional)
+- pagination cursor/page
+
+#### Discovery/List Rules
+
+- apply visibility/authz constraints first,
+- then apply taxonomy filters,
+- then order (default: recency).
+
+#### Search Rules
+
+- Phase A/B: metadata/title/summary search only.
+- Phase C: add body-text FTS.
+
+### Security Policy
+
+- Protected campaign content excluded unless session qualifies.
+- Deny-by-default on ambiguous auth context for protected-scope queries.
+
+## Delivery Phases
+
+### Phase A - Metadata Index and Discovery Views
+
+#### Data Model (D1)
 
 1. `content_index`
    - `id TEXT PRIMARY KEY`
@@ -76,60 +113,13 @@ flowchart LR
    - `source_last_modified TEXT NOT NULL`
    - `indexed_at TEXT NOT NULL`
 
-2. recommended indexes
+2. Recommended indexes
    - `idx_content_index_collection_type_subtype`
    - `idx_content_index_collection_slug`
    - `idx_content_index_visibility_campaign`
    - `idx_content_index_source_etag`
 
-## Phase C table
-
-3. `content_search_fts` (virtual table)
-   - `title`, `body_text`, `slug`, `collection`, `type`, `subtype`
-
-## Identity Rules
-
-- `id` is immutable identity from manifest contract.
-- `slug` is route identity and may change over time.
-- upserts are keyed by `id`.
-- stale rows are removed by manifest reconciliation.
-
-## Query Policy
-
-### 1) Discovery/List
-
-Inputs:
-
-- `collection` (required)
-- `type` (optional)
-- `subtype` (optional)
-- `tags` (optional)
-- pagination cursor/page
-
-Rules:
-
-- apply visibility/authz constraints first,
-- then apply taxonomy filters,
-- then order (default: recency).
-
-### 2) Search
-
-Phase A/B:
-
-- metadata/title/summary search only.
-
-Phase C:
-
-- add body-text FTS.
-
-Security:
-
-- protected campaign content excluded unless session qualifies.
-- deny-by-default on ambiguous auth context for protected-scope queries.
-
-## File-Level Handoff
-
-### Must change now
+#### Implementation Tasks (Must change now)
 
 1. Add migration file(s) under `migrations/` for metadata index tables and indexes.
 2. Add index writer module in sync path (`scripts/content-sync/`) to upsert index rows from manifests/frontmatter.
@@ -138,13 +128,22 @@ Security:
 5. Update collection list routes to consume index queries for high-volume collections.
 6. Add pagination contract and route query param handling.
 
-### Should change soon
+### Phase B - Search Foundation (Non-FTS)
+
+#### Implementation Tasks (Should change soon)
 
 1. Add `/api/search` endpoint returning normalized JSON results.
 2. Add basic search UI input/results on selected high-volume pages.
 3. Add metrics/logging for query latency and index freshness drift.
 
-### Consider soon after
+### Phase C - Full-Text Search Expansion
+
+#### Data Model Additions (D1)
+
+1. `content_search_fts` (virtual table)
+   - `title`, `body_text`, `slug`, `collection`, `type`, `subtype`
+
+#### Implementation Tasks (Consider soon after)
 
 1. Add FTS table and ingestion for body text.
 2. Add ranking/snippets and typo tolerance tuning.

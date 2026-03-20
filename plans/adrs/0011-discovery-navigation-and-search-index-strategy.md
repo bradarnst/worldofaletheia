@@ -9,9 +9,9 @@
 ## Context
 
 Collection volume is growing and current listing patterns are nearing practical limits for usability and discovery.
-Pagination by itself will not solve content findability. The project requires:
+Pagination by itself will slightly improve the UX, but will not solve content findability. The project requires:
 
-1. display-by-type and subtype,
+1. display-by-type, subtype and tag,
 2. scalable list retrieval,
 3. near-term search capability,
 4. authorization-safe behavior for campaign-protected content.

@@ -21,11 +21,11 @@ Related context:
 - `plans/adrs/0004-campaigns-astro-native-content-access-policy.md`
 - `plans/adrs/0009-campaign-content-source-separation-for-public-repo.md`
 
-Current ambiguity is no longer technical feasibility; it is operational default policy.
+We are moving from technical feasibility to operational default policy.
 
 ## Decision Drivers
 
-- Cloud-backed operation is already available and aligns with public-repo confidentiality goals.
+- Cloud-backed operation is already available and aligns with (Github) public-repo confidentiality goals.
 - Canonical runtime behavior should be explicit and stable across environments.
 - Minimize accidental complexity from mixed-source ambiguity.
 - Preserve a practical rollback path for incidents.
