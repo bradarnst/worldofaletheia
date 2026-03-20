@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { buildWikiLinkIndex, transformObsidianLinks } from './obsidian-links.mjs';
+import { syncCloudManifests } from './manifests.mjs';
 
 function timestamp() {
   const d = new Date();
@@ -55,6 +56,13 @@ function contentTypeForExtension(ext) {
   }
 }
 
+function resolveCloudMirrorDestination(config, mapping, relativePath) {
+  const cleanupRoot = mapping.localCleanupPath
+    ? path.resolve(config.repoRoot, mapping.localCleanupPath)
+    : path.resolve(config.repoRoot, 'src/content', mapping.to);
+  return path.resolve(cleanupRoot, relativePath);
+}
+
 export async function applySync(diff, config, staleAction, services = {}) {
   const changedFiles = [];
   const backupSession = timestamp();
@@ -82,25 +90,35 @@ export async function applySync(diff, config, staleAction, services = {}) {
     }
 
     if (!cloud) {
-      throw new Error('Cloud mappings require campaign cloud configuration.');
+      throw new Error('Cloud mappings require content cloud configuration.');
     }
 
     const sourceExt = path.extname(rec.sourceAbs).toLowerCase();
     const contentType = contentTypeForExtension(sourceExt);
-    await cloud.uploadFile(rec.mapping.to, rec.relativePath, rec.sourceAbs, contentType);
+    if (sourceExt === '.md') {
+      const sourceText = await fs.readFile(rec.sourceAbs, 'utf8');
+      const transformed = transformObsidianLinks(sourceText, {
+        destAbs: resolveCloudMirrorDestination(config, rec.mapping, rec.relativePath),
+        repoRoot: config.repoRoot,
+        wikiIndex,
+      });
+      await cloud.uploadText(rec.cloudKey, transformed, contentType);
+    } else {
+      await cloud.uploadFile(rec.mapping.to, rec.relativePath, rec.sourceAbs, contentType);
+    }
     changedFiles.push(`cloud:${rec.cloudKey}`);
   }
 
   if (staleAction === 'remove') {
     for (const rec of diff.grouped.stale) {
-      if (rec.mapping.target === 'repo') {
+      if (rec.destAbs) {
         await fs.rm(rec.destAbs, { force: true });
         changedFiles.push(rec.destAbs);
         continue;
       }
 
       if (!cloud) {
-        throw new Error('Cloud mappings require campaign cloud configuration.');
+        throw new Error('Cloud mappings require content cloud configuration.');
       }
 
       await cloud.deleteObject(rec.mapping.to, rec.relativePath);
@@ -110,12 +128,9 @@ export async function applySync(diff, config, staleAction, services = {}) {
 
   if (staleAction === 'backup') {
     for (const rec of diff.grouped.stale) {
-      if (rec.mapping.target === 'repo') {
-        const backupTarget = path.resolve(
-          backupRootForRun,
-          rec.mapping.to,
-          rec.relativePath,
-        );
+      if (rec.destAbs) {
+        const backupBase = rec.mapping.localCleanupPath || rec.mapping.to;
+        const backupTarget = path.resolve(backupRootForRun, backupBase, rec.relativePath);
         await ensureParent(backupTarget);
         await fs.copyFile(rec.destAbs, backupTarget);
         await fs.rm(rec.destAbs, { force: true });
@@ -124,7 +139,7 @@ export async function applySync(diff, config, staleAction, services = {}) {
       }
 
       if (!cloud) {
-        throw new Error('Cloud mappings require campaign cloud configuration.');
+        throw new Error('Cloud mappings require content cloud configuration.');
       }
 
       const backupTarget = resolveBackupTarget(
@@ -138,6 +153,11 @@ export async function applySync(diff, config, staleAction, services = {}) {
       await cloud.deleteObject(rec.mapping.to, rec.relativePath);
       changedFiles.push(`cloud:${rec.cloudKey}`, backupTarget);
     }
+  }
+
+  if (cloud) {
+    const manifestKeys = await syncCloudManifests(config, services, wikiIndex);
+    changedFiles.push(...manifestKeys.map((key) => `cloud:${key}`));
   }
 
   return {

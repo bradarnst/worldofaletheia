@@ -6,7 +6,7 @@ import { buildSyncDiff } from './fs-diff.mjs';
 import { askStaleFileAction } from './prompt.mjs';
 import { applySync } from './apply-sync.mjs';
 import { validateContentTree } from './validate.mjs';
-import { createCampaignCloudAdapter } from './cloud-storage.mjs';
+import { createContentCloudAdapter } from './cloud-storage.mjs';
 import {
   fail,
   info,
@@ -27,8 +27,11 @@ export function parseArgs(argv) {
 }
 
 function describeRecordPath(record, repoRoot) {
+  if (record.destAbs) {
+    return normalizePathForDisplay(path.relative(repoRoot, record.destAbs));
+  }
   if (record.mapping.target === 'repo') {
-    const base = record.destAbs || record.sourceAbs;
+    const base = record.sourceAbs;
     if (!base) {
       return record.relativePath;
     }
@@ -42,7 +45,8 @@ function printDiffReport(diff, repoRoot) {
 
   const show = (label, rows) => {
     if (!rows.length) return;
-    console.log(`\n${label}:`);
+    console.log(`
+${label}:`);
     for (const row of rows.slice(0, 20)) {
       const p = describeRecordPath(row, repoRoot);
       console.log(`- ${p}`);
@@ -54,7 +58,7 @@ function printDiffReport(diff, repoRoot) {
 
   show('New files', diff.grouped.new);
   show('Updated files', diff.grouped.updated);
-  show('Stale repo files', diff.grouped.stale);
+  show('Stale files', diff.grouped.stale);
 }
 
 async function runValidateOnly(config) {
@@ -144,7 +148,7 @@ async function main() {
 
     const services = {};
     if (config.hasCloudMappings) {
-      services.cloud = createCampaignCloudAdapter(config.campaignCloud);
+      services.cloud = createContentCloudAdapter(config.contentCloud);
     }
 
     await runFullSync(config, { dryRun: args.dryRun, services });

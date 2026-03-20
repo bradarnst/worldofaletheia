@@ -51,11 +51,53 @@ async function writeBodyToFile(body, destination) {
   throw new Error('Unsupported response body type from R2.');
 }
 
-export function createCampaignCloudAdapter(cloudConfig) {
+async function bodyToText(body) {
+  if (!body) {
+    throw new Error('Empty body received from R2.');
+  }
+
+  if (typeof body === 'string') {
+    return body;
+  }
+
+  if (body instanceof Uint8Array) {
+    return Buffer.from(body).toString('utf8');
+  }
+
+  if (typeof body.transformToString === 'function') {
+    return body.transformToString();
+  }
+
+  if (typeof body.transformToByteArray === 'function') {
+    const bytes = await body.transformToByteArray();
+    return Buffer.from(bytes).toString('utf8');
+  }
+
+  if (typeof body.transformToWebStream === 'function') {
+    const stream = Readable.fromWeb(body.transformToWebStream());
+    const chunks = [];
+    for await (const chunk of stream) {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    }
+    return Buffer.concat(chunks).toString('utf8');
+  }
+
+  if (typeof body.pipe === 'function') {
+    const chunks = [];
+    for await (const chunk of body) {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    }
+    return Buffer.concat(chunks).toString('utf8');
+  }
+
+  throw new Error('Unsupported response body type from R2.');
+}
+
+export function createContentCloudAdapter(cloudConfig) {
   const client = createS3Client(cloudConfig);
   const bucket = cloudConfig.bucket;
 
-  const buildKey = (prefix, relativePath) => {
+  const buildKey = (prefix, relativePath = '') => {
     const safePrefix = sanitizePrefix(prefix);
     const safeRelative = sanitizeRelative(relativePath);
     if (!safePrefix) {
@@ -112,8 +154,26 @@ export function createCampaignCloudAdapter(cloudConfig) {
     return key;
   };
 
+  const uploadText = async (key, text, contentType = 'text/plain; charset=utf-8') => {
+    await client.send(new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      Body: text,
+      ContentType: contentType,
+    }));
+    return key;
+  };
+
   const deleteObject = async (prefix, relativePath) => {
     const key = buildKey(prefix, relativePath);
+    await client.send(new DeleteObjectCommand({
+      Bucket: bucket,
+      Key: key,
+    }));
+    return key;
+  };
+
+  const deleteKey = async (key) => {
     await client.send(new DeleteObjectCommand({
       Bucket: bucket,
       Key: key,
@@ -131,13 +191,26 @@ export function createCampaignCloudAdapter(cloudConfig) {
     return key;
   };
 
+  const readText = async (key) => {
+    const response = await client.send(new GetObjectCommand({
+      Bucket: bucket,
+      Key: key,
+    }));
+    return bodyToText(response.Body);
+  };
+
   return {
     client,
     bucket,
     buildKey,
     listObjects,
     uploadFile,
+    uploadText,
     deleteObject,
+    deleteKey,
     downloadObject,
+    readText,
   };
 }
+
+export const createCampaignCloudAdapter = createContentCloudAdapter;

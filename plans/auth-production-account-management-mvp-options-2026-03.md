@@ -4,7 +4,7 @@
 
 This document is intentionally a fresh production design request.
 
-- It **does not** rely on `src/content/campaigns/access.config.json`.
+- It **does not** rely on `config/campaign-access.config.json`.
 - It **does not** rely on any prior example names or dev fixtures.
 - Goal: practical ways to ingest/manage real production accounts in Cloudflare Workers + Better Auth + D1 while keeping sensitive identity and assignment data private from GitHub viewers.
 

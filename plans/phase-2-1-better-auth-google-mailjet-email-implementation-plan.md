@@ -103,7 +103,7 @@ This phase delivers **production-safe auth** and **campaign membership enforceme
    - validate membership-seed JSON shape only.
    - no visibility logic.
 
-8. **Edit** [`src/content/campaigns/access.config.json`](src/content/campaigns/access.config.json)
+8. **Edit** [`config/campaign-access.config.json`](config/campaign-access.config.json)
    - maintain membership mapping seed format.
    - remain optional bootstrap input.
 
@@ -206,7 +206,7 @@ Use Better Auth migration generation for required auth tables (users/accounts/se
 1. Create auth tables migration.
 2. Create `campaign_memberships` migration.
 3. Run migrations in local D1.
-4. Seed local/test membership from [`src/content/campaigns/access.config.json`](src/content/campaigns/access.config.json).
+4. Seed local/test membership from [`config/campaign-access.config.json`](config/campaign-access.config.json).
 5. Promote to staging D1.
 6. Validate auth + membership reads.
 7. Promote to production D1.
@@ -526,7 +526,7 @@ All must be true:
 
 1. Exact local/staging/production auth URLs (`BETTER_AUTH_URL` values).
 2. Final contact relay destination mailbox (`CONTACT_TO_EMAIL`).
-3. Whether to enable bootstrap seeding from [`src/content/campaigns/access.config.json`](src/content/campaigns/access.config.json) in staging automatically or manual-only.
+3. Whether to enable bootstrap seeding from [`config/campaign-access.config.json`](config/campaign-access.config.json) in staging automatically or manual-only.
 4. Whether `/account` is public-with-redirect or hard-protected route.
 5. Minimum logging retention/observability destination policy.
 

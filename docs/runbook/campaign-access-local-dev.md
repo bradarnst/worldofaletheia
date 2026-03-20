@@ -47,7 +47,7 @@ Set `CAMPAIGN_GM_ASSIGNMENTS` as JSON in your environment for GM-only checks:
 
 The gate compares `aletheia-dev-session=<sessionId>` to `gmAssignments[campaignSlug].userId`.
 
-Campaign visibility defaults are now maintained in [`src/content/campaigns/access.config.json`](src/content/campaigns/access.config.json).
+Campaign visibility defaults are now maintained in [`config/campaign-access.config.json`](config/campaign-access.config.json).
 
 - This file is validated at runtime through [`normalizeCampaignAccessConfig()`](src/utils/campaign-access-config.ts:18).
 - Safe default is empty config (no overrides).

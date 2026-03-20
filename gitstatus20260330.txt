@@ -1,0 +1,41 @@
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   config/content-sync.config.example.json
+	modified:   docs/runbook/campaign-access-local-dev.md
+	modified:   docs/runbook/phase-2-1-auth-google-d1-mailjet-email.md
+	modified:   package.json
+	modified:   plans/adrs/0009-campaign-content-source-separation-for-public-repo.md
+	modified:   plans/auth-production-account-management-mvp-options-2026-03.md
+	modified:   plans/campaign-permissions-phased-enhancement-plan.md
+	modified:   plans/content-source-mode-all-local-or-cloud-lld-handoff-2026-03-19.md
+	modified:   plans/phase-2-1-better-auth-google-mailjet-email-implementation-plan.md
+	modified:   scripts/content-sync/apply-sync.mjs
+	modified:   scripts/content-sync/cloud-storage.mjs
+	modified:   scripts/content-sync/config.mjs
+	modified:   scripts/content-sync/fs-diff.mjs
+	modified:   scripts/content-sync/index.mjs
+	modified:   scripts/content-sync/validate.mjs
+	modified:   src/content.config.ts
+	modified:   src/env.d.ts
+	modified:   src/utils/campaign-membership-config.ts
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	config/campaign-access.config.json
+	gitstatus20260330.txt
+	plans/adrs/0010-global-content-source-mode-cloud-default.md
+	plans/adrs/0011-discovery-navigation-and-search-index-strategy.md
+	plans/adrs/0012-content-producer-extraction-strategy.md
+	plans/content-producer-extraction-lld-handoff-2026-03-20.md
+	plans/discovery-navigation-and-search-index-lld-handoff-2026-03-20.md
+	scripts/content-sync/fs-diff.test.mjs
+	scripts/content-sync/manifests.mjs
+	src/lib/content-source-mode.test.ts
+	src/lib/content-source-mode.ts
+	src/lib/r2-content-loader.mjs
+
+no changes added to commit (use "git add" and/or "git commit -a")

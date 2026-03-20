@@ -84,7 +84,7 @@ Conflict-handling behavior in migration runner:
 
 ## 4) Membership seed bootstrap (optional)
 
-Seed source: [`src/content/campaigns/access.config.json`](src/content/campaigns/access.config.json)
+Seed source: [`config/campaign-access.config.json`](config/campaign-access.config.json)
 
 Run local seed:
 
@@ -97,7 +97,7 @@ The seed is idempotent (`INSERT OR IGNORE`) and will not overwrite existing memb
 GM assignment source-of-truth:
 
 - staging/prod: D1 `campaign_gm_assignments`
-- local/dev fallback only: `gmAssignments` in [`src/content/campaigns/access.config.json`](src/content/campaigns/access.config.json)
+- local/dev fallback only: `gmAssignments` in [`config/campaign-access.config.json`](config/campaign-access.config.json)
 - local/dev fallback only: optional env override through `CAMPAIGN_GM_ASSIGNMENTS`
 
 ## 5) Secret provisioning

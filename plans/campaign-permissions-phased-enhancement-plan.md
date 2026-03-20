@@ -47,7 +47,7 @@ Precedence rule for session pages:
 
 ### 2) GM identity resolution (implemented now)
 
-GM assignment is sourced from `src/content/campaigns/access.config.json` via explicit mapping:
+GM assignment is sourced from `config/campaign-access.config.json` via explicit mapping:
 
 - `gmAssignments: { [campaignSlug]: { userId: string } }`
 
@@ -77,7 +77,7 @@ Legacy fields (`gm`, `gm-date`, `gm-info`) remain tolerated for transition and s
 
 ### GM assignment config
 
-`src/content/campaigns/access.config.json` now includes:
+`config/campaign-access.config.json` now includes:
 
 - `memberships` map (existing)
 - `gmAssignments` map (new)
@@ -109,6 +109,6 @@ Legacy fields (`gm`, `gm-date`, `gm-info`) remain tolerated for transition and s
 - `src/content.config.ts`
 - `src/utils/campaign-access.ts`
 - `src/utils/campaign-membership-config.ts`
-- `src/content/campaigns/access.config.json`
+- `config/campaign-access.config.json`
 - `docs/runbook/phase-2-1-auth-google-d1-mailjet-email.md`
 - `docs/runbook/campaign-access-local-dev.md`

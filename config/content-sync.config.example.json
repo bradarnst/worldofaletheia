@@ -1,26 +1,85 @@
 {
   "vaultRoot": "C:/path/or/linux/path/to/ObsidianVault",
   "mappings": [
-    { "from": "World/Lore", "to": "src/content/lore" },
-    { "from": "World/Places", "to": "src/content/places" },
-    { "from": "World/Sentients", "to": "src/content/sentients" },
-    { "from": "World/Factions", "to": "src/content/factions" },
-    { "from": "World/Flora", "to": "src/content/flora" },
-    { "from": "World/Bestiary", "to": "src/content/bestiary" },
-    { "from": "World/Systems", "to": "src/content/systems" },
-    { "from": "World/Campaigns", "to": "campaigns", "target": "cloud" },
-    { "from": "World/Meta", "to": "src/content/meta" },
-    { "from": "World/Assets/Images", "to": "src/assets/images" },
-    { "from": "World/Assets/Docs", "to": "src/assets/docs" }
+    {
+      "from": "World/Lore",
+      "to": "lore",
+      "target": "cloud",
+      "localCleanupPath": "src/content/lore"
+    },
+    {
+      "from": "World/Places",
+      "to": "places",
+      "target": "cloud",
+      "localCleanupPath": "src/content/places"
+    },
+    {
+      "from": "World/Sentients",
+      "to": "sentients",
+      "target": "cloud",
+      "localCleanupPath": "src/content/sentients"
+    },
+    {
+      "from": "World/Factions",
+      "to": "factions",
+      "target": "cloud",
+      "localCleanupPath": "src/content/factions"
+    },
+    {
+      "from": "World/Flora",
+      "to": "flora",
+      "target": "cloud",
+      "localCleanupPath": "src/content/flora"
+    },
+    {
+      "from": "World/Bestiary",
+      "to": "bestiary",
+      "target": "cloud",
+      "localCleanupPath": "src/content/bestiary"
+    },
+    {
+      "from": "World/Systems",
+      "to": "systems",
+      "target": "cloud",
+      "localCleanupPath": "src/content/systems"
+    },
+    {
+      "from": "World/Campaigns",
+      "to": "campaigns",
+      "target": "cloud",
+      "localCleanupPath": "src/content/campaigns"
+    },
+    {
+      "from": "World/Meta",
+      "to": "meta",
+      "target": "cloud",
+      "localCleanupPath": "src/content/meta"
+    },
+    {
+      "from": "World/Assets/Images",
+      "to": "src/assets/images"
+    },
+    {
+      "from": "World/Assets/Docs",
+      "to": "src/assets/docs"
+    }
   ],
-  "includeExtensions": [".md", ".png", ".jpg", ".jpeg", ".webp", ".pdf"],
+  "includeExtensions": [
+    ".md",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".webp",
+    ".pdf"
+  ],
   "backupRoot": ".content-sync-backups",
   "staleFilePolicy": "prompt",
   "defaultCommitMessage": "chore(content): sync Obsidian content",
   "requireCleanWorkingTreeBeforePull": false,
-  "campaignCloud": {
+  "contentCloud": {
     "bucket": "woa-campaign-private",
     "accountId": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "prefix": "content",
     "accessKeyIdEnv": "R2_ACCESS_KEY_ID",
     "secretAccessKeyEnv": "R2_SECRET_ACCESS_KEY"
   }

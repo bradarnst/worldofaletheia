@@ -183,7 +183,7 @@ Cloud markdown entries must use the same markdown processing rules as local cont
 
 Current coupling imports campaign access config from content tree:
 
-- `src/utils/campaign-membership-config.ts` -> `src/content/campaigns/access.config.json`
+- `src/utils/campaign-membership-config.ts` -> `config/campaign-access.config.json`
 
 Required change:
 

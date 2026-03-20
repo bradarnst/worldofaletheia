@@ -14,6 +14,19 @@ function isSubPath(parent, candidate) {
   return rel && !rel.startsWith('..') && !path.isAbsolute(rel);
 }
 
+function normalizeRepoPath(value, index, label) {
+  if (!value) {
+    return null;
+  }
+
+  const normalized = String(value).trim().split('\\').join('/');
+  if (path.isAbsolute(normalized) || normalized.includes('..')) {
+    throw new Error(`Mapping #${index + 1} has invalid ${label} path: ${value}`);
+  }
+
+  return normalized;
+}
+
 function normalizeMapping(mapping, index) {
   if (!mapping || typeof mapping !== 'object') {
     throw new Error(`Mapping #${index + 1} must be an object.`);
@@ -28,11 +41,7 @@ function normalizeMapping(mapping, index) {
   }
 
   if (target === 'repo') {
-    if (path.isAbsolute(to) || to.includes('..')) {
-      throw new Error(`Mapping #${index + 1} has invalid destination path: ${to}`);
-    }
-
-    const normalizedTo = to.split('\\').join('/');
+    const normalizedTo = normalizeRepoPath(to, index, 'destination');
     const allowedPrefixes = ['src/content/', 'src/assets/'];
     if (!allowedPrefixes.some((prefix) => normalizedTo.startsWith(prefix))) {
       throw new Error(`Mapping #${index + 1} destination must stay under src/content/ or src/assets/: ${to}`);
@@ -46,29 +55,35 @@ function normalizeMapping(mapping, index) {
     throw new Error(`Mapping #${index + 1} cloud prefix must not be empty.`);
   }
 
-  return { from, to: normalizedCloudPrefix, target };
+  const localCleanupPath = normalizeRepoPath(mapping.localCleanupPath, index, 'localCleanupPath');
+  const collection = typeof mapping.collection === 'string' && mapping.collection.trim()
+    ? mapping.collection.trim()
+    : null;
+
+  return { from, to: normalizedCloudPrefix, target, localCleanupPath, collection };
 }
 
-function normalizeCampaignCloudConfig(rawConfig, { requireCredentials = true } = {}) {
+function normalizeContentCloudConfig(rawConfig, { requireCredentials = true } = {}) {
   if (!rawConfig || typeof rawConfig !== 'object') {
-    throw new Error('campaignCloud configuration is required when cloud mappings exist.');
+    throw new Error('contentCloud configuration is required when cloud mappings exist.');
   }
 
   const bucket = String(rawConfig.bucket || '').trim();
   const accountId = String(rawConfig.accountId || '').trim();
   const region = String(rawConfig.region || 'auto').trim();
   const endpoint = String(rawConfig.endpoint || (accountId ? `https://${accountId}.r2.cloudflarestorage.com` : '')).trim();
+  const prefix = trimSlashes(String(rawConfig.prefix || 'content').trim());
   const accessKeyIdEnv = String(rawConfig.accessKeyIdEnv || 'R2_ACCESS_KEY_ID').trim();
   const secretAccessKeyEnv = String(rawConfig.secretAccessKeyEnv || 'R2_SECRET_ACCESS_KEY').trim();
 
   if (!bucket) {
-    throw new Error('campaignCloud.bucket is required.');
+    throw new Error('contentCloud.bucket is required.');
   }
   if (!accountId) {
-    throw new Error('campaignCloud.accountId is required.');
+    throw new Error('contentCloud.accountId is required.');
   }
   if (!endpoint) {
-    throw new Error('campaignCloud.endpoint is required.');
+    throw new Error('contentCloud.endpoint is required.');
   }
 
   let credentials = null;
@@ -77,10 +92,10 @@ function normalizeCampaignCloudConfig(rawConfig, { requireCredentials = true } =
     const secretAccessKey = process.env[secretAccessKeyEnv];
 
     if (!accessKeyId) {
-      throw new Error(`Environment variable ${accessKeyIdEnv} is required for campaignCloud access.`);
+      throw new Error(`Environment variable ${accessKeyIdEnv} is required for contentCloud access.`);
     }
     if (!secretAccessKey) {
-      throw new Error(`Environment variable ${secretAccessKeyEnv} is required for campaignCloud access.`);
+      throw new Error(`Environment variable ${secretAccessKeyEnv} is required for contentCloud access.`);
     }
 
     credentials = {
@@ -94,6 +109,7 @@ function normalizeCampaignCloudConfig(rawConfig, { requireCredentials = true } =
     accountId,
     region,
     endpoint,
+    prefix,
     accessKeyIdEnv,
     secretAccessKeyEnv,
     credentials,
@@ -137,8 +153,8 @@ export async function loadConfig(options = {}) {
   }
 
   const hasCloudMappings = mappings.some((m) => m.target === 'cloud');
-  const campaignCloud = hasCloudMappings
-    ? normalizeCampaignCloudConfig(parsed.campaignCloud, { requireCredentials: requireCloudCredentials })
+  const contentCloud = hasCloudMappings
+    ? normalizeContentCloudConfig(parsed.contentCloud || parsed.campaignCloud, { requireCredentials: requireCloudCredentials })
     : null;
 
   const includeExtensions = Array.isArray(parsed.includeExtensions) && parsed.includeExtensions.length
@@ -170,6 +186,7 @@ export async function loadConfig(options = {}) {
     defaultCommitMessage,
     requireCleanWorkingTreeBeforePull,
     hasCloudMappings,
-    campaignCloud,
+    contentCloud,
+    campaignCloud: contentCloud,
   };
 }

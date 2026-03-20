@@ -119,7 +119,7 @@ export async function buildSyncDiff(config, services = {}) {
 
     const cloud = services.cloud;
     if (!cloud) {
-      throw new Error('Cloud mappings require campaign cloud configuration.');
+      throw new Error('Cloud mappings require content cloud configuration.');
     }
 
     const remoteObjects = await cloud.listObjects(mapping.to, config.includeExtensions);
@@ -177,6 +177,22 @@ export async function buildSyncDiff(config, services = {}) {
           destAbs: null,
           cloudKey,
           mapping,
+        });
+      }
+    }
+
+    if (mapping.localCleanupPath) {
+      const cleanupRoot = path.resolve(config.repoRoot, mapping.localCleanupPath);
+      const cleanupFiles = await walkFiles(cleanupRoot, config.includeExtensions);
+      for (const cleanupAbs of cleanupFiles) {
+        records.push({
+          type: 'stale',
+          relativePath: normalizePathForDisplay(path.relative(cleanupRoot, cleanupAbs)),
+          sourceAbs: null,
+          destAbs: cleanupAbs,
+          cloudKey: null,
+          mapping,
+          staleReason: 'localCleanup',
         });
       }
     }

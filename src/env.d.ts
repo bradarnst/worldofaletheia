@@ -3,6 +3,8 @@
 interface ImportMetaEnv {
   readonly BETTER_AUTH_SECRET?: string;
   readonly BETTER_AUTH_URL?: string;
+  readonly CONTENT_SOURCE_MODE?: 'local' | 'cloud';
+  readonly CONTENT_SOURCE_OVERRIDES?: string;
   readonly GOOGLE_CLIENT_ID?: string;
   readonly GOOGLE_CLIENT_SECRET?: string;
   readonly CAMPAIGN_MEMBERSHIPS?: string;

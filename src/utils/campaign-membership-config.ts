@@ -1,4 +1,4 @@
-import membershipConfigJson from '../content/campaigns/access.config.json';
+import membershipConfigJson from '../../config/campaign-access.config.json';
 
 interface MembershipEntry {
   campaigns: string[];

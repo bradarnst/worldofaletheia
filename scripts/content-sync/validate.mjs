@@ -8,7 +8,6 @@ const ALLOWED_STATUS = [
   'published',
   'archive',
   'archived',
-  // Campaign-domain lifecycle statuses.
   'planning',
   'active',
   'completed',
@@ -174,6 +173,7 @@ function checkHeadings(content) {
 
 async function gatherMarkdownFiles(root) {
   const files = [];
+
   async function walk(current) {
     let entries;
     try {
@@ -196,25 +196,41 @@ async function gatherMarkdownFiles(root) {
   return files;
 }
 
-export async function validateContentTree(config) {
-  const mappedRoots = config.mappings
-    .filter((m) => m.to.startsWith('src/content/'))
-    .map((m) => path.resolve(config.repoRoot, m.to));
-  const fileSet = new Set();
+function determineValidationRoots(config) {
+  return config.mappings.map((mapping) => {
+    if (mapping.target === 'repo' || !config.vaultRoot || !mapping.from) {
+      return {
+        root: path.resolve(config.repoRoot, mapping.to),
+        labelRoot: config.repoRoot,
+        labelPrefix: '',
+      };
+    }
 
-  for (const root of mappedRoots) {
-    const files = await gatherMarkdownFiles(root);
+    return {
+      root: path.resolve(config.vaultRoot, mapping.from),
+      labelRoot: config.vaultRoot,
+      labelPrefix: 'vault/',
+    };
+  });
+}
+
+export async function validateContentTree(config) {
+  const roots = determineValidationRoots(config);
+  const fileEntries = [];
+
+  for (const root of roots) {
+    const files = await gatherMarkdownFiles(root.root);
     for (const file of files) {
-      fileSet.add(file);
+      fileEntries.push({ ...root, file });
     }
   }
 
   const failures = [];
   const warnings = [];
 
-  for (const filePath of fileSet) {
-    const relPath = path.relative(config.repoRoot, filePath).split(path.sep).join('/');
-    const text = await fs.readFile(filePath, 'utf8');
+  for (const fileEntry of fileEntries) {
+    const relPath = `${fileEntry.labelPrefix}${path.relative(fileEntry.labelRoot, fileEntry.file).split(path.sep).join('/')}`;
+    const text = await fs.readFile(fileEntry.file, 'utf8');
     const parsed = parseFrontmatter(text);
 
     if (!parsed.hasFrontmatter) {
@@ -258,17 +274,12 @@ export async function validateContentTree(config) {
     for (const headingIssue of checkHeadings(text)) {
       warnings.push(`${relPath} ${headingIssue}`);
     }
-
-    const longLine = text.split(/\r?\n/).findIndex((line) => line.length > 220);
-    if (longLine >= 0) {
-      warnings.push(`${relPath} long line at ${longLine + 1} (>220 chars)`);
-    }
   }
 
   return {
     ok: failures.length === 0,
+    checkedFiles: fileEntries.length,
     failures,
     warnings,
-    checkedFiles: fileSet.size,
   };
 }

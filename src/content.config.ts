@@ -1,6 +1,16 @@
 import { defineCollection } from 'astro:content';
 import { z } from 'astro/zod';
 import { glob } from 'astro/loaders';
+import { createR2MarkdownCollectionLoader } from './lib/r2-content-loader.mjs';
+import { resolveCollectionSource } from './lib/content-source-mode';
+
+function createMarkdownLoader(collection: string, pattern: string, base: string) {
+  if (resolveCollectionSource(collection) === 'cloud') {
+    return createR2MarkdownCollectionLoader(collection);
+  }
+
+  return glob({ pattern, base });
+}
 
 // Base frontmatter schema for all collections
 const baseSchema = z.object({
@@ -37,7 +47,6 @@ const baseSchema = z.object({
   })).optional(),
 });
 
-// Collection-specific schemas
 const loreSchema = baseSchema.extend({
   title: z.string(),
   type: z.enum(['cosmology', 'religion', 'economy', 'history', 'geography', 'food_and_drink', 'culture', 'language', 'warfare', 'domestication', 'magic', 'technology', 'structure', 'other']),
@@ -88,77 +97,69 @@ const systemsSchema = baseSchema.extend({
   excerpt: z.string().optional(),
 });
 
-// Campaign schema - only for campaign overview files (not sessions)
 const campaignsSchema = baseSchema.omit({ status: true }).extend({
   title: z.string(),
   type: z.enum(['barry', 'brad']),
   subtype: z.enum(['bestiary', 'adventures', 'hooks', 'scenes', 'factions', 'flora', 'lore', 'meta', 'places', 'sentients', 'characters', 'general']),
   excerpt: z.string().optional(),
-  // status: z.enum(['planning', 'active', 'completed', 'on-hold', 'cancelled']),
-  // Campaign-domain-only access control field.
+  status: z.enum(['planning', 'active', 'completed', 'on-hold', 'cancelled']).optional(),
   visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('gm'),
   start: z.date().optional(),
   end: z.date().optional(),
 });
 
-// Session schema - for nested session files
 const sessionsSchema = baseSchema.extend({
   title: z.string(),
   type: z.enum(['session', 'encounter', 'battle', 'note']),
   excerpt: z.string().optional(),
   campaign: z.string(),
-  // Campaign-domain-only access control field.
   visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('campaignMembers'),
   date: z.date().optional(),
-  duration: z.number().optional(), // in minutes
+  duration: z.number().optional(),
 });
 
-// Define all collections with loaders
 const lore = defineCollection({
-  loader: glob({ pattern: '**/*.md', base: 'src/content/lore' }),
+  loader: createMarkdownLoader('lore', '**/*.md', 'src/content/lore'),
   schema: loreSchema,
 });
 
 const places = defineCollection({
-  loader: glob({ pattern: '**/*.md', base: 'src/content/places' }),
+  loader: createMarkdownLoader('places', '**/*.md', 'src/content/places'),
   schema: placesSchema,
 });
 
 const sentients = defineCollection({
-  loader: glob({ pattern: '**/*.md', base: 'src/content/sentients' }),
+  loader: createMarkdownLoader('sentients', '**/*.md', 'src/content/sentients'),
   schema: sentientsSchema,
 });
 
 const bestiary = defineCollection({
-  loader: glob({ pattern: '**/*.md', base: 'src/content/bestiary' }),
+  loader: createMarkdownLoader('bestiary', '**/*.md', 'src/content/bestiary'),
   schema: bestiarySchema,
 });
 
 const flora = defineCollection({
-  loader: glob({ pattern: '**/*.md', base: 'src/content/flora' }),
+  loader: createMarkdownLoader('flora', '**/*.md', 'src/content/flora'),
   schema: floraSchema,
 });
 
 const factions = defineCollection({
-  loader: glob({ pattern: '**/*.md', base: 'src/content/factions' }),
+  loader: createMarkdownLoader('factions', '**/*.md', 'src/content/factions'),
   schema: factionsSchema,
 });
 
 const systems = defineCollection({
-  loader: glob({ pattern: '**/*.md', base: 'src/content/systems' }),
+  loader: createMarkdownLoader('systems', '**/*.md', 'src/content/systems'),
   schema: systemsSchema,
 });
 
-// Campaigns collection - only campaign overview files (index.md), NOT sessions
-// Use explicit index pattern to avoid beta glob-negation regressions.
 const campaigns = defineCollection({
-  loader: glob({ pattern: '*/*.md', base: 'src/content/campaigns' }),
+  loader: createMarkdownLoader('campaigns', '*/*.md', 'src/content/campaigns'),
   schema: campaignsSchema,
 });
 
-// Sessions collection - loads from nested sessions folders
 const sessions = defineCollection({
-  loader: glob({ pattern: '*/sessions/*.md', base: 'src/content/campaigns' }),
+  loader: createMarkdownLoader('sessions', '*/sessions/*.md', 'src/content/campaigns'),
   schema: sessionsSchema,
 });
 
@@ -168,7 +169,7 @@ const metaSchema = baseSchema.extend({
 });
 
 const meta = defineCollection({
-  loader: glob({ pattern: '**/*.md', base: 'src/content/meta' }),
+  loader: createMarkdownLoader('meta', '**/*.md', 'src/content/meta'),
   schema: metaSchema,
 });
 

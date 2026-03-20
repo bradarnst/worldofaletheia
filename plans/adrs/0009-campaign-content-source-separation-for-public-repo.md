@@ -3,7 +3,7 @@
 ## Status
 
 - **Date:** 2026-03-16
-- **Status:** Proposed
+- **Status:** Accepted
 - **Deciders:** Brad
 
 ## Context

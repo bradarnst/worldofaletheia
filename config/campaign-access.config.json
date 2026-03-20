@@ -1,0 +1,20 @@
+{
+  "memberships": {
+    "brad": {
+      "campaigns": ["brad","barry"]
+    },
+    "fred": {
+      "campaigns": ["brad"]
+    },
+    "tom": {
+      "campaigns": ["barry"]
+    },
+    "barry": {
+      "campaigns": ["barry","brad"]
+    }
+  },
+  "gmAssignments": {
+    "brad": { "userId": "brad" },
+    "barry": { "userId": "barry" }
+  }
+}
