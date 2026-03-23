@@ -174,14 +174,23 @@ flowchart LR
 
 ## Implementation Worklist
 
-- [ ] Define campaign storage key scheme (slug/session/path conventions).
-- [ ] Define resolver input/output contract for campaign pages.
-- [ ] Extend content-sync config to support campaign cloud target.
-- [ ] Implement campaign cloud upload and verification output.
-- [ ] Implement runtime campaign resolver and route wiring.
-- [ ] Implement protected image path and resizing behavior.
-- [ ] Add tests and verification scripts.
-- [ ] Update runbooks and planning docs.
+- [x] Define campaign storage key scheme (slug/session/path conventions).
+- [x] Define resolver input/output contract for campaign pages.
+- [x] Extend content-sync config to support campaign cloud target.
+- [x] Implement campaign cloud upload and verification output.
+- [x] Implement runtime campaign resolver and route wiring.
+- [x] Implement protected image delivery path.
+- [ ] Finalize sync-time pre-generated image variant pipeline/verification (`thumb`, `detail`, `fullscreen`).
+- [x] Add tests for resolver/index/media fail-closed behavior.
+- [ ] Expand integration/operator verification scripts for staging/prod parity checks.
+- [x] Update ingestion/troubleshooting runbooks for D1 discovery-index sync behavior.
+- [ ] Update remaining planning docs/checklists to reflect current completion state.
+
+## Immediate Investigation (P0)
+
+- [ ] Investigate and remediate missing `content_index` table in staging/prod D1.
+- [ ] Apply and verify `0006_content_index.sql` in staging/prod before the next remote sync run.
+- [ ] Confirm remote sync env wiring (`CONTENT_INDEX_SYNC_MODE=remote`, `CONTENT_INDEX_SYNC_ENV=<env>`) in operator and CI execution paths.
 
 ## Data and Contract Considerations
 

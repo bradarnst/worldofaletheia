@@ -31,6 +31,40 @@ This handoff is intentionally incremental to deliver value without blocking on f
 - New framework adoption for search UI.
 - Graph/relationship traversal beyond current taxonomy needs.
 
+## Execution Status Update (2026-03-23)
+
+Completed in repository:
+
+- [x] Phase A migration added for `content_index` with indexes.
+- [x] Sync-time index writer added and wired into `pnpm content:sync` flow.
+- [x] Query utility + pagination contract implemented for index-backed list reads.
+- [x] Index-backed list wiring added for high-volume collections (`lore`, `places`, `sentients`, `systems`).
+
+Still open or partial:
+
+- [ ] Type/subtype/tag display requirements are not yet formally documented/approved.
+- [ ] Type/subtype/tag UX/data-contract design is not yet finalized.
+- [ ] Display-by-type/grouped list views are not yet implemented.
+- [ ] Remote environment verification is blocked until `content_index` exists in staging/prod.
+
+Critical investigation:
+
+- [ ] P0: Investigate why staging/prod D1 are missing `content_index` despite successful local sync runs.
+
+## Pre-Implementation Gates (Required before additional Phase A feature work)
+
+### Gate G1 - Taxonomy Filter Requirements and Design
+
+- [ ] Requirements: document use cases for type/subtype/tag filtering and grouped display behavior.
+- [ ] Design: define UX states, query parameters, default ordering, and empty/error states.
+- [ ] LLD: produce implementation handoff for filter + grouped display before coding those features.
+
+### Gate G2 - Sync Hardening Requirements and Design
+
+- [ ] Requirements: define publish-failure semantics for R2 manifest writes and D1 index writes.
+- [ ] Design: define fail-fast vs partial-success behavior, operator visibility, and recovery steps.
+- [ ] LLD: produce hardening implementation handoff before changing sync runtime behavior.
+
 ## Inputs
 
 - `plans/adrs/0011-discovery-navigation-and-search-index-strategy.md`
@@ -127,6 +161,7 @@ flowchart LR
 4. Add query utility for list retrieval and filter grouping.
 5. Update collection list routes to consume index queries for high-volume collections.
 6. Add pagination contract and route query param handling.
+7. Implement type/subtype/tag display and grouped views only after Gate G1 (requirements -> design -> LLD) is completed.
 
 ### Phase B - Search Foundation (Non-FTS)
 

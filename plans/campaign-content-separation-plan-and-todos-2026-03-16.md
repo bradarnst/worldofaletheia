@@ -128,23 +128,32 @@ Current route-level authorization is necessary but not sufficient for this requi
 
 ## Must Change Now
 
-- [ ] Accept ADR for campaign source separation.
-- [ ] Implement campaign-private content removal from Git-tracked source.
-- [ ] Add content-sync capability to publish campaign content directly to private cloud storage.
-- [ ] Confirm campaign routes do not depend on Git-tracked private markdown.
+- [x] Accept ADR for campaign source separation.
+- [x] Implement campaign-private content removal from Git-tracked source.
+- [x] Add content-sync capability to publish campaign content directly to private cloud storage.
+- [x] Confirm campaign routes do not depend on Git-tracked private markdown.
 
 ## Should Change Soon
 
-- [ ] Implement runtime campaign content resolver behind Better Auth + D1 checks.
-- [ ] Add deny-by-default behavior for storage/read failures.
-- [ ] Add protected image delivery path and resizing strategy for campaign media.
-- [ ] Exclude protected campaign content from public search indexing.
+- [x] Implement runtime campaign content resolver behind Better Auth + D1 checks.
+- [x] Add deny-by-default behavior for storage/read failures.
+- [x] Add protected image delivery path for campaign media.
+- [ ] Finalize sync-time pre-generated image variant pipeline/verification for campaign media (`thumb`, `detail`, `fullscreen`).
+- [x] Exclude protected campaign content from public search indexing.
+
+## Immediate Investigation (P0)
+
+- [ ] Investigate why `content_index` is missing in staging/prod D1 despite recent sync runs.
+- [ ] Apply and verify `migrations/0006_content_index.sql` in staging and production.
+- [ ] Verify operator/CI sync target configuration (`CONTENT_INDEX_SYNC_MODE`, `CONTENT_INDEX_SYNC_ENV`) so the intended D1 target is updated.
+- [ ] Publish a short post-incident note explaining why `pnpm content:sync` appeared successful while remote index tables were absent.
 
 ## Consider for Future (Optional)
 
 - [ ] Evaluate moving all content sources to cloud storage (public + protected) if benefits justify migration.
 - [ ] Evaluate full campaigns app/service extraction when split triggers are met.
 - [ ] Execute Option 3 unified membership role model after storage separation hardens.
+- [x] Assess Git history sanitization requirement for campaign-content exposure risk. Not required per operator decision (2026-03-23).
 
 ## Risks and Mitigations
 
