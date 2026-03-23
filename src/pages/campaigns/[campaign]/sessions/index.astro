@@ -1,13 +1,12 @@
 ---
 import { getCollection } from 'astro:content';
+import type { CollectionEntry } from 'astro:content';
 import CampaignsLayout from '@layouts/CampaignsLayout.astro';
 import {
   canViewCampaignContentAsync,
-  createCampaignAccessResolverFromRequest,
   resolveCampaignContentVisibility,
 } from '@utils/campaign-access';
-import { getCloudflareRuntimeEnv } from '@utils/cloudflare-env';
-import { getCampaignGmAssignmentsForEnv, getCampaignMembershipConfigForEnv } from '@utils/campaign-membership-config';
+import { createCampaignRequestAccessResolver } from '~/lib/campaign-request-access';
 
 export async function getStaticPaths() {
   const campaignsCollection = await getCollection('campaigns');
@@ -20,75 +19,79 @@ export async function getStaticPaths() {
 // Get the campaign slug from the URL
 const { campaign } = Astro.params;
 
-const campaignEntry =
-  (await getCollection('campaigns')).find((entry) => entry.id.split('/')[0] === campaign);
+let campaignEntry: CollectionEntry<'campaigns'> | null = null;
+let allSessions: CollectionEntry<'sessions'>[] = [];
+let contentUnavailable = false;
 
-if (!campaignEntry) {
+try {
+  const [campaignsCollection, sessionsCollection] = await Promise.all([
+    getCollection('campaigns'),
+    getCollection('sessions'),
+  ]);
+  campaignEntry = campaignsCollection.find((entry) => entry.id.split('/')[0] === campaign) ?? null;
+  allSessions = sessionsCollection;
+} catch (error) {
+  console.error('campaign.sessions.index_unavailable', {
+    campaignSlug: campaign,
+    message: error instanceof Error ? error.message : 'unknown error',
+  });
+  contentUnavailable = true;
+}
+
+if (!campaignEntry && !contentUnavailable) {
   throw new Error(`Campaign not found for slug "${campaign}"`);
 }
 
 const campaignDetail = {
-  slug: campaignEntry.id.split('/')[0],
-  title: campaignEntry.data.title,
-  excerpt: campaignEntry.data.excerpt,
+  slug: campaignEntry?.id.split('/')[0] ?? campaign ?? '',
+  title: campaignEntry?.data.title ?? 'Campaign Sessions',
+  excerpt: campaignEntry?.data.excerpt,
 };
 
-const allSessions = await getCollection('sessions');
-const runtimeEnv = await getCloudflareRuntimeEnv();
-const membershipConfigRaw =
-  typeof runtimeEnv?.CAMPAIGN_MEMBERSHIPS === 'string' && runtimeEnv.CAMPAIGN_MEMBERSHIPS.length > 0
-    ? runtimeEnv.CAMPAIGN_MEMBERSHIPS
-    : getCampaignMembershipConfigForEnv();
-const gmAssignmentsConfigRaw =
-  typeof runtimeEnv?.CAMPAIGN_GM_ASSIGNMENTS === 'string' && runtimeEnv.CAMPAIGN_GM_ASSIGNMENTS.length > 0
-    ? runtimeEnv.CAMPAIGN_GM_ASSIGNMENTS
-    : getCampaignGmAssignmentsForEnv();
-const allowLegacyEnvFallback = Astro.url.hostname === 'localhost' || Astro.url.hostname === '127.0.0.1';
-const accessResolver = createCampaignAccessResolverFromRequest({
+const accessResolver = await createCampaignRequestAccessResolver({
   request: Astro.request,
   locals: Astro.locals,
-  membershipConfigRaw,
-  gmAssignmentsConfigRaw,
-  allowLegacyEnvFallback,
+  hostname: Astro.url.hostname,
 });
 
-const campaignSessions = allSessions.filter((entry) => entry.data.campaign === campaign);
-const sessionsWithVisibility = await Promise.all(
-  campaignSessions.map(async (entry) => {
-    const effectiveVisibility = resolveCampaignContentVisibility({
-      campaignSlug: campaign!,
-      contentVisibility: entry.data.visibility,
-      campaignVisibility: campaignEntry.data.visibility,
-    });
-    const canView = await canViewCampaignContentAsync({
-      visibility: effectiveVisibility,
-      campaignSlug: campaign!,
-      access: accessResolver,
-    });
-    return { entry, canView };
-  }),
-);
+const sessions = campaignEntry && !contentUnavailable
+  ? (
+      await Promise.all(
+        allSessions
+          .filter((entry) => entry.data.campaign === campaign)
+          .map(async (entry) => {
+            const effectiveVisibility = resolveCampaignContentVisibility({
+              campaignSlug: campaign ?? '',
+              contentVisibility: entry.data.visibility,
+              campaignVisibility: campaignEntry.data.visibility,
+            });
+            const canView = await canViewCampaignContentAsync({
+              visibility: effectiveVisibility,
+              campaignSlug: campaign ?? '',
+              access: accessResolver,
+            });
 
-const sessions = sessionsWithVisibility
-  .filter((item) => item.canView)
-  .map((item) => item.entry)
-  .map((entry) => {
-    const parts = entry.id.split('/');
-    const sessionSlug = parts[parts.length - 1];
+            if (!canView) {
+              return null;
+            }
 
-    return {
-      id: entry.id,
-      slug: sessionSlug,
-      title: entry.data.title,
-      date: entry.data.date,
-      duration: entry.data.duration,
-      type: entry.data.type,
-      visibility: entry.data.visibility,
-      excerpt: entry.data.excerpt,
-      tags: entry.data.tags,
-      campaignSlug: entry.data.campaign,
-    };
-  });
+            const parts = entry.id.split('/');
+            return {
+              id: entry.id,
+              slug: parts[parts.length - 1],
+              title: entry.data.title,
+              date: entry.data.date,
+              duration: entry.data.duration,
+              type: entry.data.type,
+              visibility: entry.data.visibility,
+              excerpt: entry.data.excerpt,
+              tags: entry.data.tags,
+              campaignSlug: entry.data.campaign,
+            };
+          }),
+      )
+    ).filter((entry) => entry !== null)
+  : [];
 
 // Sort sessions by date (newest first)
 const sortedSessions = sessions.sort((a, b) => {
@@ -122,6 +125,12 @@ const title = campaignDetail ? `${campaignDetail.title} - Sessions` : 'Campaign 
       <h2 class="text-xl text-gray-600">Session Notes</h2>
       {campaignDetail?.excerpt && (
         <p class="mt-4 text-gray-700 max-w-3xl">{campaignDetail.excerpt}</p>
+      )}
+      {contentUnavailable && (
+        <div class="mt-4 rounded-xl border border-warning/40 bg-warning/10 p-4 text-sm text-ink-800">
+          Session discovery is temporarily unavailable. Protected campaign content stays fail-closed until the cloud
+          source and index are healthy again.
+        </div>
       )}
     </div>
 

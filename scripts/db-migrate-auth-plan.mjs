@@ -8,6 +8,7 @@ const orderedMigrations = [
   './migrations/0003_auth_core.sql',
   './migrations/0004_auth_email_hardening.sql',
   './migrations/0005_campaign_gm_assignments_multi.sql',
+  './migrations/0006_content_index.sql',
 ];
 
 function parseArgs(argv) {
@@ -70,6 +71,30 @@ function extractNumber(raw, fallback = 0) {
   return Number(match[0]);
 }
 
+function extractWranglerRows(raw) {
+  const text = String(raw || '').trim();
+  const payloadMatch = text.match(/(\[\s*\{[\s\S]*\}\s*\])\s*$/);
+  if (!payloadMatch) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(payloadMatch[1]);
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      return null;
+    }
+
+    const firstResult = parsed[0];
+    if (!firstResult || typeof firstResult !== 'object' || !Array.isArray(firstResult.results)) {
+      return null;
+    }
+
+    return firstResult.results;
+  } catch {
+    return null;
+  }
+}
+
 function queryNumeric(baseArgs, label, sql) {
   const result = runWrangler(baseArgs, ['--command', sql], { allowFailure: true });
   if (result.status !== 0) {
@@ -80,18 +105,36 @@ function queryNumeric(baseArgs, label, sql) {
     };
   }
 
+  const combinedOutput = `${result.stdout || ''}${result.stderr || ''}`;
+  const rows = extractWranglerRows(combinedOutput);
+  if (rows && rows.length > 0) {
+    const firstValue = Object.values(rows[0])[0];
+    const numericValue = Number(firstValue);
+    return {
+      label,
+      value: Number.isNaN(numericValue) ? 0 : numericValue,
+      error: null,
+    };
+  }
+
   return {
     label,
-    value: extractNumber(result.stdout, 0),
+    value: extractNumber(combinedOutput, 0),
     error: null,
   };
 }
 
 function queryText(baseArgs, sql) {
   const result = runWrangler(baseArgs, ['--command', sql], { allowFailure: true });
+  const combinedOutput = `${result.stdout || ''}${result.stderr || ''}`;
+  const rows = extractWranglerRows(combinedOutput);
   return {
     ok: result.status === 0,
-    output: ((result.stdout || '') + (result.stderr || '')).trim(),
+    output: rows
+      ? rows
+          .map((row) => Object.values(row).map((value) => String(value)).join(' | '))
+          .join('\n')
+      : combinedOutput.trim(),
   };
 }
 
@@ -107,15 +150,23 @@ function tableExists(baseArgs, tableName) {
 function buildConflictReport(baseArgs) {
   const conflicts = [];
 
+  const objectTypeConflictCount = queryNumeric(
+    baseArgs,
+    'schema_object_conflicts',
+    `SELECT COUNT(*)
+     FROM sqlite_master
+     WHERE name IN ('campaign_memberships','campaign_gm_assignments','content_index','user','account','session','verification')
+       AND type <> 'table';`,
+  );
   const objectTypeConflicts = queryText(
     baseArgs,
     `SELECT name || ':' || type AS bad_object
      FROM sqlite_master
-     WHERE name IN ('campaign_memberships','campaign_gm_assignments','user','account','session','verification')
+     WHERE name IN ('campaign_memberships','campaign_gm_assignments','content_index','user','account','session','verification')
        AND type <> 'table'
      ORDER BY name;`,
   );
-  if (objectTypeConflicts.ok && objectTypeConflicts.output.length > 0) {
+  if ((objectTypeConflictCount.value ?? 0) > 0) {
     conflicts.push({
       type: 'schema_object_conflict',
       message:
@@ -214,6 +265,7 @@ function printPlanSummary(baseArgs) {
   console.log('\n=== Dry-run: what would change ===');
   console.log('- Ensure campaign membership + GM assignment tables/indexes exist (idempotent create-if-missing).');
   console.log('- Ensure Better Auth core tables/user columns/indexes exist (idempotent create-if-missing).');
+  console.log('- Ensure content discovery index table + supporting indexes exist (idempotent create-if-missing).');
   console.log('- Normalize email values to trim(lower(email)) and backfill email_canonical where needed.');
   console.log('- Enforce strict unique canonical email index (fails immediately if duplicates remain).');
 

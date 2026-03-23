@@ -1,0 +1,42 @@
+---
+interface Props {
+  currentPage: number;
+  totalPages: number;
+  basePath: string;
+}
+
+const { currentPage, totalPages, basePath } = Astro.props;
+
+function buildPageHref(page: number) {
+  if (page <= 1) {
+    return basePath;
+  }
+
+  return `${basePath}?page=${page}`;
+}
+
+const previousPage = currentPage > 1 ? currentPage - 1 : null;
+const nextPage = currentPage < totalPages ? currentPage + 1 : null;
+---
+
+{totalPages > 1 && (
+  <nav class="mt-10 flex flex-col gap-3 rounded-xl border border-base-300 bg-base-200/40 px-4 py-4 md:flex-row md:items-center md:justify-between" aria-label="Pagination">
+    <div class="text-sm meta-muted">Page {currentPage} of {totalPages}</div>
+
+    <div class="join self-start md:self-auto">
+      {previousPage ? (
+        <a href={buildPageHref(previousPage)} class="btn btn-sm join-item">Previous</a>
+      ) : (
+        <span class="btn btn-sm btn-disabled join-item">Previous</span>
+      )}
+
+      <span class="btn btn-sm btn-ghost join-item">{currentPage}</span>
+
+      {nextPage ? (
+        <a href={buildPageHref(nextPage)} class="btn btn-sm join-item">Next</a>
+      ) : (
+        <span class="btn btn-sm btn-disabled join-item">Next</span>
+      )}
+    </div>
+  </nav>
+)}

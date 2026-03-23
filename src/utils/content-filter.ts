@@ -1,77 +1,73 @@
+export type ContentEnvironment = 'production' | 'preview' | 'development';
+
+interface ContentDataLike {
+  status?: string;
+  author?: string;
+  campaign?: string;
+}
+
+type ContentLike = ContentDataLike | { data?: ContentDataLike } | null | undefined;
+
+function unwrapContentData(content: ContentLike): ContentDataLike | null {
+  if (!content || typeof content !== 'object') {
+    return null;
+  }
+
+  if ('data' in content && content.data && typeof content.data === 'object') {
+    return content.data;
+  }
+
+  return content;
+}
+
+export function getIncludedStatuses(environment: ContentEnvironment = 'production'): string[] {
+  const shared = ['publish', 'published', 'review', 'draft'];
+
+  if (environment === 'development') {
+    return [...shared, 'archive', 'archived'];
+  }
+
+  return shared;
+}
+
 /**
- * Determines whether content should be included in the current build environment
- * 
- * @param content - The content object with frontmatter
- * @param environment - The current build environment ('production', 'preview', 'development')
- * @returns boolean - Whether the content should be included
+ * Determines whether content should be included in the current build environment.
  */
-export function shouldIncludeContent(content: any, environment: string = 'production'): boolean {
-  const data = content?.data ?? content;
+export function shouldIncludeContent(content: ContentLike, environment: ContentEnvironment = 'production'): boolean {
+  const data = unwrapContentData(content);
   if (!data) {
     return false;
   }
 
-  // Deprecated policy: secret is ignored for access control.
-  // Visibility is campaign-domain auth metadata and is intentionally not enforced here.
-
-  // Always include published content in all environments.
-  if (data.status === 'publish' || data.status === 'published') {
-    return true;
-  }
-  
-  if (data.status === 'review') {
-    return true; // Include review content in all environments for testing purposes
-  }
-  
-  // Active policy: drafts remain visible in all environments.
-  // UI may optionally indicate draft status or expose it as a filter.
-  if (data.status === 'draft') {
-    return true;
-  }
-
-  // Include archived content only in development environment
-  if (data.status === 'archive' || data.status === 'archived') {
-    return environment === 'development';
-  }
-  
-  return false;
+  return getIncludedStatuses(environment).includes(data.status ?? '');
 }
 
 /**
- * Gets filtered content for a specific collection based on environment
- * 
- * @param collection - The Astro content collection
- * @param environment - The current build environment
- * @returns Filtered content array
+ * Gets filtered content for a specific collection based on environment.
  */
-export function getFilteredCollection(collection: any[], environment: string = 'production'): any[] {
+export function getFilteredCollection<T extends ContentLike>(
+  collection: T[],
+  environment: ContentEnvironment = 'production',
+): T[] {
   return collection.filter((item) => shouldIncludeContent(item, environment));
 }
 
 /**
- * Gets content entries for a specific author
- * 
- * @param collection - The Astro content collection
- * @param author - The author name to filter by
- * @returns Filtered content array for the author
+ * Gets content entries for a specific author.
  */
-export function getAuthorEntries(collection: any[], author: string): any[] {
+export function getAuthorEntries<T extends ContentLike>(collection: T[], author: string): T[] {
   return collection.filter((item) => {
-    const data = item?.data ?? item;
-    return data.author === author;
+    const data = unwrapContentData(item);
+    return data?.author === author;
   });
 }
 
 /**
- * Gets content entries for a specific campaign
- * 
- * @param collection - The Astro content collection
- * @param campaign - The campaign name to filter by
- * @returns Filtered content array for the campaign
+ * Gets content entries for a specific campaign.
  */
-export function getCampaignEntries(collection: any[], campaign: string): any[] {
+export function getCampaignEntries<T extends ContentLike>(collection: T[], campaign: string): T[] {
   return collection.filter((item) => {
-    const data = item?.data ?? item;
-    return data.campaign === campaign;
+    const data = unwrapContentData(item);
+    return data?.campaign === campaign;
   });
 }

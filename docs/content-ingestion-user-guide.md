@@ -13,7 +13,9 @@ The command in [`scripts/content-sync/index.mjs`](scripts/content-sync/index.mjs
 5. Normalize Obsidian wiki syntax in Markdown (for `src/content/**` mappings):
    - `[[Page Name]]` -> standard Markdown link with resolved site route
    - `![[Image Name.png]]` -> standard Markdown image link targeting `src/assets/images`
-6. Validate Markdown/frontmatter (for content folders)
+6. Publish/update R2 manifests for cloud-backed collections
+7. Reconcile the public D1 discovery index (`content_index`) from manifest identity + frontmatter metadata
+8. Validate Markdown/frontmatter (for content folders)
 
 Git operations are intentionally **not** part of default ingestion. Commit/push is manual.
 
@@ -142,12 +144,43 @@ export R2_SECRET_ACCESS_KEY="<secret-access-key>"
 pnpm content:sync:dry-run
 ```
 
+### 5) Optional: choose the D1 content-index sync target
+
+`pnpm content:sync` now updates the `content_index` D1 table after manifest generation.
+
+- Default target: local D1 (`wrangler d1 execute DB --local ...`)
+- Remote staging target:
+
+```bash
+CONTENT_INDEX_SYNC_MODE=remote CONTENT_INDEX_SYNC_ENV=staging pnpm content:sync
+```
+
+- Remote production target:
+
+```bash
+CONTENT_INDEX_SYNC_MODE=remote pnpm content:sync
+```
+
+- Disable D1 index writes for a run:
+
+```bash
+CONTENT_INDEX_SYNC_MODE=off pnpm content:sync
+```
+
+Run the migration plan first in the matching environment so `content_index` exists before sync writes begin.
+
 ## Day-to-day commands
 
 ### Main command
 
 ```bash
 pnpm content:sync
+```
+
+For authoritative cloud behavior, verify with the Cloudflare parity lane after sync:
+
+```bash
+pnpm dev:cf
 ```
 
 ### Safe preview only
@@ -184,7 +217,7 @@ Detailed operator runbook for parser/ingestion issues:
 | `CONFIG-JSON-INVALID` | Config JSON has syntax error | Fix JSON format and retry |
 | `VALIDATION-FAILED` | Markdown/frontmatter validation failed | Fix listed files, rerun sync |
 | `SYNC-STALE-ABORTED` | User chose abort at stale prompt | Re-run and choose remove or backup |
-| `SYNC-RUNTIME-ERROR` | General runtime failure | Re-run with debug and inspect details |
+| `SYNC-RUNTIME-ERROR` | General runtime failure, including R2/D1 publish failures | Re-run with debug, verify migrations, inspect the exact wrangler/R2 error |
 
 ## Debug mode for technical details
 
@@ -206,3 +239,6 @@ $env:CONTENT_SYNC_DEBUG='1'; pnpm content:sync
 - Backup folder `.content-sync-backups/` is outside published content tree.
 - Only folders in your config mappings are touched.
 - Markdown validation applies to `src/content/**` mappings; binary asset mappings under `src/assets/**` are synced but not frontmatter-validated.
+- `pnpm dev:cf` is the canonical discovery/index parity lane; plain `pnpm dev` remains the local convenience lane.
+- Protected campaign rows are intentionally excluded from the public `content_index`; only `visibility: public` campaign-domain entries are written there.
+- If private campaign content ever existed in Git history, history sanitization is still a separate operator task. Sync/index changes do not rewrite existing Git history.

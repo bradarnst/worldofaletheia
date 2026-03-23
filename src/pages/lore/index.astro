@@ -1,15 +1,18 @@
 ---
-import { getCollection } from 'astro:content';
+import PaginationNav from '@components/PaginationNav.astro';
 import WorldAletheiaLayout from '@layouts/WorldAletheiaLayout.astro';
 import ContentCard from '@components/ContentCard.astro';
 import TagCloud from '@components/TagCloud.astro';
 import wheatFields from '@images/wheat-fields.png';
-import { getFilteredCollection } from '@utils/content-filter';
+import { loadIndexBackedCollectionPage } from '~/lib/content-index-page';
 
-const lore = await getCollection('lore');
-const visibleLore = getFilteredCollection(lore);
+const discoveryPage = await loadIndexBackedCollectionPage({
+  collection: 'lore',
+  pageParam: Astro.url.searchParams.get('page'),
+  locals: Astro.locals,
+});
 
-const allTags = [...new Set(visibleLore.flatMap(item => item.data.tags))];
+const { cards, tags: allTags, pagination, mode, errorMessage } = discoveryPage;
 ---
 
 <WorldAletheiaLayout title="Lore - World of Aletheia" description="Explore the rich history, mythology, and world-building of Aletheia">
@@ -18,18 +21,29 @@ const allTags = [...new Set(visibleLore.flatMap(item => item.data.tags))];
     <p class="meta-muted">This section is structured for future filters by type, subtype, and tags, with alphabetical and grouped views planned in a later phase.</p>
   </div>
 
+  {mode === 'error' && errorMessage && (
+    <div class="mb-8 rounded-xl border border-warning/40 bg-warning/10 p-4 text-sm text-ink-800">
+      <div class="font-semibold mb-1">Index unavailable</div>
+      <p>{errorMessage}</p>
+    </div>
+  )}
+
   <div class="max-w-6xl mx-auto px-4 py-8">
     <div class="mb-12">
       <h2 class="text-2xl font-bold text-ink-950 mb-6">Latest Lore</h2>
       
-      {visibleLore.length === 0 ? (
+      {cards.length === 0 ? (
         <p class="meta-muted">No lore entries found.</p>
       ) : (
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {visibleLore.map((item, index) => (
+        <>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {cards.map((item, index) => (
             <ContentCard content={item} image={index % 2 === 0 ? wheatFields : undefined} />
-          ))}
-        </div>
+            ))}
+          </div>
+
+          <PaginationNav currentPage={pagination.page} totalPages={pagination.totalPages} basePath="/lore" />
+        </>
       )}
     </div>
     

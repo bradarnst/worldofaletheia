@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { buildWikiLinkIndex, transformObsidianLinks } from './obsidian-links.mjs';
+import { syncContentIndex } from './content-index-writer.mjs';
 import { syncCloudManifests } from './manifests.mjs';
 
 function timestamp() {
@@ -156,8 +157,17 @@ export async function applySync(diff, config, staleAction, services = {}) {
   }
 
   if (cloud) {
-    const manifestKeys = await syncCloudManifests(config, services, wikiIndex);
-    changedFiles.push(...manifestKeys.map((key) => `cloud:${key}`));
+    const manifestSync = await syncCloudManifests(config, services, wikiIndex);
+    changedFiles.push(...manifestSync.writtenKeys.map((key) => `cloud:${key}`));
+
+    const contentIndexSync = await syncContentIndex({
+      rows: manifestSync.contentIndexRows,
+      managedCollections: manifestSync.managedCollections,
+    });
+
+    if (contentIndexSync.applied) {
+      changedFiles.push('d1:content_index');
+    }
   }
 
   return {

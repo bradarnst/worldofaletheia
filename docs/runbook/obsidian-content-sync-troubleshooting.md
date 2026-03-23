@@ -7,6 +7,8 @@ This runbook is an operator-facing troubleshooting guide for ingestion failures 
 - `invalid tags format ...`
 - `missing frontmatter block`
 - `malformed frontmatter delimiters`
+- `no such table: content_index`
+- `wrangler d1 execute DB ...` fails during sync
 - validation fails during [`pnpm content:validate`](../../package.json:13)
 - regressions after parser/normalization changes
 
@@ -37,6 +39,34 @@ Interpretation:
 
 - **Pass**: parser + normalization behavior is consistent with expected tag shapes.
 - **Fail**: inspect failing test case to identify whether issue is in frontmatter parsing, normalization, or strict invalid-case handling.
+
+### 2b) Verify D1 discovery-index prerequisites
+
+If sync fails after manifest generation with a D1 error:
+
+1. Apply migrations in the matching target first:
+
+```bash
+pnpm db:migrate:plan:local
+```
+
+or, for staging parity:
+
+```bash
+pnpm db:migrate:plan:staging
+```
+
+2. Confirm the sync target matches the database you migrated:
+
+- local default: no extra env vars
+- staging remote: `CONTENT_INDEX_SYNC_MODE=remote CONTENT_INDEX_SYNC_ENV=staging`
+- production remote: `CONTENT_INDEX_SYNC_MODE=remote`
+
+3. Re-run the authoritative parity lane when checking cloud-backed behavior:
+
+```bash
+pnpm dev:cf
+```
 
 ### 3) Confirm frontmatter delimiter integrity
 
@@ -176,9 +206,11 @@ When changing parser/normalization logic in [`scripts/content-sync/validate.mjs`
   - failing-case regression test
   - 2+ additional valid tag shapes
   - 1 strict invalid case
+  - content-index writer/query coverage when manifest or visibility contracts change
 - run both:
 
 ```bash
+pnpm test scripts/content-sync/content-index-writer.test.mjs
 pnpm test scripts/content-sync/validate.test.mjs
 pnpm content:validate
 ```

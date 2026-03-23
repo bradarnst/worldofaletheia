@@ -37,6 +37,6 @@ describe('shouldIncludeContent', () => {
   });
 
   it('returns false for missing content data', () => {
-    expect(shouldIncludeContent(null as any, 'production')).toBe(false);
+    expect(shouldIncludeContent(null, 'production')).toBe(false);
   });
 });

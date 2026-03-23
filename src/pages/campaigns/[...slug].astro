@@ -1,47 +1,70 @@
 ---
 import { getCollection, render } from 'astro:content';
+import type { CollectionEntry } from 'astro:content';
 import CampaignsContentLayout from '@layouts/CampaignsContentLayout.astro';
-import { canViewCampaignContentAsync, createCampaignAccessResolverFromRequest } from '@utils/campaign-access';
-import { getCloudflareRuntimeEnv } from '@utils/cloudflare-env';
-import { getCampaignGmAssignmentsForEnv, getCampaignMembershipConfigForEnv } from '@utils/campaign-membership-config';
+import { canViewCampaignContentAsync } from '@utils/campaign-access';
+import { createCampaignRequestAccessResolver } from '~/lib/campaign-request-access';
 
 const { slug } = Astro.params;
-const campaigns = await getCollection('campaigns');
-const entry = campaigns.find((item) => item.id.split('/')[0] === slug);
+let entry: CollectionEntry<'campaigns'> | null = null;
+let contentUnavailable = false;
 
-if (!entry) {
+try {
+  const campaigns = await getCollection('campaigns');
+  entry = campaigns.find((item) => item.id.split('/')[0] === slug) ?? null;
+} catch (error) {
+  console.error('campaign.route.content_unavailable', {
+    campaignSlug: slug,
+    message: error instanceof Error ? error.message : 'unknown error',
+  });
+  contentUnavailable = true;
+}
+
+if (!entry && !contentUnavailable) {
   return Astro.redirect('/campaigns');
 }
 
-const { Content } = await render(entry);
+let Content = null;
+if (entry && !contentUnavailable) {
+  try {
+    ({ Content } = await render(entry));
+  } catch (error) {
+    console.error('campaign.route.render_unavailable', {
+      campaignSlug: slug,
+      message: error instanceof Error ? error.message : 'unknown error',
+    });
+    contentUnavailable = true;
+  }
+}
 
-const campaignSlug = entry.id.split('/')[0];
-const runtimeEnv = await getCloudflareRuntimeEnv();
-const membershipConfigRaw =
-  typeof runtimeEnv?.CAMPAIGN_MEMBERSHIPS === 'string' && runtimeEnv.CAMPAIGN_MEMBERSHIPS.length > 0
-    ? runtimeEnv.CAMPAIGN_MEMBERSHIPS
-    : getCampaignMembershipConfigForEnv();
-const gmAssignmentsConfigRaw =
-  typeof runtimeEnv?.CAMPAIGN_GM_ASSIGNMENTS === 'string' && runtimeEnv.CAMPAIGN_GM_ASSIGNMENTS.length > 0
-    ? runtimeEnv.CAMPAIGN_GM_ASSIGNMENTS
-    : getCampaignGmAssignmentsForEnv();
-const allowLegacyEnvFallback = Astro.url.hostname === 'localhost' || Astro.url.hostname === '127.0.0.1';
-const accessResolver = createCampaignAccessResolverFromRequest({
+const campaignSlug = entry?.id.split('/')[0] ?? slug ?? '';
+const accessResolver = await createCampaignRequestAccessResolver({
   request: Astro.request,
   locals: Astro.locals,
-  membershipConfigRaw,
-  gmAssignmentsConfigRaw,
-  allowLegacyEnvFallback,
+  hostname: Astro.url.hostname,
 });
-const canView = await canViewCampaignContentAsync({
-  visibility: entry.data.visibility,
-  campaignSlug,
-  access: accessResolver,
-});
+const canView =
+  entry && !contentUnavailable
+    ? await canViewCampaignContentAsync({
+        visibility: entry.data.visibility,
+        campaignSlug,
+        access: accessResolver,
+      })
+    : false;
+
+const layoutContent =
+  entry ??
+  {
+    title: 'Restricted campaign content',
+    excerpt: 'Campaign content is temporarily unavailable or restricted.',
+    author: 'World of Aletheia',
+    visibility: 'gm',
+    tags: [],
+  };
 ---
 
-<CampaignsContentLayout content={entry}>
-  {canView ? (
+<CampaignsContentLayout content={layoutContent}>
+  {canView && Content && !contentUnavailable ? (
     <article class="reading-prose">
       <Content />
     </article>
@@ -49,8 +72,8 @@ const canView = await canViewCampaignContentAsync({
     <article class="reading-prose">
       <h2>Restricted campaign content</h2>
       <p>
-        This campaign entry is restricted. Sign in with your account and ensure you have the required campaign access
-        level.
+        This campaign entry is restricted or temporarily unavailable. Sign in with your account and ensure you have the
+        required campaign access level.
       </p>
       <p><a href={`/login?next=${encodeURIComponent(Astro.url.pathname)}`}>Sign in to continue</a></p>
     </article>
