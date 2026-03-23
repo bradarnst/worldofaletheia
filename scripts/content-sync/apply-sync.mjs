@@ -94,20 +94,25 @@ export async function applySync(diff, config, staleAction, services = {}) {
       throw new Error('Cloud mappings require content cloud configuration.');
     }
 
-    const sourceExt = path.extname(rec.sourceAbs).toLowerCase();
-    const contentType = contentTypeForExtension(sourceExt);
-    if (sourceExt === '.md') {
-      const sourceText = await fs.readFile(rec.sourceAbs, 'utf8');
-      const transformed = transformObsidianLinks(sourceText, {
-        destAbs: resolveCloudMirrorDestination(config, rec.mapping, rec.relativePath),
-        repoRoot: config.repoRoot,
-        wikiIndex,
-      });
-      await cloud.uploadText(rec.cloudKey, transformed, contentType);
-    } else {
-      await cloud.uploadFile(rec.mapping.to, rec.relativePath, rec.sourceAbs, contentType);
+    try {
+      const sourceExt = path.extname(rec.sourceAbs).toLowerCase();
+      const contentType = contentTypeForExtension(sourceExt);
+      if (sourceExt === '.md') {
+        const sourceText = await fs.readFile(rec.sourceAbs, 'utf8');
+        const transformed = transformObsidianLinks(sourceText, {
+          destAbs: resolveCloudMirrorDestination(config, rec.mapping, rec.relativePath),
+          repoRoot: config.repoRoot,
+          wikiIndex,
+        });
+        await cloud.uploadText(rec.cloudKey, transformed, contentType);
+      } else {
+        await cloud.uploadFile(rec.mapping.to, rec.relativePath, rec.sourceAbs, contentType);
+      }
+      changedFiles.push(`cloud:${rec.cloudKey}`);
+    } catch (uploadError) {
+      console.error(`Cloud upload failed for ${rec.cloudKey}:`, uploadError.message);
+      // Continue processing remaining files — D1 index needs all content, not just cloud-reachable content
     }
-    changedFiles.push(`cloud:${rec.cloudKey}`);
   }
 
   if (staleAction === 'remove') {
@@ -160,13 +165,20 @@ export async function applySync(diff, config, staleAction, services = {}) {
     const manifestSync = await syncCloudManifests(config, services, wikiIndex);
     changedFiles.push(...manifestSync.writtenKeys.map((key) => `cloud:${key}`));
 
-    const contentIndexSync = await syncContentIndex({
-      rows: manifestSync.contentIndexRows,
-      managedCollections: manifestSync.managedCollections,
-    });
-
-    if (contentIndexSync.applied) {
-      changedFiles.push('d1:content_index');
+    // D1 discovery index is updated alongside cloud manifest sync using the same
+    // manifest rows. It runs regardless of whether R2 uploads succeeded.
+    let contentIndexApplied = false;
+    try {
+      const contentIndexSync = await syncContentIndex({
+        rows: manifestSync.contentIndexRows,
+        managedCollections: manifestSync.managedCollections,
+      });
+      if (contentIndexSync.applied) {
+        changedFiles.push('d1:content_index');
+        contentIndexApplied = true;
+      }
+    } catch (error) {
+      console.error('D1 content index sync failed:', error.message);
     }
   }
 

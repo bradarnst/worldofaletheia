@@ -72,8 +72,10 @@ describe('content index writer', () => {
     expect(sql).toContain('INSERT INTO content_index');
     expect(sql).toContain("King''s Road");
     expect(sql).toContain('DELETE FROM content_index');
-    expect(sql).toContain('__content_index_sync_collections');
-    expect(sql).toContain('__content_index_sync_ids');
+    expect(sql).toContain("DELETE FROM content_index WHERE collection = 'lore'");
+    expect(sql).toContain("ON CONFLICT(id) DO UPDATE SET");
+    expect(sql).not.toContain('__content_index_sync_collections');
+    expect(sql).not.toContain('__content_index_sync_ids');
   });
 
   it('supports explicit remote and off target configuration', () => {

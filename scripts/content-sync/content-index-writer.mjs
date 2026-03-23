@@ -2,6 +2,10 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
+
+const require = createRequire(import.meta.url);
 
 const PUBLIC_DISCOVERY_CAMPAIGN_COLLECTIONS = new Set(['campaigns', 'sessions']);
 
@@ -70,22 +74,26 @@ export function buildContentIndexSql(plan) {
     return '';
   }
 
-  const statements = [
-    'BEGIN TRANSACTION;',
-    'CREATE TEMP TABLE IF NOT EXISTS __content_index_sync_ids (id TEXT PRIMARY KEY);',
-    'CREATE TEMP TABLE IF NOT EXISTS __content_index_sync_collections (collection TEXT PRIMARY KEY);',
-    'DELETE FROM __content_index_sync_ids;',
-    'DELETE FROM __content_index_sync_collections;',
-  ];
-
-  for (const collection of plan.managedCollections) {
-    statements.push(
-      `INSERT OR IGNORE INTO __content_index_sync_collections (collection) VALUES (${quoteSqlLiteral(collection)});`,
-    );
+  // Build a map of collection -> rows for efficient lookup
+  const rowsByCollection = new Map();
+  for (const row of plan.rows) {
+    if (!rowsByCollection.has(row.collection)) {
+      rowsByCollection.set(row.collection, []);
+    }
+    rowsByCollection.get(row.collection).push(row);
   }
 
-  for (const row of plan.rows) {
-    statements.push(`
+  const statements = ['BEGIN TRANSACTION;'];
+
+  // For each managed collection, delete existing entries and insert new ones.
+  // D1 local does not support CREATE TEMP TABLE via --file execution (SQLITE_AUTH).
+  // Using DELETE + INSERT per collection as a "replace all" sync strategy.
+  for (const collection of plan.managedCollections) {
+    statements.push(`DELETE FROM content_index WHERE collection = ${quoteSqlLiteral(collection)};`);
+
+    const collectionRows = rowsByCollection.get(collection) || [];
+    for (const row of collectionRows) {
+      statements.push(`
 INSERT INTO content_index (
   id,
   collection,
@@ -141,15 +149,9 @@ ON CONFLICT(id) DO UPDATE SET
   source_etag = excluded.source_etag,
   source_last_modified = excluded.source_last_modified,
   indexed_at = excluded.indexed_at;`.trim());
-    statements.push(
-      `INSERT OR IGNORE INTO __content_index_sync_ids (id) VALUES (${quoteSqlLiteral(row.id)});`,
-    );
+    }
   }
 
-  statements.push(`
-DELETE FROM content_index
-WHERE collection IN (SELECT collection FROM __content_index_sync_collections)
-  AND id NOT IN (SELECT id FROM __content_index_sync_ids);`.trim());
   statements.push('COMMIT;');
 
   return `${statements.join('\n')}\n`;
@@ -166,6 +168,14 @@ export function resolveContentIndexSyncTarget(env = process.env) {
   };
 }
 
+function resolveWranglerCommand() {
+  try {
+    return require.resolve('wrangler/bin/wrangler.js');
+  } catch {
+    return 'wrangler';
+  }
+}
+
 function runWranglerSqlFile(target, filePath) {
   const args = ['d1', 'execute', 'DB'];
   if (target.mode === 'remote') {
@@ -179,7 +189,10 @@ function runWranglerSqlFile(target, filePath) {
 
   args.push('--file', filePath);
 
-  const result = spawnSync('wrangler', args, {
+  const wranglerBin = resolveWranglerCommand();
+  // wrangler is a shell script wrapper — invoke via `node <wrangler.js>` so spawnSync
+  // does not need PATH resolution or shell=True
+  const result = spawnSync(process.execPath, [wranglerBin, ...args], {
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
   });

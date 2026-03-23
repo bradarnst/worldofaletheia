@@ -300,31 +300,35 @@ export async function syncCloudManifests(config, services, wikiIndex) {
   const writtenKeys = [];
   const manifestPrefix = config.contentCloud?.prefix || 'content';
 
-  for (const [collection, entries] of manifestEntriesByCollection.entries()) {
-    entries.sort((a, b) => a.id.localeCompare(b.id));
-    const manifest = {
-      version: 1,
-      collection,
-      generatedAt,
-      entries,
-    };
-    const key = buildManifestKey(manifestPrefix, collection);
-    await cloud.uploadText(key, `${JSON.stringify(manifest, null, 2)}\n`, 'application/json');
-    writtenKeys.push(key);
-  }
+  try {
+    for (const [collection, entries] of manifestEntriesByCollection.entries()) {
+      entries.sort((a, b) => a.id.localeCompare(b.id));
+      const manifest = {
+        version: 1,
+        collection,
+        generatedAt,
+        entries,
+      };
+      const key = buildManifestKey(manifestPrefix, collection);
+      await cloud.uploadText(key, `${JSON.stringify(manifest, null, 2)}\n`, 'application/json');
+      writtenKeys.push(key);
+    }
 
-  const indexManifest = {
-    version: 1,
-    generatedAt,
-    collections: Array.from(manifestEntriesByCollection.entries()).map(([collection, entries]) => ({
-      collection,
-      count: entries.length,
-      key: buildManifestKey(manifestPrefix, collection),
-    })),
-  };
-  const indexKey = buildManifestKey(manifestPrefix, '_index');
-  await cloud.uploadText(indexKey, `${JSON.stringify(indexManifest, null, 2)}\n`, 'application/json');
-  writtenKeys.push(indexKey);
+    const indexManifest = {
+      version: 1,
+      generatedAt,
+      collections: Array.from(manifestEntriesByCollection.entries()).map(([collection, entries]) => ({
+        collection,
+        count: entries.length,
+        key: buildManifestKey(manifestPrefix, collection),
+      })),
+    };
+    const indexKey = buildManifestKey(manifestPrefix, '_index');
+    await cloud.uploadText(indexKey, `${JSON.stringify(indexManifest, null, 2)}\n`, 'application/json');
+    writtenKeys.push(indexKey);
+  } catch (uploadError) {
+    console.error('Cloud manifest upload failed (D1 index will still be updated):', uploadError.message);
+  }
 
   return {
     writtenKeys,
