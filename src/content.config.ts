@@ -31,10 +31,10 @@ const baseSchema = z.object({
   // Never used by authorization checks.
   gmResource: z.boolean().optional().default(false),
   // Legacy informational fields from previous metadata style.
-  // Preserved for transition and normalized to gmResource by calling code when needed.
+  // Preserved as optional honor-system metadata for UI labeling and filtering only.
   gm: z.boolean().optional(),
   'gm-date': z.string().optional(),
-  'gm-info': z.string().optional(),
+  'gm-info': z.union([z.boolean(), z.string()]).optional(),
   parentChain: z.array(z.object({
     label: z.string(),
     href: z.string(),
@@ -102,7 +102,6 @@ const campaignsSchema = baseSchema.omit({ status: true }).extend({
   type: z.enum(['barry', 'brad']),
   subtype: z.enum(['bestiary', 'adventures', 'hooks', 'scenes', 'factions', 'flora', 'lore', 'meta', 'places', 'sentients', 'characters', 'general']),
   excerpt: z.string().optional(),
-  status: z.enum(['planning', 'active', 'completed', 'on-hold', 'cancelled']).optional(),
   visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('gm'),
   start: z.date().optional(),
   end: z.date().optional(),

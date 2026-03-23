@@ -1,24 +1,36 @@
-# Draft Visibility Follow-up TODO
+# Draft Visibility Policy Closure
 
 ## Context
 
-Current policy is intentionally temporary: draft entries are visible in public listing pages and are flagged with a status badge.
-
-This was done to unblock content visibility while a dedicated draft-preview workflow does not yet exist.
+Previous policy was temporary while preview workflow questions were still open.
 
 Access policy clarification (2026-03):
 
 - `secret` is deprecated and ignored for access control.
-- Campaign access control should use `visibility` values (`public`, `campaignMembers`).
+- Campaign access control should use `visibility` values (`public`, `campaignMembers`, `gm`).
 - GM labels are metadata-only for discovery/filtering and are not security gates.
 
-## TODO
+## Final Decisions
 
-- [ ] Decide long-term policy for draft visibility on public pages
-- [ ] Define and implement a dedicated draft preview workflow (private route, auth gate, or preview deployment)
-- [ ] If drafts become hidden again, update [`shouldIncludeContent()`](src/utils/content-filter.ts:8) to enforce environment-based exclusion
-- [ ] If drafts remain visible, define UX copy and badge style guidance for all list/detail templates
-- [ ] Document the final policy in project docs and ADRs if scope is architectural
-- [ ] Add a `content:sync` force/reprocess mode (e.g. `--reprocess-markdown`) so unchanged markdown can be re-normalized without touching source vault files
-- [ ] Add honor-system metadata guidance for future `gm`/`gm-data`/`gm-info` labeling in Canon/Using (no hard auth gate)
-- [ ] Add content-authoring guidance for campaign `visibility` usage (`public` vs `campaignMembers`)
+- Draft entries remain visible in all environments.
+- UI may optionally indicate `draft` status and may expose draft as a filter.
+- No dedicated draft-preview workflow is required for the current publishing model.
+- `gm`, `gm-data`, and `gm-info` remain optional honor-system metadata only.
+- If `gm-info` is present, including `gm-info: 'true'`, UI may optionally surface it and discovery UIs may optionally filter by it.
+- These metadata fields never act as authorization gates.
+
+## Implementation State
+
+- `src/utils/content-filter.ts` treats drafts as always included.
+- `src/content.config.ts` accepts optional `gm-info` metadata for content entries.
+
+## Closed Follow-ups
+
+- Dedicated draft preview workflow: not required under current policy.
+- Environment-based draft exclusion in `shouldIncludeContent()`: not applicable.
+- Honor-system GM metadata guidance: resolved by policy above.
+
+## Still Separate Work
+
+- A `content:sync` force/reprocess mode remains a separate sync-pipeline enhancement.
+- Campaign authoring guidance for `visibility` values remains covered by campaign access planning, not this closure item.

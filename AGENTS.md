@@ -93,7 +93,7 @@ Campaign overviews and session logs. This is the **first domain targeted for int
 Content flows one way: **Obsidian vault → Git repo → Astro build → Cloudflare deploy**. The Obsidian vault is the single source of truth. The sync pipeline (`scripts/content-sync/`) handles diffing, stale file management, frontmatter validation, and git operations. Do not introduce bidirectional sync or CMS patterns.
 
 #### Content Collections & Schemas
-All 11 collections are defined in `src/content.config.ts` using Astro's glob loaders with Zod schemas. A shared `baseSchema` defines common fields; each collection extends it via `baseSchema.extend()`. Campaigns use `baseSchema.omit({ status: true }).extend()` to replace the status enum entirely. The `pages` collection has its own standalone schema with no base fields.
+All 11 collections are defined in `src/content.config.ts` using Astro's glob loaders with Zod schemas. A shared `baseSchema` defines common fields; each collection extends it via `baseSchema.extend()`. Campaigns use `baseSchema.omit({ status: true }).extend()` and rely on `visibility` for access semantics instead of a campaign-specific status enum. The `pages` collection has its own standalone schema with no base fields.
 
 ### Page Pattern (Per Collection)
 Each content collection follows a consistent two-file routing pattern:

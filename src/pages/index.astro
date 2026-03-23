@@ -115,7 +115,7 @@ const discoveryPool: DiscoveryItem[] = [
       url: `/meta/${item.id}`,
     })),
   ...campaigns
-    .filter((item) => item.data.status === 'active' || item.data.status === 'completed')
+    .filter((item) => item.data.visibility === 'public')
     .map((item) => {
       const campaignSlug = item.id.replace(/\/index$/, '');
       return {

@@ -66,7 +66,7 @@ All 11 collections are defined in `src/content.config.ts`:
 
 - **Schema source of truth**: `src/content.config.ts` — not the meta design docs in `src/content/meta/`
 - **Base schema**: All collections except `pages` extend `baseSchema` (includes `status`, `author`, `secret`, `tags`, `campaign`, `permissions`, `parentChain`, `relationships`)
-- **Campaigns override status**: Uses `baseSchema.omit({ status: true }).extend()` with its own enum (`planning | active | completed | on-hold | cancelled`)
+- **Campaigns omit status**: Uses `baseSchema.omit({ status: true }).extend()` and relies on `visibility` for access behavior and public listing decisions
 - **Sessions require campaign**: The `campaign` field is required on sessions (overrides the optional base field)
 
 ### Content Filtering

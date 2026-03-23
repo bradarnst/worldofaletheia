@@ -23,11 +23,10 @@ export function shouldIncludeContent(content: any, environment: string = 'produc
     return true; // Include review content in all environments for testing purposes
   }
   
-  // TEMPORARY POLICY: drafts are currently included in all environments and visually flagged in UI.
-  // Decision pending dedicated draft-preview workflow.
+  // Active policy: drafts remain visible in all environments.
+  // UI may optionally indicate draft status or expose it as a filter.
   if (data.status === 'draft') {
-    return true; // Include drafts in all environments for testing purposes
-    // return environment !== 'production';
+    return true;
   }
 
   // Include archived content only in development environment
