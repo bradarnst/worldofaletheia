@@ -188,9 +188,9 @@ flowchart LR
 
 ## Immediate Investigation (P0)
 
-- [ ] Investigate and remediate missing `content_index` table in staging/prod D1.
-- [ ] Apply and verify `0006_content_index.sql` in staging/prod before the next remote sync run.
-- [ ] Confirm remote sync env wiring (`CONTENT_INDEX_SYNC_MODE=remote`, `CONTENT_INDEX_SYNC_ENV=<env>`) in operator and CI execution paths.
+- [x] Investigate and remediate missing `content_index` table in staging/prod D1.
+- [x] Apply and verify `0006_content_index.sql` in staging/prod before the next remote sync run.
+- [x] Confirm remote sync env wiring (`CONTENT_INDEX_SYNC_MODE=remote`, `CONTENT_INDEX_SYNC_ENV=<env>`) in the operator execution path. No CI sync path exists yet. See `plans/content-index-p0-root-cause-2026-03-24.md`.
 
 ## Data and Contract Considerations
 

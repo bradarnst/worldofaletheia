@@ -83,7 +83,7 @@ export function buildContentIndexSql(plan) {
     rowsByCollection.get(row.collection).push(row);
   }
 
-  const statements = ['BEGIN TRANSACTION;'];
+  const statements = [];
 
   // For each managed collection, delete existing entries and insert new ones.
   // D1 local does not support CREATE TEMP TABLE via --file execution (SQLITE_AUTH).
@@ -151,9 +151,6 @@ ON CONFLICT(id) DO UPDATE SET
   indexed_at = excluded.indexed_at;`.trim());
     }
   }
-
-  statements.push('COMMIT;');
-
   return `${statements.join('\n')}\n`;
 }
 

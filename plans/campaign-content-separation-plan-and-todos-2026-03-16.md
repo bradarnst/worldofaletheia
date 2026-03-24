@@ -143,10 +143,10 @@ Current route-level authorization is necessary but not sufficient for this requi
 
 ## Immediate Investigation (P0)
 
-- [ ] Investigate why `content_index` is missing in staging/prod D1 despite recent sync runs.
-- [ ] Apply and verify `migrations/0006_content_index.sql` in staging and production.
-- [ ] Verify operator/CI sync target configuration (`CONTENT_INDEX_SYNC_MODE`, `CONTENT_INDEX_SYNC_ENV`) so the intended D1 target is updated.
-- [ ] Publish a short post-incident note explaining why `pnpm content:sync` appeared successful while remote index tables were absent.
+- [x] Investigate why `content_index` is missing in staging/prod D1 despite recent sync runs.
+- [x] Apply and verify `migrations/0006_content_index.sql` in staging and production.
+- [x] Verify operator sync target configuration (`CONTENT_INDEX_SYNC_MODE`, `CONTENT_INDEX_SYNC_ENV`) so the intended D1 target is updated. No CI sync path exists yet.
+- [x] Publish a short post-incident note explaining why `pnpm content:sync` appeared successful while remote index tables were absent. See `plans/content-index-p0-root-cause-2026-03-24.md`.
 
 ## Consider for Future (Optional)
 

@@ -33,7 +33,11 @@
     "ops:a2:apply:staging": "test -n \"$OP_FILE\" && wrangler d1 execute DB --remote --env staging --file \"$OP_FILE\" || (echo 'Set OP_FILE=./path/to/operator.sql' && exit 1)",
     "ops:a2:apply:prod": "test -n \"$OP_FILE\" && wrangler d1 execute DB --remote --file \"$OP_FILE\" || (echo 'Set OP_FILE=./path/to/operator.sql' && exit 1)",
     "content:sync": "node ./scripts/content-sync/index.mjs",
+    "content:sync:staging": "CONTENT_INDEX_SYNC_MODE=remote CONTENT_INDEX_SYNC_ENV=staging node ./scripts/content-sync/index.mjs",
+    "content:sync:prod": "CONTENT_INDEX_SYNC_MODE=remote CONTENT_INDEX_SYNC_ENV= node ./scripts/content-sync/index.mjs",
     "content:sync:dry-run": "node ./scripts/content-sync/index.mjs --dry-run",
+    "content:sync:staging:dry-run": "CONTENT_INDEX_SYNC_MODE=remote CONTENT_INDEX_SYNC_ENV=staging node ./scripts/content-sync/index.mjs --dry-run",
+    "content:sync:prod:dry-run": "CONTENT_INDEX_SYNC_MODE=remote CONTENT_INDEX_SYNC_ENV= node ./scripts/content-sync/index.mjs --dry-run",
     "content:validate": "node ./scripts/content-sync/index.mjs --validate-only"
   },
   "dependencies": {

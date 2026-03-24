@@ -45,11 +45,11 @@ Still open or partial:
 - [ ] Type/subtype/tag display requirements are not yet formally documented/approved.
 - [ ] Type/subtype/tag UX/data-contract design is not yet finalized.
 - [ ] Display-by-type/grouped list views are not yet implemented.
-- [ ] Remote environment verification is blocked until `content_index` exists in staging/prod.
+- [x] Remote environment verification completed after `content_index` remediation in staging/prod.
 
 Critical investigation:
 
-- [ ] P0: Investigate why staging/prod D1 are missing `content_index` despite successful local sync runs.
+- [x] P0: Investigate why staging/prod D1 are missing `content_index` despite successful local sync runs. See `plans/content-index-p0-root-cause-2026-03-24.md`.
 
 ## Pre-Implementation Gates (Required before additional Phase A feature work)
 
