@@ -7,7 +7,9 @@ import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
 
-const PUBLIC_DISCOVERY_CAMPAIGN_COLLECTIONS = new Set(['campaigns', 'sessions']);
+function isCampaignDomainCollection(collection) {
+  return collection === 'sessions' || collection.startsWith('campaign');
+}
 
 function normalizeNullableString(value) {
   if (typeof value !== 'string') {
@@ -36,7 +38,7 @@ function parseEnabledFlag(value) {
 }
 
 export function shouldIndexForPublicDiscovery(row) {
-  if (!PUBLIC_DISCOVERY_CAMPAIGN_COLLECTIONS.has(row.collection)) {
+  if (!isCampaignDomainCollection(row.collection)) {
     return true;
   }
 

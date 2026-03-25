@@ -3,7 +3,7 @@
 ## Status
 
 - **Date:** 2026-03-24
-- **Status:** Proposed
+- **Status:** Accepted
 - **Deciders:** Brad
 
 ## Context and Problem Statement
@@ -52,7 +52,7 @@ Add new campaign content kinds (scenes/adventures/characters/hooks) under existi
 
 ### Option 2: Campaign-domain collections by content family, keyed by campaign slug (Chosen)
 
-Introduce explicit campaign content-family collections (for example `campaignLore`, `campaignScenes`, `campaignAdventures`, `campaignCharacters`, `campaignHooks`) while preserving `campaign` slug linkage and Campaigns-domain route gating.
+Introduce explicit campaign content-family collections for the canon and using layers (`campaignLore`, `campaignPlaces`, `campaignSentients`, `campaignBestiary`, `campaignFlora`, `campaignFactions`, `campaignSystems`, `campaignMeta`) plus campaign-specific families (`campaignCharacters`, `campaignScenes`, `campaignAdventures`, `campaignHooks`), while preserving `campaign` slug linkage and Campaigns-domain route gating.
 
 **Pros**
 
@@ -109,11 +109,9 @@ Defer taxonomy changes in current repo and perform immediate campaign domain ext
 
 ### Sequencing and Adoption Gate
 
-1. ADR is recorded now as **Proposed**.
-2. Implementation begins after completion of current priority items:
-   - Discovery Gate G1/G2 closure and sync hardening.
-   - Campaign media variant pipeline completion.
-3. ADR is promoted to **Accepted** when implementation scope and migration plan are finalized at kickoff.
+1. ADR was recorded as **Proposed** on 2026-03-24.
+2. Implementation kicked off on 2026-03-25 with collection schema, routing, and sync/index changes in this repository.
+3. Follow-on migration work remains bounded to content movement and authoring/runbook updates as campaign families are populated.
 
 ### Expected Implementation Surface (non-exhaustive)
 

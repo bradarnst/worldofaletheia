@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { createContentIndexRepoFromLocals, type ContentIndexRow } from '~/lib/content-index-repo';
 import { normalizeFilterValueOptional, normalizePage } from '~/lib/normalizers';
+import { buildCampaignContentHref } from '@utils/campaign-collections';
 
 function normalizePageSize(value: string | null): number {
   const parsed = Number.parseInt(value ?? '10', 10);
@@ -17,12 +18,8 @@ function normalizeTags(searchParams: URLSearchParams): string[] | undefined {
 }
 
 function buildHref(item: ContentIndexRow): string {
-  if (item.collection === 'campaigns') {
-    return `/campaigns/${item.slug}`;
-  }
-
-  if (item.collection === 'sessions') {
-    return item.campaignSlug ? `/campaigns/${item.campaignSlug}/sessions/${item.slug}` : `/sessions/${item.slug}`;
+  if (item.collection === 'campaigns' || item.collection === 'sessions' || item.collection.startsWith('campaign')) {
+    return buildCampaignContentHref(item.collection, item.slug, item.campaignSlug);
   }
 
   return `/${item.collection}/${item.slug}`;

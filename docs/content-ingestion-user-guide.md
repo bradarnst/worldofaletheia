@@ -99,6 +99,28 @@ Minimal example:
 
 Use this when you want campaign files to publish to R2 instead of `src/content/campaigns`.
 
+Campaign authoring and slug-rename conventions live in [`docs/runbook/campaign-authoring-and-rename.md`](docs/runbook/campaign-authoring-and-rename.md).
+
+Campaign source folders should use this family-based shape:
+
+```text
+<campaign-slug>/
+  index.md
+  sessions/
+  lore/
+  places/
+  sentients/
+  bestiary/
+  flora/
+  factions/
+  systems/
+  meta/
+  characters/
+  scenes/
+  adventures/
+  hooks/
+```
+
 1. Create a bucket (example bucket name):
 
 ```bash
@@ -195,6 +217,14 @@ pnpm content:sync:dry-run
 pnpm content:validate
 ```
 
+### Campaign slug rename helper
+
+```bash
+pnpm campaign:rename -- --from=old-campaign-slug --to=new-campaign-slug
+```
+
+Use `--dry-run` first for a no-write preview.
+
 ## Stale file decision (important)
 
 If a file exists in repo mapped folders but no longer exists in Obsidian, script asks:
@@ -210,6 +240,7 @@ When something fails, messages are intentionally short and include a support cod
 Detailed operator runbook for parser/ingestion issues:
 
 - [`docs/runbook/obsidian-content-sync-troubleshooting.md`](docs/runbook/obsidian-content-sync-troubleshooting.md)
+- [`docs/runbook/campaign-authoring-and-rename.md`](docs/runbook/campaign-authoring-and-rename.md)
 
 | Support code | Meaning | Recovery action |
 |---|---|---|

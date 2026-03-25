@@ -130,6 +130,24 @@ describe('ContentIndexRepo', () => {
     expect(recordedValues).toEqual(['campaigns', 'publish', 'published', 'review', 'draft']);
   });
 
+  it('applies the public visibility guard to campaign family collections', async () => {
+    let recordedQuery = '';
+    let recordedValues: unknown[] = [];
+    const repo = new ContentIndexRepo(
+      createDbMock((query, values) => {
+        recordedQuery = query;
+        recordedValues = values;
+        return [];
+      }),
+    );
+
+    await repo.listContent({ collection: 'campaignLore' });
+
+    expect(recordedQuery).toContain("collection NOT LIKE 'campaign%'");
+    expect(recordedQuery).toContain("COALESCE(visibility, 'gm') = 'public'");
+    expect(recordedValues).toEqual(['campaignLore', 'publish', 'published', 'review', 'draft', 12, 0]);
+  });
+
   it('returns grouped facet counts for type queries', async () => {
     const repo = new ContentIndexRepo(
       createDbMock((query, values) => {

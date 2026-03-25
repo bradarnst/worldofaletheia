@@ -53,7 +53,13 @@ Illustrative collection set:
 - `campaigns` (campaign overview/metadata)
 - `sessions`
 - `campaignLore`
+- `campaignPlaces`
+- `campaignSentients`
+- `campaignBestiary`
+- `campaignFlora`
 - `campaignFactions`
+- `campaignSystems`
+- `campaignMeta`
 - `campaignCharacters`
 - `campaignScenes`
 - `campaignAdventures`

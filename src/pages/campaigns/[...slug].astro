@@ -2,16 +2,43 @@
 import { getCollection, render } from 'astro:content';
 import type { CollectionEntry } from 'astro:content';
 import CampaignsContentLayout from '@layouts/CampaignsContentLayout.astro';
-import { canViewCampaignContentAsync } from '@utils/campaign-access';
+import {
+  canViewCampaignContentAsync,
+  resolveCampaignContentVisibility,
+} from '@utils/campaign-access';
+import {
+  CAMPAIGN_FAMILY_SEGMENTS,
+  extractCampaignSlugFromEntryId,
+  getCampaignFamilyBySegment,
+  pickCampaignEntryDate,
+} from '@utils/campaign-collections';
+import { getAllCampaignFamilyEntries } from '@utils/campaign-content';
 import { createCampaignRequestAccessResolver } from '~/lib/campaign-request-access';
+
+interface CampaignSectionCard {
+  segment: string;
+  label: string;
+  description: string;
+  href: string;
+  count: number;
+  latestUpdated: Date | null;
+}
 
 const { slug } = Astro.params;
 let entry: CollectionEntry<'campaigns'> | null = null;
+let sessions: CollectionEntry<'sessions'>[] = [];
+let familyEntries: Awaited<ReturnType<typeof getAllCampaignFamilyEntries>> = [];
 let contentUnavailable = false;
 
 try {
-  const campaigns = await getCollection('campaigns');
-  entry = campaigns.find((item) => item.id.split('/')[0] === slug) ?? null;
+  const [campaigns, sessionsCollection, allFamilyEntries] = await Promise.all([
+    getCollection('campaigns'),
+    getCollection('sessions'),
+    getAllCampaignFamilyEntries(),
+  ]);
+  entry = campaigns.find((item) => extractCampaignSlugFromEntryId(item.id) === slug) ?? null;
+  sessions = sessionsCollection;
+  familyEntries = allFamilyEntries;
 } catch (error) {
   console.error('campaign.route.content_unavailable', {
     campaignSlug: slug,
@@ -37,7 +64,7 @@ if (entry && !contentUnavailable) {
   }
 }
 
-const campaignSlug = entry?.id.split('/')[0] ?? slug ?? '';
+const campaignSlug = entry ? extractCampaignSlugFromEntryId(entry.id) : slug ?? '';
 const accessResolver = await createCampaignRequestAccessResolver({
   request: Astro.request,
   locals: Astro.locals,
@@ -51,6 +78,68 @@ const canView =
         access: accessResolver,
       })
     : false;
+
+const sectionCards: CampaignSectionCard[] = [];
+if (entry && canView && !contentUnavailable) {
+  const sectionDefinitions = [
+    {
+      segment: 'sessions',
+      label: 'Sessions',
+      description: 'Session logs, encounters, and play records tied to this campaign.',
+      href: `/campaigns/${campaignSlug}/sessions`,
+      entries: sessions.filter((sessionEntry) => sessionEntry.data.campaign === campaignSlug),
+    },
+    ...CAMPAIGN_FAMILY_SEGMENTS.map((segment) => {
+      const family = getCampaignFamilyBySegment(segment);
+      return {
+        segment,
+        label: family?.label ?? segment,
+        description: family?.description ?? 'Campaign content.',
+        href: `/campaigns/${campaignSlug}/${segment}`,
+        entries: familyEntries.filter(
+          (familyEntry) => familyEntry.collection === family?.collection && familyEntry.data.campaign === campaignSlug,
+        ),
+      };
+    }),
+  ];
+
+  for (const section of sectionDefinitions) {
+    let visibleCount = 0;
+    let latestUpdated: Date | null = null;
+
+    for (const sectionEntry of section.entries) {
+      const effectiveVisibility = resolveCampaignContentVisibility({
+        campaignSlug,
+        contentVisibility: sectionEntry.data.visibility,
+        campaignVisibility: entry.data.visibility,
+      });
+      const canViewSectionEntry = await canViewCampaignContentAsync({
+        visibility: effectiveVisibility,
+        campaignSlug,
+        access: accessResolver,
+      });
+
+      if (!canViewSectionEntry) {
+        continue;
+      }
+
+      visibleCount += 1;
+      const candidateDate = pickCampaignEntryDate(sectionEntry.data);
+      if (!latestUpdated || candidateDate.getTime() > latestUpdated.getTime()) {
+        latestUpdated = candidateDate;
+      }
+    }
+
+    sectionCards.push({
+      segment: section.segment,
+      label: section.label,
+      description: section.description,
+      href: section.href,
+      count: visibleCount,
+      latestUpdated,
+    });
+  }
+}
 
 const layoutContent =
   entry ??
@@ -67,6 +156,38 @@ const layoutContent =
   {canView && Content && !contentUnavailable ? (
     <article class="reading-prose">
       <Content />
+
+      <section class="not-prose mt-12 border-t border-base-300 pt-8">
+        <div class="mb-6 flex flex-col gap-2">
+          <h2 class="text-2xl font-bold text-ink-950">Campaign Records</h2>
+          <p class="meta-muted max-w-3xl">
+            Browse the campaign's session history and family-specific records. This starts to replace the older
+            overloaded subtype model with explicit campaign-domain collections.
+          </p>
+        </div>
+
+        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {sectionCards.map((section) => (
+            <a href={section.href} class="card border border-base-300 bg-base-100 shadow-sm transition-shadow hover:shadow-md">
+              <div class="card-body gap-3">
+                <div class="flex items-start justify-between gap-3">
+                  <h3 class="card-title text-xl text-ink-950">{section.label}</h3>
+                  <span class="badge badge-outline">{section.count}</span>
+                </div>
+                <p class="text-sm text-ink-800">{section.description}</p>
+                <div class="flex items-center justify-between text-sm meta-muted">
+                  <span>{section.count === 1 ? '1 visible entry' : `${section.count} visible entries`}</span>
+                  <span>
+                    {section.latestUpdated
+                      ? `Updated ${section.latestUpdated.toLocaleDateString('en-GB')}`
+                      : 'No visible entries yet'}
+                  </span>
+                </div>
+              </div>
+            </a>
+          ))}
+        </div>
+      </section>
     </article>
   ) : (
     <article class="reading-prose">

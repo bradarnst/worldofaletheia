@@ -48,15 +48,23 @@ describe('content index writer', () => {
       campaignSlug: 'brad',
       status: 'draft',
     });
+    const protectedCampaignLore = createRow({
+      id: 'brad/lore/river-omens',
+      collection: 'campaignLore',
+      slug: 'river-omens',
+      visibility: 'campaignMembers',
+      campaignSlug: 'brad',
+      status: 'publish',
+    });
 
     const plan = buildContentIndexSyncPlan({
-      rows: [protectedCampaign, publicSession, publicLore],
-      managedCollections: ['sessions', 'campaigns', 'lore'],
+      rows: [protectedCampaign, publicSession, protectedCampaignLore, publicLore],
+      managedCollections: ['sessions', 'campaignLore', 'campaigns', 'lore'],
     });
 
     expect(plan.rows.map((row) => row.id)).toEqual(['brad/sessions/intro', 'lore/example']);
-    expect(plan.skippedRows.map((row) => row.id)).toEqual(['campaigns/brad/index']);
-    expect(plan.skippedByCollection).toEqual({ campaigns: 1 });
+    expect(plan.skippedRows.map((row) => row.id)).toEqual(['campaigns/brad/index', 'brad/lore/river-omens']);
+    expect(plan.skippedByCollection).toEqual({ campaigns: 1, campaignLore: 1 });
   });
 
   it('builds upsert and reconciliation SQL for managed collections', () => {
@@ -114,8 +122,8 @@ describe('content index writer', () => {
     expect(
       shouldIndexForPublicDiscovery(
         createRow({
-          collection: 'sessions',
-          id: 'brad/sessions/intro',
+          collection: 'campaignHooks',
+          id: 'brad/hooks/missing-heir',
           visibility: 'campaignMembers',
         }),
       ),

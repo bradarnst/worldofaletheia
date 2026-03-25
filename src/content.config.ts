@@ -97,10 +97,17 @@ const systemsSchema = baseSchema.extend({
   excerpt: z.string().optional(),
 });
 
+const metaSchema = baseSchema.extend({
+  title: z.string(),
+  excerpt: z.string().optional(),
+});
+
 const campaignsSchema = baseSchema.omit({ status: true }).extend({
   title: z.string(),
-  type: z.enum(['barry', 'brad']),
-  subtype: z.enum(['bestiary', 'adventures', 'hooks', 'scenes', 'factions', 'flora', 'lore', 'meta', 'places', 'sentients', 'characters', 'general']),
+  type: z.string().trim().min(1).optional().default('campaign'),
+  // Legacy field retained for backward compatibility with pre-family campaign metadata.
+  // Campaign family is now represented by explicit collections (campaignLore, campaignPlaces, etc.).
+  subtype: z.string().trim().min(1).optional(),
   excerpt: z.string().optional(),
   visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('gm'),
   start: z.date().optional(),
@@ -115,6 +122,78 @@ const sessionsSchema = baseSchema.extend({
   visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('campaignMembers'),
   date: z.date().optional(),
   duration: z.number().optional(),
+});
+
+const campaignLoreSchema = loreSchema.extend({
+  campaign: z.string(),
+  visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('campaignMembers'),
+});
+
+const campaignPlacesSchema = placesSchema.extend({
+  campaign: z.string(),
+  visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('campaignMembers'),
+});
+
+const campaignSentientsSchema = sentientsSchema.extend({
+  campaign: z.string(),
+  visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('campaignMembers'),
+});
+
+const campaignBestiarySchema = bestiarySchema.extend({
+  campaign: z.string(),
+  visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('campaignMembers'),
+});
+
+const campaignFloraSchema = floraSchema.extend({
+  campaign: z.string(),
+  visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('campaignMembers'),
+});
+
+const campaignFactionsSchema = factionsSchema.extend({
+  campaign: z.string(),
+  visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('campaignMembers'),
+});
+
+const campaignSystemsSchema = systemsSchema.extend({
+  campaign: z.string(),
+  visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('campaignMembers'),
+});
+
+const campaignMetaSchema = metaSchema.extend({
+  campaign: z.string(),
+  visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('campaignMembers'),
+});
+
+const campaignCharactersSchema = sentientsSchema.extend({
+  type: z.enum(['pc', 'npc', 'ally', 'adversary', 'patron', 'creature', 'group', 'other']),
+  campaign: z.string(),
+  visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('campaignMembers'),
+});
+
+const campaignScenesSchema = baseSchema.extend({
+  title: z.string(),
+  type: z.enum(['scene', 'combat', 'social', 'travel', 'downtime', 'investigation', 'flashback', 'other']),
+  excerpt: z.string().optional(),
+  campaign: z.string(),
+  visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('campaignMembers'),
+  date: z.date().optional(),
+});
+
+const campaignAdventuresSchema = baseSchema.extend({
+  title: z.string(),
+  type: z.enum(['arc', 'mission', 'quest', 'contract', 'dungeon', 'journey', 'heist', 'other']),
+  excerpt: z.string().optional(),
+  campaign: z.string(),
+  visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('campaignMembers'),
+  date: z.date().optional(),
+});
+
+const campaignHooksSchema = baseSchema.extend({
+  title: z.string(),
+  type: z.enum(['rumor', 'lead', 'job', 'threat', 'mystery', 'opportunity', 'other']),
+  excerpt: z.string().optional(),
+  campaign: z.string(),
+  visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('campaignMembers'),
 });
 
 const lore = defineCollection({
@@ -153,7 +232,7 @@ const systems = defineCollection({
 });
 
 const campaigns = defineCollection({
-  loader: createMarkdownLoader('campaigns', '*/*.md', 'src/content/campaigns'),
+  loader: createMarkdownLoader('campaigns', '*/index.md', 'src/content/campaigns'),
   schema: campaignsSchema,
 });
 
@@ -162,9 +241,64 @@ const sessions = defineCollection({
   schema: sessionsSchema,
 });
 
-const metaSchema = baseSchema.extend({
-  title: z.string(),
-  excerpt: z.string().optional(),
+const campaignLore = defineCollection({
+  loader: createMarkdownLoader('campaignLore', '*/lore/**/*.md', 'src/content/campaigns'),
+  schema: campaignLoreSchema,
+});
+
+const campaignPlaces = defineCollection({
+  loader: createMarkdownLoader('campaignPlaces', '*/places/**/*.md', 'src/content/campaigns'),
+  schema: campaignPlacesSchema,
+});
+
+const campaignSentients = defineCollection({
+  loader: createMarkdownLoader('campaignSentients', '*/sentients/**/*.md', 'src/content/campaigns'),
+  schema: campaignSentientsSchema,
+});
+
+const campaignBestiary = defineCollection({
+  loader: createMarkdownLoader('campaignBestiary', '*/bestiary/**/*.md', 'src/content/campaigns'),
+  schema: campaignBestiarySchema,
+});
+
+const campaignFlora = defineCollection({
+  loader: createMarkdownLoader('campaignFlora', '*/flora/**/*.md', 'src/content/campaigns'),
+  schema: campaignFloraSchema,
+});
+
+const campaignFactions = defineCollection({
+  loader: createMarkdownLoader('campaignFactions', '*/factions/**/*.md', 'src/content/campaigns'),
+  schema: campaignFactionsSchema,
+});
+
+const campaignSystems = defineCollection({
+  loader: createMarkdownLoader('campaignSystems', '*/systems/**/*.md', 'src/content/campaigns'),
+  schema: campaignSystemsSchema,
+});
+
+const campaignCharacters = defineCollection({
+  loader: createMarkdownLoader('campaignCharacters', '*/characters/**/*.md', 'src/content/campaigns'),
+  schema: campaignCharactersSchema,
+});
+
+const campaignScenes = defineCollection({
+  loader: createMarkdownLoader('campaignScenes', '*/scenes/**/*.md', 'src/content/campaigns'),
+  schema: campaignScenesSchema,
+});
+
+const campaignAdventures = defineCollection({
+  loader: createMarkdownLoader('campaignAdventures', '*/adventures/**/*.md', 'src/content/campaigns'),
+  schema: campaignAdventuresSchema,
+});
+
+const campaignHooks = defineCollection({
+  loader: createMarkdownLoader('campaignHooks', '*/hooks/**/*.md', 'src/content/campaigns'),
+  schema: campaignHooksSchema,
+});
+
+const campaignMeta = defineCollection({
+  loader: createMarkdownLoader('campaignMeta', '*/meta/**/*.md', 'src/content/campaigns'),
+  schema: campaignMetaSchema,
 });
 
 const meta = defineCollection({
@@ -193,6 +327,18 @@ export const collections = {
   systems,
   campaigns,
   sessions,
+  campaignLore,
+  campaignPlaces,
+  campaignSentients,
+  campaignBestiary,
+  campaignFlora,
+  campaignFactions,
+  campaignSystems,
+  campaignMeta,
+  campaignCharacters,
+  campaignScenes,
+  campaignAdventures,
+  campaignHooks,
   meta,
   pages,
 };

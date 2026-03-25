@@ -13,6 +13,8 @@ Plain `pnpm dev` is the fast lane for UI/content iteration and is not authoritat
   - [`/campaigns/[...slug]`](src/pages/campaigns/[...slug].astro)
   - [`/campaigns/[campaign]/sessions`](src/pages/campaigns/[campaign]/sessions/index.astro)
   - [`/campaigns/[campaign]/sessions/[...slug]`](src/pages/campaigns/[campaign]/sessions/[...slug].astro)
+  - [`/campaigns/[campaign]/[family]`](src/pages/campaigns/[campaign]/[family]/index.astro)
+  - [`/campaigns/[campaign]/[family]/[...slug]`](src/pages/campaigns/[campaign]/[family]/[...slug].astro)
 - Non-campaign domains stay public-by-default and do not use this gate.
 
 ## Model (fallback only)
@@ -46,6 +48,8 @@ Set `CAMPAIGN_GM_ASSIGNMENTS` as JSON in your environment for GM-only checks:
 ```
 
 The gate compares `aletheia-dev-session=<sessionId>` to `gmAssignments[campaignSlug].userId`.
+
+If you rename a campaign slug, update local membership/gm config to match the new slug or use the rename helper documented in [`docs/runbook/campaign-authoring-and-rename.md`](docs/runbook/campaign-authoring-and-rename.md).
 
 Campaign visibility defaults are now maintained in [`config/campaign-access.config.json`](config/campaign-access.config.json).
 

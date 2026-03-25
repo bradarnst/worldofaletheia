@@ -207,7 +207,7 @@ function buildWhereClause(filters: ContentIndexBaseFilters): { sql: string; valu
   }
 
   if ((filters.visibilityScope ?? 'public') === 'public') {
-    clauses.push(`(collection NOT IN ('campaigns', 'sessions') OR COALESCE(visibility, 'gm') = 'public')`);
+    clauses.push(`((collection != 'sessions' AND collection NOT LIKE 'campaign%') OR COALESCE(visibility, 'gm') = 'public')`);
   }
 
   return {

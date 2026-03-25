@@ -1,0 +1,222 @@
+---
+import { getCollection, render } from 'astro:content';
+import type { CollectionEntry } from 'astro:content';
+import CampaignsContentLayout from '@layouts/CampaignsContentLayout.astro';
+import {
+  canViewCampaignContentAsync,
+  resolveCampaignContentVisibility,
+} from '@utils/campaign-access';
+import {
+  extractCampaignFamilySlugFromEntryId,
+  extractCampaignSlugFromEntryId,
+  getCampaignFamilyBySegment,
+  getCampaignFamilySegmentByCollection,
+  pickCampaignEntryDate,
+} from '@utils/campaign-collections';
+import { getAllCampaignFamilyEntries, getCampaignFamilyCollectionEntries } from '@utils/campaign-content';
+import { createCampaignRequestAccessResolver } from '~/lib/campaign-request-access';
+
+export async function getStaticPaths() {
+  const entries = await getAllCampaignFamilyEntries();
+
+  return entries.flatMap((entry) => {
+    const family = getCampaignFamilySegmentByCollection(entry.collection);
+    if (!family) {
+      return [];
+    }
+
+    return [{
+      params: { campaign: entry.data.campaign, family, slug: extractCampaignFamilySlugFromEntryId(entry.id) },
+    }];
+  });
+}
+
+const { campaign, family, slug } = Astro.params;
+const familyConfig = getCampaignFamilyBySegment(family);
+
+if (!familyConfig) {
+  throw new Error(`Unknown campaign family "${family}"`);
+}
+
+let campaignEntry: CollectionEntry<'campaigns'> | null = null;
+let familyEntry: Awaited<ReturnType<typeof getCampaignFamilyCollectionEntries>>[number] | null = null;
+let siblingEntries: Awaited<ReturnType<typeof getCampaignFamilyCollectionEntries>> = [];
+let contentUnavailable = false;
+
+try {
+  const [campaignsCollection, collectionEntries] = await Promise.all([
+    getCollection('campaigns'),
+    getCampaignFamilyCollectionEntries(familyConfig.collection),
+  ]);
+
+  campaignEntry = campaignsCollection.find((entry) => extractCampaignSlugFromEntryId(entry.id) === campaign) ?? null;
+  familyEntry =
+    collectionEntries.find(
+      (entry) => entry.data.campaign === campaign && extractCampaignFamilySlugFromEntryId(entry.id) === slug,
+    ) ?? null;
+  siblingEntries = collectionEntries.filter((entry) => entry.data.campaign === campaign);
+} catch (error) {
+  console.error('campaign.family.detail_unavailable', {
+    campaignSlug: campaign,
+    family,
+    slug,
+    message: error instanceof Error ? error.message : 'unknown error',
+  });
+  contentUnavailable = true;
+}
+
+if (!campaignEntry && !contentUnavailable) {
+  throw new Error(`Campaign not found for slug "${campaign}"`);
+}
+
+if (!familyEntry && !contentUnavailable) {
+  throw new Error(`Campaign ${familyConfig.label} entry not found for campaign "${campaign}" and slug "${slug}"`);
+}
+
+let Content = null;
+if (familyEntry && !contentUnavailable) {
+  try {
+    ({ Content } = await render(familyEntry));
+  } catch (error) {
+    console.error('campaign.family.render_unavailable', {
+      campaignSlug: campaign,
+      family,
+      slug,
+      message: error instanceof Error ? error.message : 'unknown error',
+    });
+    contentUnavailable = true;
+  }
+}
+
+const accessResolver = await createCampaignRequestAccessResolver({
+  request: Astro.request,
+  locals: Astro.locals,
+  hostname: Astro.url.hostname,
+});
+const sortedSiblings: Array<{ slug: string; title: string; updatedAt: Date }> = [];
+if (campaignEntry && !contentUnavailable) {
+  for (const siblingEntry of siblingEntries) {
+    const siblingVisibility = resolveCampaignContentVisibility({
+      campaignSlug: campaign ?? '',
+      contentVisibility: siblingEntry.data.visibility,
+      campaignVisibility: campaignEntry.data.visibility,
+    });
+    const canViewSibling = await canViewCampaignContentAsync({
+      visibility: siblingVisibility,
+      campaignSlug: campaign ?? '',
+      access: accessResolver,
+    });
+
+    if (!canViewSibling) {
+      continue;
+    }
+
+    sortedSiblings.push({
+      slug: extractCampaignFamilySlugFromEntryId(siblingEntry.id),
+      title: siblingEntry.data.title,
+      updatedAt: pickCampaignEntryDate(siblingEntry.data),
+    });
+  }
+}
+sortedSiblings.sort((left, right) => left.updatedAt.getTime() - right.updatedAt.getTime());
+
+const currentIndex = sortedSiblings.findIndex((entry) => entry.slug === slug);
+const previousEntry = currentIndex > 0 ? sortedSiblings[currentIndex - 1] : null;
+const nextEntry = currentIndex >= 0 && currentIndex < sortedSiblings.length - 1 ? sortedSiblings[currentIndex + 1] : null;
+
+const effectiveVisibility =
+  familyEntry && campaignEntry
+    ? resolveCampaignContentVisibility({
+        campaignSlug: campaign ?? '',
+        contentVisibility: familyEntry.data.visibility,
+        campaignVisibility: campaignEntry.data.visibility,
+      })
+    : 'gm';
+const canViewEntry =
+  familyEntry && campaignEntry && !contentUnavailable
+    ? await canViewCampaignContentAsync({
+        visibility: effectiveVisibility,
+        campaignSlug: campaign ?? '',
+        access: accessResolver,
+      })
+    : false;
+
+const entryTitle = familyEntry?.data.title ?? `Restricted ${familyConfig.label.toLowerCase()} entry`;
+const campaignTitle = campaignEntry?.data.title ?? campaign ?? 'Campaign';
+const title = `${entryTitle} - ${campaignTitle}`;
+const layoutContent =
+  familyEntry ??
+  {
+    title: entryTitle,
+    excerpt: `${familyConfig.label} content is temporarily unavailable or restricted.`,
+    author: 'World of Aletheia',
+    visibility: 'gm',
+    tags: [],
+    campaign: campaign ?? '',
+  };
+---
+
+<CampaignsContentLayout content={layoutContent} title={title}>
+  <article class="reading-prose">
+    <nav class="not-prose mb-6 text-sm meta-muted">
+      <a href="/campaigns" class="hover:text-primary">Campaigns</a>
+      <span class="mx-2">/</span>
+      <a href={`/campaigns/${campaign}`} class="hover:text-primary">{campaignTitle}</a>
+      <span class="mx-2">/</span>
+      <a href={`/campaigns/${campaign}/${family}`} class="hover:text-primary">{familyConfig.label}</a>
+      <span class="mx-2">/</span>
+      <span class="font-medium text-ink-900">{entryTitle}</span>
+    </nav>
+
+    <header class="not-prose mb-8 space-y-4">
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="badge badge-outline">{familyConfig.label}</span>
+        <span class="badge badge-ghost uppercase">{familyEntry?.data.type ?? 'restricted'}</span>
+        <span class="badge badge-ghost">{familyEntry?.data.visibility ?? 'gm'}</span>
+      </div>
+
+      {familyEntry && (
+        <div class="text-sm meta-muted">
+          Updated {pickCampaignEntryDate(familyEntry.data).toLocaleDateString('en-GB')}
+        </div>
+      )}
+    </header>
+
+    {canViewEntry && Content && !contentUnavailable ? (
+      <Content />
+    ) : (
+      <section>
+        <h2>Restricted campaign content</h2>
+        <p>
+          This {familyConfig.label.toLowerCase()} entry is restricted or temporarily unavailable. Sign in with your
+          account and ensure you have the required campaign access level.
+        </p>
+        <p><a href={`/login?next=${encodeURIComponent(Astro.url.pathname)}`}>Sign in to continue</a></p>
+      </section>
+    )}
+
+    <nav class="not-prose mt-12 flex items-center justify-between border-t border-base-300 pt-6">
+      {previousEntry ? (
+        <a href={`/campaigns/${campaign}/${family}/${previousEntry.slug}`} class="text-primary transition-colors hover:text-primary/80">
+          <div class="text-xs meta-muted">Previous Entry</div>
+          <div class="font-medium">{previousEntry.title}</div>
+        </a>
+      ) : (
+        <div />
+      )}
+
+      <a href={`/campaigns/${campaign}/${family}`} class="text-sm meta-muted transition-colors hover:text-ink-900">
+        All {familyConfig.label}
+      </a>
+
+      {nextEntry ? (
+        <a href={`/campaigns/${campaign}/${family}/${nextEntry.slug}`} class="text-right text-primary transition-colors hover:text-primary/80">
+          <div class="text-xs meta-muted">Next Entry</div>
+          <div class="font-medium">{nextEntry.title}</div>
+        </a>
+      ) : (
+        <div />
+      )}
+    </nav>
+  </article>
+</CampaignsContentLayout>

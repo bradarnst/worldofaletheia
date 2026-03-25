@@ -3,6 +3,12 @@ import { getCollection } from 'astro:content';
 import Layout from '@layouts/MainSiteLayout.astro';
 import RandomHeroImage from '@components/RandomHeroImage.astro';
 import { getFilteredCollection } from '@utils/content-filter';
+import {
+  buildCampaignContentHref,
+  extractCampaignSlugFromEntryId,
+  extractCampaignFamilySlugFromEntryId,
+} from '@utils/campaign-collections';
+import { getAllCampaignFamilyEntries } from '@utils/campaign-content';
 
 const utcDay = Math.floor(Date.now() / 86400000);
 
@@ -18,7 +24,34 @@ type DiscoveryItem = {
 const pickCreated = (data: { created?: Date; ['created-date']?: Date }): Date =>
   data.created ?? data['created-date'] ?? new Date(0);
 
-const [lore, places, sentients, bestiary, flora, factions, systems, campaigns, meta, sessions] = await Promise.all([
+const toDiscoveryItems = <T extends { id: string; data: { title: string; excerpt?: string; created?: Date; ['created-date']?: Date } }>(
+  items: T[],
+  prefix: string,
+  domain: string,
+  buildUrl: (item: T) => string,
+): DiscoveryItem[] =>
+  items.map((item) => ({
+    id: `${prefix}:${item.id}`,
+    title: item.data.title,
+    excerpt: item.data.excerpt,
+    created: pickCreated(item.data),
+    domain,
+    url: buildUrl(item),
+  }));
+
+const [
+  lore,
+  places,
+  sentients,
+  bestiary,
+  flora,
+  factions,
+  systems,
+  campaigns,
+  meta,
+  sessions,
+  campaignFamilyEntries,
+] = await Promise.all([
   getCollection('lore'),
   getCollection('places'),
   getCollection('sentients'),
@@ -29,6 +62,7 @@ const [lore, places, sentients, bestiary, flora, factions, systems, campaigns, m
   getCollection('campaigns'),
   getCollection('meta'),
   getCollection('sessions'),
+  getAllCampaignFamilyEntries(),
 ]);
 
 const visibleLore = getFilteredCollection(lore);
@@ -39,108 +73,31 @@ const visibleFlora = getFilteredCollection(flora);
 const visibleFactions = getFilteredCollection(factions);
 const visibleSystems = getFilteredCollection(systems);
 const visibleMeta = getFilteredCollection(meta);
-const visibleSessions = getFilteredCollection(sessions);
+const visibleSessions = getFilteredCollection(sessions).filter((item) => item.data.visibility === 'public');
+const visibleCampaignFamilyEntries = getFilteredCollection(campaignFamilyEntries).filter((item) => item.data.visibility === 'public');
 
 const discoveryPool: DiscoveryItem[] = [
-  ...visibleLore
-    .map((item) => ({
-      id: `lore:${item.id}`,
-      title: item.data.title,
-      excerpt: item.data.excerpt,
-      created: pickCreated(item.data),
-      domain: 'Canon',
-      url: `/lore/${item.id}`,
-    })),
-  ...visiblePlaces
-    .map((item) => ({
-      id: `places:${item.id}`,
-      title: item.data.title,
-      excerpt: item.data.excerpt,
-      created: pickCreated(item.data),
-      domain: 'Canon',
-      url: `/places/${item.id}`,
-    })),
-  ...visibleSentients
-    .map((item) => ({
-      id: `sentients:${item.id}`,
-      title: item.data.title,
-      excerpt: item.data.excerpt,
-      created: pickCreated(item.data),
-      domain: 'Canon',
-      url: `/sentients/${item.id}`,
-    })),
-  ...visibleBestiary
-    .map((item) => ({
-      id: `bestiary:${item.id}`,
-      title: item.data.title,
-      excerpt: item.data.excerpt,
-      created: pickCreated(item.data),
-      domain: 'Canon',
-      url: `/bestiary/${item.id}`,
-    })),
-  ...visibleFlora
-    .map((item) => ({
-      id: `flora:${item.id}`,
-      title: item.data.title,
-      excerpt: item.data.excerpt,
-      created: pickCreated(item.data),
-      domain: 'Canon',
-      url: `/flora/${item.id}`,
-    })),
-  ...visibleFactions
-    .map((item) => ({
-      id: `factions:${item.id}`,
-      title: item.data.title,
-      excerpt: item.data.excerpt,
-      created: pickCreated(item.data),
-      domain: 'Canon',
-      url: `/factions/${item.id}`,
-    })),
-  ...visibleSystems
-    .map((item) => ({
-      id: `systems:${item.id}`,
-      title: item.data.title,
-      excerpt: item.data.excerpt,
-      created: pickCreated(item.data),
-      domain: 'Using',
-      url: `/systems/${item.id}`,
-    })),
-  ...visibleMeta
-    .map((item) => ({
-      id: `meta:${item.id}`,
-      title: item.data.title,
-      excerpt: item.data.excerpt,
-      created: pickCreated(item.data),
-      domain: 'Using',
-      url: `/meta/${item.id}`,
-    })),
-  ...campaigns
-    .filter((item) => item.data.visibility === 'public')
-    .map((item) => {
-      const campaignSlug = item.id.replace(/\/index$/, '');
-      return {
-        id: `campaigns:${item.id}`,
-        title: item.data.title,
-        excerpt: item.data.excerpt,
-        created: pickCreated(item.data),
-        domain: 'Campaigns',
-        url: `/campaigns/${campaignSlug}`,
-      };
-    }),
-  ...visibleSessions
-    .map((item) => {
-      const parts = item.id.split('/');
-      const campaignSlug = parts[0];
-      const sessionSlug = parts[parts.length - 1];
-      return {
-        id: `sessions:${item.id}`,
-        title: item.data.title,
-        excerpt: item.data.excerpt,
-        created: pickCreated(item.data),
-        domain: 'Campaigns',
-        url: `/campaigns/${campaignSlug}/sessions/${sessionSlug}`,
-      };
-    }),
+  ...toDiscoveryItems(visibleLore, 'lore', 'Canon', (item) => `/lore/${item.id}`),
+  ...toDiscoveryItems(visiblePlaces, 'places', 'Canon', (item) => `/places/${item.id}`),
+  ...toDiscoveryItems(visibleSentients, 'sentients', 'Canon', (item) => `/sentients/${item.id}`),
+  ...toDiscoveryItems(visibleBestiary, 'bestiary', 'Canon', (item) => `/bestiary/${item.id}`),
+  ...toDiscoveryItems(visibleFlora, 'flora', 'Canon', (item) => `/flora/${item.id}`),
+  ...toDiscoveryItems(visibleFactions, 'factions', 'Canon', (item) => `/factions/${item.id}`),
+  ...toDiscoveryItems(visibleSystems, 'systems', 'Using', (item) => `/systems/${item.id}`),
+  ...toDiscoveryItems(visibleMeta, 'meta', 'Using', (item) => `/meta/${item.id}`),
+  ...toDiscoveryItems(
+    campaigns.filter((item) => item.data.visibility === 'public'),
+    'campaigns',
+    'Campaigns',
+    (item) => buildCampaignContentHref('campaigns', extractCampaignSlugFromEntryId(item.id), extractCampaignSlugFromEntryId(item.id)),
+  ),
+  ...toDiscoveryItems(visibleSessions, 'sessions', 'Campaigns', (item) => {
+    const parts = item.id.split('/');
+    return buildCampaignContentHref('sessions', parts[parts.length - 1] ?? item.id, item.data.campaign);
+  }),
+  ...toDiscoveryItems(visibleCampaignFamilyEntries, 'campaignFamily', 'Campaigns', (item) =>
+    buildCampaignContentHref(item.collection, extractCampaignFamilySlugFromEntryId(item.id), item.data.campaign),
+  ),
 ];
 
 const sortedDiscovery = discoveryPool.sort((a, b) => b.created.getTime() - a.created.getTime());

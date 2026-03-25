@@ -53,24 +53,46 @@ function computeRouteFromMarkdownPath(absolutePath, repoRoot) {
   const relative = toPosix(path.relative(path.resolve(repoRoot, 'src/content'), absolutePath));
   const segments = relative.split('/');
   const collection = segments[0];
-  const fileName = segments[segments.length - 1];
-  const slug = slugifySegment(fileName.replace(/\.md$/i, ''));
+  const routeSegments = segments.map((segment, index) => {
+    if (index === segments.length - 1) {
+      return slugifySegment(segment.replace(/\.md$/i, ''));
+    }
+
+    return slugifySegment(segment);
+  });
+  const slug = routeSegments[routeSegments.length - 1];
 
   if (segments.length === 1) {
     return `/${slug}`;
   }
 
   if (collection === 'campaigns') {
-    const campaignFolder = slugifySegment(segments[1]);
-    const isSessionFile = segments.length >= 4 && segments[2] === 'sessions';
+    const campaignFolder = routeSegments[1];
+    const campaignContentSegments = routeSegments.slice(2);
 
-    if (isSessionFile) {
-      return slug === 'index'
-        ? `/campaigns/${campaignFolder}/sessions`
-        : `/campaigns/${campaignFolder}/sessions/${slug}`;
+    if (campaignContentSegments.length === 0) {
+      return `/campaigns/${campaignFolder}`;
     }
 
-    return slug === 'index' ? `/campaigns/${campaignFolder}` : `/campaigns/${slug}`;
+    if (campaignContentSegments[0] === 'sessions') {
+      const sessionSegments = campaignContentSegments.slice(1);
+      if (sessionSegments.length === 0 || (sessionSegments.length === 1 && sessionSegments[0] === 'index')) {
+        return `/campaigns/${campaignFolder}/sessions`;
+      }
+
+      return `/campaigns/${campaignFolder}/sessions/${sessionSegments.join('/')}`;
+    }
+
+    if (campaignContentSegments.length === 1) {
+      return `/campaigns/${campaignFolder}`;
+    }
+
+    const [familySegment, ...familySlugSegments] = campaignContentSegments;
+    if (familySlugSegments.length === 0 || (familySlugSegments.length === 1 && familySlugSegments[0] === 'index')) {
+      return `/campaigns/${campaignFolder}/${familySegment}`;
+    }
+
+    return `/campaigns/${campaignFolder}/${familySegment}/${familySlugSegments.join('/')}`;
   }
 
   return `/${collection}/${slug}`;

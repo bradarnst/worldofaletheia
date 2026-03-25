@@ -96,6 +96,23 @@ function toCampaignVisibility(value) {
   return value === 'public' || value === 'campaignMembers' || value === 'gm' ? value : null;
 }
 
+const CAMPAIGN_FAMILY_COLLECTIONS = {
+  lore: 'campaignLore',
+  places: 'campaignPlaces',
+  sentients: 'campaignSentients',
+  bestiary: 'campaignBestiary',
+  flora: 'campaignFlora',
+  factions: 'campaignFactions',
+  systems: 'campaignSystems',
+  meta: 'campaignMeta',
+  characters: 'campaignCharacters',
+  scenes: 'campaignScenes',
+  adventures: 'campaignAdventures',
+  hooks: 'campaignHooks',
+};
+
+const CAMPAIGN_FAMILY_SEGMENT_PATTERN = Object.keys(CAMPAIGN_FAMILY_COLLECTIONS).join('|');
+
 function createContentIndexRow({
   manifestEntry,
   frontmatterRecord,
@@ -181,7 +198,25 @@ async function deriveCollectionEntries(mapping, relativePath, transformedMarkdow
       ];
     }
 
-    const campaignMatch = /^([^/]+)\/([^/]+)\.md$/i.exec(normalizedRelative);
+    const familyMatch = new RegExp(`^([^/]+)\/(${CAMPAIGN_FAMILY_SEGMENT_PATTERN})\/(.+)\\.md$`, 'i').exec(normalizedRelative);
+    if (familyMatch) {
+      const campaignSlug = familyMatch[1];
+      const familySegment = familyMatch[2].toLowerCase();
+      const familySlug = normalizeNullableString(frontmatterRecord.slug) ?? familyMatch[3];
+      const collection = CAMPAIGN_FAMILY_COLLECTIONS[familySegment];
+
+      return [
+        buildEntry({
+          collection,
+          id: stripMarkdownExtension(normalizedRelative),
+          slug: familySlug,
+          routePath: `${mapping.to}/${normalizedRelative}`,
+          campaignSlug,
+        }),
+      ];
+    }
+
+    const campaignMatch = /^([^/]+)\/index\.md$/i.exec(normalizedRelative);
     if (campaignMatch) {
       const campaignSlug = campaignMatch[1];
       return [

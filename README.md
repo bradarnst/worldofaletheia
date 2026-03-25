@@ -136,6 +136,7 @@ Content workflow helpers:
 pnpm content:sync
 pnpm content:sync:dry-run
 pnpm content:validate
+pnpm campaign:rename -- --from=old-campaign-slug --to=new-campaign-slug
 ```
 
 For local config setup, copy `config/content-sync.config.example.json` to `config/content-sync.config.json` and set your `vaultRoot`.
@@ -143,6 +144,7 @@ For local config setup, copy `config/content-sync.config.example.json` to `confi
 More detailed docs:
 
 - `docs/content-ingestion-user-guide.md`
+- `docs/runbook/campaign-authoring-and-rename.md`
 - `docs/runbook/obsidian-content-sync-troubleshooting.md`
 
 A more end-user-friendly setup guide may be added later if there is enough outside interest.
@@ -166,4 +168,3 @@ This section will point to my portfolio/CV contact links.
 ## License
 
 MIT.
-

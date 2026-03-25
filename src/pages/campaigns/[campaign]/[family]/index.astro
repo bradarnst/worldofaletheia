@@ -1,0 +1,183 @@
+---
+import { getCollection } from 'astro:content';
+import type { CollectionEntry } from 'astro:content';
+import TagCloud from '@components/TagCloud.astro';
+import CampaignsLayout from '@layouts/CampaignsLayout.astro';
+import {
+  canViewCampaignContentAsync,
+  resolveCampaignContentVisibility,
+} from '@utils/campaign-access';
+import {
+  CAMPAIGN_FAMILY_SEGMENTS,
+  extractCampaignFamilySlugFromEntryId,
+  extractCampaignSlugFromEntryId,
+  getCampaignFamilyBySegment,
+  pickCampaignEntryDate,
+} from '@utils/campaign-collections';
+import { getCampaignFamilyCollectionEntries } from '@utils/campaign-content';
+import { createCampaignRequestAccessResolver } from '~/lib/campaign-request-access';
+
+const isDefined = <T,>(value: T | null): value is T => value !== null;
+
+export async function getStaticPaths() {
+  const campaignsCollection = await getCollection('campaigns');
+
+  return campaignsCollection.flatMap((item) => {
+    const campaign = extractCampaignSlugFromEntryId(item.id);
+    return CAMPAIGN_FAMILY_SEGMENTS.map((family) => ({
+      params: { campaign, family },
+    }));
+  });
+}
+
+const { campaign, family } = Astro.params;
+const familyConfig = getCampaignFamilyBySegment(family);
+
+if (!familyConfig) {
+  throw new Error(`Unknown campaign family "${family}"`);
+}
+
+let campaignEntry: CollectionEntry<'campaigns'> | null = null;
+let familyEntries: Awaited<ReturnType<typeof getCampaignFamilyCollectionEntries>> = [];
+let contentUnavailable = false;
+
+try {
+  const [campaignsCollection, collectionEntries] = await Promise.all([
+    getCollection('campaigns'),
+    getCampaignFamilyCollectionEntries(familyConfig.collection),
+  ]);
+  campaignEntry = campaignsCollection.find((entry) => extractCampaignSlugFromEntryId(entry.id) === campaign) ?? null;
+  familyEntries = collectionEntries.filter((entry) => entry.data.campaign === campaign);
+} catch (error) {
+  console.error('campaign.family.index_unavailable', {
+    campaignSlug: campaign,
+    family,
+    message: error instanceof Error ? error.message : 'unknown error',
+  });
+  contentUnavailable = true;
+}
+
+if (!campaignEntry && !contentUnavailable) {
+  throw new Error(`Campaign not found for slug "${campaign}"`);
+}
+
+const accessResolver = await createCampaignRequestAccessResolver({
+  request: Astro.request,
+  locals: Astro.locals,
+  hostname: Astro.url.hostname,
+});
+
+const entries = campaignEntry && !contentUnavailable
+  ? (
+      await Promise.all(
+        familyEntries.map(async (entry) => {
+          const effectiveVisibility = resolveCampaignContentVisibility({
+            campaignSlug: campaign ?? '',
+            contentVisibility: entry.data.visibility,
+            campaignVisibility: campaignEntry.data.visibility,
+          });
+          const canView = await canViewCampaignContentAsync({
+            visibility: effectiveVisibility,
+            campaignSlug: campaign ?? '',
+            access: accessResolver,
+          });
+
+          if (!canView) {
+            return null;
+          }
+
+          return {
+            id: entry.id,
+            slug: extractCampaignFamilySlugFromEntryId(entry.id),
+            title: entry.data.title,
+            excerpt: entry.data.excerpt,
+            type: entry.data.type,
+            visibility: entry.data.visibility,
+            tags: entry.data.tags,
+            updatedAt: pickCampaignEntryDate(entry.data),
+          };
+        }),
+      )
+    ).filter(isDefined)
+  : [];
+
+const sortedEntries = entries.sort((left, right) => right.updatedAt.getTime() - left.updatedAt.getTime());
+const allTags = [...new Set(sortedEntries.flatMap((entry) => entry.tags))].sort((left, right) => left.localeCompare(right));
+const campaignTitle = campaignEntry?.data.title ?? campaign ?? 'Campaign';
+const pageTitle = `${campaignTitle} - ${familyConfig.label}`;
+---
+
+<CampaignsLayout title={pageTitle} description={`${familyConfig.label} for ${campaignTitle}`}>
+  <div class="mx-auto max-w-6xl px-4 py-8">
+    <nav class="mb-6 text-sm meta-muted">
+      <a href="/campaigns" class="hover:text-primary">Campaigns</a>
+      <span class="mx-2">/</span>
+      <a href={`/campaigns/${campaign}`} class="hover:text-primary">{campaignTitle}</a>
+      <span class="mx-2">/</span>
+      <span class="font-medium text-ink-900">{familyConfig.label}</span>
+    </nav>
+
+    <div class="mb-10 space-y-4">
+      <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <div class="space-y-2">
+          <h1 class="text-3xl font-bold text-ink-950">{familyConfig.label}</h1>
+          <p class="max-w-3xl text-ink-800">{familyConfig.description}</p>
+        </div>
+        <span class="badge badge-outline badge-lg">{sortedEntries.length} visible</span>
+      </div>
+
+      {contentUnavailable && (
+        <div class="rounded-xl border border-warning/40 bg-warning/10 p-4 text-sm text-ink-800">
+          {familyConfig.label} discovery is temporarily unavailable. Protected campaign content stays fail-closed until
+          the cloud source and index are healthy again.
+        </div>
+      )}
+    </div>
+
+    <div class="mb-12">
+      {sortedEntries.length === 0 ? (
+        <div class="rounded-xl border border-base-300 bg-base-200 p-8 text-center text-ink-800">
+          No visible {familyConfig.label.toLowerCase()} entries found for this campaign yet.
+        </div>
+      ) : (
+        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {sortedEntries.map((entry) => (
+            <a
+              href={`/campaigns/${campaign}/${family}/${entry.slug}`}
+              class="card border border-base-300 bg-base-100 shadow-sm transition-shadow hover:shadow-md"
+            >
+              <div class="card-body gap-3">
+                <div class="flex items-start justify-between gap-3">
+                  <h2 class="card-title text-xl text-ink-950">{entry.title}</h2>
+                  <span class="badge badge-outline uppercase">{entry.type}</span>
+                </div>
+
+                {entry.excerpt && <p class="text-sm text-ink-800">{entry.excerpt}</p>}
+
+                <div class="flex flex-wrap gap-2">
+                  <span class="badge badge-ghost">{entry.visibility}</span>
+                  <span class="badge badge-ghost">{entry.updatedAt.toLocaleDateString('en-GB')}</span>
+                </div>
+
+                {entry.tags.length > 0 && (
+                  <div class="flex flex-wrap gap-2">
+                    {entry.tags.slice(0, 4).map((tag) => (
+                      <span class="tag-chip">{tag}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
+
+    {allTags.length > 0 && (
+      <section class="space-y-4 border-t border-base-300 pt-8">
+        <h2 class="text-2xl font-bold text-ink-950">Tags in {familyConfig.label}</h2>
+        <TagCloud tags={allTags} />
+      </section>
+    )}
+  </div>
+</CampaignsLayout>

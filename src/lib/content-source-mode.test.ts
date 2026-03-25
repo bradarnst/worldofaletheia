@@ -19,6 +19,8 @@ describe('content source mode resolution', () => {
 
     expect(resolveCollectionSource('meta', env)).toBe('local');
     expect(resolveCollectionSource('campaigns', env)).toBe('cloud');
+    expect(resolveCollectionSource('campaignLore', env)).toBe('cloud');
+    expect(resolveCollectionSource('sessions', env)).toBe('cloud');
     expect(resolveCollectionSource('lore', env)).toBe('cloud');
   });
 });
