@@ -106,6 +106,7 @@ Defer taxonomy changes in current repo and perform immediate campaign domain ext
 4. Campaign routes remain under `/campaigns/**` and continue SSR/fail-closed access behavior where required.
 5. No new service/adapter/contract abstraction layers are introduced by this decision unless ADR-0004 triggers are concretely met.
 6. D1 table changes are not required by default; database schema change is only introduced if a concrete query/index requirement emerges.
+7. Campaign identity consistency is deferred follow-on work: current implementation mixes campaign overview path identity (`<campaign-slug>/index.md`) with explicit `campaign` slug foreign keys on nested campaign-family/session entries; avoid adding duplicated `campaignName` metadata during transition.
 
 ### Sequencing and Adoption Gate
 

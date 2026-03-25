@@ -13,6 +13,20 @@ This runbook documents the current Campaigns-domain authoring shape and the supp
   - Campaign manifest identity in R2
   - Campaign access lookups and membership references
 
+## Identity model and consistency note
+
+Current state (post-taxonomy refactor):
+
+- Campaign overview identity is derived from folder slug + `index.md` (`<campaign-slug>/index.md`).
+- Nested campaign entries (`sessions`, `lore`, `characters`, etc.) carry explicit `campaign: <campaign-slug>` frontmatter as a foreign key.
+- Nested entries do **not** carry a separate `campaignName`/`campaignTitle` field.
+
+Consistency note:
+
+- This path-derived + field-derived mix is a known modeling inconsistency, not a role/public-private requirement.
+- Campaign display name remains single-source in campaign overview `title` (`<campaign-slug>/index.md`); avoid duplicating names on nested entries.
+- Follow-on normalization can make campaign identity fully explicit across campaign-domain entries without introducing denormalized `campaignName` metadata.
+
 ## Campaign content shape
 
 Under the Obsidian Campaigns source folder (for example `World/Campaigns`), organize each campaign like this:
