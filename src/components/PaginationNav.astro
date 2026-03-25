@@ -3,16 +3,29 @@ interface Props {
   currentPage: number;
   totalPages: number;
   basePath: string;
+  preservedParams?: Record<string, string>;
 }
 
-const { currentPage, totalPages, basePath } = Astro.props;
+const { currentPage, totalPages, basePath, preservedParams = {} } = Astro.props;
 
 function buildPageHref(page: number) {
-  if (page <= 1) {
-    return basePath;
+  const params = new URLSearchParams();
+
+  // Explicit parameter ordering for predictable URLs
+  const orderedKeys = ['view', 'type', 'subtype', 'tag'];
+  for (const key of orderedKeys) {
+    const value = preservedParams[key];
+    if (value && value.trim().length > 0) {
+      params.set(key, value);
+    }
   }
 
-  return `${basePath}?page=${page}`;
+  if (page > 1) {
+    params.set('page', String(page));
+  }
+
+  const query = params.toString();
+  return query.length > 0 ? `${basePath}?${query}` : basePath;
 }
 
 const previousPage = currentPage > 1 ? currentPage - 1 : null;

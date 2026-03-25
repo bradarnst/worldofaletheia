@@ -1,0 +1,276 @@
+---
+import type { ImageMetadata } from 'astro';
+import ContentCard from '@components/ContentCard.astro';
+import PaginationNav from '@components/PaginationNav.astro';
+import type {
+  ContentCardEntry,
+  DiscoveryFacetOption,
+  DiscoveryFilters,
+  DiscoveryGroupPreview,
+} from '~/lib/content-index-page';
+import type { ContentIndexPagination } from '~/lib/content-index-repo';
+
+interface Props {
+  basePath: string;
+  collectionLabel: string;
+  cards: ContentCardEntry[];
+  groups: DiscoveryGroupPreview[];
+  facets: {
+    types: DiscoveryFacetOption[];
+    subtypes: DiscoveryFacetOption[];
+    tags: DiscoveryFacetOption[];
+  };
+  filters: DiscoveryFilters;
+  pagination: ContentIndexPagination;
+  image?: ImageMetadata;
+  emptyMessage: string;
+  mode: 'index' | 'local' | 'error';
+  errorMessage: string | null;
+}
+
+const {
+  basePath,
+  collectionLabel,
+  cards,
+  groups,
+  facets,
+  filters,
+  pagination,
+  image,
+  emptyMessage,
+  mode,
+  errorMessage,
+} = Astro.props;
+
+function formatFilterValue(value: string) {
+  return value
+    .split(/[_-]/)
+    .filter((segment) => segment.length > 0)
+    .map((segment) => `${segment.slice(0, 1).toUpperCase()}${segment.slice(1)}`)
+    .join(' ');
+}
+
+const activeFilters = [
+  filters.type ? { label: 'Type', value: filters.type } : null,
+  filters.subtype ? { label: 'Subtype', value: filters.subtype } : null,
+  filters.tag ? { label: 'Tag', value: filters.tag } : null,
+].filter((item): item is { label: string; value: string } => item !== null);
+
+function buildHref(overrides: Partial<DiscoveryFilters> = {}) {
+  const next: DiscoveryFilters = {
+    ...filters,
+    ...overrides,
+  };
+  const params = new URLSearchParams();
+
+  if (next.view !== 'latest') {
+    params.set('view', next.view);
+  }
+
+  if (next.type) {
+    params.set('type', next.type);
+  }
+
+  if (next.subtype) {
+    params.set('subtype', next.subtype);
+  }
+
+  if (next.tag) {
+    params.set('tag', next.tag);
+  }
+
+  if (next.view === 'latest' && next.page > 1) {
+    params.set('page', String(next.page));
+  }
+
+  const query = params.toString();
+  return query.length > 0 ? `${basePath}?${query}` : basePath;
+}
+
+const preservedParams = {
+  ...(filters.view !== 'latest' ? { view: filters.view } : {}),
+  ...(filters.type ? { type: filters.type } : {}),
+  ...(filters.subtype ? { subtype: filters.subtype } : {}),
+  ...(filters.tag ? { tag: filters.tag } : {}),
+};
+---
+
+<div class="mb-8 rounded-xl border border-base-300 bg-base-200/60 p-4 text-sm text-ink-700">
+  <div class="font-semibold mb-1">Index-backed discovery</div>
+  <p class="meta-muted">Browse by type, subtype, and tags, or switch to grouped discovery for a faster taxonomy-first overview.</p>
+</div>
+
+{mode === 'error' && errorMessage && (
+  <div class="mb-8 rounded-xl border border-warning/40 bg-warning/10 p-4 text-sm text-ink-800">
+    <div class="font-semibold mb-1">Index unavailable</div>
+    <p>{errorMessage}</p>
+  </div>
+)}
+
+<div class="max-w-6xl mx-auto px-4 py-8">
+  <section class="mb-10 rounded-2xl border border-base-300 bg-base-100/80 p-5 shadow-sm">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div>
+        <h2 class="text-2xl font-bold text-ink-950">{collectionLabel} Discovery</h2>
+        <p class="meta-muted mt-2 text-sm">
+          {mode === 'local'
+            ? 'Running in local fallback mode. Filters are computed from local collection content.'
+            : 'Powered by the discovery index with taxonomy-aware filtering.'}
+        </p>
+      </div>
+
+      <div class="join self-start lg:self-auto">
+        <a href={buildHref({ view: 'latest', page: 1 })} class:list={["btn btn-sm join-item", filters.view === 'latest' ? 'btn-primary' : 'btn-ghost']}>Latest</a>
+        <a href={buildHref({ view: 'grouped', page: 1 })} class:list={["btn btn-sm join-item", filters.view === 'grouped' ? 'btn-primary' : 'btn-ghost']}>Grouped</a>
+      </div>
+    </div>
+
+    <form method="get" class="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <input type="hidden" name="view" value={filters.view} />
+
+      {facets.types.length > 0 && (
+        <label class="form-control w-full">
+          <span class="label-text text-sm font-medium text-ink-800">Type</span>
+          <select name="type" class="select select-bordered w-full">
+            <option value="">All types</option>
+            {facets.types.map((facet) => (
+              <option value={facet.value} selected={filters.type === facet.value}>
+                {facet.label} ({facet.count})
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+
+      {facets.subtypes.length > 0 && (
+        <label class="form-control w-full">
+          <span class="label-text text-sm font-medium text-ink-800">Subtype</span>
+          <select name="subtype" class="select select-bordered w-full">
+            <option value="">All subtypes</option>
+            {facets.subtypes.map((facet) => (
+              <option value={facet.value} selected={filters.subtype === facet.value}>
+                {facet.label} ({facet.count})
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+
+      {facets.tags.length > 0 && (
+        <label class="form-control w-full">
+          <span class="label-text text-sm font-medium text-ink-800">Tag</span>
+          <select name="tag" class="select select-bordered w-full">
+            <option value="">All tags</option>
+            {facets.tags.map((facet) => (
+              <option value={facet.value} selected={filters.tag === facet.value}>
+                {facet.label} ({facet.count})
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+
+      <div class="flex items-end gap-3">
+        <button type="submit" class="btn btn-primary btn-sm">Apply filters</button>
+        <a href={basePath} class="btn btn-ghost btn-sm">Reset</a>
+      </div>
+    </form>
+
+    {activeFilters.length > 0 && (
+      <div class="mt-5 flex flex-wrap items-center gap-2">
+        {activeFilters.map((filter) => (
+          <span class="badge badge-outline badge-lg">{filter.label}: {formatFilterValue(filter.value)}</span>
+        ))}
+      </div>
+    )}
+
+    {facets.tags.length > 0 && (
+      <div class="mt-5">
+        <div class="mb-2 text-sm font-medium text-ink-800">Popular tags</div>
+        <div class="flex flex-wrap gap-2">
+          {facets.tags.slice(0, 12).map((facet) => (
+            <a
+              href={buildHref({ tag: facet.value, page: 1 })}
+              class:list={[
+                'badge badge-outline badge-lg transition-colors',
+                filters.tag === facet.value ? 'badge-primary' : 'hover:border-primary hover:text-primary',
+              ]}
+            >
+              {facet.label} ({facet.count})
+            </a>
+          ))}
+        </div>
+      </div>
+    )}
+  </section>
+
+  {filters.view === 'grouped' ? (
+    <section class="mb-12">
+      <div class="mb-6 flex items-center justify-between gap-4">
+        <h2 class="text-2xl font-bold text-ink-950">Grouped by {filters.type && facets.subtypes.length > 0 ? 'Subtype' : 'Type'}</h2>
+        <a href={buildHref({ view: 'latest', page: 1 })} class="btn btn-outline btn-sm">Switch to latest</a>
+      </div>
+
+      {groups.length === 0 ? (
+        <p class="meta-muted">No grouped entries match the current filters.</p>
+      ) : (
+        <div class="space-y-10">
+          {groups.map((group) => (
+            <section class="rounded-2xl border border-base-300 bg-base-100/80 p-5 shadow-sm">
+              <div class="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <h3 class="text-xl font-bold text-ink-950">{group.label}</h3>
+                  <p class="meta-muted text-sm">{group.count} entries in this {group.field} bucket.</p>
+                </div>
+
+                <a
+                  href={buildHref({
+                    view: 'latest',
+                    page: 1,
+                    type: group.field === 'type' ? group.value : filters.type,
+                    subtype: group.field === 'subtype' ? group.value : filters.subtype,
+                  })}
+                  class="btn btn-outline btn-sm"
+                >
+                  View all
+                </a>
+              </div>
+
+              <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {group.items.map((item, index) => (
+                  <ContentCard content={item} image={index % 2 === 0 ? image : undefined} />
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+      )}
+    </section>
+  ) : (
+    <section class="mb-12">
+      <div class="mb-6 flex items-center justify-between gap-4">
+        <h2 class="text-2xl font-bold text-ink-950">Latest {collectionLabel}</h2>
+        <a href={buildHref({ view: 'grouped', page: 1 })} class="btn btn-outline btn-sm">Browse grouped</a>
+      </div>
+
+      {cards.length === 0 ? (
+        <p class="meta-muted">{emptyMessage}</p>
+      ) : (
+        <>
+          <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {cards.map((item, index) => (
+              <ContentCard content={item} image={index % 2 === 0 ? image : undefined} />
+            ))}
+          </div>
+
+          <PaginationNav
+            currentPage={pagination.page}
+            totalPages={pagination.totalPages}
+            basePath={basePath}
+            preservedParams={preservedParams}
+          />
+        </>
+      )}
+    </section>
+  )}
+</div>

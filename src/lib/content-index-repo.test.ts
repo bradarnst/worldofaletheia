@@ -83,7 +83,7 @@ describe('ContentIndexRepo', () => {
     const [countQuery, listQuery] = seenQueries;
     expect(countQuery.query).toContain("COALESCE(visibility, 'gm') = 'public'");
     expect(countQuery.values).toEqual(['lore', 'publish', 'published', 'review', 'draft']);
-    expect(listQuery.query).toContain('ORDER BY COALESCE(updated_at, source_last_modified) DESC, slug ASC');
+    expect(listQuery.query).toContain('ORDER BY updated_at DESC, slug ASC');
     expect(listQuery.values).toEqual(['lore', 'publish', 'published', 'review', 'draft', 10, 10]);
   });
 
@@ -117,13 +117,100 @@ describe('ContentIndexRepo', () => {
       createDbMock((query, values) => {
         recordedQuery = query;
         recordedValues = values;
-        return [{ tag: 'alpha' }, { tag: 'beta' }];
+        return [
+          { value: 'alpha', total_count: 2 },
+          { value: 'beta', total_count: 1 },
+        ];
       }),
     );
 
     await expect(repo.listTags({ collection: 'campaigns' })).resolves.toEqual(['alpha', 'beta']);
-    expect(recordedQuery).toContain('SELECT DISTINCT tag.value AS tag');
+    expect(recordedQuery).toContain('SELECT tag.value AS value, COUNT(DISTINCT content_index.id) AS total_count');
     expect(recordedQuery).toContain("COALESCE(visibility, 'gm') = 'public'");
     expect(recordedValues).toEqual(['campaigns', 'publish', 'published', 'review', 'draft']);
+  });
+
+  it('returns grouped facet counts for type queries', async () => {
+    const repo = new ContentIndexRepo(
+      createDbMock((query, values) => {
+        expect(query).toContain('SELECT type AS value, COUNT(*) AS total_count');
+        expect(values).toEqual(['systems', 'publish', 'published', 'review', 'draft']);
+        return [
+          { value: 'general', total_count: 3 },
+          { value: 'gurps', total_count: 7 },
+        ];
+      }),
+    );
+
+    await expect(repo.listTypeCounts({ collection: 'systems' })).resolves.toEqual([
+      { value: 'general', count: 3 },
+      { value: 'gurps', count: 7 },
+    ]);
+  });
+
+  it('searches metadata fields with escaped LIKE terms and pagination', async () => {
+    const seenQueries: Array<{ query: string; values: unknown[]; method: 'first' | 'all' }> = [];
+    const repo = new ContentIndexRepo(
+      createDbMock((query, values, method) => {
+        seenQueries.push({ query, values, method });
+
+        if (method === 'first') {
+          return { total_count: 1 };
+        }
+
+        return [
+          {
+            id: 'systems/gurps-magic',
+            collection: 'systems',
+            slug: 'gurps-magic',
+            title: 'GURPS Magic',
+            type: 'gurps',
+            subtype: 'magic',
+            tags_json: '["gurps","magic"]',
+            visibility: null,
+            campaign_slug: null,
+            summary: 'Magic rules',
+            status: 'publish',
+            author: 'Brad',
+            created_at: '2026-03-01T00:00:00.000Z',
+            updated_at: '2026-03-02T00:00:00.000Z',
+            source_etag: 'etag-1',
+            source_last_modified: '2026-03-02T00:00:00.000Z',
+            indexed_at: '2026-03-03T00:00:00.000Z',
+          },
+        ];
+      }),
+    );
+
+    const result = await repo.searchContent({
+      query: 'magic gurps',
+      collection: 'systems',
+      page: 1,
+      pageSize: 5,
+    });
+
+    expect(result.pagination.totalItems).toBe(1);
+    expect(result.items[0]?.slug).toBe('gurps-magic');
+    expect(seenQueries[0]?.query).toContain("LOWER(title) LIKE ? ESCAPE '\\'");
+    expect(seenQueries[0]?.values).toEqual([
+      'systems',
+      'publish',
+      'published',
+      'review',
+      'draft',
+      '%magic%',
+      '%magic%',
+      '%magic%',
+      '%magic%',
+      '%magic%',
+      '%magic%',
+      '%gurps%',
+      '%gurps%',
+      '%gurps%',
+      '%gurps%',
+      '%gurps%',
+      '%gurps%',
+    ]);
+    expect(seenQueries[1]?.values.slice(-2)).toEqual([5, 0]);
   });
 });
