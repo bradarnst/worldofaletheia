@@ -154,9 +154,12 @@ const layoutContent =
     tags: [],
     campaign: campaign ?? '',
   };
+const robots = effectiveVisibility === 'public' && canViewEntry && !contentUnavailable
+  ? undefined
+  : 'noindex, nofollow';
 ---
 
-<CampaignsContentLayout content={layoutContent} title={title}>
+<CampaignsContentLayout content={layoutContent} title={title} robots={robots}>
   <article class="reading-prose">
     <nav class="not-prose mb-6 text-sm meta-muted">
       <a href="/campaigns" class="hover:text-primary">Campaigns</a>

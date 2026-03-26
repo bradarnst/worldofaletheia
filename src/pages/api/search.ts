@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { createContentIndexRepoFromLocals, type ContentIndexRow } from '~/lib/content-index-repo';
 import { normalizeFilterValueOptional, normalizePage } from '~/lib/normalizers';
 import { buildCampaignContentHref } from '@utils/campaign-collections';
+import { getNoIndexHeaders } from '@utils/seo';
 
 function normalizePageSize(value: string | null): number {
   const parsed = Number.parseInt(value ?? '10', 10);
@@ -32,7 +33,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
   if (query.length < 2) {
     return new Response(JSON.stringify({ ok: false, error: 'invalid_query' }), {
       status: 400,
-      headers: { 'content-type': 'application/json' },
+      headers: getNoIndexHeaders('application/json'),
     });
   }
 
@@ -69,7 +70,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
       }),
       {
         status: 200,
-        headers: { 'content-type': 'application/json' },
+        headers: getNoIndexHeaders('application/json'),
       },
     );
   } catch (error) {
@@ -79,7 +80,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
 
     return new Response(JSON.stringify({ ok: false, error: 'unavailable' }), {
       status: 503,
-      headers: { 'content-type': 'application/json' },
+      headers: getNoIndexHeaders('application/json'),
     });
   }
 };

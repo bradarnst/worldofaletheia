@@ -2,13 +2,22 @@
 import '../styles/global.css';
 import BaseHead from '@components/BaseHead.astro';
 import Footer from '@components/Footer.astro';
+
 export interface Props {
   title?: string;
   description?: string;
   showFooter?: boolean;
+  robots?: string;
+  canonicalUrl?: string;
 }
 
-const { title = 'World of Aletheia', description = 'An immersive tabletop RPG setting where magic, mystery, and adventure await in the Shattered Lands.', showFooter = true } = Astro.props;
+const {
+  title = 'World of Aletheia',
+  description = 'An immersive tabletop RPG setting where magic, mystery, and adventure await in the Shattered Lands.',
+  showFooter = true,
+  robots,
+  canonicalUrl,
+} = Astro.props;
 ---
 
 <html lang="en" data-theme="savanna-days">
@@ -31,7 +40,7 @@ const { title = 'World of Aletheia', description = 'An immersive tabletop RPG se
       document.documentElement.setAttribute('data-theme', getTheme());
     })();
   </script>
-  <BaseHead title={title} description={description} />
+  <BaseHead title={title} description={description} robots={robots} canonicalUrl={canonicalUrl} />
   <body class="min-h-screen">
     <slot />
     {showFooter && <Footer />}

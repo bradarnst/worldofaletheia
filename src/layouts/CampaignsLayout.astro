@@ -7,12 +7,13 @@ import CampaignsHeader from '@components/CampaignsHeader.astro';
 export interface Props {
   title?: string;
   description?: string;
+  robots?: string;
 }
 
-const { title, description } = Astro.props;
+const { title, description, robots } = Astro.props;
 ---
 
-<BaseLayout title={title} description={description}>
+<BaseLayout title={title} description={description} robots={robots}>
   <GlobalNavigation />
   <CampaignsNav />
   <CampaignsHeader title={title || 'Campaigns'} description={description} />

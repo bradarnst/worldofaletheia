@@ -150,9 +150,12 @@ const layoutContent =
     visibility: 'gm',
     tags: [],
   };
+const robots = entry && entry.data.visibility === 'public' && canView && !contentUnavailable
+  ? undefined
+  : 'noindex, nofollow';
 ---
 
-<CampaignsContentLayout content={layoutContent}>
+<CampaignsContentLayout content={layoutContent} robots={robots}>
   {canView && Content && !contentUnavailable ? (
     <article class="reading-prose">
       <Content />

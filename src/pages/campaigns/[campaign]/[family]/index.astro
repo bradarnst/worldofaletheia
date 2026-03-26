@@ -105,9 +105,12 @@ const sortedEntries = entries.sort((left, right) => right.updatedAt.getTime() - 
 const allTags = [...new Set(sortedEntries.flatMap((entry) => entry.tags))].sort((left, right) => left.localeCompare(right));
 const campaignTitle = campaignEntry?.data.title ?? campaign ?? 'Campaign';
 const pageTitle = `${campaignTitle} - ${familyConfig.label}`;
+const robots = campaignEntry && campaignEntry.data.visibility === 'public' && !contentUnavailable
+  ? undefined
+  : 'noindex, nofollow';
 ---
 
-<CampaignsLayout title={pageTitle} description={`${familyConfig.label} for ${campaignTitle}`}>
+<CampaignsLayout title={pageTitle} description={`${familyConfig.label} for ${campaignTitle}`} robots={robots}>
   <div class="mx-auto max-w-6xl px-4 py-8">
     <nav class="mb-6 text-sm meta-muted">
       <a href="/campaigns" class="hover:text-primary">Campaigns</a>

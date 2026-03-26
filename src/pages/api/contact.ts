@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
-import { sendContactEmail } from '../../lib/email';
+import { sendContactEmail } from '~/lib/email';
+import { getNoIndexHeaders } from '@utils/seo';
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX_REQUESTS = 5;
@@ -77,7 +78,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   if (!checkRateLimit(ip)) {
     return new Response(JSON.stringify({ ok: false, error: 'rate_limited' }), {
       status: 429,
-      headers: { 'content-type': 'application/json' },
+      headers: getNoIndexHeaders('application/json'),
     });
   }
 
@@ -87,7 +88,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   } catch {
     return new Response(JSON.stringify({ ok: false, error: 'invalid_json' }), {
       status: 400,
-      headers: { 'content-type': 'application/json' },
+      headers: getNoIndexHeaders('application/json'),
     });
   }
 
@@ -95,7 +96,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   if (!normalized) {
     return new Response(JSON.stringify({ ok: false, error: 'invalid_payload' }), {
       status: 400,
-      headers: { 'content-type': 'application/json' },
+      headers: getNoIndexHeaders('application/json'),
     });
   }
 
@@ -103,7 +104,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   if (normalized.website) {
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,
-      headers: { 'content-type': 'application/json' },
+      headers: getNoIndexHeaders('application/json'),
     });
   }
 
@@ -120,7 +121,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,
-      headers: { 'content-type': 'application/json' },
+      headers: getNoIndexHeaders('application/json'),
     });
   } catch (error) {
     console.error('contact.relay.failed', {
@@ -130,8 +131,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     return new Response(JSON.stringify({ ok: false, error: 'unavailable' }), {
       status: 503,
-      headers: { 'content-type': 'application/json' },
+      headers: getNoIndexHeaders('application/json'),
     });
   }
 };
-

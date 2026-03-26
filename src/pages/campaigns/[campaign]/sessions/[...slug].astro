@@ -170,9 +170,12 @@ const layoutContent =
     campaign: campaign ?? '',
     created: session.createdAt,
   };
+const robots = effectiveVisibility === 'public' && canViewSession && !contentUnavailable
+  ? undefined
+  : 'noindex, nofollow';
 ---
 
-<CampaignsContentLayout content={layoutContent} title={title}>
+<CampaignsContentLayout content={layoutContent} title={title} robots={robots}>
   <article class="reading-prose">
     <!-- Breadcrumb -->
     <nav class="mb-6 text-sm meta-muted not-prose">

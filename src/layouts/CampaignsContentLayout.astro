@@ -9,17 +9,18 @@ interface Props {
   content: any;
   title?: string;
   description?: string;
+  robots?: string;
   children: any;
 }
 
-const { content, title, description, children } = Astro.props;
+const { content, title, description, robots, children } = Astro.props;
 
 const data = content.data || content;
 const contentTitle = title || data.title || content.title;
 const contentExcerpt = data.excerpt || content.excerpt;
 ---
 
-<BaseLayout title={contentTitle} description={description}>
+<BaseLayout title={contentTitle} description={description} robots={robots}>
   <GlobalNavigation />
   <CampaignsNav />
   <CampaignsContentHeader
@@ -36,7 +37,7 @@ const contentExcerpt = data.excerpt || content.excerpt;
       <main class="content-container">
         <slot />
       </main>
-      
+
       <Footer>
         <span slot="left">Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
       </Footer>

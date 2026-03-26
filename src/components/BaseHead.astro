@@ -1,13 +1,19 @@
 ---
-import {SEO} from 'astro-seo';
+import { SEO } from 'astro-seo';
 import aletheiaLogo from '@images/aletheia-logo.png';
+import { buildCanonicalUrl, getDefaultRobotsDirective } from '@utils/seo';
 
 export interface Props {
   title: string;
   description: string;
+  robots?: string;
+  canonicalUrl?: string;
 }
 
-const { title, description } = Astro.props;
+const { title, description, robots: robotsOverride, canonicalUrl } = Astro.props;
+const canonical = canonicalUrl ?? buildCanonicalUrl(Astro.url.pathname);
+const robots = robotsOverride ?? getDefaultRobotsDirective(Astro.url);
+const openGraphImage = new URL(aletheiaLogo.src, canonical).toString();
 ---
 
 <head>
@@ -17,6 +23,9 @@ const { title, description } = Astro.props;
   <meta name="viewport" content="width=device-width" />
   <meta name="generator" content={Astro.generator} />
   <meta name="description" content={description} />
+  <link rel="canonical" href={canonical} />
+  {robots && <meta name="robots" content={robots} />}
+  {robots && <meta name="googlebot" content={robots} />}
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:wght@400;600;700&display=swap" rel="stylesheet" />
@@ -24,11 +33,15 @@ const { title, description } = Astro.props;
   <SEO
     title={title}
     description={description}
+    canonical={canonical}
+    noindex={robots?.includes('noindex') ?? false}
+    nofollow={robots?.includes('nofollow') ?? false}
     openGraph={{
       basic: {
-        title: title,
+        title,
         type: 'website',
-        image: aletheiaLogo.src,
+        image: openGraphImage,
+        url: canonical,
       },
     }}
   />

@@ -11,6 +11,7 @@ const fromRoot = (value) => fileURLToPath(new URL(value, import.meta.url));
 // https://astro.build/config
 export default defineConfig({
   output: 'server',
+  site: 'https://worldofaletheia.com',
   integrations: [],
 
   vite: {

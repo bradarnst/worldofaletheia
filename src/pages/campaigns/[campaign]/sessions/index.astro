@@ -100,9 +100,12 @@ const sortedSessions = sessions.sort((a, b) => {
 });
 
 const title = campaignDetail ? `${campaignDetail.title} - Sessions` : 'Campaign Sessions';
+const robots = campaignEntry && campaignEntry.data.visibility === 'public' && !contentUnavailable
+  ? undefined
+  : 'noindex, nofollow';
 ---
 
-<CampaignsLayout title={title} description={`Session notes for ${campaignDetail?.title || campaign}`}>
+<CampaignsLayout title={title} description={`Session notes for ${campaignDetail?.title || campaign}`} robots={robots}>
   <div class="max-w-6xl mx-auto px-4 py-8">
     <!-- Breadcrumb -->
     <nav class="mb-6 text-sm text-gray-600">

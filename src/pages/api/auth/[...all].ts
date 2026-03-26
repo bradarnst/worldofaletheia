@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { getAuth } from '../../../lib/auth';
+import { getNoIndexHeaders } from '@utils/seo';
 
 const REQUIRED_AUTH_ENV_KEYS = [
   'BETTER_AUTH_URL',
@@ -38,7 +39,9 @@ function getAuthEnvDiagnostics(locals: unknown) {
 export const ALL: APIRoute = async ({ request, locals }) => {
   try {
     const auth = getAuth(locals);
-    return await auth.handler(request);
+    const response = await auth.handler(request);
+    response.headers.set('x-robots-tag', 'noindex, nofollow');
+    return response;
   } catch (error) {
     console.error('auth.route.unhandled_error', {
       message: error instanceof Error ? error.message : 'unknown error',
@@ -48,7 +51,7 @@ export const ALL: APIRoute = async ({ request, locals }) => {
 
     return new Response(JSON.stringify({ error: 'authentication_unavailable' }), {
       status: 500,
-      headers: { 'content-type': 'application/json' },
+      headers: getNoIndexHeaders('application/json'),
     });
   }
 };

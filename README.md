@@ -4,133 +4,115 @@ A live worldbuilding and campaign platform for tabletop RPG play.
 
 **Live site:** [worldofaletheia.com](https://worldofaletheia.com)
 
-This started as a practical tool for my table (my brother and I as GMs, plus our players), not a demo project. It then evolved into something worth publishing: both the product and the architecture behind it.
+This started as a practical tool for our table (my brother and I as GMs, plus our players), not a demo project. It has since grown into a production system with real architecture constraints: cloud-backed content, authenticated campaign boundaries, and discovery-focused navigation.
 
 ![Home page with Savanna Nights theme](./screenshots/home-savanna-nights-theme.webp)
 
 ## What This Project Is
 
-World of Aletheia is a production Astro site with three active domains:
+World of Aletheia is an Astro-first site with three product domains:
 
-- **Canon**: setting reference content (lore, places, sentients, flora, bestiary, factions)
-- **Using Aletheia**: systems and play documentation
-- **Campaigns**: active campaign/session domain, designed for progressively richer interactive tooling
+- **Canon** (`/lore`, `/places`, `/sentients`, `/bestiary`, `/flora`, `/factions`) for world reference content
+- **Using Aletheia** (`/systems`, `/meta`, `/about`) for play/system documentation
+- **Campaigns** (`/campaigns/**`) for campaign-specific content with runtime access control
 
-The core design goal is simple: keep publishing fast and reliable for content, while creating a clean runway for campaign features that need authenticated runtime behavior.
+Design-wise, the homepage follows a story-first pattern instead of acting like a sitemap. The visual layer is intentionally curated (hero governance, multi-theme support, readability-first structure), and discovery tools are woven directly into collection pages.
 
-## Content Authoring Workflow (Obsidian-First)
+## Current Functionality
 
-This project follows an **Obsidian-first source-of-truth model**.
+Core capabilities currently implemented:
 
-- Canonical content is authored in an Obsidian vault
-- The website repo is the publish/deploy target, not the primary writing surface
-- Markdown + frontmatter are synchronized into this repo through the content sync workflow
+- **Content publishing and domain separation** across 23 Astro collections with schema validation in `src/content.config.ts`
+- **Taxonomy-aware discovery** on high-volume collections (latest/grouped views, type/subtype/tag filtering, pagination)
+- **Chronology tools** with live canon utility routes:
+  - `/calendar` (month/week/year views)
+  - `/timeline` (dated lore event chronology)
+- **Campaign family model** with explicit campaign collections (`campaignLore`, `campaignPlaces`, `campaignCharacters`, `campaignScenes`, `campaignAdventures`, `campaignHooks`, etc.)
+- **Campaign access boundaries** using Better Auth + D1 membership checks and fail-closed behavior for protected content
+- **Protected campaign media delivery** through API routes with auth-aware gating
+- **Search API foundation** via `/api/search` backed by the discovery metadata index
 
-Current practical setup:
+## Content Workflow (Obsidian-First)
 
-- Multiple authors write in Obsidian
-- Obsidian's Git plugin is used for vault sync/backup/versioning
-- A local working copy of this repo is used by the sync pipeline for simplicity and deterministic builds
+This project follows an Obsidian-first source-of-truth model (ADR-0001):
 
-This is a workflow choice, not a hard product limitation:
+- Canonical writing happens in an Obsidian vault
+- Markdown + frontmatter are synchronized through `scripts/content-sync/`
+- Default sync mappings target cloud-backed collections in R2
+- The website repo is the publication/deployment target
 
-- Other sync/backup approaches can work, as long as they preserve markdown/frontmatter structure expected by the pipeline
-
-Reference decision: `plans/adrs/0001-obsidian-first-content-architecture.md`
-
-## Why This Repo Is Public
-
-- Share the product implementation openly for anyone curious how this is built
-- Share architecture decisions and trade-offs, not just code snapshots
-- Include the project in my portfolio for freelance and long-term contract work
-
-Short version: this is real software used by real humans, with enough scars to be useful.
-
-## Product Focus
-
-Current priorities:
-
-- Stable, readable content publishing
-- Campaign access control and private campaign content boundaries
-- Expandability toward campaign tooling beyond static pages
-
-Planned near-term roadmap:
-
-- **Custom calendar** (in active design/implementation planning)
-- **Player character and NPC organization capabilities**
-- **Potential interactive maps**
-
-Useful planning references:
-
-- `plans/features/aletheia-calendar-architecture-recommendation.md`
-- `plans/features/aletheia_calendar_developer_handoff.md`
-- `plans/adrs/0009-campaign-content-source-separation-for-public-repo.md`
+The flow is one-way by design: Obsidian -> repo sync -> build/deploy. There is no CMS or bidirectional sync pattern.
 
 ## Architecture Snapshot
 
-This is an Astro-first architecture with static content where possible and runtime complexity only where needed.
+This architecture stays static-first where possible and uses runtime checks only where required.
 
 ```mermaid
 flowchart LR
-  O[Obsidian authoring vault] --> G[Git-based vault sync or backup]
-  G --> S[Content sync pipeline]
-  S --> R[src/content and assets]
-  R --> B[Astro build]
-  B --> D[Cloudflare deploy]
+  O[Obsidian authoring vault] --> S[Content sync pipeline]
+  S --> R2[Cloud content store and manifests in R2]
+  S --> IDX[Discovery metadata index in D1]
+  R2 --> A[Astro content loaders]
+  A --> B[Astro build and SSR routes]
+  IDX --> Q[Index-backed discovery and search]
+  B --> CF[Cloudflare deploy]
 
-  U[Authenticated campaign request] --> A[Auth check Better Auth + D1]
-  A -->|allow| C[Campaign resolver]
-  C --> P[Private campaign storage path]
-  A -->|deny| X[403 or redirect]
+  U[Campaign request] --> AUTH[Better Auth session plus D1 checks]
+  AUTH -->|allow| CR[Campaign content resolver]
+  CR --> R2
+  AUTH -->|deny| X[Fail closed 403 or redirect]
 ```
 
-If you like decision records more than mystery architecture, see `plans/adrs/`.
+Cloud-backed content mode is now the canonical runtime lane (ADR-0010), with local mode retained for rollback and local authoring workflows.
 
-## Tech Stack and Infrastructure
+## Tech Stack
 
-- **Framework:** Astro (static-first, Islands when interaction is justified)
-- **Styling:** Tailwind CSS + DaisyUI
-- **Runtime/deploy:** Cloudflare (Workers/Pages flow, Wrangler tooling)
-- **Auth/data:** Better Auth + Cloudflare D1
-- **Content pipeline:** Obsidian-first sync tooling in `scripts/content-sync/`
+- **Framework:** Astro 6 (`@astrojs/cloudflare` adapter)
+- **UI:** Tailwind CSS 4 + DaisyUI 5
+- **Runtime/deploy:** Cloudflare Workers/Pages + Wrangler
+- **Auth:** Better Auth
+- **Data/index:** Cloudflare D1 (`content_index`, auth/session data)
+- **Content storage:** Cloudflare R2 object storage with manifest-backed markdown loading
+- **Content sync:** Node ESM scripts in `scripts/content-sync/`
 - **Testing:** Vitest
 - **Package manager:** pnpm
 
-## Authorship and AI Collaboration
+## Developer Setup
 
-I own the architecture, technical direction, decision-making, reviews, approvals, and overall product outcomes.
-
-Implementation is **AI-assisted by design**:
-
-- Primary coding agent workflow: **Kilo Code** via **Kilo Gateway**
-- Model ecosystem includes providers such as **OpenAI**, **Anthropic**, and **Google**
-- I use agents as force multipliers, not as autopilot; architectural intent and acceptance criteria are human-led
-
-Or put differently: the AI writes plenty of lines, but it does not get final say in system design.
-
-## Developer Setup (Concise)
-
-Prereqs:
+Prerequisites:
 
 - Node.js 20+
 - pnpm
-- Cloudflare account + Wrangler (for cloud-backed/auth flows)
+- Cloudflare account and Wrangler CLI
 
-Install and run:
+Install and run the fast local lane:
 
 ```bash
 pnpm install
 pnpm dev
 ```
 
-Build/test:
+Run Cloudflare parity lane (authoritative for cloud-mode behavior):
+
+```bash
+pnpm dev:cf:build
+pnpm dev:cf
+```
+
+Run auth + parity lane together:
+
+```bash
+pnpm dev:cf:auth
+```
+
+Build and test:
 
 ```bash
 pnpm build
 pnpm test
 ```
 
-Content workflow helpers:
+## Content Sync Commands
 
 ```bash
 pnpm content:sync
@@ -139,31 +121,52 @@ pnpm content:validate
 pnpm campaign:rename -- --from=old-campaign-slug --to=new-campaign-slug
 ```
 
-For local config setup, copy `config/content-sync.config.example.json` to `config/content-sync.config.json` and set your `vaultRoot`.
+Initial setup:
 
-More detailed docs:
+1. Copy `config/content-sync.config.example.json` to `config/content-sync.config.json`
+2. Set `vaultRoot`
+3. Set your cloud content credentials (`R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`)
 
-- `docs/content-ingestion-user-guide.md`
-- `docs/runbook/campaign-authoring-and-rename.md`
-- `docs/runbook/obsidian-content-sync-troubleshooting.md`
+## ADRs and Planning
 
-A more end-user-friendly setup guide may be added later if there is enough outside interest.
+Architecture decisions are tracked in `plans/adrs/`.
+
+Key recent decisions:
+
+- ADR-0010: cloud-default content source mode
+- ADR-0011: D1 metadata index for discovery/search
+- ADR-0013: campaign-domain collection taxonomy refactor
+- ADR-0014: calendar/timeline canon utility policy
+
+## Why This Repo Is Public
+
+- Share practical implementation details, not just screenshots
+- Document architectural trade-offs through ADRs
+- Maintain a transparent portfolio artifact for architecture + engineering work
+
+Short version: this is production software used by real people.
+
+## Authorship and AI Collaboration
+
+I own architecture, technical direction, review, and final acceptance.
+
+Implementation is AI-assisted by design:
+
+- Primary coding agent workflow: Kilo Code via Kilo Gateway
+- Model ecosystem includes OpenAI, Anthropic, and Google providers
+- Agents are force multipliers, not autonomous decision makers
 
 ## Contributing
 
 - Issues are welcome
-- PRs are considered selectively to preserve architectural coherence
+- PRs are reviewed selectively to preserve architectural coherence
 
 ## Work With Me
 
-I am available for architecture-heavy consulting and implementation leadership, especially where product direction and system design need to stay tightly coupled.
+I am available for architecture-heavy consulting and implementation leadership.
 
-This section will point to my portfolio/CV contact links.
-
-[LinkedIn](https://www.linkedin.com/in/bradarnst/)
-
-[CV/Portfolio Site](https://brad.nexusseven.com)
-
+- [LinkedIn](https://www.linkedin.com/in/bradarnst/)
+- [CV/Portfolio Site](https://brad.nexusseven.com)
 
 ## License
 
