@@ -314,13 +314,19 @@ Optional festival shortcuts:
 
 ---
 
+## Implementation addendum
+
+For repository implementation, use `aletheia_date_end` as the event end field name (instead of `aletheia_end` in earlier drafts).
+
+---
+
 ## 13. Event Ingestion (Obsidian Markdown)
 
 Frontmatter example:
 
 ```yaml
 aletheia_date: 1105-Amoris-17
-aletheia_end: 1105-Amoris-19
+aletheia_date_end: 1105-Amoris-19
 tldr: Short event description
 region: Northern Marches
 tags: [history, war]
@@ -329,7 +335,7 @@ tags: [history, war]
 Rules:
 
 - `aletheia_date` must resolve to a single day
-- `aletheia_end` optional
+- `aletheia_date_end` optional
 - events normalize to:
 
 ```

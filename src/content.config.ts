@@ -85,7 +85,7 @@ const floraSchema = baseSchema.extend({
 
 const factionsSchema = baseSchema.extend({
   title: z.string(),
-  type: z.enum(['guild', 'criminal', 'government', 'religion', 'military', 'police', 'school', 'order']),
+  type: z.enum(['political', 'guild', 'criminal', 'government', 'religion', 'military', 'police', 'school', 'order']),
   excerpt: z.string().optional(),
   alignment: z.enum(['lawful', 'neutral', 'chaotic', 'good', 'evil', 'any']).optional(),
 });

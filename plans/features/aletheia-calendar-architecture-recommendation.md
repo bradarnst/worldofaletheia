@@ -6,6 +6,7 @@
 - Author: Architect review
 - Input spec reviewed: `plans/features/aletheia_calendar_developer_handoff.md`
 - Scope: implementation architecture for calendar math + calendar UI + API contracts
+- Addendum (2026-03-26): `plans/features/aletheia-calendar-mvp-decisions-addendum-2026-03-26.md`
 
 ## 1) Context Anchors From Existing Decisions
 
@@ -324,7 +325,7 @@ Timeline support should be implemented as a required second phase, with static o
 
 ### Collection and computation model
 
-1. Events are authored in markdown frontmatter (`aletheia_date`, optional `aletheia_end`) as defined in [`aletheia_calendar_developer_handoff.md`](plans/features/aletheia_calendar_developer_handoff.md).
+1. Events are authored in markdown frontmatter (`aletheia_date`, optional `aletheia_date_end`) as defined in [`aletheia_calendar_developer_handoff.md`](plans/features/aletheia_calendar_developer_handoff.md).
 2. During Astro build, collect relevant entries via content collections.
 3. Pass event dates through the same calendar engine used by API/page logic.
 4. Normalize each event to canonical fields:
