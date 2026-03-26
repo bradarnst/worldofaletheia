@@ -372,16 +372,6 @@ const meta = defineCollection({
   schema: metaSchema,
 });
 
-const pagesSchema = z.object({
-  title: z.string(),
-  description: z.string().optional(),
-  tldr: z.string().optional(),
-});
-
-const pages = defineCollection({
-  loader: glob({ pattern: '*.md', base: 'src/content' }),
-  schema: pagesSchema,
-});
 
 export const collections = {
   lore,
@@ -406,5 +396,4 @@ export const collections = {
   campaignAdventures,
   campaignHooks,
   meta,
-  pages,
 };
