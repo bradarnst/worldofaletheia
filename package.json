@@ -35,6 +35,8 @@
     "content:sync": "node ./scripts/content-sync/index.mjs",
     "content:sync:staging": "CONTENT_INDEX_SYNC_MODE=remote CONTENT_INDEX_SYNC_ENV=staging node ./scripts/content-sync/index.mjs",
     "content:sync:prod": "CONTENT_INDEX_SYNC_MODE=remote CONTENT_INDEX_SYNC_ENV= node ./scripts/content-sync/index.mjs",
+    "deploy:prod": "pnpm content:sync:prod && CONTENT_SOURCE_MODE=cloud pnpm build && pnpm wrangler deploy",
+    "deploy:staging": "pnpm content:sync:staging && CONTENT_SOURCE_MODE=cloud pnpm build && pnpm wrangler deploy --env staging",
     "content:sync:dry-run": "node ./scripts/content-sync/index.mjs --dry-run",
     "content:sync:staging:dry-run": "CONTENT_INDEX_SYNC_MODE=remote CONTENT_INDEX_SYNC_ENV=staging node ./scripts/content-sync/index.mjs --dry-run",
     "content:sync:prod:dry-run": "CONTENT_INDEX_SYNC_MODE=remote CONTENT_INDEX_SYNC_ENV= node ./scripts/content-sync/index.mjs --dry-run",

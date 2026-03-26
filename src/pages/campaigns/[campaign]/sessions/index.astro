@@ -12,7 +12,8 @@ export async function getStaticPaths() {
   const campaignsCollection = await getCollection('campaigns');
 
   return campaignsCollection.map((item) => ({
-    params: { campaign: item.id.split('/')[0] },
+    // id format: campaigns/{slug}/Campaign - {slug}
+    params: { campaign: item.id.split('/')[1] ?? item.id },
   }));
 }
 
@@ -28,7 +29,7 @@ try {
     getCollection('campaigns'),
     getCollection('sessions'),
   ]);
-  campaignEntry = campaignsCollection.find((entry) => entry.id.split('/')[0] === campaign) ?? null;
+  campaignEntry = campaignsCollection.find((entry) => entry.id.split('/')[1] === campaign) ?? null;
   allSessions = sessionsCollection;
 } catch (error) {
   console.error('campaign.sessions.index_unavailable', {
@@ -43,7 +44,7 @@ if (!campaignEntry && !contentUnavailable) {
 }
 
 const campaignDetail = {
-  slug: campaignEntry?.id.split('/')[0] ?? campaign ?? '',
+  slug: campaignEntry?.id.split('/')[1] ?? campaign ?? '',
   title: campaignEntry?.data.title ?? 'Campaign Sessions',
   excerpt: campaignEntry?.data.excerpt,
 };

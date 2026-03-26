@@ -120,12 +120,15 @@ export function isCampaignDomainCollection(collection: string): collection is Ca
 }
 
 export function extractCampaignSlugFromEntryId(id: string): string {
-  return id.split('/')[0] ?? '';
+  // id format: campaigns/{slug}/Campaign - {slug} or campaigns/{slug}/{family}/{slug}
+  const parts = id.split('/');
+  return parts[1] ?? '';
 }
 
 export function extractCampaignFamilySlugFromEntryId(id: string): string {
+  // id format: campaigns/{slug}/{family}/{slug} -> returns the family-specific slug (last segment)
   const parts = id.split('/');
-  return parts.slice(2).join('/');
+  return parts[parts.length - 1] ?? '';
 }
 
 export function extractLeafSlugFromEntryId(id: string): string {

@@ -13,7 +13,9 @@ for (const session of sessions) {
 }
 
 const campaignSummaries = campaigns.map((entry) => {
-  const slug = entry.id.split('/')[0];
+  const parts = entry.id.split('/');
+  // id format: campaigns/{slug}/Campaign - {slug}.md -> ['campaigns', slug, 'Campaign - slug']
+  const slug = parts[1] ?? entry.id;
 
   return {
     id: slug,

@@ -45,7 +45,8 @@ try {
   ]);
 
   campaignEntry = campaignsCollection.find((entry) => {
-    const campaignSlug = entry.id.split('/')[0];
+    // id format: campaigns/{slug}/Campaign - {slug}
+    const campaignSlug = entry.id.split('/')[1];
     return campaignSlug === campaign || entry.data.campaign === campaign;
   }) ?? null;
 
@@ -89,7 +90,7 @@ const session = {
 };
 
 const campaignDetail = {
-  slug: campaignEntry?.id.split('/')[0] ?? campaign ?? '',
+  slug: campaignEntry?.id.split('/')[1] ?? campaign ?? '',
   title: campaignEntry?.data.title ?? 'Campaign',
 };
 

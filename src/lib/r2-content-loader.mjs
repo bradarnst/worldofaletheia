@@ -197,19 +197,28 @@ function normalizeManifestEntry(entry, collection) {
 }
 
 async function readManifest(collection) {
-  const rawText = await getObjectText(buildManifestKey(collection));
-  const parsed = JSON.parse(rawText);
+  const key = buildManifestKey(collection);
+  try {
+    const rawText = await getObjectText(key);
+    const parsed = JSON.parse(rawText);
 
-  if (!Array.isArray(parsed.entries)) {
-    throw new Error(`Manifest for ${collection} is missing entries.`);
+    if (!Array.isArray(parsed.entries)) {
+      throw new Error(`Manifest for ${collection} is missing entries.`);
+    }
+
+    return {
+      version: typeof parsed.version === 'number' ? parsed.version : 1,
+      collection,
+      generatedAt: typeof parsed.generatedAt === 'string' ? parsed.generatedAt : '',
+      entries: parsed.entries.map((entry) => normalizeManifestEntry(entry, collection)),
+    };
+  } catch (err) {
+    // Manifest doesn't exist - return empty collection
+    if (err.name === 'NoSuchKey' || err.message?.includes('NoSuchKey')) {
+      return { version: 1, collection, generatedAt: '', entries: [] };
+    }
+    throw err;
   }
-
-  return {
-    version: typeof parsed.version === 'number' ? parsed.version : 1,
-    collection,
-    generatedAt: typeof parsed.generatedAt === 'string' ? parsed.generatedAt : '',
-    entries: parsed.entries.map((entry) => normalizeManifestEntry(entry, collection)),
-  };
 }
 
 export function createR2MarkdownCollectionLoader(collection) {
@@ -220,12 +229,62 @@ export function createR2MarkdownCollectionLoader(collection) {
       const manifest = await readManifest(collection);
       const parseFrontmatter = await getParseFrontmatter();
 
+      // Valid type values per collection (for data sanitization)
+      const VALID_TYPES = {
+        lore: ['cosmology', 'religion', 'economy', 'history', 'geography', 'food_and_drink', 'culture', 'language', 'warfare', 'domestication', 'magic', 'technology', 'structure', 'other', 'event'],
+        places: ['location', 'landmark', 'dungeon', 'settlement', 'region', 'inhabitants', 'water'],
+        sentients: ['race', 'species', 'culture', 'organization', 'deity'],
+        bestiary: ['monster', 'animal', 'beast', 'spirit', 'construct', 'elemental'],
+        flora: ['tree', 'flower', 'fungus', 'herb', 'fruit', 'plant', 'crop'],
+        factions: ['political', 'guild', 'criminal', 'government', 'religion', 'military', 'police', 'school', 'order'],
+        systems: ['general', 'gurps'],
+        sessions: ['session', 'encounter', 'battle', 'note'],
+        campaignLore: ['cosmology', 'religion', 'economy', 'history', 'geography', 'food_and_drink', 'culture', 'language', 'warfare', 'domestication', 'magic', 'technology', 'structure', 'other'],
+        campaignPlaces: ['location', 'landmark', 'dungeon', 'settlement', 'region', 'inhabitants', 'water'],
+        campaignSentients: ['race', 'species', 'culture', 'organization', 'deity'],
+        campaignBestiary: ['monster', 'animal', 'beast', 'spirit', 'construct', 'elemental'],
+        campaignFlora: ['tree', 'flower', 'fungus', 'herb', 'fruit', 'plant', 'crop'],
+        campaignFactions: ['political', 'guild', 'criminal', 'government', 'religion', 'military', 'police', 'school', 'order'],
+        campaignSystems: ['general', 'gurps'],
+        campaignCharacters: ['pc', 'npc', 'ally', 'adversary', 'patron', 'creature', 'group', 'other'],
+        campaignScenes: ['scene', 'combat', 'social', 'travel', 'downtime', 'investigation', 'flashback', 'other'],
+        campaignAdventures: ['arc', 'mission', 'quest', 'contract', 'dungeon', 'journey', 'heist', 'other'],
+        campaignHooks: ['rumor', 'lead', 'job', 'threat', 'mystery', 'opportunity', 'other'],
+      };
+
       for (const entry of manifest.entries) {
         const markdown = await getObjectText(entry.key);
         const { frontmatter, content } = parseFrontmatter(markdown);
+        
+        // Inject campaign field from manifest for campaign family collections
+        const enrichedFrontmatter = { ...frontmatter };
+        if (entry.campaignSlug && !enrichedFrontmatter.campaign) {
+          enrichedFrontmatter.campaign = entry.campaignSlug;
+        }
+        
+        // Sanitize type field if it has invalid values
+        const validTypes = VALID_TYPES[collection];
+        if (validTypes) {
+          let typeVal = enrichedFrontmatter.type ? String(enrichedFrontmatter.type).trim() : '';
+          // Determine fallback: prefer 'location' for places, 'other' for others, else first valid
+          const getFallback = () => {
+            if (validTypes.includes('location')) return 'location';
+            if (validTypes.includes('other')) return 'other';
+            return validTypes[0];
+          };
+          // Handle missing, malformed, or invalid type values
+          if (!typeVal || typeVal.includes(':') || typeVal.includes(' ') || !validTypes.includes(typeVal)) {
+            if (typeVal && !validTypes.includes(typeVal)) {
+              console.warn(`[r2-loader] ${collection}: invalid type "${typeVal}" for ${entry.id}, falling back to "${getFallback()}"`);
+            }
+            typeVal = getFallback();
+            enrichedFrontmatter.type = typeVal;
+          }
+        }
+        
         const data = await context.parseData({
           id: entry.id,
-          data: frontmatter,
+          data: enrichedFrontmatter,
           filePath: `cloud://${entry.key}`,
         });
         context.store.set({
