@@ -1,0 +1,363 @@
+---
+import { getCollection } from 'astro:content';
+import AletheiaMonthGrid from '@components/calendar/AletheiaMonthGrid.astro';
+import WorldAletheiaLayout from '@layouts/WorldAletheiaLayout.astro';
+import { getFilteredCollection } from '@utils/content-filter';
+import {
+  MONTHS,
+  buildCalendarMonthData,
+  buildCalendarWeekData,
+  buildCalendarYearData,
+  buildEventProjectionMap,
+  enrichDate,
+  formatAletheiaDate,
+  formatAletheiaDateLabel,
+  formatAletheiaDateRange,
+  getMonthReferenceDate,
+  getNextMonthDate,
+  getNonLeapDayIndex,
+  getPreviousMonthDate,
+  getYearViewYear,
+  monthDateFromNonLeapDayIndex,
+  normalizeLoreEvents,
+  resolveCalendarSelection,
+  type AletheiaDate,
+  type CalendarView,
+} from '~/lib/aletheia-calendar';
+
+function buildCalendarHref(view: CalendarView, date: AletheiaDate): string {
+  const searchParams = new URLSearchParams({
+    view,
+    year: String(date.year),
+  });
+
+  if (date.kind === 'month') {
+    searchParams.set('month', String(date.monthIndex));
+    searchParams.set('day', String(date.day));
+    searchParams.set('date', formatAletheiaDate(date));
+  } else {
+    searchParams.set('date', formatAletheiaDate(date));
+  }
+
+  return `/calendar?${searchParams.toString()}`;
+}
+
+function buildTimelineHref(date: AletheiaDate): string {
+  const searchParams = new URLSearchParams({
+    year: String(date.year),
+    date: formatAletheiaDate(date),
+  });
+
+  if (date.kind === 'month') {
+    searchParams.set('month', String(date.monthIndex));
+    searchParams.set('day', String(date.day));
+  }
+
+  return `/timeline?${searchParams.toString()}`;
+}
+
+function getWeekNavigationDate(date: AletheiaDate, deltaWeeks: number): AletheiaDate {
+  const anchorDate = date.kind === 'leapday' ? getMonthReferenceDate(date) : date;
+  const nextIndex = Math.max(0, getNonLeapDayIndex(anchorDate) + (deltaWeeks * 6));
+  return monthDateFromNonLeapDayIndex(nextIndex);
+}
+
+function getYearNavigationDate(date: AletheiaDate, deltaYears: number): AletheiaDate {
+  const year = Math.max(0, date.year + deltaYears);
+  if (date.kind === 'leapday') {
+    return { kind: 'month', year, monthIndex: 1, monthName: 'Brumalis', day: 1 };
+  }
+
+  return {
+    kind: 'month',
+    year,
+    monthIndex: date.monthIndex,
+    monthName: date.monthName,
+    day: date.day,
+  };
+}
+
+const loreEntries = getFilteredCollection(await getCollection('lore'));
+const loreEvents = normalizeLoreEvents(loreEntries.filter((entry) => entry.data.type === 'event'));
+const eventProjectionMap = buildEventProjectionMap(loreEvents);
+
+const selection = resolveCalendarSelection(Astro.url.searchParams);
+const selectedDate = selection.date;
+const selectedEnrichedDate = enrichDate(selectedDate);
+const selectedDateEvents = eventProjectionMap.get(selectedEnrichedDate.absDay) ?? [];
+const monthReferenceDate = getMonthReferenceDate(selectedDate);
+
+const monthData = buildCalendarMonthData(monthReferenceDate.year, monthReferenceDate.monthIndex, eventProjectionMap);
+const weekData = buildCalendarWeekData(selectedDate, eventProjectionMap);
+const yearData = buildCalendarYearData(getYearViewYear(selectedDate), eventProjectionMap);
+
+const previousHref = selection.view === 'week'
+  ? buildCalendarHref('week', getWeekNavigationDate(selectedDate, -1))
+  : selection.view === 'year'
+    ? buildCalendarHref('year', getYearNavigationDate(selectedDate, -1))
+    : buildCalendarHref('month', getPreviousMonthDate(selectedDate));
+const nextHref = selection.view === 'week'
+  ? buildCalendarHref('week', getWeekNavigationDate(selectedDate, 1))
+  : selection.view === 'year'
+    ? buildCalendarHref('year', getYearNavigationDate(selectedDate, 1))
+    : buildCalendarHref('month', getNextMonthDate(selectedDate));
+
+const calendarTitle = selection.view === 'week'
+  ? 'Week View'
+  : selection.view === 'year'
+    ? `Year ${getYearViewYear(selectedDate)}`
+    : `${monthData.monthName} ${monthData.year}`;
+const monthSelectValue = selectedDate.kind === 'month' ? String(selectedDate.monthIndex) : String(monthReferenceDate.monthIndex);
+const dayInputValue = selectedDate.kind === 'month' ? String(selectedDate.day) : String(monthReferenceDate.day);
+---
+
+<WorldAletheiaLayout title="Calendar - World of Aletheia" description="View the civic calendar of Aletheia by month, week, or year.">
+  <section class="space-y-8">
+    <div class="hero rounded-3xl border border-base-300 bg-gradient-to-br from-base-100 via-base-100 to-base-200 shadow-sm">
+      <div class="hero-content w-full max-w-none px-6 py-10 lg:px-10">
+        <div class="w-full space-y-5">
+          <div class="space-y-2">
+            <p class="text-sm font-semibold uppercase tracking-[0.3em] text-ink-700">Canon Utility</p>
+            <h1 class="text-4xl font-bold text-ink-950">Aletheia Calendar</h1>
+            <p class="max-w-3xl text-lg text-ink-800">
+              The civic calendar of Aletheia tracks twelve 31-day months, a six-day week, and a Mid-Summer festival anchored to the moon.
+            </p>
+          </div>
+
+          <div class="grid gap-4 lg:grid-cols-[minmax(0,1.8fr)_minmax(320px,1fr)]">
+            <div class="card bg-base-100 shadow-sm border border-base-300">
+              <div class="card-body gap-5">
+                <div class="flex flex-wrap items-center gap-3">
+                  <a href={buildCalendarHref('month', selectedDate)} class:list={['btn btn-sm', selection.view === 'month' ? 'btn-primary' : 'btn-outline']}>
+                    Month
+                  </a>
+                  <a href={buildCalendarHref('week', selectedDate)} class:list={['btn btn-sm', selection.view === 'week' ? 'btn-primary' : 'btn-outline']}>
+                    Week
+                  </a>
+                  <a href={buildCalendarHref('year', selectedDate)} class:list={['btn btn-sm', selection.view === 'year' ? 'btn-primary' : 'btn-outline']}>
+                    Year
+                  </a>
+                  <a href={buildTimelineHref(selectedDate)} class="btn btn-sm btn-outline">Timeline from here</a>
+                </div>
+
+                <form method="get" class="grid gap-4 md:grid-cols-2 xl:grid-cols-[auto_minmax(9rem,1fr)_minmax(13rem,1fr)_auto_auto] xl:items-end">
+                  <label class="form-control gap-2">
+                    <span class="label-text font-semibold text-ink-800">View</span>
+                    <select name="view" class="select select-bordered w-full">
+                      <option value="month" selected={selection.view === 'month'}>Month</option>
+                      <option value="week" selected={selection.view === 'week'}>Week</option>
+                      <option value="year" selected={selection.view === 'year'}>Year</option>
+                    </select>
+                  </label>
+
+                  <label class="form-control gap-2">
+                    <span class="label-text font-semibold text-ink-800">Year</span>
+                    <input name="year" type="number" min="0" value={selectedDate.year} class="input input-bordered w-full" />
+                  </label>
+
+                  <label class="form-control gap-2">
+                    <span class="label-text font-semibold text-ink-800">Month</span>
+                    <select name="month" class="select select-bordered w-full">
+                      {MONTHS.map((monthName, index) => (
+                        <option value={index + 1} selected={monthSelectValue === String(index + 1)}>
+                          {index + 1} - {monthName}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label class="form-control gap-2">
+                    <span class="label-text font-semibold text-ink-800">Day</span>
+                    <input name="day" type="number" min="1" max="31" value={dayInputValue} class="input input-bordered w-full" />
+                  </label>
+
+                  <button type="submit" class="btn btn-primary">Go</button>
+                </form>
+
+                <p class="text-sm text-ink-700">
+                  Direct date URLs also work: <code>1105-Amoris-17</code>, <code>1105-4-17</code>, and <code>1110-Leapday</code> via the <code>date</code> query string.
+                </p>
+              </div>
+            </div>
+
+            <div class="card bg-base-100 shadow-sm border border-base-300">
+              <div class="card-body gap-4">
+                <div>
+                  <p class="text-sm font-semibold uppercase tracking-[0.24em] text-ink-700">Selected Date</p>
+                  <h2 class="mt-2 text-2xl font-bold text-ink-950">{formatAletheiaDateLabel(selectedEnrichedDate)}</h2>
+                </div>
+
+                <div class="flex flex-wrap gap-2 text-sm">
+                  {selectedDate.kind === 'month' && <span class="badge badge-outline">{selectedEnrichedDate.weekday}</span>}
+                  <span class="badge badge-outline">{selectedEnrichedDate.moonPhaseLabel}</span>
+                  {'isFestivalDay' in selectedEnrichedDate && selectedEnrichedDate.isFestivalDay && (
+                    <span class="badge badge-warning">Festival Day {selectedEnrichedDate.festivalDayNumber}</span>
+                  )}
+                  {'isFestivalLeapDay' in selectedEnrichedDate && selectedEnrichedDate.isFestivalLeapDay && (
+                    <span class="badge badge-warning">Festival Leap Day</span>
+                  )}
+                </div>
+
+                <div class="flex items-center justify-between gap-3">
+                  <a href={previousHref} class="btn btn-sm btn-outline">Previous</a>
+                  <p class="text-center text-sm text-ink-700">{calendarTitle}</p>
+                  <a href={nextHref} class="btn btn-sm btn-outline">Next</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {selection.view === 'month' && (
+      <div class="grid gap-6 xl:grid-cols-[minmax(0,1.8fr)_minmax(320px,1fr)]">
+        <div class="card bg-base-100 shadow-sm border border-base-300">
+          <div class="card-body gap-5">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p class="text-sm font-semibold uppercase tracking-[0.24em] text-ink-700">Month View</p>
+                <h2 class="text-2xl font-bold text-ink-950">{monthData.monthName} {monthData.year}</h2>
+              </div>
+              <span class="badge badge-outline">{monthData.eventCount} dated lore events</span>
+            </div>
+            <AletheiaMonthGrid month={monthData} selectedAbsDay={selectedEnrichedDate.absDay} />
+          </div>
+        </div>
+
+        <div class="space-y-6">
+          {monthData.leapDay && (
+            <div class="card border border-warning/60 bg-warning/10 shadow-sm">
+              <div class="card-body gap-2">
+                <h3 class="card-title text-xl text-ink-950">Leap Day Watch</h3>
+                <p class="text-ink-800">
+                  Leap Day falls outside every month and weekday, but it still occurs inside this year's Mid-Summer festival.
+                </p>
+                <p class="text-sm text-ink-700">{formatAletheiaDateLabel(monthData.leapDay, { includeWeekday: false })}</p>
+              </div>
+            </div>
+          )}
+
+          <div class="card bg-base-100 shadow-sm border border-base-300">
+            <div class="card-body gap-4">
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <h3 class="card-title text-xl text-ink-950">On this date</h3>
+                  <p class="text-sm text-ink-700">Lore events projected onto the selected day.</p>
+                </div>
+                <span class="badge badge-outline">{selectedDateEvents.length}</span>
+              </div>
+
+              {selectedDateEvents.length > 0 ? (
+                <div class="space-y-3">
+                  {selectedDateEvents.map((event) => (
+                    <article class="rounded-xl border border-base-300 bg-base-200/60 p-3">
+                      <div class="flex items-start justify-between gap-3">
+                        <div>
+                          <a href={event.href} class="font-semibold text-ink-950 transition-colors hover:text-primary">{event.title}</a>
+                          <p class="text-sm text-ink-700">{formatAletheiaDateRange(event.startDate, event.endDate)}</p>
+                        </div>
+                        {!event.isSingleDay && <span class="badge badge-outline">{event.durationDays} days</span>}
+                      </div>
+                      {event.excerpt && <p class="mt-2 text-sm text-ink-800">{event.excerpt}</p>}
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <p class="text-sm text-ink-700">No lore events are projected onto this day yet.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {selection.view === 'week' && (
+      <div class="space-y-6">
+        <div class="card bg-base-100 shadow-sm border border-base-300">
+          <div class="card-body gap-5">
+            <div>
+              <p class="text-sm font-semibold uppercase tracking-[0.24em] text-ink-700">Week View</p>
+              <h2 class="text-2xl font-bold text-ink-950">Six civic days around {formatAletheiaDateLabel(selectedEnrichedDate)}</h2>
+            </div>
+
+            {weekData.leapDay && selectedDate.kind === 'leapday' && (
+              <div class="rounded-xl border border-warning/60 bg-warning/10 p-4 text-sm text-ink-800">
+                Leap Day stands outside the six-day week. The cards below show the surrounding weekday cycle, with the Leap Day break called out between festival days three and four.
+              </div>
+            )}
+
+            <div class="grid gap-4 xl:grid-cols-6">
+              {weekData.items.map((item) => (
+                <>
+                  <article class:list={[
+                    'card border shadow-sm',
+                    item.date.absDay === selectedEnrichedDate.absDay ? 'border-primary bg-base-100 ring-1 ring-primary/40' : 'border-base-300 bg-base-100',
+                  ]}>
+                    <div class="card-body gap-3 p-4">
+                      <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-ink-700">{item.date.weekday}</p>
+                        <h3 class="mt-1 text-lg font-bold text-ink-950">{item.date.monthName} {item.date.day}</h3>
+                        <p class="text-sm text-ink-700">Year {item.date.year}</p>
+                      </div>
+                      <div class="flex flex-wrap gap-2 text-xs">
+                        <span class="badge badge-outline">{item.date.moonPhaseLabel}</span>
+                        {item.date.isFestivalDay && <span class="badge badge-warning">Festival {item.date.festivalDayNumber}</span>}
+                      </div>
+                      <div class="space-y-2 text-sm text-ink-800">
+                        {item.events.length > 0 ? item.events.slice(0, 3).map((event) => (
+                          <a href={event.href} class="block rounded-lg border border-base-300 bg-base-200/60 px-2 py-1 transition-colors hover:border-primary">
+                            {event.title}
+                          </a>
+                        )) : <p>No events.</p>}
+                      </div>
+                    </div>
+                  </article>
+                  {item.hasLeapDayAfter && weekData.leapDay && (
+                    <div class="card border border-warning/60 bg-warning/10 shadow-sm xl:col-span-6">
+                      <div class="card-body flex-row items-center justify-between gap-3 p-4">
+                        <div>
+                          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-ink-700">Leap Day Interlude</p>
+                          <p class="text-sm text-ink-800">{formatAletheiaDateLabel(weekData.leapDay, { includeWeekday: false })} pauses the weekday cycle before it resumes.</p>
+                        </div>
+                        <span class="badge badge-warning">Outside the week</span>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {selection.view === 'year' && (
+      <div class="card bg-base-100 shadow-sm border border-base-300">
+        <div class="card-body gap-6">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p class="text-sm font-semibold uppercase tracking-[0.24em] text-ink-700">Year View</p>
+              <h2 class="text-2xl font-bold text-ink-950">Year {getYearViewYear(selectedDate)}</h2>
+            </div>
+            <a href={buildTimelineHref(selectedDate)} class="btn btn-sm btn-outline">View timeline from this year</a>
+          </div>
+
+          <div class="grid gap-6 xl:grid-cols-2">
+            {yearData.map((yearMonth) => (
+              <section class="rounded-2xl border border-base-300 bg-base-100 p-4 shadow-sm">
+                <div class="mb-4 flex items-center justify-between gap-3">
+                  <a href={buildCalendarHref('month', { kind: 'month', year: yearMonth.year, monthIndex: yearMonth.monthIndex, monthName: yearMonth.monthName, day: 1 })} class="text-lg font-semibold text-ink-950 transition-colors hover:text-primary">
+                    {yearMonth.monthName}
+                  </a>
+                  <span class="badge badge-outline">{yearMonth.eventCount} events</span>
+                </div>
+                <AletheiaMonthGrid month={yearMonth} compact={true} selectedAbsDay={monthReferenceDate.year === yearMonth.year && monthReferenceDate.monthIndex === yearMonth.monthIndex ? selectedEnrichedDate.absDay : undefined} />
+              </section>
+            ))}
+          </div>
+        </div>
+      </div>
+    )}
+  </section>
+</WorldAletheiaLayout>

@@ -1,0 +1,174 @@
+---
+import { getCollection } from 'astro:content';
+import WorldAletheiaLayout from '@layouts/WorldAletheiaLayout.astro';
+import { getFilteredCollection } from '@utils/content-filter';
+import {
+  MONTHS,
+  formatAletheiaDate,
+  formatAletheiaDateLabel,
+  formatAletheiaDateRange,
+  normalizeLoreEvents,
+  resolveTimelineStartDate,
+  toAbsDay,
+} from '~/lib/aletheia-calendar';
+
+function buildCalendarHref(dateString: string, year: number, monthIndex?: number, day?: number): string {
+  const searchParams = new URLSearchParams({
+    date: dateString,
+    year: String(year),
+  });
+
+  if (monthIndex) {
+    searchParams.set('month', String(monthIndex));
+  }
+
+  if (day) {
+    searchParams.set('day', String(day));
+  }
+
+  return `/calendar?${searchParams.toString()}`;
+}
+
+const loreEntries = getFilteredCollection(await getCollection('lore'));
+const allEvents = normalizeLoreEvents(loreEntries.filter((entry) => entry.data.type === 'event'));
+const timelineStartDate = resolveTimelineStartDate(Astro.url.searchParams);
+const timelineStartAbsDay = timelineStartDate ? toAbsDay(timelineStartDate) : null;
+const visibleEvents = timelineStartAbsDay === null
+  ? allEvents
+  : allEvents.filter((event) => event.endAbsDay >= timelineStartAbsDay);
+const timelineRows = visibleEvents.map((event, index) => ({
+  event,
+  showYearMarker: index === 0 || visibleEvents[index - 1]?.startDate.year !== event.startDate.year,
+}));
+const monthValue = Astro.url.searchParams.get('month') ?? '';
+const dayValue = Astro.url.searchParams.get('day') ?? '';
+const yearValue = Astro.url.searchParams.get('year') ?? '';
+---
+
+<WorldAletheiaLayout title="Timeline - World of Aletheia" description="Read the chronological lore timeline of Aletheia.">
+  <section class="space-y-8">
+    <div class="hero rounded-3xl border border-base-300 bg-gradient-to-br from-base-100 via-base-100 to-base-200 shadow-sm">
+      <div class="hero-content w-full max-w-none px-6 py-10 lg:px-10">
+        <div class="w-full grid gap-6 lg:grid-cols-[minmax(0,1.8fr)_minmax(320px,1fr)]">
+          <div class="space-y-4">
+            <div class="space-y-2">
+              <p class="text-sm font-semibold uppercase tracking-[0.3em] text-ink-700">Canon Utility</p>
+              <h1 class="text-4xl font-bold text-ink-950">Aletheia Timeline</h1>
+              <p class="max-w-3xl text-lg text-ink-800">
+                A vertical chronology of dated lore entries. The MVP timeline is intentionally simple: one scrollable sequence ordered by the shared calendar engine's absolute day index.
+              </p>
+            </div>
+            <div class="flex flex-wrap gap-3">
+              <a href="/calendar" class="btn btn-outline btn-sm">Calendar</a>
+              <a href="/timeline" class="btn btn-outline btn-sm">Reset timeline</a>
+            </div>
+          </div>
+
+          <div class="card bg-base-100 shadow-sm border border-base-300">
+            <div class="card-body gap-4">
+              <div>
+                <h2 class="card-title text-xl text-ink-950">Start From</h2>
+                <p class="text-sm text-ink-700">Use numeric month filters or a direct <code>date</code> query string in the URL.</p>
+              </div>
+
+              <form method="get" class="grid gap-4 md:grid-cols-2 xl:grid-cols-4 xl:items-end">
+                <label class="form-control gap-2">
+                  <span class="label-text font-semibold text-ink-800">Year</span>
+                  <input name="year" type="number" min="0" value={yearValue} class="input input-bordered w-full" />
+                </label>
+
+                <label class="form-control gap-2">
+                  <span class="label-text font-semibold text-ink-800">Month</span>
+                  <select name="month" class="select select-bordered w-full">
+                    <option value="">Any month</option>
+                    {MONTHS.map((monthName, index) => (
+                      <option value={index + 1} selected={monthValue === String(index + 1)}>
+                        {index + 1} - {monthName}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label class="form-control gap-2">
+                  <span class="label-text font-semibold text-ink-800">Day</span>
+                  <input name="day" type="number" min="1" max="31" value={dayValue} class="input input-bordered w-full" />
+                </label>
+
+                <button type="submit" class="btn btn-primary">Apply</button>
+              </form>
+
+              {timelineStartDate ? (
+                <p class="text-sm text-ink-700">Showing events on or after <strong>{formatAletheiaDateLabel(timelineStartDate)}</strong>.</p>
+              ) : (
+                <p class="text-sm text-ink-700">Showing the full dated lore timeline.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm border border-base-300">
+      <div class="card-body gap-6">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="text-2xl font-bold text-ink-950">Chronological Lore</h2>
+            <p class="text-sm text-ink-700">{visibleEvents.length} event{visibleEvents.length === 1 ? '' : 's'} in the current timeline window.</p>
+          </div>
+        </div>
+
+        {timelineRows.length > 0 ? (
+          <div class="relative border-l-2 border-base-300 pl-6">
+            {timelineRows.map(({ event, showYearMarker }) => (
+              <article class="relative pb-8 last:pb-0">
+                <span class="absolute -left-[2.05rem] top-6 h-4 w-4 rounded-full border-4 border-base-100 bg-primary"></span>
+                {showYearMarker && (
+                  <div class="mb-4 inline-flex rounded-full border border-base-300 bg-base-200 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-ink-700">
+                    Year {event.startDate.year}
+                  </div>
+                )}
+
+                <div class="rounded-2xl border border-base-300 bg-base-100 p-5 shadow-sm">
+                  <div class="flex flex-wrap items-start justify-between gap-4">
+                    <div class="space-y-2">
+                      <div class="flex flex-wrap gap-2 text-xs">
+                        <span class="badge badge-outline">{formatAletheiaDateRange(event.startDate, event.endDate)}</span>
+                        {!event.isSingleDay && <span class="badge badge-outline">{event.durationDays} days</span>}
+                        {event.startDate.kind === 'month' && event.startDate.isFestivalDay && (
+                          <span class="badge badge-warning">Festival Day {event.startDate.festivalDayNumber}</span>
+                        )}
+                      </div>
+                      <h3 class="text-xl font-bold text-ink-950">
+                        <a href={event.href} class="transition-colors hover:text-primary">{event.title}</a>
+                      </h3>
+                    </div>
+                    <a
+                      href={buildCalendarHref(formatAletheiaDate(event.startDate), event.startDate.year, event.startDate.kind === 'month' ? event.startDate.monthIndex : undefined, event.startDate.kind === 'month' ? event.startDate.day : undefined)}
+                      class="btn btn-sm btn-outline"
+                    >
+                      Open in calendar
+                    </a>
+                  </div>
+
+                  {event.excerpt && <p class="mt-3 text-ink-800">{event.excerpt}</p>}
+
+                  {event.tags.length > 0 && (
+                    <div class="mt-4 flex flex-wrap gap-2">
+                      {event.tags.map((tag) => (
+                        <span class="tag-chip">{tag}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div class="rounded-2xl border border-dashed border-base-300 bg-base-200/50 p-8 text-center text-ink-700">
+            No dated lore events fall within the current timeline window yet.
+          </div>
+        )}
+      </div>
+    </div>
+  </section>
+</WorldAletheiaLayout>

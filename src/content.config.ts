@@ -3,6 +3,7 @@ import { z } from 'astro/zod';
 import { glob } from 'astro/loaders';
 import { createR2MarkdownCollectionLoader } from './lib/r2-content-loader.mjs';
 import { resolveCollectionSource } from './lib/content-source-mode';
+import { parseAletheiaDate, toAbsDay } from './lib/aletheia-calendar';
 
 function createMarkdownLoader(collection: string, pattern: string, base: string) {
   if (resolveCollectionSource(collection) === 'cloud') {
@@ -47,10 +48,72 @@ const baseSchema = z.object({
   })).optional(),
 });
 
+const sharedLoreTypes = ['cosmology', 'religion', 'economy', 'history', 'geography', 'food_and_drink', 'culture', 'language', 'warfare', 'domestication', 'magic', 'technology', 'structure', 'other'] as const;
+const loreTypes = [...sharedLoreTypes, 'event'] as const;
+
 const loreSchema = baseSchema.extend({
   title: z.string(),
-  type: z.enum(['cosmology', 'religion', 'economy', 'history', 'geography', 'food_and_drink', 'culture', 'language', 'warfare', 'domestication', 'magic', 'technology', 'structure', 'other']),
+  type: z.enum(loreTypes),
   excerpt: z.string().optional(),
+  aletheia_date: z.string().trim().min(1).optional(),
+  aletheia_date_end: z.string().trim().min(1).optional(),
+}).superRefine((data, ctx) => {
+  const hasStartDate = Boolean(data.aletheia_date);
+  const hasEndDate = Boolean(data.aletheia_date_end);
+  const startDate = hasStartDate ? parseAletheiaDate(data.aletheia_date ?? '') : null;
+  const endDate = hasEndDate ? parseAletheiaDate(data.aletheia_date_end ?? '') : null;
+
+  if (data.type === 'event') {
+    if (!hasStartDate) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['aletheia_date'],
+        message: 'Lore entries with type event must define aletheia_date.',
+      });
+    }
+
+    if (hasStartDate && !startDate) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['aletheia_date'],
+        message: 'aletheia_date must be a valid Aletheia calendar date.',
+      });
+    }
+
+    if (hasEndDate && !endDate) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['aletheia_date_end'],
+        message: 'aletheia_date_end must be a valid Aletheia calendar date.',
+      });
+    }
+
+    if (startDate && endDate && toAbsDay(endDate) < toAbsDay(startDate)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['aletheia_date_end'],
+        message: 'aletheia_date_end must be on or after aletheia_date.',
+      });
+    }
+
+    return;
+  }
+
+  if (hasStartDate) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['aletheia_date'],
+      message: 'Only lore entries with type event may define aletheia_date.',
+    });
+  }
+
+  if (hasEndDate) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['aletheia_date_end'],
+      message: 'Only lore entries with type event may define aletheia_date_end.',
+    });
+  }
 });
 
 const placesSchema = baseSchema.extend({
@@ -124,7 +187,10 @@ const sessionsSchema = baseSchema.extend({
   duration: z.number().optional(),
 });
 
-const campaignLoreSchema = loreSchema.extend({
+const campaignLoreSchema = baseSchema.extend({
+  title: z.string(),
+  type: z.enum(sharedLoreTypes),
+  excerpt: z.string().optional(),
   campaign: z.string(),
   visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('campaignMembers'),
 });

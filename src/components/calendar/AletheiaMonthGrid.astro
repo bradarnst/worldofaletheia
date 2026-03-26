@@ -1,0 +1,85 @@
+---
+import type { CalendarMonthData } from '~/lib/aletheia-calendar';
+
+interface Props {
+  month: CalendarMonthData;
+  selectedAbsDay?: number;
+  compact?: boolean;
+}
+
+const { month, selectedAbsDay, compact = false } = Astro.props;
+const weekdayLabels = ['Primus', 'Secundus', 'Tertius', 'Quartus', 'Quintus', 'Deorum'];
+---
+
+<div class="space-y-3">
+  <div class="grid grid-cols-6 gap-2 text-center text-xs font-semibold uppercase tracking-[0.18em] text-ink-700">
+    {weekdayLabels.map((label) => (
+      <div class="rounded-lg border border-base-300 bg-base-200/70 px-2 py-2">{label}</div>
+    ))}
+  </div>
+
+  <div class:list={[
+    'grid grid-cols-6 gap-2',
+    compact ? 'text-xs' : 'text-sm',
+  ]}>
+    {month.slots.map((slot) => {
+      if (slot.kind === 'empty') {
+        return <div class:list={['rounded-xl border border-dashed border-base-300/70 bg-base-200/25', compact ? 'min-h-20' : 'min-h-36']} aria-hidden="true" />;
+      }
+
+      const isSelected = selectedAbsDay === slot.date.absDay;
+      const visibleEvents = compact ? [] : slot.events.slice(0, 2);
+      const hiddenEventCount = compact ? slot.events.length : Math.max(slot.events.length - visibleEvents.length, 0);
+
+      return (
+        <div
+          class:list={[
+            'rounded-xl border bg-base-100 p-2 shadow-sm transition-colors',
+            compact ? 'min-h-20' : 'min-h-36',
+            isSelected ? 'border-primary shadow-md ring-1 ring-primary/40' : 'border-base-300',
+            slot.date.isFestivalDay ? 'bg-warning/10' : '',
+          ]}
+        >
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <p class:list={['font-semibold text-ink-950', compact ? 'text-sm' : 'text-base']}>
+                {slot.date.day}
+              </p>
+              {!compact && <p class="text-xs text-ink-700">{slot.date.weekday}</p>}
+            </div>
+            <div class="flex flex-col items-end gap-1">
+              <span class="badge badge-outline badge-sm border-base-300 text-ink-700" title={slot.date.moonPhaseLabel}>
+                {slot.date.moonPhaseShortLabel}
+              </span>
+              {slot.date.isFestivalDay && (
+                <span class="badge badge-warning badge-sm">F{slot.date.festivalDayNumber}</span>
+              )}
+              {slot.date.isFullMoon && !slot.date.isFestivalDay && (
+                <span class="badge badge-info badge-sm">Full</span>
+              )}
+              {compact && slot.events.length > 0 && (
+                <span class="badge badge-primary badge-sm">{slot.events.length}</span>
+              )}
+            </div>
+          </div>
+
+          {!compact && (
+            <div class="mt-3 space-y-2">
+              {visibleEvents.map((event) => (
+                <a
+                  href={event.href}
+                  class="block rounded-lg border border-base-300 bg-base-200/60 px-2 py-1 text-xs text-ink-800 transition-colors hover:border-primary hover:bg-base-200"
+                >
+                  {event.title}
+                </a>
+              ))}
+              {hiddenEventCount > 0 && (
+                <p class="text-xs font-medium text-ink-700">+{hiddenEventCount} more</p>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    })}
+  </div>
+</div>
