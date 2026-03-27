@@ -102,12 +102,15 @@ const entries = campaignEntry && !contentUnavailable
   : [];
 
 const sortedEntries = entries.sort((left, right) => right.updatedAt.getTime() - left.updatedAt.getTime());
+const totalEntriesCount = familyEntries.length;
+const restrictedEntriesCount = Math.max(totalEntriesCount - sortedEntries.length, 0);
 const allTags = [...new Set(sortedEntries.flatMap((entry) => entry.tags))].sort((left, right) => left.localeCompare(right));
 const campaignTitle = campaignEntry?.data.title ?? campaign ?? 'Campaign';
 const pageTitle = `${campaignTitle} - ${familyConfig.label}`;
 const robots = campaignEntry && campaignEntry.data.visibility === 'public' && !contentUnavailable
   ? undefined
   : 'noindex, nofollow';
+const loginHref = `/login?next=${encodeURIComponent(Astro.url.pathname + Astro.url.search)}`;
 ---
 
 <CampaignsLayout title={pageTitle} description={`${familyConfig.label} for ${campaignTitle}`} robots={robots}>
@@ -126,7 +129,12 @@ const robots = campaignEntry && campaignEntry.data.visibility === 'public' && !c
           <h1 class="text-3xl font-bold text-ink-950">{familyConfig.label}</h1>
           <p class="max-w-3xl text-ink-800">{familyConfig.description}</p>
         </div>
-        <span class="badge badge-outline badge-lg">{sortedEntries.length} visible</span>
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="badge badge-outline badge-lg">{sortedEntries.length} / {totalEntriesCount} visible</span>
+          {restrictedEntriesCount > 0 && (
+            <span class="badge badge-ghost">{restrictedEntriesCount} protected</span>
+          )}
+        </div>
       </div>
 
       {contentUnavailable && (
@@ -135,12 +143,29 @@ const robots = campaignEntry && campaignEntry.data.visibility === 'public' && !c
           the cloud source and index are healthy again.
         </div>
       )}
+
+      {restrictedEntriesCount > 0 && (
+        <div class="rounded-xl border border-base-300 bg-base-200 p-4 text-sm text-ink-800">
+          <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <p>
+              {restrictedEntriesCount}
+              {' '}
+              protected {familyConfig.label.toLowerCase()}
+              {' '}
+              {restrictedEntriesCount === 1 ? 'entry is' : 'entries are'} currently hidden in this list.
+            </p>
+            <a href={loginHref} class="btn btn-primary btn-sm">Sign in to reveal</a>
+          </div>
+        </div>
+      )}
     </div>
 
     <div class="mb-12">
       {sortedEntries.length === 0 ? (
         <div class="rounded-xl border border-base-300 bg-base-200 p-8 text-center text-ink-800">
-          No visible {familyConfig.label.toLowerCase()} entries found for this campaign yet.
+          {restrictedEntriesCount > 0
+            ? `No visible ${familyConfig.label.toLowerCase()} entries found. Sign in to reveal protected records.`
+            : `No visible ${familyConfig.label.toLowerCase()} entries found for this campaign yet.`}
         </div>
       ) : (
         <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

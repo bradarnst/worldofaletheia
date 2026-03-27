@@ -171,6 +171,7 @@ const layoutContent =
     campaign: campaign ?? '',
     created: session.createdAt,
   };
+const loginHref = `/login?next=${encodeURIComponent(Astro.url.pathname + Astro.url.search)}`;
 const robots = effectiveVisibility === 'public' && canViewSession && !contentUnavailable
   ? undefined
   : 'noindex, nofollow';
@@ -238,7 +239,7 @@ const robots = effectiveVisibility === 'public' && canViewSession && !contentUna
           This session is restricted or temporarily unavailable. Sign in with your account and ensure you have the
           required campaign access level.
         </p>
-        <p><a href={`/login?next=${encodeURIComponent(Astro.url.pathname)}`}>Sign in to continue</a></p>
+        <p><a href={loginHref} class="btn btn-primary btn-sm">Sign in to continue</a></p>
       </section>
     )}
 

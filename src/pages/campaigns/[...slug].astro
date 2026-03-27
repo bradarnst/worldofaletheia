@@ -21,6 +21,8 @@ interface CampaignSectionCard {
   description: string;
   href: string;
   count: number;
+  totalCount: number;
+  restrictedCount: number;
   latestUpdated: Date | null;
 }
 
@@ -106,6 +108,7 @@ if (entry && canView && !contentUnavailable) {
   for (const section of sectionDefinitions) {
     let visibleCount = 0;
     let latestUpdated: Date | null = null;
+    const totalCount = section.entries.length;
 
     for (const sectionEntry of section.entries) {
       const effectiveVisibility = resolveCampaignContentVisibility({
@@ -136,6 +139,8 @@ if (entry && canView && !contentUnavailable) {
       description: section.description,
       href: section.href,
       count: visibleCount,
+      totalCount,
+      restrictedCount: Math.max(totalCount - visibleCount, 0),
       latestUpdated,
     });
   }
@@ -153,6 +158,8 @@ const layoutContent =
 const robots = entry && entry.data.visibility === 'public' && canView && !contentUnavailable
   ? undefined
   : 'noindex, nofollow';
+const hasRestrictedSectionRecords = sectionCards.some((section) => section.restrictedCount > 0);
+const loginHref = `/login?next=${encodeURIComponent(Astro.url.pathname + Astro.url.search)}`;
 ---
 
 <CampaignsContentLayout content={layoutContent} robots={robots}>
@@ -161,12 +168,18 @@ const robots = entry && entry.data.visibility === 'public' && canView && !conten
       <Content />
 
       <section class="not-prose mt-12 border-t border-base-300 pt-8">
-        <div class="mb-6 flex flex-col gap-2">
+        <div class="mb-6 flex flex-col gap-3">
           <h2 class="text-2xl font-bold text-ink-950">Campaign Records</h2>
           <p class="meta-muted max-w-3xl">
-            Browse the campaign's session history and family-specific records. This starts to replace the older
-            overloaded subtype model with explicit campaign-domain collections.
+            Browse the campaign's session history and family-specific records. Record counts include protected entries
+            without exposing their titles.
           </p>
+          {hasRestrictedSectionRecords && (
+            <div class="inline-flex w-fit items-center gap-3 rounded-lg border border-base-300 bg-base-200 px-3 py-2 text-sm text-ink-800">
+              <span>Some records are hidden until you sign in.</span>
+              <a href={loginHref} class="btn btn-primary btn-xs">Sign in</a>
+            </div>
+          )}
         </div>
 
         <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -175,15 +188,20 @@ const robots = entry && entry.data.visibility === 'public' && canView && !conten
               <div class="card-body gap-3">
                 <div class="flex items-start justify-between gap-3">
                   <h3 class="card-title text-xl text-ink-950">{section.label}</h3>
-                  <span class="badge badge-outline">{section.count}</span>
+                  <span class="badge badge-outline">{section.count} / {section.totalCount}</span>
                 </div>
                 <p class="text-sm text-ink-800">{section.description}</p>
-                <div class="flex items-center justify-between text-sm meta-muted">
+                <div class="flex flex-wrap items-center justify-between gap-2 text-sm meta-muted">
                   <span>{section.count === 1 ? '1 visible entry' : `${section.count} visible entries`}</span>
+                  {section.restrictedCount > 0 && (
+                    <span>{section.restrictedCount} protected</span>
+                  )}
                   <span>
                     {section.latestUpdated
                       ? `Updated ${section.latestUpdated.toLocaleDateString('en-GB')}`
-                      : 'No visible entries yet'}
+                      : section.restrictedCount > 0
+                        ? 'Sign in to reveal entries'
+                        : 'No visible entries yet'}
                   </span>
                 </div>
               </div>
@@ -199,7 +217,7 @@ const robots = entry && entry.data.visibility === 'public' && canView && !conten
         This campaign entry is restricted or temporarily unavailable. Sign in with your account and ensure you have the
         required campaign access level.
       </p>
-      <p><a href={`/login?next=${encodeURIComponent(Astro.url.pathname)}`}>Sign in to continue</a></p>
+      <p><a href={loginHref} class="btn btn-primary btn-sm">Sign in to continue</a></p>
     </article>
   )}
 </CampaignsContentLayout>

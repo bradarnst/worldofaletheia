@@ -2,9 +2,30 @@
 import { getCollection } from 'astro:content';
 import CampaignsLayout from '@layouts/CampaignsLayout.astro';
 import TagCloud from '@components/TagCloud.astro';
+import { getAllCampaignFamilyEntries } from '@utils/campaign-content';
+import {
+  resolveCampaignContentVisibility,
+  type CampaignVisibility,
+} from '@utils/campaign-access';
 
-const campaigns = await getCollection('campaigns');
-const sessions = await getCollection('sessions');
+type CampaignRecordCounter = {
+  total: number;
+  publicCount: number;
+  protectedCount: number;
+};
+
+const [campaigns, sessions, familyEntries] = await Promise.all([
+  getCollection('campaigns'),
+  getCollection('sessions'),
+  getAllCampaignFamilyEntries(),
+]);
+
+const campaignVisibilityBySlug = new Map<string, CampaignVisibility>();
+for (const campaign of campaigns) {
+  const parts = campaign.id.split('/');
+  const slug = parts[1] ?? campaign.id;
+  campaignVisibilityBySlug.set(slug, campaign.data.visibility);
+}
 
 const sessionCounts = new Map<string, number>();
 for (const session of sessions) {
@@ -12,10 +33,52 @@ for (const session of sessions) {
   sessionCounts.set(campaignSlug, (sessionCounts.get(campaignSlug) || 0) + 1);
 }
 
+const campaignRecordCounts = new Map<string, CampaignRecordCounter>();
+for (const campaign of campaigns) {
+  const parts = campaign.id.split('/');
+  const slug = parts[1] ?? campaign.id;
+  campaignRecordCounts.set(slug, {
+    total: 0,
+    publicCount: 0,
+    protectedCount: 0,
+  });
+}
+
+for (const entry of [...sessions, ...familyEntries]) {
+  const campaignSlug = entry.data.campaign;
+  if (!campaignSlug) {
+    continue;
+  }
+
+  const counts = campaignRecordCounts.get(campaignSlug);
+  if (!counts) {
+    continue;
+  }
+
+  const campaignVisibility = campaignVisibilityBySlug.get(campaignSlug) ?? 'gm';
+  const effectiveVisibility = resolveCampaignContentVisibility({
+    campaignSlug,
+    contentVisibility: entry.data.visibility,
+    campaignVisibility,
+  });
+
+  counts.total += 1;
+  if (effectiveVisibility === 'public') {
+    counts.publicCount += 1;
+  } else {
+    counts.protectedCount += 1;
+  }
+}
+
 const campaignSummaries = campaigns.map((entry) => {
   const parts = entry.id.split('/');
   // id format: campaigns/{slug}/Campaign - {slug}.md -> ['campaigns', slug, 'Campaign - slug']
   const slug = parts[1] ?? entry.id;
+  const recordCounts = campaignRecordCounts.get(slug) ?? {
+    total: 0,
+    publicCount: 0,
+    protectedCount: 0,
+  };
 
   return {
     id: slug,
@@ -25,56 +88,95 @@ const campaignSummaries = campaigns.map((entry) => {
     tags: entry.data.tags,
     visibility: entry.data.visibility,
     sessionCount: sessionCounts.get(slug) || 0,
+    totalRecordCount: recordCounts.total,
+    publicRecordCount: recordCounts.publicCount,
+    protectedRecordCount: recordCounts.protectedCount,
   };
 });
 
 const publicCampaigns = campaignSummaries.filter((item) => item.visibility === 'public');
+const campaignsWithProtectedContent = publicCampaigns.filter((item) => item.protectedRecordCount > 0).length;
+const totalProtectedRecords = publicCampaigns.reduce((sum, item) => sum + item.protectedRecordCount, 0);
 
-const allTags = [...new Set(publicCampaigns.flatMap(item => item.tags))];
+const allTags = [...new Set(publicCampaigns.flatMap((item) => item.tags))];
+const next = encodeURIComponent(`${Astro.url.pathname}${Astro.url.search}`);
+const loginHref = `/login?next=${next}`;
 ---
 
 <CampaignsLayout title="Campaigns - World of Aletheia" description="Explore public campaigns in Aletheia">
-  <div class="max-w-6xl mx-auto px-4 py-8">
-    <div class="mb-12">
-      <h2 class="text-2xl font-bold text-gray-900 mb-6">Latest Campaigns</h2>
-      
+  <div class="max-w-6xl mx-auto px-4 py-8 space-y-12">
+    <section class="rounded-xl border border-base-300 bg-base-200 p-6">
+      <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div class="space-y-2">
+          <h2 class="text-2xl font-bold text-ink-950">Campaign Access</h2>
+          <p class="text-ink-800 max-w-3xl">
+            Campaign pages intentionally hide protected record titles. Sign in to reveal member and GM records where you
+            have access.
+          </p>
+          {totalProtectedRecords > 0 && (
+            <p class="meta-muted text-sm">
+              Public campaigns currently include {totalProtectedRecords} protected records across
+              {' '}
+              {campaignsWithProtectedContent}
+              {' '}
+              campaigns.
+            </p>
+          )}
+        </div>
+        <div class="flex items-center gap-3">
+          <a href={loginHref} class="btn btn-primary">Sign in to reveal protected records</a>
+          <a href="/account" class="btn btn-outline">Account</a>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="text-2xl font-bold text-ink-950 mb-6">Latest Campaigns</h2>
+
       {publicCampaigns.length === 0 ? (
-        <p class="text-gray-600">No public campaign entries found.</p>
+        <p class="text-ink-800">No public campaign entries found.</p>
       ) : (
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {publicCampaigns.map((item) => (
             <a href={`/campaigns/${item.slug}`} class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
-              <div class="card-body">
+              <div class="card-body gap-3">
                 <h3 class="card-title font-lora">{item.title}</h3>
-                <p class="text-gray-600">{item.excerpt || 'No description available'}</p>
-                <div class="flex flex-wrap gap-2 mt-2">
+                <p class="text-ink-800">{item.excerpt || 'No description available'}</p>
+                <div class="flex flex-wrap gap-2">
                   <span class="badge badge-ghost">{item.sessionCount} sessions</span>
+                  <span class="badge badge-ghost">{item.publicRecordCount} public records</span>
+                  {item.protectedRecordCount > 0 && (
+                    <span class="badge badge-outline">+{item.protectedRecordCount} protected</span>
+                  )}
                 </div>
+                {item.protectedRecordCount > 0 && (
+                  <p class="text-sm meta-muted">Sign in to reveal additional records for this campaign.</p>
+                )}
               </div>
             </a>
           ))}
         </div>
       )}
-    </div>
+    </section>
 
-    <div class="mb-12">
-      <h2 class="text-2xl font-bold text-gray-900 mb-6">Campaign Tools</h2>
+    <section>
+      <h2 class="text-2xl font-bold text-ink-950 mb-6">Campaign Tools</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <a href="/campaigns/sample-campaign/sessions" class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
           <div class="card-body">
             <h3 class="card-title font-lora">Sessions</h3>
-            <p class="text-gray-600">Browse session logs and timeline entries by campaign.</p>
+            <p class="text-ink-800">Browse session logs and timeline entries by campaign.</p>
             <div class="card-actions justify-end">
               <span class="btn btn-primary btn-sm">Explore</span>
             </div>
           </div>
         </a>
       </div>
-    </div>
-    
-    <div class="mb-12">
-      <h2 class="text-2xl font-bold text-gray-900 mb-6">Popular Tags</h2>
+    </section>
+
+    <section>
+      <h2 class="text-2xl font-bold text-ink-950 mb-6">Popular Tags</h2>
       <TagCloud tags={allTags} />
-    </div>
+    </section>
   </div>
 </CampaignsLayout>

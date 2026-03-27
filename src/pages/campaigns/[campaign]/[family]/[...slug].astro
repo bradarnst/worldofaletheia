@@ -154,6 +154,7 @@ const layoutContent =
     tags: [],
     campaign: campaign ?? '',
   };
+const loginHref = `/login?next=${encodeURIComponent(Astro.url.pathname + Astro.url.search)}`;
 const robots = effectiveVisibility === 'public' && canViewEntry && !contentUnavailable
   ? undefined
   : 'noindex, nofollow';
@@ -194,7 +195,7 @@ const robots = effectiveVisibility === 'public' && canViewEntry && !contentUnava
           This {familyConfig.label.toLowerCase()} entry is restricted or temporarily unavailable. Sign in with your
           account and ensure you have the required campaign access level.
         </p>
-        <p><a href={`/login?next=${encodeURIComponent(Astro.url.pathname)}`}>Sign in to continue</a></p>
+        <p><a href={loginHref} class="btn btn-primary btn-sm">Sign in to continue</a></p>
       </section>
     )}
 

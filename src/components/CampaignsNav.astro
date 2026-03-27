@@ -1,8 +1,11 @@
 ---
 const currentPath = Astro.url.pathname;
+const currentPathWithSearch = `${Astro.url.pathname}${Astro.url.search}`;
+const loginHref = `/login?next=${encodeURIComponent(currentPathWithSearch)}`;
 
 const links = [
   { href: '/campaigns', label: 'All Campaigns' },
+  { href: loginHref, label: 'Sign in' },
 ];
 ---
 

@@ -8,6 +8,9 @@ const themes = [
   { value: 'savanna-nights', label: 'Savanna Nights' },
   { value: 'jungle-nights', label: 'Jungle Nights' },
 ];
+
+const currentPathWithSearch = `${Astro.url.pathname}${Astro.url.search}`;
+const loginHref = `/login?next=${encodeURIComponent(currentPathWithSearch)}`;
 ---
 
 <div class="navbar nav-readable bg-base-200 text-base-content sticky top-0 z-50 shadow-md border-b border-base-300">
@@ -30,6 +33,7 @@ const themes = [
         <li><a href="/bestiary" class="hover:text-primary" >Bestiary</a></li>
         <li><a href="/flora" class="hover:text-primary" >Flora</a></li>
         <li><a href="/campaigns" class="hover:text-primary" >Campaigns</a></li>
+        <li><a href={loginHref} class="hover:text-primary">Sign in</a></li>
         <li><a href="/systems" class="hover:text-primary" >Systems</a></li>
         <li><a href="/meta" class="hover:text-primary" >Meta</a></li>
         <li><a href="/systems/gurps" class="text-secondary hover:text-primary">GURPS</a></li>
@@ -88,6 +92,7 @@ const themes = [
         </label>
       </li>
       <li><a href="/about" class="hover:text-primary">About</a></li>
+      <li><a href={loginHref} class="hover:text-primary">Sign in</a></li>
       
       <!-- The "Regions" Dropdown (For quick jumping when NOT on homepage) -->
       <!-- <li>
