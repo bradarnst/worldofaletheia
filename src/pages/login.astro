@@ -15,7 +15,8 @@ const callbackURL = new URL(next, Astro.url.origin).toString();
         Campaign member-only content requires an authenticated account with campaign membership in the access table.
       </p>
 
-      <form action="/api/auth/sign-in/social" method="POST" class="space-y-3">
+      <!-- Social sign-in: submit via fetch as JSON (better-auth requires application/json) -->
+      <form id="social-signin-form" class="space-y-3">
         <input type="hidden" name="provider" value="google" />
         <input type="hidden" name="callbackURL" value={callbackURL} />
         <button type="submit" class="btn btn-primary w-full">Continue with Google</button>
@@ -73,4 +74,57 @@ const callbackURL = new URL(next, Astro.url.origin).toString();
     </div>
   </section>
 </MainSiteLayout>
+
+<script>
+  document.getElementById('social-signin-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.currentTarget as HTMLFormElement;
+    const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+    const originalText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Redirecting...';
+
+    const formData = new FormData(form);
+    const body = Object.fromEntries(formData.entries());
+
+    try {
+      const response = await fetch('/api/auth/sign-in/social', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        redirect: 'manual',
+      });
+
+      if (response.status === 302 || response.status === 303) {
+        const location = response.headers.get('Location');
+        if (location) {
+          window.location.href = location;
+          return;
+        }
+      }
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.url) {
+          window.location.href = data.url;
+          return;
+        }
+      }
+
+      // Fallback: follow redirect if the handler redirected automatically
+      if (response.url && response.url !== window.location.href) {
+        window.location.href = response.url;
+        return;
+      }
+
+      const error = data?.error ?? 'sign_in_failed';
+      alert(`Sign-in failed: ${error}. Please try again.`);
+    } catch {
+      alert('Sign-in failed. Please try again.');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = originalText;
+    }
+  });
+</script>
 

@@ -83,7 +83,7 @@ export async function handleCampaignMediaRequest(context: {
 
   let bucket;
   try {
-    bucket = getCampaignMediaBucketFromLocals(context.locals);
+    bucket = await getCampaignMediaBucketFromLocals(context.locals);
   } catch (error) {
     console.error('campaign.media.binding_unavailable', {
       campaignSlug,

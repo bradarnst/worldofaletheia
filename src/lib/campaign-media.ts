@@ -1,12 +1,3 @@
-interface RuntimeLike {
-  env?: Record<string, unknown>;
-}
-
-interface LocalsLike {
-  cfContext?: RuntimeLike;
-  runtime?: RuntimeLike;
-}
-
 export interface CampaignMediaObjectLike {
   body: ReadableStream<Uint8Array> | null;
   httpEtag?: string;
@@ -26,20 +17,6 @@ export interface CampaignMediaBucketLike {
 
 export type CampaignMediaVariant = 'thumb' | 'detail' | 'fullscreen' | 'original';
 
-function getRuntimeEnvFromLocals(locals: unknown): Record<string, unknown> | null {
-  const typedLocals = (locals as LocalsLike | undefined) ?? {};
-
-  if (typedLocals.cfContext?.env) {
-    return typedLocals.cfContext.env;
-  }
-
-  if (typedLocals.runtime?.env) {
-    return typedLocals.runtime.env;
-  }
-
-  return null;
-}
-
 function isCampaignMediaBucketLike(candidate: unknown): candidate is CampaignMediaBucketLike {
   return (
     typeof candidate === 'object' &&
@@ -47,6 +24,24 @@ function isCampaignMediaBucketLike(candidate: unknown): candidate is CampaignMed
     'get' in candidate &&
     typeof (candidate as { get?: unknown }).get === 'function'
   );
+}
+
+// Astro v6 (Cloudflare): use cloudflare:workers directly rather than locals.cfContext,
+// since cfContext is not reliably populated on Astro.locals for API routes.
+async function getCampaignMediaBucketFromEnv(): Promise<CampaignMediaBucketLike> {
+  try {
+    const { env } = await import('cloudflare:workers');
+    const bucket = (env as Record<string, unknown>).woa_campaign_private;
+    if (!isCampaignMediaBucketLike(bucket)) {
+      throw new Error('Cloudflare R2 binding "woa_campaign_private" is unavailable in runtime environment');
+    }
+    return bucket;
+  } catch (err) {
+    if (err instanceof Error && err.message.includes('unavailable')) {
+      throw err;
+    }
+    throw new Error('Cloudflare R2 binding "woa_campaign_private" is unavailable in runtime environment');
+  }
 }
 
 function guessContentType(assetPath: string): string {
@@ -102,18 +97,10 @@ export function buildCampaignImageObjectKey(options: {
   return `${basePath}/variants/${options.variant}/${options.assetPath}`;
 }
 
-export function getCampaignMediaBucketFromLocals(locals: unknown): CampaignMediaBucketLike {
-  const runtimeEnv = getRuntimeEnvFromLocals(locals);
-  if (!runtimeEnv) {
-    throw new Error('Cloudflare runtime env is unavailable for campaign media binding');
-  }
-
-  const bucket = runtimeEnv.woa_campaign_private;
-  if (!isCampaignMediaBucketLike(bucket)) {
-    throw new Error('Cloudflare R2 binding "woa_campaign_private" is unavailable in runtime environment');
-  }
-
-  return bucket;
+export async function getCampaignMediaBucketFromLocals(_locals: unknown): Promise<CampaignMediaBucketLike> {
+  // locals parameter kept for API compatibility but ignored —
+  // cloudflare:workers env is the canonical source in Astro v6 Cloudflare.
+  return getCampaignMediaBucketFromEnv();
 }
 
 export function createCampaignMediaResponse(object: CampaignMediaObjectLike, assetPath: string): Response {

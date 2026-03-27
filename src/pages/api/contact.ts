@@ -109,7 +109,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   try {
-    const runtimeEnv = (locals as { runtime?: { env?: Record<string, unknown> } })?.runtime?.env;
+    // Astro v6 (Cloudflare): use cfContext for env access.
+    const typedLocals = locals as { cfContext?: { env?: Record<string, unknown> } } | undefined;
+    const runtimeEnv = typedLocals?.cfContext?.env ?? null;
 
     await sendContactEmail({
       env: runtimeEnv,

@@ -9,30 +9,6 @@ export interface D1DatabaseLike {
   prepare(query: string): D1PreparedStatementLike;
 }
 
-interface RuntimeLike {
-  env?: Record<string, unknown>;
-}
-
-interface LocalsLike {
-  cfContext?: RuntimeLike;
-  runtime?: RuntimeLike;
-}
-
-function getRuntimeEnvFromLocals(locals: unknown): Record<string, unknown> | null {
-  const typedLocals = (locals as LocalsLike | undefined) ?? {};
-
-  if (typedLocals.cfContext?.env) {
-    return typedLocals.cfContext.env;
-  }
-
-  // Backward-compatible fallback for older adapter/runtime combinations.
-  if (typedLocals.runtime?.env) {
-    return typedLocals.runtime.env;
-  }
-
-  return null;
-}
-
 function isD1DatabaseLike(candidate: unknown): candidate is D1DatabaseLike {
   return (
     typeof candidate === 'object' &&
@@ -42,7 +18,7 @@ function isD1DatabaseLike(candidate: unknown): candidate is D1DatabaseLike {
   );
 }
 
-export function getD1BindingFromRuntimeEnv(runtimeEnv: unknown): D1DatabaseLike {
+function getD1BindingFromRuntimeEnvImpl(runtimeEnv: unknown): D1DatabaseLike {
   const candidate =
     runtimeEnv && typeof runtimeEnv === 'object'
       ? (runtimeEnv as Record<string, unknown>).DB
@@ -55,18 +31,26 @@ export function getD1BindingFromRuntimeEnv(runtimeEnv: unknown): D1DatabaseLike 
   return candidate;
 }
 
-export function getD1BindingFromLocals(locals: unknown): D1DatabaseLike {
-  const runtimeEnv = getRuntimeEnvFromLocals(locals);
-  if (!runtimeEnv) {
-    throw new Error('Cloudflare runtime env is unavailable in Astro.locals.cfContext.env');
+// Astro v6 (Cloudflare): use cloudflare:workers directly rather than locals.cfContext,
+// since cfContext is not reliably populated on Astro.locals for API routes.
+async function getD1BindingFromRuntimeEnv(): Promise<D1DatabaseLike> {
+  try {
+    const { env } = await import('cloudflare:workers');
+    return getD1BindingFromRuntimeEnvImpl(env as Record<string, unknown>);
+  } catch {
+    throw new Error('Cloudflare D1 binding is unavailable: cloudflare:workers env not accessible');
   }
-
-  return getD1BindingFromRuntimeEnv(runtimeEnv);
 }
 
-export function tryGetD1BindingFromLocals(locals: unknown): D1DatabaseLike | null {
+export async function getD1BindingFromLocals(_locals: unknown): Promise<D1DatabaseLike> {
+  // locals parameter kept for API compatibility but ignored —
+  // cloudflare:workers env is the canonical source in Astro v6 Cloudflare.
+  return getD1BindingFromRuntimeEnv();
+}
+
+export async function tryGetD1BindingFromLocals(locals: unknown): Promise<D1DatabaseLike | null> {
   try {
-    return getD1BindingFromLocals(locals);
+    return await getD1BindingFromLocals(locals);
   } catch {
     return null;
   }

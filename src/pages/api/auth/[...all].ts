@@ -9,14 +9,21 @@ const REQUIRED_AUTH_ENV_KEYS = [
   'GOOGLE_CLIENT_SECRET',
 ] as const;
 
-function getAuthEnvDiagnostics(locals: unknown) {
-  const runtimeEnv =
-    locals && typeof locals === 'object'
-      ? ((locals as { cfContext?: { env?: Record<string, unknown> }; runtime?: { env?: Record<string, unknown> } })
-          .cfContext?.env ??
-        (locals as { runtime?: { env?: Record<string, unknown> } }).runtime?.env ??
-        null)
-      : null;
+async function getAuthEnvDiagnostics(): Promise<{
+  hasRuntimeEnv: boolean;
+  hasDbBinding: boolean;
+  requiredVarStatus: { key: string; present: boolean }[];
+}> {
+  let runtimeEnv: Record<string, unknown> | null = null;
+
+  // Astro v6 (Cloudflare): use cloudflare:workers module directly
+  try {
+    const { env: cfEnv } = await import('cloudflare:workers');
+    runtimeEnv = cfEnv as Record<string, unknown>;
+  } catch {
+    // cloudflare:workers not available (should not happen in Cloudflare runtime)
+    runtimeEnv = null;
+  }
 
   const hasDbBinding =
     !!runtimeEnv &&
@@ -26,7 +33,7 @@ function getAuthEnvDiagnostics(locals: unknown) {
 
   const requiredVarStatus = REQUIRED_AUTH_ENV_KEYS.map((key) => ({
     key,
-    present: typeof runtimeEnv?.[key] === 'string' && runtimeEnv[key].length > 0,
+    present: typeof runtimeEnv?.[key] === 'string' && (runtimeEnv as Record<string, unknown>)[key]?.length > 0,
   }));
 
   return {
@@ -38,15 +45,30 @@ function getAuthEnvDiagnostics(locals: unknown) {
 
 export const ALL: APIRoute = async ({ request, locals }) => {
   try {
-    const auth = getAuth(locals);
+    const auth = await getAuth(locals);
     const response = await auth.handler(request);
+
+    if (!response) {
+      const diagnostics = await getAuthEnvDiagnostics();
+      console.error('auth.handler.returned_null', {
+        path: new URL(request.url).pathname,
+        method: request.method,
+        diagnostics,
+      });
+      return new Response(JSON.stringify({ error: 'auth_handler_null' }), {
+        status: 500,
+        headers: getNoIndexHeaders('application/json'),
+      });
+    }
+
     response.headers.set('x-robots-tag', 'noindex, nofollow');
     return response;
   } catch (error) {
+    const diagnostics = await getAuthEnvDiagnostics();
     console.error('auth.route.unhandled_error', {
       message: error instanceof Error ? error.message : 'unknown error',
       path: new URL(request.url).pathname,
-      diagnostics: getAuthEnvDiagnostics(locals),
+      diagnostics,
     });
 
     return new Response(JSON.stringify({ error: 'authentication_unavailable' }), {

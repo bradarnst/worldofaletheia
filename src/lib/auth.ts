@@ -1,16 +1,7 @@
 import { betterAuth } from 'better-auth';
 import { type BetterAuthOptions } from 'better-auth';
-import { getD1BindingFromLocals, getD1BindingFromRuntimeEnv } from './d1';
+import { getD1BindingFromLocals } from './d1';
 import { sendVerificationEmail } from './email';
-
-interface LocalsLike {
-  cfContext?: {
-    env?: Record<string, unknown>;
-  };
-  runtime?: {
-    env?: Record<string, unknown>;
-  };
-}
 
 const authByBinding = new WeakMap<object, ReturnType<typeof betterAuth>>();
 
@@ -58,7 +49,7 @@ function buildAuthOptions(env: Record<string, unknown>): BetterAuthOptions {
   return {
     baseURL,
     secret: getRequiredString(env, 'BETTER_AUTH_SECRET'),
-    database: getD1BindingFromRuntimeEnv(env) as BetterAuthOptions['database'],
+    database: env.DB as BetterAuthOptions['database'],
     trustedOrigins,
     socialProviders,
     emailAndPassword: {
@@ -92,16 +83,21 @@ function buildAuthOptions(env: Record<string, unknown>): BetterAuthOptions {
   };
 }
 
-export function getAuth(locals: unknown) {
-  const typedLocals = (locals as LocalsLike | undefined) ?? {};
-  const d1 = getD1BindingFromLocals(typedLocals);
+// Astro v6 (Cloudflare): import env directly from cloudflare:workers rather than
+// relying on Astro.locals.cfContext, which is not populated for API routes.
+export async function getAuth(_locals: unknown): Promise<ReturnType<typeof betterAuth>> {
+  const d1 = await getD1BindingFromLocals(_locals);
   const existing = authByBinding.get(d1 as unknown as object);
   if (existing) {
     return existing;
   }
 
-  const runtimeEnv = typedLocals.cfContext?.env ?? typedLocals.runtime?.env;
-  if (!runtimeEnv) {
+  // cloudflare:workers env is the canonical runtime environment source in Astro v6.
+  let runtimeEnv: Record<string, unknown>;
+  try {
+    const { env } = await import('cloudflare:workers');
+    runtimeEnv = env as Record<string, unknown>;
+  } catch {
     throw new Error('Cloudflare runtime environment is required for auth initialization');
   }
 
