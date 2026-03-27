@@ -118,7 +118,7 @@ const loreSchema = baseSchema.extend({
 
 const placesSchema = baseSchema.extend({
   title: z.string(),
-  type: z.enum(['location', 'landmark', 'dungeon', 'settlement', 'region', 'inhabitants', 'water']),
+  type: z.enum(['location', 'landmark', 'dungeon', 'settlement', 'region', 'polity', 'adminDivision', 'water', 'biome']),
   excerpt: z.string().optional(),
   coordinates: z.object({
     x: z.number(),
