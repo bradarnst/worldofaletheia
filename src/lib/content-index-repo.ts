@@ -454,6 +454,7 @@ export class ContentIndexRepo {
   }
 }
 
-export function createContentIndexRepoFromLocals(locals: unknown): ContentIndexRepo {
-  return new ContentIndexRepo(getD1BindingFromLocals(locals));
+export async function createContentIndexRepoFromLocals(locals: unknown): Promise<ContentIndexRepo> {
+  const db = await getD1BindingFromLocals(locals);
+  return new ContentIndexRepo(db);
 }

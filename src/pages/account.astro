@@ -8,7 +8,7 @@ const session = await getRequestSession(Astro.request, Astro.locals);
 let memberships: string[] = [];
 if (session) {
   try {
-    const repo = createCampaignMembershipRepoFromLocals(Astro.locals);
+    const repo = await createCampaignMembershipRepoFromLocals(Astro.locals);
     const records = await repo.listCampaignMemberships(session.user.id);
     memberships = records.map((record) => record.campaignSlug);
   } catch (error) {

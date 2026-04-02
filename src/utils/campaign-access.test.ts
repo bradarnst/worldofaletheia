@@ -21,6 +21,7 @@ import { createCampaignMembershipRepoFromLocals } from '../lib/campaign-membersh
 
 const getRequestSessionMock = vi.mocked(getRequestSession);
 const createRepoMock = vi.mocked(createCampaignMembershipRepoFromLocals);
+type MockCampaignMembershipRepo = Awaited<ReturnType<typeof createCampaignMembershipRepoFromLocals>>;
 
 describe('campaign access resolver', () => {
   beforeEach(() => {
@@ -293,13 +294,13 @@ describe('campaign access resolver', () => {
       user: { id: 'gm-user', email: 'gm@example.com', name: 'GM User' },
       session: { id: 'session-1', userId: 'gm-user', expiresAt: '' },
     });
-    createRepoMock.mockReturnValue({
+    createRepoMock.mockResolvedValue({
       isUserMemberOfCampaign: vi.fn().mockResolvedValue(false),
       isUserGmOfCampaign: vi.fn().mockResolvedValue(true),
       listCampaignGms: vi.fn(),
       listCampaignMemberships: vi.fn(),
       seedFromMembershipMap: vi.fn(),
-    } as unknown as ReturnType<typeof createCampaignMembershipRepoFromLocals>);
+    } as unknown as MockCampaignMembershipRepo);
 
     const resolver = createCampaignAccessResolverFromRequest({
       request: new Request('https://example.com/campaigns/brad', {
@@ -323,13 +324,13 @@ describe('campaign access resolver', () => {
       user: { id: 'member-user', email: 'member@example.com', name: 'Member User' },
       session: { id: 'session-1', userId: 'member-user', expiresAt: '' },
     });
-    createRepoMock.mockReturnValue({
+    createRepoMock.mockResolvedValue({
       isUserMemberOfCampaign: vi.fn().mockResolvedValue(true),
       isUserGmOfCampaign: vi.fn().mockResolvedValue(false),
       listCampaignGms: vi.fn(),
       listCampaignMemberships: vi.fn(),
       seedFromMembershipMap: vi.fn(),
-    } as unknown as ReturnType<typeof createCampaignMembershipRepoFromLocals>);
+    } as unknown as MockCampaignMembershipRepo);
 
     const resolver = createCampaignAccessResolverFromRequest({
       request: new Request('https://example.com/campaigns/brad', {
@@ -353,13 +354,13 @@ describe('campaign access resolver', () => {
       user: { id: 'user-1', email: 'user@example.com', name: 'User One' },
       session: { id: 'session-1', userId: 'user-1', expiresAt: '' },
     });
-    createRepoMock.mockReturnValue({
+    createRepoMock.mockResolvedValue({
       isUserMemberOfCampaign: vi.fn().mockResolvedValue(true),
       isUserGmOfCampaign: vi.fn().mockResolvedValue(false),
       listCampaignGms: vi.fn(),
       listCampaignMemberships: vi.fn(),
       seedFromMembershipMap: vi.fn(),
-    } as unknown as ReturnType<typeof createCampaignMembershipRepoFromLocals>);
+    } as unknown as MockCampaignMembershipRepo);
 
     const resolver = createCampaignAccessResolverFromRequest({
       request: new Request('https://example.com/campaigns/brad', {
@@ -379,13 +380,13 @@ describe('campaign access resolver', () => {
   });
 
   it('allows multiple gm users for the same campaign in async resolver', async () => {
-    createRepoMock.mockReturnValue({
+    createRepoMock.mockResolvedValue({
       isUserMemberOfCampaign: vi.fn().mockResolvedValue(false),
       isUserGmOfCampaign: vi.fn(async (userId: string) => userId === 'gm-a' || userId === 'gm-b'),
       listCampaignGms: vi.fn(),
       listCampaignMemberships: vi.fn(),
       seedFromMembershipMap: vi.fn(),
-    } as unknown as ReturnType<typeof createCampaignMembershipRepoFromLocals>);
+    } as unknown as MockCampaignMembershipRepo);
 
     getRequestSessionMock.mockResolvedValueOnce({
       user: { id: 'gm-a', email: 'gma@example.com', name: 'GM A' },
@@ -435,13 +436,13 @@ describe('campaign access resolver', () => {
       user: { id: 'gm-user', email: 'gm@example.com', name: 'GM User' },
       session: { id: 'session-1', userId: 'gm-user', expiresAt: '' },
     });
-    createRepoMock.mockReturnValue({
+    createRepoMock.mockResolvedValue({
       isUserMemberOfCampaign: vi.fn().mockResolvedValue(true),
       isUserGmOfCampaign: vi.fn().mockRejectedValue(new Error('db unavailable')),
       listCampaignGms: vi.fn(),
       listCampaignMemberships: vi.fn(),
       seedFromMembershipMap: vi.fn(),
-    } as unknown as ReturnType<typeof createCampaignMembershipRepoFromLocals>);
+    } as unknown as MockCampaignMembershipRepo);
 
     const resolver = createCampaignAccessResolverFromRequest({
       request: new Request('https://example.com/campaigns/brad', {
@@ -467,13 +468,13 @@ describe('campaign access resolver', () => {
       user: { id: 'dev123', email: 'dev@example.com', name: 'Dev User' },
       session: { id: 'session-1', userId: 'dev123', expiresAt: '' },
     });
-    createRepoMock.mockReturnValue({
+    createRepoMock.mockResolvedValue({
       isUserMemberOfCampaign: vi.fn().mockResolvedValue(false),
       isUserGmOfCampaign: vi.fn().mockRejectedValue(new Error('db unavailable')),
       listCampaignGms: vi.fn(),
       listCampaignMemberships: vi.fn(),
       seedFromMembershipMap: vi.fn(),
-    } as unknown as ReturnType<typeof createCampaignMembershipRepoFromLocals>);
+    } as unknown as MockCampaignMembershipRepo);
 
     const resolver = createCampaignAccessResolverFromRequest({
       request: new Request('https://example.com/campaigns/brad', {

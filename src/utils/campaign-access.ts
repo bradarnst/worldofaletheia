@@ -1,5 +1,5 @@
-import { createCampaignMembershipRepoFromLocals } from '../lib/campaign-membership-repo';
-import { getRequestSession, type RequestSession } from '../lib/auth-session';
+import { type CampaignMembershipRepo, createCampaignMembershipRepoFromLocals } from '~/lib/campaign-membership-repo';
+import { getRequestSession, type RequestSession } from '~/lib/auth-session';
 
 export type CampaignVisibility = 'public' | 'campaignMembers' | 'gm';
 
@@ -342,10 +342,10 @@ export function createCampaignAccessResolverFromRequest(options: {
           };
         }
 
-        let repo: ReturnType<typeof createCampaignMembershipRepoFromLocals>;
+        let repo: CampaignMembershipRepo;
         let isMember = false;
         try {
-          repo = createCampaignMembershipRepoFromLocals(locals);
+          repo = await createCampaignMembershipRepoFromLocals(locals);
           isMember = await repo.isUserMemberOfCampaign(session.user.id, campaignSlug);
         } catch (error) {
           console.error('campaign.membership.query_failed', {

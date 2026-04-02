@@ -38,7 +38,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
   }
 
   try {
-    const repo = createContentIndexRepoFromLocals(locals);
+    const repo = await createContentIndexRepoFromLocals(locals);
     const result = await repo.searchContent({
       query,
       collection: normalizeFilterValueOptional(url.searchParams.get('collection')),

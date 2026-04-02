@@ -58,7 +58,7 @@ function asRequestSession(payload: unknown): RequestSession | null {
 
 export async function getRequestSession(request: Request, locals: unknown): Promise<RequestSession | null> {
   try {
-    const auth = getAuth(locals);
+    const auth = await getAuth(locals);
     const requestUrl = new URL(request.url);
     const sessionUrl = new URL('/api/auth/get-session', requestUrl.origin);
 

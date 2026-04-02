@@ -80,6 +80,11 @@ function buildAuthOptions(env: Record<string, unknown>): BetterAuthOptions {
         secure: useSecureCookies,
       },
     },
+    account: {
+      accountLinking: {
+        enabled: true,
+      },
+    },
   };
 }
 

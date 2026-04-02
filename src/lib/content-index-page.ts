@@ -261,7 +261,7 @@ export async function loadIndexBackedCollectionPage(options: {
   const groupPreviewSize = options.groupPreviewSize ?? 3;
   const filters = parseFilters(options.searchParams);
   const environment = options.environment ?? 'production';
-  const db = tryGetD1BindingFromLocals(options.locals);
+  const db = await tryGetD1BindingFromLocals(options.locals);
 
   if (!db) {
     const collection = sortLocalEntries(

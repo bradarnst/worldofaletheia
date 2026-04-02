@@ -106,6 +106,7 @@ export class CampaignMembershipRepo {
   }
 }
 
-export function createCampaignMembershipRepoFromLocals(locals: unknown): CampaignMembershipRepo {
-  return new CampaignMembershipRepo(getD1BindingFromLocals(locals));
+export async function createCampaignMembershipRepoFromLocals(locals: unknown): Promise<CampaignMembershipRepo> {
+  const db = await getD1BindingFromLocals(locals);
+  return new CampaignMembershipRepo(db);
 }

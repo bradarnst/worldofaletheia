@@ -287,11 +287,19 @@ export function createR2MarkdownCollectionLoader(collection) {
           data: enrichedFrontmatter,
           filePath: `cloud://${entry.key}`,
         });
+
+        // Render markdown to HTML using the content layer's markdown processor
+        // Pass the raw markdown (with frontmatter) - renderMarkdown parses it internally
+        const rendered = await context.renderMarkdown(markdown, {
+          fileURL: `cloud://${entry.key}`,
+        });
+
         context.store.set({
           id: entry.id,
           data,
           body: content,
           filePath: `cloud://${entry.key}`,
+          rendered,
         });
       }
     },
