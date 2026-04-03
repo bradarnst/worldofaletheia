@@ -1,12 +1,12 @@
 # World of Aletheia Status Report
 
-- **Report date:** 2026-03-24
-- **Generated at:** 2026-03-24T08:19:59+01:00
+- **Report date:** 2026-04-02
+- **Generated at:** 2026-04-02T23:22:40+02:00
 - **Repository branch:** `main`
 
 ## Executive Status
 
-Project is in a strong post-foundation state: core architecture decisions are implemented, campaign privacy and auth boundaries are live, and discovery indexing has been remediated in staging and production. The highest-value remaining work is now concentrated in discovery UX contract closure, sync hardening semantics, and calendar roadmap execution.
+Project is in a stronger post-foundation state: CI now covers the core local quality lane, repo-wide TypeScript is back to a trustworthy baseline, and Discovery Gates G1/G2 are closed in both UX and sync semantics. The highest-value remaining work is now campaign media variants, calendar MVP depth, and operator tooling hardening.
 
 ## Current State (Implemented)
 
@@ -25,40 +25,46 @@ Project is in a strong post-foundation state: core architecture decisions are im
    - References: `src/lib/content-index-page.ts`, `src/lib/content-index-repo.ts`, `src/pages/lore/index.astro`, `src/pages/places/index.astro`, `src/pages/sentients/index.astro`, `src/pages/systems/index.astro`.
 
 4. **Campaign access and protected media path are implemented**
-   - Better Auth + D1 campaign access checks are live.
-   - Protected campaign media route fails closed for protected content when auth or storage is unavailable.
-   - References: `src/utils/campaign-access.ts`, `src/lib/campaign-request-access.ts`, `src/lib/campaign-media-handler.ts`, `src/pages/api/campaign-media/[campaign]/images/[variant]/[...asset].ts`.
+    - Better Auth + D1 campaign access checks are live.
+    - Protected campaign media route fails closed for protected content when auth or storage is unavailable.
+    - References: `src/utils/campaign-access.ts`, `src/lib/campaign-request-access.ts`, `src/lib/campaign-media-handler.ts`, `src/pages/api/campaign-media/[campaign]/images/[variant]/[...asset].ts`.
 
-5. **Validation baseline is healthy**
-   - `pnpm test`: passing (64 tests)
-   - `pnpm build`: passing (with non-blocking warnings in local lane)
+5. **Discovery grouped UX and sync hardening gates are closed**
+   - Grouped discovery is live for the type-bearing public collections: `lore`, `places`, `sentients`, `systems`, `bestiary`, `flora`, and `factions`.
+   - Discovery contract and sync failure semantics are captured in `plans/discovery-navigation-and-search-index-lld-handoff-2026-03-20.md`.
+   - Cloud authoritative sync now fails closed on object, manifest, and D1 index publish failures with dedicated support codes.
+
+6. **Validation baseline is healthy**
+    - `pnpm test`: passing (64 tests)
+    - `pnpm build`: passing (with non-blocking warnings in local lane)
+    - `pnpm exec tsc --noEmit`: passing
+
+7. **CI regression guard is present**
+   - Minimal GitHub Actions workflow now runs `pnpm test` and `pnpm build` on pull requests and `main`.
+   - Reference: `.github/workflows/ci.yml`.
 
 ## Remaining Work (Short-Term Priorities)
 
 1. **Finalize campaign image variant generation/verification pipeline**
-   - Open item remains for `thumb`, `detail`, `fullscreen` sync-time generation/verification.
+    - Open item remains for `thumb`, `detail`, `fullscreen` sync-time generation/verification.
+    - References:
+      - `plans/campaign-content-separation-plan-and-todos-2026-03-16.md`
+      - `plans/campaign-content-source-separation-handoff-to-code-2026-03-16.md`
+
+2. **Advance calendar MVP beyond the current route utility layer**
+   - Calendar and timeline foundations exist, but the next value is richer event usage and follow-on date-math/API work.
    - References:
-     - `plans/campaign-content-separation-plan-and-todos-2026-03-16.md`
-     - `plans/campaign-content-source-separation-handoff-to-code-2026-03-16.md`
+      - `plans/adrs/0014-calendar-and-timeline-canon-utility-routes-and-lore-event-metadata-policy.md`
+      - `plans/features/aletheia_calendar_developer_handoff.md`
 
-2. **Close Discovery Gate G1 (requirements and UX contract)**
-   - Type/subtype/tag behavior and grouped view UX are still open.
-   - Reference: `plans/discovery-navigation-and-search-index-lld-handoff-2026-03-20.md`.
+3. **Resolve known operator/config debt**
+    - Staging Wrangler config warning debt remains.
+    - Migration dry-run parser remains brittle when Wrangler warning noise appears.
+    - Reference: `plans/content-index-p0-root-cause-2026-03-24.md`.
 
-3. **Close Discovery Gate G2 (sync failure semantics and hardening)**
-   - Current sync flow can continue after index write failure; this should be formalized and tightened for authoritative lanes.
-   - References:
-     - `plans/discovery-navigation-and-search-index-lld-handoff-2026-03-20.md`
-     - `scripts/content-sync/apply-sync.mjs`
-
-4. **Resolve known operator/config debt**
-   - Staging Wrangler config warning debt remains.
-   - Migration dry-run parser remains brittle when Wrangler warning noise appears.
-   - Reference: `plans/content-index-p0-root-cause-2026-03-24.md`.
-
-5. **Add automation for parity checks**
-   - No CI workflow is currently present under `.github/workflows/`.
-   - This keeps sync/index/auth verification primarily operator-driven.
+4. **Add deeper parity automation when secrets/remote execution are worth the complexity**
+   - CI now covers the local quality lane, but sync/index/auth parity remains operator-driven by design.
+   - Remote lanes should be added only with explicit secret handling and failure ownership.
 
 ## Longer-Term Workstreams
 
@@ -71,29 +77,28 @@ Project is in a strong post-foundation state: core architecture decisions are im
    - Reference: ADR-0012 and `plans/content-producer-extraction-lld-handoff-2026-03-20.md`.
 
 3. **Calendar implementation**
-   - Architecture and developer handoff docs are present; runtime implementation has not started in `src/` yet.
+   - Architecture is accepted and the shared calendar engine/routes are present; richer MVP coverage is still pending.
    - References:
-     - `plans/features/aletheia-calendar-architecture-recommendation.md`
-     - `plans/features/aletheia_calendar_developer_handoff.md`
+      - `plans/features/aletheia-calendar-architecture-recommendation.md`
+      - `plans/features/aletheia_calendar_developer_handoff.md`
 
 ## Risks and Notes
 
 1. **Doc drift risk remains non-trivial**
    - Some older planning files describe superseded states and can dilute current priority signal.
 
-2. **Partial-success sync behavior can hide authoritative-lane failures**
-   - This was a direct factor in the recent `content_index` incident and should be addressed via Gate G2.
+2. **Remote parity remains intentionally manual**
+   - The new CI lane protects local regressions, but remote sync/index/auth verification still depends on operator execution.
 
 3. **Local build warnings are expected under cloud-first workflow shift**
-   - Empty local content mirrors in cloud mode can produce local warnings while parity lane remains authoritative.
+    - Empty local content mirrors in cloud mode can produce local warnings while parity lane remains authoritative.
 
 ## Immediate Recommended Sequence
 
-1. Discovery Gate G1 requirements/design sign-off.
-2. Discovery Gate G2 hardening contract sign-off.
-3. Implement grouped type/subtype/tag views and search endpoint foundation.
-4. Finalize campaign media variants pipeline.
-5. Add CI parity lane for sync/index/auth verification.
+1. Finalize campaign media variants pipeline.
+2. Extend calendar/timeline MVP coverage.
+3. Harden Wrangler/operator tooling around warning noise and staging config.
+4. Decide whether remote parity deserves a secret-backed CI lane.
 
 ## Open Task Count Snapshot (from active planning docs)
 

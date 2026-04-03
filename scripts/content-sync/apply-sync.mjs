@@ -3,6 +3,7 @@ import path from 'node:path';
 import { buildWikiLinkIndex, transformObsidianLinks } from './obsidian-links.mjs';
 import { syncContentIndex } from './content-index-writer.mjs';
 import { syncCloudManifests } from './manifests.mjs';
+import { SupportCodeError } from './utils.mjs';
 
 function timestamp() {
   const d = new Date();
@@ -70,6 +71,7 @@ export async function applySync(diff, config, staleAction, services = {}) {
   const backupRootForRun = path.resolve(config.resolvedBackupRoot, backupSession);
   const wikiIndex = await buildWikiLinkIndex(config.repoRoot);
   const cloud = services.cloud || null;
+  const cloudOperationFailures = [];
 
   for (const rec of [...diff.grouped.new, ...diff.grouped.updated]) {
     if (rec.mapping.target === 'repo') {
@@ -111,8 +113,15 @@ export async function applySync(diff, config, staleAction, services = {}) {
       changedFiles.push(`cloud:${rec.cloudKey}`);
     } catch (uploadError) {
       console.error(`Cloud upload failed for ${rec.cloudKey}:`, uploadError.message);
-      // Continue processing remaining files — D1 index needs all content, not just cloud-reachable content
+      cloudOperationFailures.push(`upload ${rec.cloudKey}`);
     }
+  }
+
+  if (cloud && cloudOperationFailures.length > 0) {
+    throw new SupportCodeError(
+      'SYNC-CLOUD-OBJECTS-FAILED',
+      `Cloud publish aborted after ${cloudOperationFailures.length} object failure(s): ${cloudOperationFailures.join(', ')}`,
+    );
   }
 
   if (staleAction === 'remove') {
@@ -162,12 +171,18 @@ export async function applySync(diff, config, staleAction, services = {}) {
   }
 
   if (cloud) {
-    const manifestSync = await syncCloudManifests(config, services, wikiIndex);
+    let manifestSync;
+    try {
+      manifestSync = await syncCloudManifests(config, services, wikiIndex);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new SupportCodeError('SYNC-MANIFEST-PUBLISH-FAILED', `Cloud manifest publish failed: ${message}`);
+    }
+
     changedFiles.push(...manifestSync.writtenKeys.map((key) => `cloud:${key}`));
 
     // D1 discovery index is updated alongside cloud manifest sync using the same
     // manifest rows. It runs regardless of whether R2 uploads succeeded.
-    let contentIndexApplied = false;
     try {
       const contentIndexSync = await syncContentIndex({
         rows: manifestSync.contentIndexRows,
@@ -175,10 +190,10 @@ export async function applySync(diff, config, staleAction, services = {}) {
       });
       if (contentIndexSync.applied) {
         changedFiles.push('d1:content_index');
-        contentIndexApplied = true;
       }
     } catch (error) {
-      console.error('D1 content index sync failed:', error.message);
+      const message = error instanceof Error ? error.message : String(error);
+      throw new SupportCodeError('SYNC-CONTENT-INDEX-FAILED', `D1 content index sync failed: ${message}`);
     }
   }
 

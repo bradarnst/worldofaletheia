@@ -9,6 +9,7 @@ import { validateContentTree } from './validate.mjs';
 import { createContentCloudAdapter } from './cloud-storage.mjs';
 import {
   fail,
+  getSupportCode,
   info,
   normalizePathForDisplay,
   ok,
@@ -153,9 +154,11 @@ async function main() {
 
     await runFullSync(config, { dryRun: args.dryRun, services });
   } catch (error) {
+    const supportCode = getSupportCode(error);
+
     fail('Content sync failed.');
     console.log('Action: check the message above and retry.');
-    support('SYNC-RUNTIME-ERROR');
+    support(supportCode ?? 'SYNC-RUNTIME-ERROR');
     printErrorDetails(error);
     process.exitCode = 1;
   }

@@ -1,41 +1,22 @@
 ---
-import { getCollection } from 'astro:content';
+import DiscoveryCollectionView from '@components/DiscoveryCollectionView.astro';
 import WorldAletheiaLayout from '@layouts/WorldAletheiaLayout.astro';
-import ContentCard from '@components/ContentCard.astro';
-import TagCloud from '@components/TagCloud.astro';
 import wheatFields from '@images/wheat-fields.png';
-import { getFilteredCollection } from '@utils/content-filter';
+import { loadIndexBackedCollectionPage } from '~/lib/content-index-page';
 
-const bestiary = await getCollection('bestiary');
-const visibleBestiary = getFilteredCollection(bestiary);
-
-const allTags = [...new Set(visibleBestiary.flatMap(item => item.data.tags))];
+const discoveryPage = await loadIndexBackedCollectionPage({
+  collection: 'bestiary',
+  searchParams: Astro.url.searchParams,
+  locals: Astro.locals,
+});
 ---
 
 <WorldAletheiaLayout title="Bestiary - World of Aletheia" description="Explore monsters, beasts, and other creatures of Aletheia">
-  <div class="mb-8 rounded-xl border border-base-300 bg-base-200/60 p-4 text-sm text-ink-700">
-    <div class="font-semibold mb-1">Future-ready discovery</div>
-    <p class="meta-muted">Prepared for future filters by creature type, subtype, and tags with alphabetical and grouped views in later phases.</p>
-  </div>
-
-  <div class="max-w-6xl mx-auto px-4 py-8">
-    <div class="mb-12">
-      <h2 class="text-2xl font-bold text-ink-950 mb-6">Latest Bestiary Entries</h2>
-      
-      {visibleBestiary.length === 0 ? (
-        <p class="meta-muted">No published bestiary entries found.</p>
-      ) : (
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {visibleBestiary.map((item, index) => (
-            <ContentCard content={item} image={index % 2 === 0 ? wheatFields : undefined} />
-          ))}
-        </div>
-      )}
-    </div>
-    
-    <div class="mb-12">
-      <h2 class="text-2xl font-bold text-ink-950 mb-6">Popular Tags</h2>
-      <TagCloud tags={allTags} />
-    </div>
-  </div>
+  <DiscoveryCollectionView
+    basePath="/bestiary"
+    collectionLabel="Bestiary"
+    image={wheatFields}
+    emptyMessage="No published bestiary entries found."
+    {...discoveryPage}
+  />
 </WorldAletheiaLayout>

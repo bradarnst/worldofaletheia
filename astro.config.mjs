@@ -1,12 +1,14 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
-import { fileURLToPath } from 'node:url';
 
 import tailwindcss from '@tailwindcss/vite';
 
 import cloudflare from '@astrojs/cloudflare';
 
-const fromRoot = (value) => fileURLToPath(new URL(value, import.meta.url));
+/**
+ * @param {string} value
+ */
+const fromRoot = (value) => decodeURIComponent(new URL(value, import.meta.url).pathname);
 
 // https://astro.build/config
 export default defineConfig({

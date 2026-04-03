@@ -9,7 +9,7 @@ import { tryGetD1BindingFromLocals } from './d1';
 import { getFilteredCollection, type ContentEnvironment } from '~/utils/content-filter';
 import { normalizeFilterValue, normalizePage, normalizeView, type DiscoveryViewMode } from './normalizers';
 
-export type IndexBackedCollectionName = 'lore' | 'places' | 'sentients' | 'systems';
+export type IndexBackedCollectionName = 'lore' | 'places' | 'sentients' | 'systems' | 'bestiary' | 'flora' | 'factions';
 type DiscoveryGroupField = 'type' | 'subtype';
 
 interface LocalCollectionData {

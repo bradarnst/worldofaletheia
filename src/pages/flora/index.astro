@@ -1,41 +1,22 @@
 ---
-import { getCollection } from 'astro:content';
+import DiscoveryCollectionView from '@components/DiscoveryCollectionView.astro';
 import WorldAletheiaLayout from '@layouts/WorldAletheiaLayout.astro';
-import ContentCard from '@components/ContentCard.astro';
-import TagCloud from '@components/TagCloud.astro';
 import savannaFarmland from '@images/savanna-farmland.png';
-import { getFilteredCollection } from '@utils/content-filter';
+import { loadIndexBackedCollectionPage } from '~/lib/content-index-page';
 
-const flora = await getCollection('flora');
-const visibleFlora = getFilteredCollection(flora);
-
-const allTags = [...new Set(visibleFlora.flatMap(item => item.data.tags))];
+const discoveryPage = await loadIndexBackedCollectionPage({
+  collection: 'flora',
+  searchParams: Astro.url.searchParams,
+  locals: Astro.locals,
+});
 ---
 
 <WorldAletheiaLayout title="Flora - World of Aletheia" description="Explore plants, fungi, herbs, and other flora of Aletheia">
-  <div class="mb-8 rounded-xl border border-base-300 bg-base-200/60 p-4 text-sm text-ink-700">
-    <div class="font-semibold mb-1">Future-ready discovery</div>
-    <p class="meta-muted">Prepared for future filters by flora type, subtype, and tags with alphabetical and grouped views in later phases.</p>
-  </div>
-
-  <div class="max-w-6xl mx-auto px-4 py-8">
-    <div class="mb-12">
-      <h2 class="text-2xl font-bold text-ink-950 mb-6">Latest Flora</h2>
-      
-      {visibleFlora.length === 0 ? (
-        <p class="meta-muted">No published flora entries found.</p>
-      ) : (
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {visibleFlora.map((item, index) => (
-            <ContentCard content={item} image={index % 2 === 0 ? savannaFarmland : undefined} />
-          ))}
-        </div>
-      )}
-    </div>
-    
-    <div class="mb-12">
-      <h2 class="text-2xl font-bold text-ink-950 mb-6">Popular Tags</h2>
-      <TagCloud tags={allTags} />
-    </div>
-  </div>
+  <DiscoveryCollectionView
+    basePath="/flora"
+    collectionLabel="Flora"
+    image={savannaFarmland}
+    emptyMessage="No published flora entries found."
+    {...discoveryPage}
+  />
 </WorldAletheiaLayout>

@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
-import { getAllCampaignFamilyEntries } from '@utils/campaign-content';
+import { getAllCampaignFamilyEntries, type CampaignFamilyEntry } from '@utils/campaign-content';
 import { getCampaignFamilySegmentByCollection } from '@utils/campaign-collections';
 import { getFilteredCollection } from '@utils/content-filter';
 import { buildCanonicalUrl, getNoIndexHeaders, isProductionHostname } from '@utils/seo';
@@ -8,6 +8,23 @@ import { buildCanonicalUrl, getNoIndexHeaders, isProductionHostname } from '@uti
 interface SitemapUrlEntry {
   loc: string;
   lastmod?: string;
+}
+
+interface SitemapEntryDataLike {
+  created?: Date;
+  'created-date'?: Date;
+  modified?: Date;
+  'modified-date'?: Date;
+  start?: Date;
+  end?: Date;
+  date?: Date;
+  campaign?: string;
+  visibility?: string;
+}
+
+interface SitemapCollectionEntryLike {
+  id: string;
+  data: SitemapEntryDataLike;
 }
 
 function toIsoDate(value: Date | undefined): string | undefined {
@@ -28,6 +45,28 @@ function createUrlEntry(pathname: string, lastmod?: string): SitemapUrlEntry {
     loc: buildCanonicalUrl(pathname),
     lastmod,
   };
+}
+
+function pickEntryDate(data: SitemapEntryDataLike): string | undefined {
+  return toIsoDate(data.modified ?? data['modified-date'] ?? data.created ?? data['created-date']);
+}
+
+function appendCollectionEntries<T extends SitemapCollectionEntryLike>(
+  entries: SitemapUrlEntry[],
+  collectionName: string,
+  collection: T[],
+): void {
+  for (const entry of getFilteredCollection(collection)) {
+    entries.push(createUrlEntry(`/${collectionName}/${entry.id}`, pickEntryDate(entry.data)));
+  }
+}
+
+function pickCampaignDate(data: SitemapEntryDataLike): string | undefined {
+  return toIsoDate(data.end ?? data.start ?? data.modified ?? data['modified-date'] ?? data.created ?? data['created-date']);
+}
+
+function pickDatedEntryDate(data: SitemapEntryDataLike): string | undefined {
+  return toIsoDate(data.date ?? data.modified ?? data['modified-date'] ?? data.created ?? data['created-date']);
 }
 
 export const GET: APIRoute = async ({ request }) => {
@@ -90,16 +129,14 @@ export const GET: APIRoute = async ({ request }) => {
 
   const entries: SitemapUrlEntry[] = staticPaths.map((pathname) => createUrlEntry(pathname));
 
-  for (const collectionName of ['lore', 'places', 'sentients', 'bestiary', 'flora', 'factions', 'systems', 'meta'] as const) {
-    const collectionMap = { lore, places, sentients, bestiary, flora, factions, systems, meta };
-    const collection = getFilteredCollection(collectionMap[collectionName]);
-
-    for (const entry of collection) {
-      entries.push(
-        createUrlEntry(`/${collectionName}/${entry.id}`, toIsoDate(entry.data.modified ?? entry.data['modified-date'] ?? entry.data.created ?? entry.data['created-date'])),
-      );
-    }
-  }
+  appendCollectionEntries(entries, 'lore', lore);
+  appendCollectionEntries(entries, 'places', places);
+  appendCollectionEntries(entries, 'sentients', sentients);
+  appendCollectionEntries(entries, 'bestiary', bestiary);
+  appendCollectionEntries(entries, 'flora', flora);
+  appendCollectionEntries(entries, 'factions', factions);
+  appendCollectionEntries(entries, 'systems', systems);
+  appendCollectionEntries(entries, 'meta', meta);
 
   const publicCampaigns = campaigns.filter((entry) => entry.data.visibility === 'public');
   const publicCampaignSlugs = new Set(publicCampaigns.map((entry) => entry.id.split('/')[0]));
@@ -107,7 +144,7 @@ export const GET: APIRoute = async ({ request }) => {
   for (const entry of publicCampaigns) {
     const slug = entry.id.split('/')[0];
     entries.push(
-      createUrlEntry(`/campaigns/${slug}`, toIsoDate(entry.data.end ?? entry.data.start ?? entry.data.modified ?? entry.data['modified-date'] ?? entry.data.created ?? entry.data['created-date'])),
+      createUrlEntry(`/campaigns/${slug}`, pickCampaignDate(entry.data)),
     );
   }
 
@@ -119,11 +156,11 @@ export const GET: APIRoute = async ({ request }) => {
   for (const entry of publicSessions) {
     const parts = entry.id.split('/');
     const slug = parts[parts.length - 1] ?? entry.id;
-    entries.push(createUrlEntry(`/campaigns/${entry.data.campaign}/sessions/${slug}`, toIsoDate(entry.data.date ?? entry.data.modified ?? entry.data['modified-date'] ?? entry.data.created ?? entry.data['created-date'])));
+    entries.push(createUrlEntry(`/campaigns/${entry.data.campaign}/sessions/${slug}`, pickDatedEntryDate(entry.data)));
   }
 
   const familyIndexPaths = new Set<string>();
-  for (const entry of familyEntries) {
+  for (const entry of familyEntries as CampaignFamilyEntry[]) {
     if (!publicCampaignSlugs.has(entry.data.campaign) || entry.data.visibility !== 'public') {
       continue;
     }
@@ -134,7 +171,7 @@ export const GET: APIRoute = async ({ request }) => {
     }
 
     familyIndexPaths.add(`/campaigns/${entry.data.campaign}/${familySegment}`);
-    entries.push(createUrlEntry(`/campaigns/${entry.data.campaign}/${familySegment}/${entry.id.split('/').slice(2).join('/')}`, toIsoDate(entry.data.date ?? entry.data.modified ?? entry.data['modified-date'] ?? entry.data.created ?? entry.data['created-date'])));
+    entries.push(createUrlEntry(`/campaigns/${entry.data.campaign}/${familySegment}/${entry.id.split('/').slice(2).join('/')}`, pickDatedEntryDate(entry.data)));
   }
 
   for (const pathname of familyIndexPaths) {

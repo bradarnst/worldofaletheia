@@ -1,41 +1,22 @@
 ---
-import { getCollection } from 'astro:content';
+import DiscoveryCollectionView from '@components/DiscoveryCollectionView.astro';
 import WorldAletheiaLayout from '@layouts/WorldAletheiaLayout.astro';
-import ContentCard from '@components/ContentCard.astro';
-import TagCloud from '@components/TagCloud.astro';
 import dwarvenMountainEntrance from '@images/dwarven-mountain-entrance.png';
-import { getFilteredCollection } from '@utils/content-filter';
+import { loadIndexBackedCollectionPage } from '~/lib/content-index-page';
 
-const factions = await getCollection('factions');
-const visibleFactions = getFilteredCollection(factions);
-
-const allTags = [...new Set(visibleFactions.flatMap(item => item.data.tags))];
+const discoveryPage = await loadIndexBackedCollectionPage({
+  collection: 'factions',
+  searchParams: Astro.url.searchParams,
+  locals: Astro.locals,
+});
 ---
 
 <WorldAletheiaLayout title="Factions - World of Aletheia" description="Discover guilds, kingdoms, cults, and other organizations of Aletheia">
-  <div class="mb-8 rounded-xl border border-base-300 bg-base-200/60 p-4 text-sm text-ink-700">
-    <div class="font-semibold mb-1">Future-ready discovery</div>
-    <p class="meta-muted">Prepared for future filters by faction type, subtype, and tags with alphabetical and grouped views in later phases.</p>
-  </div>
-
-  <div class="max-w-6xl mx-auto px-4 py-8">
-    <div class="mb-12">
-      <h2 class="text-2xl font-bold text-ink-950 mb-6">Latest Factions</h2>
-      
-      {visibleFactions.length === 0 ? (
-        <p class="meta-muted">No published faction entries found.</p>
-      ) : (
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {visibleFactions.map((item, index) => (
-            <ContentCard content={item} image={index % 2 === 0 ? dwarvenMountainEntrance : undefined} />
-          ))}
-        </div>
-      )}
-    </div>
-    
-    <div class="mb-12">
-      <h2 class="text-2xl font-bold text-ink-950 mb-6">Popular Tags</h2>
-      <TagCloud tags={allTags} />
-    </div>
-  </div>
+  <DiscoveryCollectionView
+    basePath="/factions"
+    collectionLabel="Factions"
+    image={dwarvenMountainEntrance}
+    emptyMessage="No published faction entries found."
+    {...discoveryPage}
+  />
 </WorldAletheiaLayout>

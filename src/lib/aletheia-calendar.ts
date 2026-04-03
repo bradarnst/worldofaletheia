@@ -757,6 +757,10 @@ export function buildCalendarWeekData(
   return { items, leapDay };
 }
 
+function enrichAletheiaDate(date: AletheiaDate): EnrichedAletheiaDate {
+  return date.kind === 'leapday' ? enrichDate(date) : enrichDate(date);
+}
+
 export function normalizeLoreEvent(entry: LoreEventEntryLike): NormalizedLoreEvent | null {
   const data = entry.data;
   if (data.type !== 'event' || !data.aletheia_date) {
@@ -786,8 +790,8 @@ export function normalizeLoreEvent(entry: LoreEventEntryLike): NormalizedLoreEve
     title: data.title,
     excerpt: data.excerpt,
     tags: data.tags ?? [],
-    startDate: enrichDate(startDate),
-    endDate: enrichDate(endDate),
+    startDate: enrichAletheiaDate(startDate),
+    endDate: enrichAletheiaDate(endDate),
     startAbsDay,
     endAbsDay,
     durationDays: (endAbsDay - startAbsDay) + 1,

@@ -38,13 +38,14 @@ Completed in repository:
 - [x] Phase A migration added for `content_index` with indexes.
 - [x] Sync-time index writer added and wired into `pnpm content:sync` flow.
 - [x] Query utility + pagination contract implemented for index-backed list reads.
-- [x] Index-backed list wiring added for high-volume collections (`lore`, `places`, `sentients`, `systems`).
+- [x] Index-backed list wiring added for type-bearing public collections (`lore`, `places`, `sentients`, `systems`, `bestiary`, `flora`, `factions`).
+- [x] Grouped discovery views now ship on the same collection pages with local fallback support.
 
 Still open or partial:
 
-- [ ] Type/subtype/tag display requirements are not yet formally documented/approved.
-- [ ] Type/subtype/tag UX/data-contract design is not yet finalized.
-- [ ] Display-by-type/grouped list views are not yet implemented.
+- [x] Type/subtype/tag display requirements are documented below and reflected in route behavior.
+- [x] Type/subtype/tag UX/data-contract design is finalized for current discovery surfaces.
+- [x] Display-by-type/grouped list views are implemented on supported collections.
 - [x] Remote environment verification completed after `content_index` remediation in staging/prod.
 
 Critical investigation:
@@ -55,15 +56,30 @@ Critical investigation:
 
 ### Gate G1 - Taxonomy Filter Requirements and Design
 
-- [ ] Requirements: document use cases for type/subtype/tag filtering and grouped display behavior.
-- [ ] Design: define UX states, query parameters, default ordering, and empty/error states.
-- [ ] LLD: produce implementation handoff for filter + grouped display before coding those features.
+- [x] Requirements: document use cases for type/subtype/tag filtering and grouped display behavior.
+- [x] Design: define UX states, query parameters, default ordering, and empty/error states.
+- [x] LLD: produce implementation handoff for filter + grouped display before coding those features.
+
+Implemented contract (2026-04-02):
+
+- Query params are `view`, `type`, `subtype`, `tag`, and `page`.
+- `view=latest` is the default and keeps recency ordering (`updated_at desc`, `slug asc`).
+- `view=grouped` groups by `type` unless a `type` filter is active and subtype facets exist; in that state the grouped view pivots to `subtype`.
+- Tag filters narrow both latest and grouped views without changing the grouping field.
+- Empty states stay collection-specific; index read failures render a safe fallback message instead of stale partial data.
 
 ### Gate G2 - Sync Hardening Requirements and Design
 
-- [ ] Requirements: define publish-failure semantics for R2 manifest writes and D1 index writes.
-- [ ] Design: define fail-fast vs partial-success behavior, operator visibility, and recovery steps.
-- [ ] LLD: produce hardening implementation handoff before changing sync runtime behavior.
+- [x] Requirements: define publish-failure semantics for R2 manifest writes and D1 index writes.
+- [x] Design: define fail-fast vs partial-success behavior, operator visibility, and recovery steps.
+- [x] LLD: produce hardening implementation handoff before changing sync runtime behavior.
+
+Implemented contract (2026-04-02):
+
+- Cloud object write failures abort authoritative publish before manifest or D1 index publication.
+- R2 manifest publication failures stop the sync with a dedicated support code (`SYNC-MANIFEST-PUBLISH-FAILED`).
+- D1 discovery index publication failures stop the sync with a dedicated support code (`SYNC-CONTENT-INDEX-FAILED`).
+- Local repo-only sync behavior is unchanged; the hard fail-fast path applies to cloud-backed publish lanes.
 
 ## Inputs
 

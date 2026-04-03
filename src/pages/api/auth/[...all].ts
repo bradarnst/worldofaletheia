@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { getAuth } from '../../../lib/auth';
+import { getAuth } from '~/lib/auth';
 import { getNoIndexHeaders } from '@utils/seo';
 
 const REQUIRED_AUTH_ENV_KEYS = [
@@ -31,10 +31,14 @@ async function getAuthEnvDiagnostics(): Promise<{
     'DB' in runtimeEnv &&
     !!(runtimeEnv as Record<string, unknown>).DB;
 
-  const requiredVarStatus = REQUIRED_AUTH_ENV_KEYS.map((key) => ({
-    key,
-    present: typeof runtimeEnv?.[key] === 'string' && (runtimeEnv as Record<string, unknown>)[key]?.length > 0,
-  }));
+  const requiredVarStatus = REQUIRED_AUTH_ENV_KEYS.map((key) => {
+    const value = runtimeEnv?.[key];
+
+    return {
+      key,
+      present: typeof value === 'string' && value.length > 0,
+    };
+  });
 
   return {
     hasRuntimeEnv: !!runtimeEnv,

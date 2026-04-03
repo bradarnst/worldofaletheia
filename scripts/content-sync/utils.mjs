@@ -1,5 +1,13 @@
 import path from 'node:path';
 
+export class SupportCodeError extends Error {
+  constructor(code, message) {
+    super(message);
+    this.name = 'SupportCodeError';
+    this.supportCode = code;
+  }
+}
+
 export function info(message) {
   console.log(`ℹ ${message}`);
 }
@@ -30,6 +38,10 @@ export function normalizePathForDisplay(p) {
 
 export function isDebugEnabled() {
   return process.env.CONTENT_SYNC_DEBUG === '1';
+}
+
+export function getSupportCode(error) {
+  return error instanceof SupportCodeError ? error.supportCode : null;
 }
 
 export function printErrorDetails(error) {
