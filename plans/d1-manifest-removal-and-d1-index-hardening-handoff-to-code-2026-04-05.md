@@ -56,10 +56,15 @@ Validation completed:
 - `pnpm build`: passed
 - `pnpm db:migrate:plan:local`: passed
 - local D1 schema check: passed
+- `pnpm db:migrate:plan:prod`: passed
+- `pnpm content:sync:prod`: passed
+- remote D1 schema check: passed (`collection` PK position `1`, `id` PK position `2`)
+- remote `r2_key` verification: passed (`0` empty `r2_key` rows after sync repair)
+- remote parity build: passed with `CONTENT_SOURCE_MODE=cloud CONTENT_LOADER_D1_MODE=remote pnpm build`
 
-Environment blocker still outstanding:
+Additional implementation note:
 
-- `pnpm dev:cf:build` could not complete in this environment because Wrangler remote-mode authentication was unavailable (`Failed to fetch auth token: 400 Bad Request` and login required).
+- `scripts/content-sync/cloud-content-metadata.mjs` was updated to recognize legacy top-level campaign overview filenames (for example `<campaign-slug>/Campaign - Brad.md`) so cloud-managed `campaigns` rows continue to receive valid `r2_key` values even when source content has not yet normalized to `index.md`.
 
 ## In Scope
 
@@ -241,11 +246,11 @@ Status: completed on 2026-04-05.
 
 ### Phase B - Runtime and Sync Parity Validation
 
-Status: partially completed on 2026-04-05. Local validation passed; Cloudflare remote parity remains environment-blocked.
+Status: completed on 2026-04-06.
 
-1. Verified loader behavior against the new D1 schema through tests and local migration checks.
-2. Verified sync/index code still publishes collection-scoped rows under the updated conflict target.
-3. Verified runtime-path tests and active docs no longer describe manifests as the active lookup contract.
+1. Verified loader behavior against the new D1 schema through tests plus local and remote migration checks.
+2. Verified sync/index code publishes collection-scoped rows under the updated conflict target in production.
+3. Verified remote parity build succeeds with cloud mode and remote D1 lookup enabled.
 
 ### Phase C - Documentation Cleanup
 
@@ -280,7 +285,7 @@ Implementation result as of 2026-04-05:
 3. `content_index` safely supports collection-local IDs without cross-collection collision.
 4. D1 remains the sole authoritative lookup for `collection/id/slug -> r2_key`.
 5. Active docs and handoffs no longer describe manifests as current architecture.
-6. Full remote Cloudflare parity verification is still pending Wrangler-authenticated execution.
+6. Remote Cloudflare parity verification completed successfully on 2026-04-06.
 
 ## Risks and Notes
 

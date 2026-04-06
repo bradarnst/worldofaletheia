@@ -137,6 +137,7 @@ Implemented artifacts:
 
 - `migrations/0008_content_index_collection_scoped_identity.sql` rebuilds `content_index` around `PRIMARY KEY (collection, id)`.
 - `scripts/content-sync/content-index-writer.mjs` now upserts on `ON CONFLICT(collection, id)` and sorts rows by `collection + id`.
+- `scripts/content-sync/cloud-content-metadata.mjs` now also recognizes legacy top-level campaign overview filenames so remote campaign root rows keep valid `r2_key` values during sync.
 - `scripts/db-migrate-auth-plan.mjs` includes the new migration and safely handles already-applied lookup-schema steps.
 - `src/lib/content-index-loader.test.mjs` covers collection-local ID handling under the D1-only lookup contract.
 - `src/lib/content-index-repo.ts` and `src/lib/content-index-repo.test.ts` were updated so index queries remain correct under collection-scoped identity.
@@ -148,7 +149,10 @@ Validation status at implementation time:
 - `pnpm build`: passed
 - `pnpm db:migrate:plan:local`: passed
 - local D1 schema verification: `content_index` now reports `collection` PK position `1` and `id` PK position `2`
-- Cloudflare parity lane: blocked in this environment by Wrangler authentication (`pnpm dev:cf:build` could not run remote mode without login)
+- `pnpm db:migrate:plan:prod`: passed
+- `pnpm content:sync:prod`: passed
+- remote D1 verification: `content_index` now reports `collection` PK position `1`, `id` PK position `2`, and `0` empty `r2_key` rows
+- remote parity build: passed with `CONTENT_SOURCE_MODE=cloud CONTENT_LOADER_D1_MODE=remote pnpm build`
 
 ## Links
 

@@ -141,7 +141,7 @@ function createContentIndexRow({
   };
 }
 
-async function deriveCollectionEntries(mapping, relativePath, transformedMarkdown, sourceStats, cloud, generatedAt) {
+export async function deriveCollectionEntries(mapping, relativePath, transformedMarkdown, sourceStats, cloud, generatedAt) {
   const parseFrontmatter = await getParseFrontmatter();
   const normalizedRelative = normalizeDisplayPath(relativePath);
   if (!normalizedRelative.toLowerCase().endsWith('.md')) {
@@ -224,6 +224,27 @@ async function deriveCollectionEntries(mapping, relativePath, transformedMarkdow
           campaignSlug,
         }),
       ];
+    }
+
+    const legacyCampaignMatch = /^([^/]+)\/([^/]+)\.md$/i.exec(normalizedRelative);
+    if (legacyCampaignMatch) {
+      const campaignSlug = legacyCampaignMatch[1];
+      const topLevelFileName = legacyCampaignMatch[2].toLowerCase();
+      if (
+        topLevelFileName !== 'index' &&
+        topLevelFileName !== 'sessions' &&
+        !Object.prototype.hasOwnProperty.call(CAMPAIGN_FAMILY_COLLECTIONS, topLevelFileName)
+      ) {
+        return [
+          buildEntry({
+            collection: 'campaigns',
+            id: stripMarkdownExtension(normalizedRelative),
+            slug: normalizeNullableString(frontmatterRecord.slug) ?? campaignSlug,
+            routePath: `${mapping.to}/${normalizedRelative}`,
+            campaignSlug,
+          }),
+        ];
+      }
     }
 
     return [];
