@@ -7,10 +7,6 @@ import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
 
-function isCampaignDomainCollection(collection) {
-  return collection === 'sessions' || collection.startsWith('campaign');
-}
-
 function normalizeNullableString(value) {
   if (typeof value !== 'string') {
     return null;
@@ -37,37 +33,12 @@ function parseEnabledFlag(value) {
   return normalized !== '0' && normalized !== 'false' && normalized !== 'off';
 }
 
-export function shouldIndexForPublicDiscovery(row) {
-  if (!isCampaignDomainCollection(row.collection)) {
-    return true;
-  }
-
-  return row.visibility === 'public';
-}
-
 export function buildContentIndexSyncPlan({ rows, managedCollections }) {
-  const filteredRows = [];
-  const skippedRows = [];
-
-  for (const row of rows) {
-    if (shouldIndexForPublicDiscovery(row)) {
-      filteredRows.push(row);
-      continue;
-    }
-
-    skippedRows.push(row);
-  }
-
-  const skippedByCollection = skippedRows.reduce((counts, row) => {
-    counts[row.collection] = (counts[row.collection] || 0) + 1;
-    return counts;
-  }, {});
-
   return {
-    rows: filteredRows.sort((left, right) => left.id.localeCompare(right.id)),
+    rows: rows
+      .slice()
+      .sort((left, right) => left.collection.localeCompare(right.collection) || left.id.localeCompare(right.id)),
     managedCollections: [...new Set(managedCollections)].sort((left, right) => left.localeCompare(right)),
-    skippedRows,
-    skippedByCollection,
   };
 }
 
@@ -111,6 +82,7 @@ INSERT INTO content_index (
   author,
   created_at,
   updated_at,
+  r2_key,
   source_etag,
   source_last_modified,
   indexed_at
@@ -130,12 +102,12 @@ VALUES (
   ${quoteSqlLiteral(row.author)},
   ${quoteSqlLiteral(row.createdAt)},
   ${quoteSqlLiteral(row.updatedAt)},
+  ${quoteSqlLiteral(row.r2Key)},
   ${quoteSqlLiteral(row.sourceEtag)},
   ${quoteSqlLiteral(row.sourceLastModified)},
   ${quoteSqlLiteral(row.indexedAt)}
 )
-ON CONFLICT(id) DO UPDATE SET
-  collection = excluded.collection,
+ON CONFLICT(collection, id) DO UPDATE SET
   slug = excluded.slug,
   title = excluded.title,
   type = excluded.type,
@@ -148,6 +120,7 @@ ON CONFLICT(id) DO UPDATE SET
   author = excluded.author,
   created_at = excluded.created_at,
   updated_at = excluded.updated_at,
+  r2_key = CASE WHEN excluded.r2_key IS NOT NULL AND excluded.r2_key != '' THEN excluded.r2_key ELSE content_index.r2_key END,
   source_etag = excluded.source_etag,
   source_last_modified = excluded.source_last_modified,
   indexed_at = excluded.indexed_at;`.trim());

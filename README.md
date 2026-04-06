@@ -27,9 +27,10 @@ Core capabilities currently implemented:
 - **Chronology tools** with live canon utility routes:
   - `/calendar` (month/week/year views)
   - `/timeline` (dated lore event chronology)
+  - `/api/calendar/*` (month/week/year, moon phase, and date-diff JSON contracts)
 - **Campaign family model** with explicit campaign collections (`campaignLore`, `campaignPlaces`, `campaignCharacters`, `campaignScenes`, `campaignAdventures`, `campaignHooks`, etc.)
 - **Campaign access boundaries** using Better Auth + D1 membership checks and fail-closed behavior for protected content
-- **Protected campaign media delivery** through API routes with auth-aware gating
+- **Protected campaign media delivery** through API routes with auth-aware gating and sync-time `thumb`/`detail`/`fullscreen` variants
 - **Search API foundation** via `/api/search` backed by the discovery metadata index
 
 ## Content Workflow (Obsidian-First)
@@ -50,8 +51,8 @@ This architecture stays static-first where possible and uses runtime checks only
 ```mermaid
 flowchart LR
   O[Obsidian authoring vault] --> S[Content sync pipeline]
-  S --> R2[Cloud content store and manifests in R2]
-  S --> IDX[Discovery metadata index in D1]
+  S --> R2[Cloud content store in R2]
+  S --> IDX[D1 content index and object lookup]
   R2 --> A[Astro content loaders]
   A --> B[Astro build and SSR routes]
   IDX --> Q[Index-backed discovery and search]
@@ -71,8 +72,8 @@ Cloud-backed content mode is now the canonical runtime lane (ADR-0010), with loc
 - **UI:** Tailwind CSS 4 + DaisyUI 5
 - **Runtime/deploy:** Cloudflare Workers/Pages + Wrangler
 - **Auth:** Better Auth
-- **Data/index:** Cloudflare D1 (`content_index`, auth/session data)
-- **Content storage:** Cloudflare R2 object storage with manifest-backed markdown loading
+- **Data/index:** Cloudflare D1 (`content_index` object lookup/discovery index, auth/session data)
+- **Content storage:** Cloudflare R2 object storage with D1-backed markdown lookup
 - **Content sync:** Node ESM scripts in `scripts/content-sync/`
 - **Testing:** Vitest
 - **Package manager:** pnpm

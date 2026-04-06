@@ -164,6 +164,16 @@ export function createContentCloudAdapter(cloudConfig) {
     return key;
   };
 
+  const uploadBytes = async (key, body, contentType = 'application/octet-stream') => {
+    await client.send(new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      Body: body,
+      ContentType: contentType,
+    }));
+    return key;
+  };
+
   const deleteObject = async (prefix, relativePath) => {
     const key = buildKey(prefix, relativePath);
     await client.send(new DeleteObjectCommand({
@@ -206,6 +216,7 @@ export function createContentCloudAdapter(cloudConfig) {
     listObjects,
     uploadFile,
     uploadText,
+    uploadBytes,
     deleteObject,
     deleteKey,
     downloadObject,

@@ -6,6 +6,14 @@
 - Audience: Implementation handoff to code
 - Scope: Runtime read path + sync contract for all collections
 
+## Historical Status Note (2026-04-05)
+
+This handoff is partially superseded by `plans/adrs/0016-d1-as-canonical-cloud-content-index-and-r2-blob-storage.md`.
+
+- D1 `content_index` is now the sole cloud lookup/discovery contract.
+- R2 stores blobs only.
+- Any manifest-specific runtime or sync language in this document is historical context, not current architecture.
+
 ## Context
 
 Current state has an incomplete split:

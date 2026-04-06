@@ -3,6 +3,7 @@ import path from 'node:path';
 import { Readable } from 'node:stream';
 import { pathToFileURL } from 'node:url';
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { loadCollectionLookupRows } from './content-index-loader.mjs';
 
 let cachedConfig = null;
 let cachedClient = null;
@@ -162,71 +163,12 @@ async function getObjectText(key) {
   return bodyToString(response.Body);
 }
 
-function buildManifestKey(collection) {
-  const config = loadContentCloudConfig();
-  const manifestPath = `manifests/${collection}.json`;
-  return config.prefix ? `${config.prefix}/${manifestPath}` : manifestPath;
-}
-
-function normalizeManifestEntry(entry, collection) {
-  if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
-    throw new Error(`Invalid manifest entry for collection ${collection}.`);
-  }
-
-  const id = String(entry.id ?? '').trim();
-  const key = String(entry.key ?? '').trim();
-  if (!id || !key) {
-    throw new Error(`Manifest entry in ${collection} is missing required id/key fields.`);
-  }
-
-  return {
-    collection,
-    id,
-    slug: typeof entry.slug === 'string' ? entry.slug : undefined,
-    path: typeof entry.path === 'string' ? entry.path : undefined,
-    key,
-    etag: typeof entry.etag === 'string' ? entry.etag : undefined,
-    lastModified: typeof entry.lastModified === 'string' ? entry.lastModified : undefined,
-    visibility: typeof entry.visibility === 'string' ? entry.visibility : undefined,
-    campaignSlug: typeof entry.campaignSlug === 'string'
-      ? entry.campaignSlug
-      : entry.campaignSlug === null
-        ? null
-        : undefined,
-  };
-}
-
-async function readManifest(collection) {
-  const key = buildManifestKey(collection);
-  try {
-    const rawText = await getObjectText(key);
-    const parsed = JSON.parse(rawText);
-
-    if (!Array.isArray(parsed.entries)) {
-      throw new Error(`Manifest for ${collection} is missing entries.`);
-    }
-
-    return {
-      version: typeof parsed.version === 'number' ? parsed.version : 1,
-      collection,
-      generatedAt: typeof parsed.generatedAt === 'string' ? parsed.generatedAt : '',
-      entries: parsed.entries.map((entry) => normalizeManifestEntry(entry, collection)),
-    };
-  } catch (err) {
-    // Manifest doesn't exist - return empty collection
-    if (err.name === 'NoSuchKey' || err.message?.includes('NoSuchKey')) {
-      return { version: 1, collection, generatedAt: '', entries: [] };
-    }
-    throw err;
-  }
-}
-
 export function createR2MarkdownCollectionLoader(collection) {
   return {
     name: `woa-r2-${collection}`,
     async load(context) {
       context.store.clear();
-      const manifest = await readManifest(collection);
+      const entries = await loadCollectionLookupRows(collection);
       const parseFrontmatter = await getParseFrontmatter();
 
       // Valid type values per collection (for data sanitization)
@@ -252,11 +194,11 @@ export function createR2MarkdownCollectionLoader(collection) {
         campaignHooks: ['rumor', 'lead', 'job', 'threat', 'mystery', 'opportunity', 'other'],
       };
 
-      for (const entry of manifest.entries) {
-        const markdown = await getObjectText(entry.key);
+      for (const entry of entries) {
+        const markdown = await getObjectText(entry.r2Key);
         const { frontmatter, content } = parseFrontmatter(markdown);
         
-        // Inject campaign field from manifest for campaign family collections
+        // Inject campaign field from D1 lookup data for campaign family collections
         const enrichedFrontmatter = { ...frontmatter };
         if (entry.campaignSlug && !enrichedFrontmatter.campaign) {
           enrichedFrontmatter.campaign = entry.campaignSlug;
@@ -285,20 +227,20 @@ export function createR2MarkdownCollectionLoader(collection) {
         const data = await context.parseData({
           id: entry.id,
           data: enrichedFrontmatter,
-          filePath: `cloud://${entry.key}`,
+          filePath: `cloud://${entry.r2Key}`,
         });
 
         // Render markdown to HTML using the content layer's markdown processor
         // Pass the raw markdown (with frontmatter) - renderMarkdown parses it internally
         const rendered = await context.renderMarkdown(markdown, {
-          fileURL: `cloud://${entry.key}`,
+          fileURL: `cloud://${entry.r2Key}`,
         });
 
         context.store.set({
           id: entry.id,
           data,
           body: content,
-          filePath: `cloud://${entry.key}`,
+          filePath: `cloud://${entry.r2Key}`,
           rendered,
         });
       }

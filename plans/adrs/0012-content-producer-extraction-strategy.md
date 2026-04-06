@@ -8,7 +8,7 @@
 
 ## Context
 
-The content producer workflow (Obsidian/Git sync, manifest generation, cloud publishing) already has different cadence and ownership pressure than website feature delivery.
+The content producer workflow (Obsidian/Git sync, D1 index derivation, cloud publishing) already has different cadence and ownership pressure than website feature delivery.
 
 Observed operational reality:
 
@@ -70,7 +70,7 @@ The project needs a clear extraction strategy that avoids accidental split compl
 1. The content producer becomes a dedicated repository.
 2. First execution target is GitHub Actions in producer repo.
 3. Worker-first ingestion runtime is optional follow-on, not required for initial extraction.
-4. Site app remains content consumer (R2 + manifests + index) and does not own producer orchestration long-term.
+4. Site app remains a content consumer (R2 blobs + D1 index) and does not own producer orchestration long-term.
 5. Schema authority stays in current repo during transition; promote to shared contracts package only when at least two active consumers require it.
 
 ### Split Trigger Interpretation

@@ -10,7 +10,7 @@ This runbook documents the current Campaigns-domain authoring shape and the supp
   - Campaign routes (`/campaigns/<campaign-slug>/...`)
   - Campaign-family routes (`/campaigns/<campaign-slug>/lore/...`, `/campaigns/<campaign-slug>/characters/...`, etc.)
   - Session routes (`/campaigns/<campaign-slug>/sessions/...`)
-  - Campaign manifest identity in R2
+  - Campaign D1 content-index identity and R2 object lookup paths
   - Campaign access lookups and membership references
 
 ## Identity model and consistency note
@@ -60,6 +60,12 @@ Under the Obsidian Campaigns source folder (for example `World/Campaigns`), orga
     <entry-slug>.md
   hooks/
     <entry-slug>.md
+  assets/
+    images/
+      original/
+        <asset-path>
+    docs/
+      <asset-path>.pdf
 ```
 
 Notes:
@@ -79,6 +85,7 @@ Notes:
   - `adventures` -> `campaignAdventures`
   - `hooks` -> `campaignHooks`
 - Nested campaign content should keep `campaign: <campaign-slug>` in frontmatter.
+- Campaign images intended for protected delivery should live under `assets/images/original/**`; sync generates `thumb`, `detail`, and `fullscreen` variants in cloud storage.
 - New campaigns no longer require a code edit in `src/content.config.ts`; the previous hardcoded `barry|brad` schema constraint has been removed.
 
 ## Adding a new campaign

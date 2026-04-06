@@ -11,7 +11,7 @@
 The project now has working capability for both local and cloud-backed content reads, including:
 
 - runtime source-mode control (`local` vs `cloud`),
-- R2 manifest-backed content contracts,
+- D1-backed cloud lookup with R2 blob retrieval,
 - cloud parity development lanes.
 
 Related context:
@@ -59,7 +59,7 @@ Set cloud as canonical runtime mode and reserve local mode for explicit rollback
 
 **Cons**
 
-- Requires stricter manifest/index operational discipline.
+- Requires stricter D1 index/sync operational discipline.
 - Requires clear local fallback rules to avoid misuse.
 
 ### Option 3: Per-collection mixed mode by default
@@ -103,7 +103,7 @@ Let each collection independently choose local or cloud as standard operation.
 
 ### Negative
 
-- Increased reliance on manifest and sync correctness.
+- Increased reliance on D1 index freshness and sync correctness.
 - More visible impact from cloud ingestion failures.
 
 ### Neutral

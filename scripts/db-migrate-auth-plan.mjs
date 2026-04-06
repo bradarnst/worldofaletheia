@@ -9,6 +9,8 @@ const orderedMigrations = [
   './migrations/0004_auth_email_hardening.sql',
   './migrations/0005_campaign_gm_assignments_multi.sql',
   './migrations/0006_content_index.sql',
+  './migrations/0007_content_index_r2_lookup.sql',
+  './migrations/0008_content_index_collection_scoped_identity.sql',
 ];
 
 function parseArgs(argv) {
@@ -73,30 +75,50 @@ function extractNumber(raw, fallback = 0) {
 
 function extractWranglerRows(raw) {
   const text = String(raw || '').trim();
-  const payloadMatch = text.match(/(\[\s*\{[\s\S]*\}\s*\])\s*$/);
-  if (!payloadMatch) {
-    return null;
+  if (!text) {
+    return [];
   }
 
   try {
-    const parsed = JSON.parse(payloadMatch[1]);
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-      return null;
+    const parsed = JSON.parse(text);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      const firstResult = parsed[0];
+      if (firstResult && typeof firstResult === 'object' && Array.isArray(firstResult.results)) {
+        return firstResult.results;
+      }
     }
-
-    const firstResult = parsed[0];
-    if (!firstResult || typeof firstResult !== 'object' || !Array.isArray(firstResult.results)) {
-      return null;
-    }
-
-    return firstResult.results;
   } catch {
-    return null;
+    // Fall back to extracting the final JSON payload from mixed wrangler output.
   }
+
+  const payloadMatches = text.match(/\[\s*\{[\s\S]*?\}\s*\]/g);
+  if (!payloadMatches || payloadMatches.length === 0) {
+    return [];
+  }
+
+  for (const payload of payloadMatches.reverse()) {
+    try {
+      const parsed = JSON.parse(payload);
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        continue;
+      }
+
+      const firstResult = parsed[0];
+      if (!firstResult || typeof firstResult !== 'object' || !Array.isArray(firstResult.results)) {
+        continue;
+      }
+
+      return firstResult.results;
+    } catch {
+      continue;
+    }
+  }
+
+  return [];
 }
 
 function queryNumeric(baseArgs, label, sql) {
-  const result = runWrangler(baseArgs, ['--command', sql], { allowFailure: true });
+  const result = runWrangler(baseArgs, ['--json', '--command', sql], { allowFailure: true });
   if (result.status !== 0) {
     return {
       label,
@@ -105,8 +127,7 @@ function queryNumeric(baseArgs, label, sql) {
     };
   }
 
-  const combinedOutput = `${result.stdout || ''}${result.stderr || ''}`;
-  const rows = extractWranglerRows(combinedOutput);
+  const rows = extractWranglerRows(result.stdout || '') || extractWranglerRows(`${result.stdout || ''}${result.stderr || ''}`);
   if (rows && rows.length > 0) {
     const firstValue = Object.values(rows[0])[0];
     const numericValue = Number(firstValue);
@@ -119,22 +140,22 @@ function queryNumeric(baseArgs, label, sql) {
 
   return {
     label,
-    value: extractNumber(combinedOutput, 0),
+    value: 0,
     error: null,
   };
 }
 
 function queryText(baseArgs, sql) {
-  const result = runWrangler(baseArgs, ['--command', sql], { allowFailure: true });
+  const result = runWrangler(baseArgs, ['--json', '--command', sql], { allowFailure: true });
   const combinedOutput = `${result.stdout || ''}${result.stderr || ''}`;
-  const rows = extractWranglerRows(combinedOutput);
+  const rows = extractWranglerRows(result.stdout || '') || extractWranglerRows(combinedOutput);
   return {
     ok: result.status === 0,
     output: rows
       ? rows
           .map((row) => Object.values(row).map((value) => String(value)).join(' | '))
           .join('\n')
-      : combinedOutput.trim(),
+      : '',
   };
 }
 
@@ -145,6 +166,32 @@ function tableExists(baseArgs, tableName) {
     `SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='${tableName}';`,
   );
   return check.value === 1;
+}
+
+function columnExists(baseArgs, tableName, columnName) {
+  const check = queryNumeric(
+    baseArgs,
+    `${tableName}.${columnName}`,
+    `SELECT COUNT(*) FROM pragma_table_info('${tableName}') WHERE name='${columnName}';`,
+  );
+  return check.value === 1;
+}
+
+function contentIndexUsesCollectionScopedPrimaryKey(baseArgs) {
+  if (!tableExists(baseArgs, 'content_index')) {
+    return false;
+  }
+
+  const check = queryNumeric(
+    baseArgs,
+    'content_index.collection_scoped_pk',
+    `SELECT COUNT(*)
+     FROM pragma_table_info('content_index')
+     WHERE (name = 'collection' AND pk = 1)
+        OR (name = 'id' AND pk = 2);`,
+  );
+
+  return check.value === 2;
 }
 
 function buildConflictReport(baseArgs) {
@@ -413,6 +460,19 @@ function printConflictBlock(conflicts, { forced }) {
 function runMigrationPlan(baseArgs) {
   console.log('\n=== Applying ordered migration plan ===');
   for (const migrationFile of orderedMigrations) {
+    if (migrationFile === './migrations/0007_content_index_r2_lookup.sql' && columnExists(baseArgs, 'content_index', 'r2_key')) {
+      console.log(`Skipping ${migrationFile} (content_index.r2_key already exists).`);
+      continue;
+    }
+
+    if (
+      migrationFile === './migrations/0008_content_index_collection_scoped_identity.sql' &&
+      contentIndexUsesCollectionScopedPrimaryKey(baseArgs)
+    ) {
+      console.log(`Skipping ${migrationFile} (content_index already uses PRIMARY KEY (collection, id)).`);
+      continue;
+    }
+
     console.log(`Applying ${migrationFile}...`);
     runWrangler(baseArgs, ['--file', migrationFile]);
   }

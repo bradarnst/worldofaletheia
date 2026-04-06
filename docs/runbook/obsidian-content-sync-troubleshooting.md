@@ -42,7 +42,7 @@ Interpretation:
 
 ### 2b) Verify D1 discovery-index prerequisites
 
-If sync fails after manifest generation with a D1 error:
+If sync fails while collecting D1 lookup rows or writing the D1 index:
 
 1. Apply migrations in the matching target first:
 
@@ -206,7 +206,7 @@ When changing parser/normalization logic in [`scripts/content-sync/validate.mjs`
   - failing-case regression test
   - 2+ additional valid tag shapes
   - 1 strict invalid case
-  - content-index writer/query coverage when manifest or visibility contracts change
+  - content-index writer/query coverage when lookup-key or visibility contracts change
 - run both:
 
 ```bash

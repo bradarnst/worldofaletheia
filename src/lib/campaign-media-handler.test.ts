@@ -48,7 +48,7 @@ describe('handleCampaignMediaRequest', () => {
   });
 
   it('fails closed when campaign metadata cannot be loaded', async () => {
-    getCollectionMock.mockRejectedValue(new Error('r2 manifest unavailable'));
+    getCollectionMock.mockRejectedValue(new Error('d1 lookup unavailable'));
 
     const response = await handleCampaignMediaRequest({
       request: new Request('https://example.com/api/campaign-media/brad/images/detail/map.png'),

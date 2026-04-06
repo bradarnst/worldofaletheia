@@ -55,6 +55,7 @@ describe('ContentIndexRepo', () => {
             author: 'Brad',
             created_at: '2026-03-01T00:00:00.000Z',
             updated_at: '2026-03-02T00:00:00.000Z',
+            r2_key: 'content/lore/example.md',
             source_etag: 'etag-1',
             source_last_modified: '2026-03-02T00:00:00.000Z',
             indexed_at: '2026-03-03T00:00:00.000Z',
@@ -125,7 +126,9 @@ describe('ContentIndexRepo', () => {
     );
 
     await expect(repo.listTags({ collection: 'campaigns' })).resolves.toEqual(['alpha', 'beta']);
-    expect(recordedQuery).toContain('SELECT tag.value AS value, COUNT(DISTINCT content_index.id) AS total_count');
+    expect(recordedQuery).toContain(
+      "SELECT tag.value AS value, COUNT(DISTINCT content_index.collection || ':' || content_index.id) AS total_count",
+    );
     expect(recordedQuery).toContain("COALESCE(visibility, 'gm') = 'public'");
     expect(recordedValues).toEqual(['campaigns', 'publish', 'published', 'review', 'draft']);
   });
@@ -192,6 +195,7 @@ describe('ContentIndexRepo', () => {
             author: 'Brad',
             created_at: '2026-03-01T00:00:00.000Z',
             updated_at: '2026-03-02T00:00:00.000Z',
+            r2_key: 'content/systems/gurps-magic.md',
             source_etag: 'etag-1',
             source_last_modified: '2026-03-02T00:00:00.000Z',
             indexed_at: '2026-03-03T00:00:00.000Z',

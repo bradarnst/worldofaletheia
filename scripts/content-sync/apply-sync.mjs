@@ -1,8 +1,9 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { buildCampaignImageVariantUploads, getCampaignImageVariantPlan } from './campaign-media-variants.mjs';
 import { buildWikiLinkIndex, transformObsidianLinks } from './obsidian-links.mjs';
 import { syncContentIndex } from './content-index-writer.mjs';
-import { syncCloudManifests } from './manifests.mjs';
+import { collectCloudContentMetadata } from './cloud-content-metadata.mjs';
 import { SupportCodeError } from './utils.mjs';
 
 function timestamp() {
@@ -65,6 +66,51 @@ function resolveCloudMirrorDestination(config, mapping, relativePath) {
   return path.resolve(cleanupRoot, relativePath);
 }
 
+async function uploadCloudRecord({ rec, config, wikiIndex, cloud }) {
+  const sourceExt = path.extname(rec.sourceAbs).toLowerCase();
+  const contentType = contentTypeForExtension(sourceExt);
+
+  if (sourceExt === '.md') {
+    const sourceText = await fs.readFile(rec.sourceAbs, 'utf8');
+    const transformed = transformObsidianLinks(sourceText, {
+      destAbs: resolveCloudMirrorDestination(config, rec.mapping, rec.relativePath),
+      repoRoot: config.repoRoot,
+      wikiIndex,
+    });
+    const key = await cloud.uploadText(rec.cloudKey, transformed, contentType);
+    return [key];
+  }
+
+  const uploadedKeys = [await cloud.uploadFile(rec.mapping.to, rec.relativePath, rec.sourceAbs, contentType)];
+  const variantPlan = getCampaignImageVariantPlan(rec.relativePath);
+  if (!variantPlan) {
+    return uploadedKeys;
+  }
+
+  const variantUploads = await buildCampaignImageVariantUploads(rec.sourceAbs, variantPlan);
+  for (const variantUpload of variantUploads) {
+    const key = cloud.buildKey(rec.mapping.to, variantUpload.relativePath);
+    await cloud.uploadBytes(key, variantUpload.body, variantUpload.contentType);
+    uploadedKeys.push(key);
+  }
+
+  return uploadedKeys;
+}
+
+async function deleteCloudRecord(mapping, relativePath, cloud) {
+  const deletedKeys = [await cloud.deleteObject(mapping.to, relativePath)];
+  const variantPlan = getCampaignImageVariantPlan(relativePath);
+  if (!variantPlan) {
+    return deletedKeys;
+  }
+
+  for (const variant of variantPlan.variants) {
+    deletedKeys.push(await cloud.deleteObject(mapping.to, variant.relativePath));
+  }
+
+  return deletedKeys;
+}
+
 export async function applySync(diff, config, staleAction, services = {}) {
   const changedFiles = [];
   const backupSession = timestamp();
@@ -97,20 +143,8 @@ export async function applySync(diff, config, staleAction, services = {}) {
     }
 
     try {
-      const sourceExt = path.extname(rec.sourceAbs).toLowerCase();
-      const contentType = contentTypeForExtension(sourceExt);
-      if (sourceExt === '.md') {
-        const sourceText = await fs.readFile(rec.sourceAbs, 'utf8');
-        const transformed = transformObsidianLinks(sourceText, {
-          destAbs: resolveCloudMirrorDestination(config, rec.mapping, rec.relativePath),
-          repoRoot: config.repoRoot,
-          wikiIndex,
-        });
-        await cloud.uploadText(rec.cloudKey, transformed, contentType);
-      } else {
-        await cloud.uploadFile(rec.mapping.to, rec.relativePath, rec.sourceAbs, contentType);
-      }
-      changedFiles.push(`cloud:${rec.cloudKey}`);
+      const uploadedKeys = await uploadCloudRecord({ rec, config, wikiIndex, cloud });
+      changedFiles.push(...uploadedKeys.map((key) => `cloud:${key}`));
     } catch (uploadError) {
       console.error(`Cloud upload failed for ${rec.cloudKey}:`, uploadError.message);
       cloudOperationFailures.push(`upload ${rec.cloudKey}`);
@@ -136,8 +170,8 @@ export async function applySync(diff, config, staleAction, services = {}) {
         throw new Error('Cloud mappings require content cloud configuration.');
       }
 
-      await cloud.deleteObject(rec.mapping.to, rec.relativePath);
-      changedFiles.push(`cloud:${rec.cloudKey}`);
+      const deletedKeys = await deleteCloudRecord(rec.mapping, rec.relativePath, cloud);
+      changedFiles.push(...deletedKeys.map((key) => `cloud:${key}`));
     }
   }
 
@@ -165,35 +199,24 @@ export async function applySync(diff, config, staleAction, services = {}) {
       );
       await ensureParent(backupTarget);
       await cloud.downloadObject(rec.mapping.to, rec.relativePath, backupTarget);
-      await cloud.deleteObject(rec.mapping.to, rec.relativePath);
-      changedFiles.push(`cloud:${rec.cloudKey}`, backupTarget);
+      const deletedKeys = await deleteCloudRecord(rec.mapping, rec.relativePath, cloud);
+      changedFiles.push(...deletedKeys.map((key) => `cloud:${key}`), backupTarget);
     }
   }
 
   if (cloud) {
-    let manifestSync;
     try {
-      manifestSync = await syncCloudManifests(config, services, wikiIndex);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      throw new SupportCodeError('SYNC-MANIFEST-PUBLISH-FAILED', `Cloud manifest publish failed: ${message}`);
-    }
-
-    changedFiles.push(...manifestSync.writtenKeys.map((key) => `cloud:${key}`));
-
-    // D1 discovery index is updated alongside cloud manifest sync using the same
-    // manifest rows. It runs regardless of whether R2 uploads succeeded.
-    try {
+      const contentMetadata = await collectCloudContentMetadata(config, services, wikiIndex);
       const contentIndexSync = await syncContentIndex({
-        rows: manifestSync.contentIndexRows,
-        managedCollections: manifestSync.managedCollections,
+        rows: contentMetadata.contentIndexRows,
+        managedCollections: contentMetadata.managedCollections,
       });
       if (contentIndexSync.applied) {
         changedFiles.push('d1:content_index');
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      throw new SupportCodeError('SYNC-CONTENT-INDEX-FAILED', `D1 content index sync failed: ${message}`);
+      throw new SupportCodeError('SYNC-CONTENT-INDEX-FAILED', `D1 content lookup/index sync failed: ${message}`);
     }
   }
 

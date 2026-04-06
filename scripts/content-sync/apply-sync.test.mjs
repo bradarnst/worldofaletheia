@@ -6,12 +6,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const {
   buildWikiLinkIndexMock,
   transformObsidianLinksMock,
-  syncCloudManifestsMock,
+  collectCloudContentMetadataMock,
   syncContentIndexMock,
 } = vi.hoisted(() => ({
   buildWikiLinkIndexMock: vi.fn(),
   transformObsidianLinksMock: vi.fn(),
-  syncCloudManifestsMock: vi.fn(),
+  collectCloudContentMetadataMock: vi.fn(),
   syncContentIndexMock: vi.fn(),
 }));
 
@@ -20,8 +20,8 @@ vi.mock('./obsidian-links.mjs', () => ({
   transformObsidianLinks: transformObsidianLinksMock,
 }));
 
-vi.mock('./manifests.mjs', () => ({
-  syncCloudManifests: syncCloudManifestsMock,
+vi.mock('./cloud-content-metadata.mjs', () => ({
+  collectCloudContentMetadata: collectCloudContentMetadataMock,
 }));
 
 vi.mock('./content-index-writer.mjs', () => ({
@@ -65,6 +65,7 @@ function createCloudServices() {
     cloud: {
       uploadText: vi.fn(),
       uploadFile: vi.fn(),
+      uploadBytes: vi.fn(),
       deleteObject: vi.fn(),
       downloadObject: vi.fn(),
     },
@@ -79,7 +80,7 @@ describe('applySync failure semantics', () => {
     buildWikiLinkIndexMock.mockResolvedValue(new Map());
     transformObsidianLinksMock.mockReset();
     transformObsidianLinksMock.mockImplementation((sourceText) => sourceText);
-    syncCloudManifestsMock.mockReset();
+    collectCloudContentMetadataMock.mockReset();
     syncContentIndexMock.mockReset();
   });
 
@@ -87,7 +88,7 @@ describe('applySync failure semantics', () => {
     await Promise.all(repoRoots.splice(0).map((repoRoot) => fs.rm(repoRoot, { recursive: true, force: true })));
   });
 
-  it('aborts publish before manifest sync when cloud object uploads fail', async () => {
+  it('aborts publish before metadata collection when cloud object uploads fail', async () => {
     const config = await createWorkspace();
     repoRoots.push(config.repoRoot);
     const services = createCloudServices();
@@ -103,19 +104,20 @@ describe('applySync failure semantics', () => {
       supportCode: 'SYNC-CLOUD-OBJECTS-FAILED',
     });
     expect(services.cloud.deleteObject).not.toHaveBeenCalled();
-    expect(syncCloudManifestsMock).not.toHaveBeenCalled();
+    expect(collectCloudContentMetadataMock).not.toHaveBeenCalled();
   });
 
-  it('fails with a dedicated support code when manifest publish fails', async () => {
+  it('fails with a dedicated support code when D1 lookup metadata collection fails', async () => {
     const config = await createWorkspace();
     repoRoots.push(config.repoRoot);
     const services = createCloudServices();
     services.cloud.uploadText.mockResolvedValue(undefined);
-    syncCloudManifestsMock.mockRejectedValue(new Error('r2 manifest write failed'));
+    collectCloudContentMetadataMock.mockRejectedValue(new Error('content lookup rows unavailable'));
 
     await expect(applySync(createCloudDiff(config.sourceAbs), config, null, services)).rejects.toMatchObject({
-      supportCode: 'SYNC-MANIFEST-PUBLISH-FAILED',
+      supportCode: 'SYNC-CONTENT-INDEX-FAILED',
     });
+    expect(syncContentIndexMock).not.toHaveBeenCalled();
   });
 
   it('fails with a dedicated support code when D1 index sync fails', async () => {
@@ -123,8 +125,7 @@ describe('applySync failure semantics', () => {
     repoRoots.push(config.repoRoot);
     const services = createCloudServices();
     services.cloud.uploadText.mockResolvedValue(undefined);
-    syncCloudManifestsMock.mockResolvedValue({
-      writtenKeys: ['manifests/lore.json'],
+    collectCloudContentMetadataMock.mockResolvedValue({
       contentIndexRows: [],
       managedCollections: ['lore'],
     });

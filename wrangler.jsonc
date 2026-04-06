@@ -46,6 +46,13 @@
           "database_name": "world-of-aletheia-staging",
           "database_id": "500030de-a6b3-47dc-8ab7-dd51128f35c8"
         }
+      ],
+      "r2_buckets": [
+        {
+          "bucket_name": "woa-campaign-private",
+          "binding": "woa_campaign_private",
+          "remote": true
+        }
       ]
     }
   },

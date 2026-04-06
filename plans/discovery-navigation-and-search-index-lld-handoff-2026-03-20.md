@@ -6,6 +6,13 @@
 - Audience: Code implementation handoff
 - Scope: Near-term discovery and search foundation
 
+## Historical Status Note (2026-04-05)
+
+Manifest-specific sync language in this handoff is superseded by `plans/adrs/0016-d1-as-canonical-cloud-content-index-and-r2-blob-storage.md` and `plans/d1-manifest-removal-and-d1-index-hardening-handoff-to-code-2026-04-05.md`.
+
+- D1 `content_index` is the only supported cloud lookup/index.
+- R2 stores markdown/media blobs only.
+
 ## Intent
 
 Implement scalable content discovery in phased order:
@@ -70,14 +77,13 @@ Implemented contract (2026-04-02):
 
 ### Gate G2 - Sync Hardening Requirements and Design
 
-- [x] Requirements: define publish-failure semantics for R2 manifest writes and D1 index writes.
+- [x] Requirements: define publish-failure semantics for cloud object writes and D1 index writes.
 - [x] Design: define fail-fast vs partial-success behavior, operator visibility, and recovery steps.
 - [x] LLD: produce hardening implementation handoff before changing sync runtime behavior.
 
 Implemented contract (2026-04-02):
 
-- Cloud object write failures abort authoritative publish before manifest or D1 index publication.
-- R2 manifest publication failures stop the sync with a dedicated support code (`SYNC-MANIFEST-PUBLISH-FAILED`).
+- Cloud object write failures abort authoritative publish before D1 index publication.
 - D1 discovery index publication failures stop the sync with a dedicated support code (`SYNC-CONTENT-INDEX-FAILED`).
 - Local repo-only sync behavior is unchanged; the hard fail-fast path applies to cloud-backed publish lanes.
 

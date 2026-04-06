@@ -43,11 +43,6 @@ function stripMarkdownExtension(relativePath) {
   return relativePath.replace(/\.md$/i, '');
 }
 
-function buildManifestKey(prefix, collection) {
-  const trimmedPrefix = String(prefix || '').replace(/^\/+|\/+$/g, '');
-  return trimmedPrefix ? `${trimmedPrefix}/manifests/${collection}.json` : `manifests/${collection}.json`;
-}
-
 function normalizeNullableString(value) {
   if (typeof value !== 'string') {
     return null;
@@ -114,7 +109,7 @@ const CAMPAIGN_FAMILY_COLLECTIONS = {
 const CAMPAIGN_FAMILY_SEGMENT_PATTERN = Object.keys(CAMPAIGN_FAMILY_COLLECTIONS).join('|');
 
 function createContentIndexRow({
-  manifestEntry,
+  contentEntry,
   frontmatterRecord,
   generatedAt,
 }) {
@@ -122,25 +117,26 @@ function createContentIndexRow({
   const updatedAt =
     normalizeDateValue(frontmatterRecord.modified ?? frontmatterRecord['modified-date']) ??
     createdAt ??
-    manifestEntry.lastModified;
+    contentEntry.lastModified;
 
   return {
-    id: manifestEntry.id,
-    collection: manifestEntry.collection,
-    slug: manifestEntry.slug,
-    title: normalizeNullableString(frontmatterRecord.title) ?? manifestEntry.slug,
+    id: contentEntry.id,
+    collection: contentEntry.collection,
+    slug: contentEntry.slug,
+    title: normalizeNullableString(frontmatterRecord.title) ?? contentEntry.slug,
     type: normalizeNullableString(frontmatterRecord.type),
     subtype: normalizeNullableString(frontmatterRecord.subtype),
     tagsJson: JSON.stringify(normalizeTags(frontmatterRecord.tags)),
-    visibility: toCampaignVisibility(frontmatterRecord.visibility) ?? manifestEntry.visibility,
-    campaignSlug: manifestEntry.campaignSlug,
+    visibility: toCampaignVisibility(frontmatterRecord.visibility) ?? contentEntry.visibility,
+    campaignSlug: contentEntry.campaignSlug,
     summary: normalizeNullableString(frontmatterRecord.excerpt),
     status: normalizeNullableString(frontmatterRecord.status),
     author: normalizeNullableString(frontmatterRecord.author),
     createdAt,
     updatedAt,
-    sourceEtag: manifestEntry.etag,
-    sourceLastModified: manifestEntry.lastModified,
+    r2Key: contentEntry.r2Key,
+    sourceEtag: contentEntry.etag,
+    sourceLastModified: contentEntry.lastModified,
     indexedAt: generatedAt,
   };
 }
@@ -156,16 +152,16 @@ async function deriveCollectionEntries(mapping, relativePath, transformedMarkdow
   const frontmatterRecord = frontmatter && typeof frontmatter === 'object' ? frontmatter : {};
   const sourceEtag = buildSourceEtag(transformedMarkdown);
   const lastModified = sourceStats.mtime.toISOString();
-  const cloudKey = cloud.buildKey(mapping.to, normalizedRelative);
+  const r2Key = cloud.buildKey(mapping.to, normalizedRelative);
   const visibility = toCampaignVisibility(frontmatterRecord.visibility);
 
   const buildEntry = ({ collection, id, slug, routePath, campaignSlug }) => {
-    const manifestEntry = {
+    const contentEntry = {
       collection,
       id,
       slug,
       path: routePath,
-      key: cloudKey,
+      r2Key,
       etag: sourceEtag,
       lastModified,
       visibility,
@@ -173,9 +169,9 @@ async function deriveCollectionEntries(mapping, relativePath, transformedMarkdow
     };
 
     return {
-      manifestEntry,
+      contentEntry,
       contentIndexRow: createContentIndexRow({
-        manifestEntry,
+        contentEntry,
         frontmatterRecord,
         generatedAt,
       }),
@@ -198,7 +194,7 @@ async function deriveCollectionEntries(mapping, relativePath, transformedMarkdow
       ];
     }
 
-    const familyMatch = new RegExp(`^([^/]+)\/(${CAMPAIGN_FAMILY_SEGMENT_PATTERN})\/(.+)\\.md$`, 'i').exec(normalizedRelative);
+    const familyMatch = new RegExp(`^([^/]+)\/(${CAMPAIGN_FAMILY_SEGMENT_PATTERN})\/(.+)\.md$`, 'i').exec(normalizedRelative);
     if (familyMatch) {
       const campaignSlug = familyMatch[1];
       const familySegment = familyMatch[2].toLowerCase();
@@ -284,18 +280,17 @@ function resolveVirtualDestination(config, mapping, relativePath) {
   return path.resolve(cleanupRoot, relativePath);
 }
 
-export async function syncCloudManifests(config, services, wikiIndex) {
+export async function collectCloudContentMetadata(config, services, wikiIndex) {
   const cloud = services.cloud;
   if (!cloud) {
     return {
-      writtenKeys: [],
       generatedAt: new Date().toISOString(),
       managedCollections: [],
       contentIndexRows: [],
     };
   }
 
-  const manifestEntriesByCollection = new Map();
+  const managedCollections = new Set();
   const contentIndexRows = [];
   const generatedAt = new Date().toISOString();
 
@@ -324,51 +319,15 @@ export async function syncCloudManifests(config, services, wikiIndex) {
         cloud,
         generatedAt,
       )) {
-        const collectionEntries = manifestEntriesByCollection.get(derivedEntry.manifestEntry.collection) ?? [];
-        collectionEntries.push(derivedEntry.manifestEntry);
-        manifestEntriesByCollection.set(derivedEntry.manifestEntry.collection, collectionEntries);
+        managedCollections.add(derivedEntry.contentEntry.collection);
         contentIndexRows.push(derivedEntry.contentIndexRow);
       }
     }
   }
 
-  const writtenKeys = [];
-  const manifestPrefix = config.contentCloud?.prefix || 'content';
-
-  try {
-    for (const [collection, entries] of manifestEntriesByCollection.entries()) {
-      entries.sort((a, b) => a.id.localeCompare(b.id));
-      const manifest = {
-        version: 1,
-        collection,
-        generatedAt,
-        entries,
-      };
-      const key = buildManifestKey(manifestPrefix, collection);
-      await cloud.uploadText(key, `${JSON.stringify(manifest, null, 2)}\n`, 'application/json');
-      writtenKeys.push(key);
-    }
-
-    const indexManifest = {
-      version: 1,
-      generatedAt,
-      collections: Array.from(manifestEntriesByCollection.entries()).map(([collection, entries]) => ({
-        collection,
-        count: entries.length,
-        key: buildManifestKey(manifestPrefix, collection),
-      })),
-    };
-    const indexKey = buildManifestKey(manifestPrefix, '_index');
-    await cloud.uploadText(indexKey, `${JSON.stringify(indexManifest, null, 2)}\n`, 'application/json');
-    writtenKeys.push(indexKey);
-  } catch (uploadError) {
-    console.error('Cloud manifest upload failed (D1 index will still be updated):', uploadError.message);
-  }
-
   return {
-    writtenKeys,
     generatedAt,
-    managedCollections: Array.from(manifestEntriesByCollection.keys()).sort((a, b) => a.localeCompare(b)),
+    managedCollections: Array.from(managedCollections).sort((a, b) => a.localeCompare(b)),
     contentIndexRows,
   };
 }

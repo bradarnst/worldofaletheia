@@ -6,6 +6,13 @@
 - Audience: Architecture and implementation handoff
 - Scope: Dedicated producer repository extraction plan
 
+## Historical Status Note (2026-04-05)
+
+Manifest-specific producer contract language in this handoff is superseded by `plans/adrs/0016-d1-as-canonical-cloud-content-index-and-r2-blob-storage.md`.
+
+- Producer output contract is D1 index rows plus R2 blobs.
+- Any manifest references here are historical transition context only.
+
 ## Intent
 
 Extract content production (sync/publish/index) into a dedicated repository while preserving site delivery continuity and current product priorities.
@@ -36,7 +43,7 @@ Extract content production (sync/publish/index) into a dedicated repository whil
 Producer repo owns:
 
 - source discovery and validation,
-- manifest generation,
+- content-index row derivation,
 - R2 object publication,
 - D1 index publication,
 - dry-run + operator-safe reporting.

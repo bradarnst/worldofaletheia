@@ -118,7 +118,7 @@ Defer taxonomy changes in current repo and perform immediate campaign domain ext
 
 - `src/content.config.ts` collection/schema updates.
 - `src/pages/campaigns/**` route updates for new campaign-family collections.
-- `scripts/content-sync/manifests.mjs` and related sync/index writer updates.
+- `scripts/content-sync/cloud-content-metadata.mjs` and related sync/index writer updates.
 - Discovery/index contract updates for campaign-family collections.
 - Runbook and content-authoring documentation updates.
 

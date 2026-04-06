@@ -13,8 +13,8 @@ The command in [`scripts/content-sync/index.mjs`](scripts/content-sync/index.mjs
 5. Normalize Obsidian wiki syntax in Markdown (for `src/content/**` mappings):
    - `[[Page Name]]` -> standard Markdown link with resolved site route
    - `![[Image Name.png]]` -> standard Markdown image link targeting `src/assets/images`
-6. Publish/update R2 manifests for cloud-backed collections
-7. Reconcile the public D1 discovery index (`content_index`) from manifest identity + frontmatter metadata
+6. Upload/update cloud-backed content objects in R2
+7. Reconcile the D1 `content_index` table from content identity + frontmatter metadata + `r2_key` lookup data
 8. Validate Markdown/frontmatter (for content folders)
 
 Git operations are intentionally **not** part of default ingestion. Commit/push is manual.
@@ -168,7 +168,7 @@ pnpm content:sync:dry-run
 
 ### 5) Optional: choose the D1 content-index sync target
 
-`pnpm content:sync` now updates the `content_index` D1 table after manifest generation.
+`pnpm content:sync` now updates the `content_index` D1 table as the canonical cloud metadata + object-lookup source for cloud content. D1 is the only supported cloud lookup contract; R2 stores blobs only.
 
 - Default target: local D1 (`wrangler d1 execute DB --local ...`)
 - Remote staging target:
@@ -189,7 +189,13 @@ CONTENT_INDEX_SYNC_MODE=remote pnpm content:sync
 CONTENT_INDEX_SYNC_MODE=off pnpm content:sync
 ```
 
-Run the migration plan first in the matching environment so `content_index` exists before sync writes begin.
+Run the migration plan first in the matching environment so `content_index`, its collection-scoped identity constraints, and its `r2_key` column exist before sync writes begin.
+
+If you build with `CONTENT_SOURCE_MODE=cloud`, the loader also needs to know which D1 target to read from:
+
+- Local build/parity: `CONTENT_LOADER_D1_MODE=local`
+- Remote staging build: `CONTENT_LOADER_D1_MODE=remote CONTENT_LOADER_D1_ENV=staging`
+- Remote production build: `CONTENT_LOADER_D1_MODE=remote`
 
 ## Day-to-day commands
 
@@ -249,6 +255,21 @@ Detailed operator runbook for parser/ingestion issues:
 | `VALIDATION-FAILED` | Markdown/frontmatter validation failed | Fix listed files, rerun sync |
 | `SYNC-STALE-ABORTED` | User chose abort at stale prompt | Re-run and choose remove or backup |
 | `SYNC-RUNTIME-ERROR` | General runtime failure, including R2/D1 publish failures | Re-run with debug, verify migrations, inspect the exact wrangler/R2 error |
+
+## Campaign media variants
+
+When a cloud-targeted campaign source includes images under `assets/images/original/**`, sync uploads the original object and also generates:
+
+- `thumb`
+- `detail`
+- `fullscreen`
+
+The generated variants are written to `assets/images/variants/<variant>/**` in R2 and are served through the protected campaign-media route.
+
+## Discovery index scope
+
+- `content_index` now stores both public and protected campaign-domain rows when sync runs.
+- Public discovery/search behavior is still enforced by query guards; protected rows remain deny-by-default outside authorized campaign paths.
 
 ## Debug mode for technical details
 

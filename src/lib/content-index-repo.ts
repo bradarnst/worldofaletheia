@@ -27,6 +27,7 @@ interface ContentIndexRowRecord {
   author: string | null;
   created_at: string | null;
   updated_at: string | null;
+  r2_key: string;
   source_etag: string;
   source_last_modified: string;
   indexed_at: string;
@@ -47,6 +48,7 @@ export interface ContentIndexRow {
   author: string | null;
   createdAt: string | null;
   updatedAt: string | null;
+  r2Key: string;
   sourceEtag: string;
   sourceLastModified: string;
   indexedAt: string;
@@ -166,6 +168,7 @@ function toContentIndexRow(record: ContentIndexRowRecord): ContentIndexRow {
     author: record.author,
     createdAt: record.created_at,
     updatedAt: record.updated_at,
+    r2Key: record.r2_key,
     sourceEtag: record.source_etag,
     sourceLastModified: record.source_last_modified,
     indexedAt: record.indexed_at,
@@ -287,6 +290,7 @@ export class ContentIndexRepo {
         author,
         created_at,
         updated_at,
+        r2_key,
         source_etag,
         source_last_modified,
         indexed_at
@@ -330,6 +334,7 @@ export class ContentIndexRepo {
         author,
         created_at,
         updated_at,
+        r2_key,
         source_etag,
         source_last_modified,
         indexed_at
@@ -383,6 +388,7 @@ export class ContentIndexRepo {
         author,
         created_at,
         updated_at,
+        r2_key,
         source_etag,
         source_last_modified,
         indexed_at
@@ -427,7 +433,7 @@ export class ContentIndexRepo {
     const query =
       facet === 'tag'
         ? `
-            SELECT tag.value AS value, COUNT(DISTINCT content_index.id) AS total_count
+            SELECT tag.value AS value, COUNT(DISTINCT content_index.collection || ':' || content_index.id) AS total_count
             FROM content_index, json_each(content_index.tags_json) AS tag
             WHERE ${where.sql}
               AND tag.value IS NOT NULL
