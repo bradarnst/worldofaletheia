@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { spawnSync } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
 
 const orderedMigrations = [
   './migrations/0001_campaign_memberships.sql',
@@ -13,7 +14,7 @@ const orderedMigrations = [
   './migrations/0008_content_index_collection_scoped_identity.sql',
 ];
 
-function parseArgs(argv) {
+export function parseArgs(argv) {
   const args = argv.slice(2);
   const flags = new Set(args.filter((part) => part.startsWith('--')));
   const modeArg = args.find((part) => part.startsWith('--mode='));
@@ -65,60 +66,211 @@ function runWrangler(baseArgs, extraArgs, { allowFailure = false } = {}) {
   return result;
 }
 
-function extractNumber(raw, fallback = 0) {
-  const match = String(raw).match(/-?\d+/);
-  if (!match) {
-    return fallback;
-  }
-  return Number(match[0]);
-}
-
-function extractWranglerRows(raw) {
-  const text = String(raw || '').trim();
-  if (!text) {
-    return [];
-  }
+function parseWranglerPayload(raw, sourceLabel) {
+  let parsed;
 
   try {
-    const parsed = JSON.parse(text);
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      const firstResult = parsed[0];
-      if (firstResult && typeof firstResult === 'object' && Array.isArray(firstResult.results)) {
-        return firstResult.results;
-      }
-    }
-  } catch {
-    // Fall back to extracting the final JSON payload from mixed wrangler output.
+    parsed = JSON.parse(raw);
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    return {
+      rows: null,
+      error: `${sourceLabel} is not valid JSON (${reason}).`,
+    };
   }
 
-  const payloadMatches = text.match(/\[\s*\{[\s\S]*?\}\s*\]/g);
-  if (!payloadMatches || payloadMatches.length === 0) {
-    return [];
+  if (!Array.isArray(parsed) || parsed.length === 0) {
+    return {
+      rows: null,
+      error: `${sourceLabel} did not contain a Wrangler result array.`,
+    };
   }
 
-  for (const payload of payloadMatches.reverse()) {
-    try {
-      const parsed = JSON.parse(payload);
-      if (!Array.isArray(parsed) || parsed.length === 0) {
-        continue;
-      }
-
-      const firstResult = parsed[0];
-      if (!firstResult || typeof firstResult !== 'object' || !Array.isArray(firstResult.results)) {
-        continue;
-      }
-
-      return firstResult.results;
-    } catch {
-      continue;
-    }
+  const firstResult = parsed[0];
+  if (!firstResult || typeof firstResult !== 'object' || !Array.isArray(firstResult.results)) {
+    return {
+      rows: null,
+      error: `${sourceLabel} did not contain a results array.`,
+    };
   }
 
-  return [];
+  return {
+    rows: firstResult.results,
+    error: null,
+  };
 }
 
-function queryNumeric(baseArgs, label, sql) {
-  const result = runWrangler(baseArgs, ['--json', '--command', sql], { allowFailure: true });
+function collectJsonArrayCandidates(text) {
+  const candidates = [];
+
+  for (let start = 0; start < text.length; start += 1) {
+    if (text[start] !== '[') {
+      continue;
+    }
+
+    let depth = 0;
+    let inString = false;
+    let isEscaped = false;
+
+    for (let index = start; index < text.length; index += 1) {
+      const character = text[index];
+
+      if (inString) {
+        if (isEscaped) {
+          isEscaped = false;
+          continue;
+        }
+
+        if (character === '\\') {
+          isEscaped = true;
+          continue;
+        }
+
+        if (character === '"') {
+          inString = false;
+        }
+
+        continue;
+      }
+
+      if (character === '"') {
+        inString = true;
+        continue;
+      }
+
+      if (character === '[') {
+        depth += 1;
+        continue;
+      }
+
+      if (character !== ']') {
+        continue;
+      }
+
+      depth -= 1;
+      if (depth === 0) {
+        candidates.push(text.slice(start, index + 1));
+        break;
+      }
+    }
+  }
+
+  return candidates;
+}
+
+export function parseWranglerRows(raw) {
+  const text = String(raw || '').trim();
+  if (!text) {
+    return {
+      rows: null,
+      error: 'Wrangler returned no output.',
+    };
+  }
+
+  const directParse = parseWranglerPayload(text, 'Wrangler output');
+  if (!directParse.error) {
+    return directParse;
+  }
+
+  const payloadMatches = collectJsonArrayCandidates(text);
+  if (!payloadMatches || payloadMatches.length === 0) {
+    return {
+      rows: null,
+      error: 'Wrangler output did not contain a parseable JSON payload.',
+    };
+  }
+
+  const errors = [];
+  for (const payload of payloadMatches.reverse()) {
+    const parsedPayload = parseWranglerPayload(payload, 'Embedded Wrangler JSON payload');
+    if (!parsedPayload.error) {
+      return parsedPayload;
+    }
+
+    errors.push(parsedPayload.error);
+  }
+
+  return {
+    rows: null,
+    error: errors[errors.length - 1] || directParse.error,
+  };
+}
+
+function buildWranglerOutputCandidates({ stdout, stderr }) {
+  const candidates = [];
+  const rawCandidates = [
+    String(stdout || ''),
+    String(stderr || ''),
+    [stdout, stderr].filter(Boolean).join('\n'),
+    [stderr, stdout].filter(Boolean).join('\n'),
+  ];
+
+  for (const candidate of rawCandidates) {
+    const normalized = String(candidate || '').trim();
+    if (!normalized || candidates.includes(normalized)) {
+      continue;
+    }
+
+    candidates.push(normalized);
+  }
+
+  return candidates;
+}
+
+export function extractWranglerRowsFromResult(result) {
+  const errors = [];
+
+  for (const candidate of buildWranglerOutputCandidates(result)) {
+    const parsed = parseWranglerRows(candidate);
+    if (!parsed.error) {
+      return parsed;
+    }
+
+    errors.push(parsed.error);
+  }
+
+  return {
+    rows: null,
+    error: errors[errors.length - 1] || 'Wrangler returned no parseable JSON output.',
+  };
+}
+
+export function interpretNumericRows(label, rows) {
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return {
+      label,
+      value: null,
+      error: `${label} query returned no rows.`,
+    };
+  }
+
+  const firstRow = rows[0];
+  if (!firstRow || typeof firstRow !== 'object' || Array.isArray(firstRow)) {
+    return {
+      label,
+      value: null,
+      error: `${label} query returned an unreadable first row.`,
+    };
+  }
+
+  const firstValue = Object.values(firstRow)[0];
+  const numericValue = Number(firstValue);
+  if (!Number.isFinite(numericValue)) {
+    return {
+      label,
+      value: null,
+      error: `${label} query returned a non-numeric first value (${JSON.stringify(firstValue)}).`,
+    };
+  }
+
+  return {
+    label,
+    value: numericValue,
+    error: null,
+  };
+}
+
+export function interpretNumericWranglerResult(result, label) {
   if (result.status !== 0) {
     return {
       label,
@@ -127,54 +279,68 @@ function queryNumeric(baseArgs, label, sql) {
     };
   }
 
-  const rows = extractWranglerRows(result.stdout || '') || extractWranglerRows(`${result.stdout || ''}${result.stderr || ''}`);
-  if (rows && rows.length > 0) {
-    const firstValue = Object.values(rows[0])[0];
-    const numericValue = Number(firstValue);
+  const parsedRows = extractWranglerRowsFromResult(result);
+  if (parsedRows.error) {
     return {
       label,
-      value: Number.isNaN(numericValue) ? 0 : numericValue,
-      error: null,
+      value: null,
+      error: `${label} query output was unreadable: ${parsedRows.error}`,
     };
   }
 
-  return {
-    label,
-    value: 0,
-    error: null,
-  };
+  return interpretNumericRows(label, parsedRows.rows);
+}
+
+function requireNumericValue(result, context = result.label) {
+  if (result.error || result.value === null || !Number.isFinite(result.value)) {
+    throw new Error(`Unable to evaluate ${context}: ${result.error || 'numeric result unavailable.'}`);
+  }
+
+  return result.value;
+}
+
+function queryNumeric(baseArgs, label, sql) {
+  const result = runWrangler(baseArgs, ['--json', '--command', sql], { allowFailure: true });
+  return interpretNumericWranglerResult(result, label);
 }
 
 function queryText(baseArgs, sql) {
   const result = runWrangler(baseArgs, ['--json', '--command', sql], { allowFailure: true });
-  const combinedOutput = `${result.stdout || ''}${result.stderr || ''}`;
-  const rows = extractWranglerRows(result.stdout || '') || extractWranglerRows(combinedOutput);
+  const parsedRows = extractWranglerRowsFromResult(result);
   return {
-    ok: result.status === 0,
-    output: rows
-      ? rows
+    ok: result.status === 0 && !parsedRows.error,
+    output: parsedRows.rows
+      ? parsedRows.rows
           .map((row) => Object.values(row).map((value) => String(value)).join(' | '))
           .join('\n')
       : '',
+    error:
+      result.status !== 0
+        ? (result.stderr || result.stdout || '').trim() || 'query failed'
+        : parsedRows.error,
   };
 }
 
 function tableExists(baseArgs, tableName) {
-  const check = queryNumeric(
-    baseArgs,
-    `${tableName}_table_exists`,
-    `SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='${tableName}';`,
-  );
-  return check.value === 1;
+  return requireNumericValue(
+    queryNumeric(
+      baseArgs,
+      `${tableName}_table_exists`,
+      `SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='${tableName}';`,
+    ),
+    `${tableName} table existence check`,
+  ) === 1;
 }
 
 function columnExists(baseArgs, tableName, columnName) {
-  const check = queryNumeric(
-    baseArgs,
-    `${tableName}.${columnName}`,
-    `SELECT COUNT(*) FROM pragma_table_info('${tableName}') WHERE name='${columnName}';`,
-  );
-  return check.value === 1;
+  return requireNumericValue(
+    queryNumeric(
+      baseArgs,
+      `${tableName}.${columnName}`,
+      `SELECT COUNT(*) FROM pragma_table_info('${tableName}') WHERE name='${columnName}';`,
+    ),
+    `${tableName}.${columnName} column existence check`,
+  ) === 1;
 }
 
 function contentIndexUsesCollectionScopedPrimaryKey(baseArgs) {
@@ -191,7 +357,7 @@ function contentIndexUsesCollectionScopedPrimaryKey(baseArgs) {
         OR (name = 'id' AND pk = 2);`,
   );
 
-  return check.value === 2;
+  return requireNumericValue(check, 'content_index collection-scoped primary key check') === 2;
 }
 
 function buildConflictReport(baseArgs) {
@@ -213,12 +379,12 @@ function buildConflictReport(baseArgs) {
        AND type <> 'table'
      ORDER BY name;`,
   );
-  if ((objectTypeConflictCount.value ?? 0) > 0) {
+  if (requireNumericValue(objectTypeConflictCount, 'schema object conflict detection') > 0) {
     conflicts.push({
       type: 'schema_object_conflict',
       message:
         'Found existing non-table objects using required table names. Rename/remove conflicting object(s) before running migrations.',
-      details: objectTypeConflicts.output,
+      details: objectTypeConflicts.output || objectTypeConflicts.error || 'No details available.',
     });
   }
 
@@ -229,14 +395,14 @@ function buildConflictReport(baseArgs) {
     `SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='user';`,
   );
 
-  if (userTableExists.value === 1) {
+  if (requireNumericValue(userTableExists, 'user table existence check') === 1) {
     for (const column of requiredUserColumns) {
       const hasColumn = queryNumeric(
         baseArgs,
         `user.${column}`,
         `SELECT COUNT(*) FROM pragma_table_info('user') WHERE name='${column}';`,
       );
-      if (hasColumn.value === 0) {
+      if (requireNumericValue(hasColumn, `user.${column} column existence check`) === 0) {
         conflicts.push({
           type: 'schema_shape_conflict',
           message: `Existing user table is missing required column: ${column}`,
@@ -257,7 +423,7 @@ function buildConflictReport(baseArgs) {
          HAVING COUNT(*) > 1
        );`,
     );
-    if ((duplicateCanonical.value ?? 0) > 0) {
+    if (requireNumericValue(duplicateCanonical, 'canonical email collision detection') > 0) {
       const duplicateDetails = queryText(
         baseArgs,
         `SELECT trim(lower(email)) AS canonical_email,
@@ -275,7 +441,7 @@ function buildConflictReport(baseArgs) {
         type: 'canonical_email_collision',
         message:
           'Canonical-email collisions detected (`trim(lower(email))`). Running without force is blocked to prevent ambiguous identity state changes.',
-        details: duplicateDetails.output || 'No details available.',
+        details: duplicateDetails.output || duplicateDetails.error || 'No details available.',
       });
     }
   }
@@ -285,13 +451,13 @@ function buildConflictReport(baseArgs) {
     'verification_table_exists',
     `SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='verification';`,
   );
-  if (verificationTableExists.value === 1) {
+  if (requireNumericValue(verificationTableExists, 'verification table existence check') === 1) {
     const hasExpiry = queryNumeric(
       baseArgs,
       'verification.expiresAt',
       `SELECT COUNT(*) FROM pragma_table_info('verification') WHERE name='expiresAt';`,
     );
-    if (hasExpiry.value === 0) {
+    if (requireNumericValue(hasExpiry, 'verification.expiresAt column existence check') === 0) {
       conflicts.push({
         type: 'schema_shape_conflict',
         message: 'Existing verification table is missing required column: expiresAt',
@@ -316,14 +482,13 @@ function printPlanSummary(baseArgs) {
   console.log('- Normalize email values to trim(lower(email)) and backfill email_canonical where needed.');
   console.log('- Enforce strict unique canonical email index (fails immediately if duplicates remain).');
 
-  const userExists = tableExists(baseArgs, 'user');
-  const metrics = [
-    {
-      label: 'user_table_exists',
-      value: userExists ? 1 : 0,
-      error: null,
-    },
-  ];
+  const userTableExists = queryNumeric(
+    baseArgs,
+    'user_table_exists',
+    `SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='user';`,
+  );
+  const metrics = [userTableExists];
+  const userExists = userTableExists.error ? false : userTableExists.value === 1;
 
   if (userExists) {
     metrics.push(
@@ -428,7 +593,7 @@ WHERE id IN (SELECT id FROM losers);
     `SELECT COUNT(*) FROM pragma_table_info('user') WHERE name='email_canonical';`,
   );
 
-  if (hasCanonicalColumn.value === 1) {
+  if (requireNumericValue(hasCanonicalColumn, 'user.email_canonical column existence check') === 1) {
     runWrangler(
       baseArgs,
       [
@@ -517,4 +682,6 @@ async function main() {
   }
 }
 
-main();
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  await main();
+}

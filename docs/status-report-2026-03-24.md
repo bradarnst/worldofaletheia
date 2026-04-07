@@ -6,7 +6,7 @@
 
 ## Executive Status
 
-Project is in a stronger post-foundation state: CI covers the core local quality lane, repo-wide TypeScript remains healthy, cloud content no longer depends on R2 manifests, campaign media variants are generated at sync time, and the first `/api/calendar/*` contracts are live. The highest-value remaining work is now operator tooling hardening, remote parity automation decisions, and follow-on calendar consumers.
+Project is in a stronger post-foundation state: CI covers the core local quality lane, repo-wide TypeScript remains healthy, cloud content no longer depends on R2 manifests, campaign media variants are generated at sync time, the first `/api/calendar/*` contracts are live, and the remaining operator dry-run/parser fragility is now bounded. The highest-value remaining work is remote parity automation decisions and follow-on calendar consumers.
 
 ## Current State (Implemented)
 
@@ -40,26 +40,33 @@ Project is in a stronger post-foundation state: CI covers the core local quality
     - The server-rendered `/calendar` and `/timeline` pages still use the same shared engine directly.
 
 7. **Validation baseline is healthy**
-     - `pnpm test`: passing (94 tests)
+     - `pnpm test`: passing (105 tests)
      - `pnpm build`: passing (with non-blocking warnings in local lane)
      - `pnpm exec tsc --noEmit`: passing
 
 8. **CI regression guard is present**
-    - Minimal GitHub Actions workflow exists for manual `workflow_dispatch` execution and runs `pnpm test` plus `pnpm build`.
-    - Reference: `.github/workflows/ci.yml`.
+     - Minimal GitHub Actions workflow exists for manual `workflow_dispatch` execution and runs `pnpm test` plus `pnpm build`.
+     - Reference: `.github/workflows/ci.yml`.
+
+9. **Operator tooling hardening is closed for the current Step 1 scope**
+     - `wrangler.jsonc` already carries `env.staging.r2_buckets`, and staging D1 operator commands now run without the historical binding-warning noise.
+     - `scripts/db-migrate-auth-plan.mjs` now fails closed when Wrangler JSON output is unreadable or non-numeric instead of silently treating parse issues as `0`.
+     - Added parser regressions in `scripts/db-migrate-auth-plan.test.mjs` for mixed log + JSON output, missing payloads, and non-numeric result values.
+     - Verified with successful runs of:
+       - `pnpm exec vitest run scripts/db-migrate-auth-plan.test.mjs`
+       - `pnpm test`
+       - `pnpm build`
+       - `pnpm db:migrate:plan:staging:dry-run`
+       - `pnpm db:migrate:plan:prod:dry-run`
+       - `pnpm exec wrangler d1 execute DB --remote --env staging --command "SELECT 1 AS ok;"`
 
 ## Remaining Work (Short-Term Priorities)
 
-1. **Resolve known operator/config debt**
-    - Staging Wrangler config warning debt remains.
-    - Migration dry-run parser remains brittle when Wrangler warning noise appears.
-    - Reference: `plans/content-index-p0-root-cause-2026-03-24.md`.
-
-2. **Decide whether remote parity deserves more automation**
+1. **Decide whether remote parity deserves more automation**
     - CI protects the local quality lane, but sync/index/auth parity remains operator-driven by design.
     - Remote lanes should be added only with explicit secret handling and failure ownership.
 
-3. **Build consumers on top of the new calendar API surface**
+2. **Build consumers on top of the new calendar API surface**
     - Calendar and timeline foundations exist, and `/api/calendar/*` is now available for richer UI or tooling consumers.
     - References:
       - `plans/adrs/0014-calendar-and-timeline-canon-utility-routes-and-lore-event-metadata-policy.md`
@@ -94,10 +101,9 @@ Project is in a stronger post-foundation state: CI covers the core local quality
 
 ## Immediate Recommended Sequence
 
-1. Harden Wrangler/operator tooling around warning noise and staging config.
-2. Decide whether remote parity deserves a secret-backed CI lane.
-3. Build the next calendar/timeline consumer on top of `/api/calendar/*`.
-4. Reassess campaign-domain follow-ons once the simplified pipeline settles.
+1. Decide whether remote parity deserves a secret-backed CI lane.
+2. Build the next calendar/timeline consumer on top of `/api/calendar/*`.
+3. Reassess campaign-domain follow-ons once the simplified pipeline settles.
 
 ## Open Task Count Snapshot (from active planning docs)
 
