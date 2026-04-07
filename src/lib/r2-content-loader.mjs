@@ -165,12 +165,9 @@ async function getObjectText(key) {
 
 /**
  * Resolve a relative path against an R2 object key to produce another R2 object key.
- * e.g. relativeToR2Key('content/lore/the-orcs.md', '../../assets/images/Orcs.png')
- *   → 'content/assets/images/Orcs.png'
  */
 function relativeToR2Key(r2Key, relativePath) {
   const segments = r2Key.split('/');
-  // Remove the filename to get the "directory" of the R2 object
   segments.pop();
   for (const part of relativePath.split('/')) {
     if (part === '..') {
@@ -183,52 +180,48 @@ function relativeToR2Key(r2Key, relativePath) {
 }
 
 /**
- * Replace __ASTRO_IMAGE_ attribute values (JSON with relative src)
- * with URLs pointing to the content-image handler. The handler fetches
- * the image from R2 using the computed R2 key.
- * The HTML serializer encodes " as &#x22; in attributes.
+ * Pre-process markdown content to replace relative image paths with R2 handler URLs.
+ * This runs BEFORE Astro's markdown processor, so we transform:
+ *   ![alt](../../assets/images/X.png) 
+ * to:
+ *   ![alt](/_content-image?key=assets/images/X.png)
+ * 
+ * Images are stored at R2 key "assets/images/X.png" (no content/ prefix).
+ * Markdown is stored at R2 key "lore/example.md" but images use their own prefix.
+ * This way Astro's markdown processor never sees relative paths and won't
+ * add __astro_image_ attributes.
  */
-function replaceImageAttrsWithR2Urls(html, imagePaths, markdownR2Key) {
-  if (!imagePaths || imagePaths.length === 0 || !markdownR2Key) {
-    return html;
+function preprocessMarkdownImages(markdown, markdownR2Key) {
+  if (!markdownR2Key) {
+    return markdown;
   }
 
-  // Pre-compute relative path → R2 key for all images in this markdown file
-  const relPathToR2Key = new Map();
-  for (const relPath of imagePaths) {
-    relPathToR2Key.set(relPath, relativeToR2Key(markdownR2Key, relPath));
-  }
-
-  // The HTML has __ASTRO_IMAGE_="..." with JSON where src is the relative path.
-  // In the attribute, " is encoded as &#x22;.
-  const regex = /__ASTRO_IMAGE_="([^"]+)"/g;
-  return html.replace(regex, (_full, encodedJson) => {
-    // Decode HTML entities to recover the JSON string
-    const jsonStr = encodedJson.replaceAll('&#x22;', '"');
-    let parsed;
-    try {
-      parsed = JSON.parse(jsonStr);
-    } catch {
-      return _full;
+  // Match markdown image syntax: ![alt](path) or ![alt](<path>) with angle brackets
+  // The path can be wrapped in angle brackets or plain parens
+  const imageRegex = /!\[([^\]]*)\]\(<([^>]+)>\)|!\[([^\]]*)\]\(([^)]+)\)/g;
+  
+  return markdown.replace(imageRegex, (_match, altAngle, srcAngle, altParen, srcParen) => {
+    // Two patterns: ![alt](<path>) captures altAngle+srcAngle, or ![alt](path) captures altParen+srcParen
+    const alt = altAngle || altParen;
+    const src = srcAngle || srcParen;
+    if (!src) {
+      return _match;
     }
-    const relPath = parsed.src;
-    if (!relPath) {
-      return _full;
+    
+    // Skip if already an absolute URL or external
+    if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('/')) {
+      return _match;
     }
-
-    const imageR2Key = relPathToR2Key.get(relPath);
-    if (!imageR2Key) {
-      return _full;
-    }
-
-    // Rewrite src to point to our R2 image handler
-    parsed.src = `/_content-image?key=${encodeURIComponent(imageR2Key)}`;
-
-    // Re-encode quotes for HTML attribute context
-    const outJson = JSON.stringify(parsed).replaceAll('"', '&#x22;');
-    return `__ASTRO_IMAGE_="${outJson}"`;
+    
+    // Compute R2 key from relative path - images use assets/images prefix
+    // not the markdown's collection prefix
+    const imageR2Key = relativeToR2Key(markdownR2Key, src);
+    const r2Url = `/api/content-image?key=${encodeURIComponent(imageR2Key)}`;
+    
+    return `![${alt}](${r2Url})`;
   });
 }
+
 
 export function createR2MarkdownCollectionLoader(collection) {
   return {
@@ -297,29 +290,21 @@ export function createR2MarkdownCollectionLoader(collection) {
           filePath: `cloud://${entry.r2Key}`,
         });
 
+        // Pre-process markdown to replace relative image paths with R2 handler URLs
+        // BEFORE Astro's markdown processor runs, so it never sees relative paths
+        const preprocessedContent = preprocessMarkdownImages(content, entry.r2Key);
+
         // Render markdown to HTML using the content layer's markdown processor
-        // Pass the frontmatter-stripped body content, not the full file
-        const rendered = await context.renderMarkdown(content, {
+        const rendered = await context.renderMarkdown(preprocessedContent, {
           fileURL: `cloud://${entry.r2Key}`,
         });
-
-        // In cloud mode, __ASTRO_IMAGE_ attributes contain relative paths that
-        // Astro's updateImageReferencesInBody() cannot resolve (no imageAssetMap).
-        // Post-process the HTML to replace __ASTRO_IMAGE_ attrs with internal
-        // image handler URLs so images are served from R2.
-        const processedHtml = replaceImageAttrsWithR2Urls(
-          rendered.html,
-          rendered.metadata?.imagePaths,
-          entry.r2Key,
-        );
 
         context.store.set({
           id: entry.id,
           data,
           body: content,
           filePath: `cloud://${entry.r2Key}`,
-          rendered: { ...rendered, html: processedHtml },
-          assetImports: rendered.metadata?.imagePaths,
+          rendered,
         });
       }
     },
