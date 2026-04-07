@@ -7,6 +7,12 @@ interface Props {
 }
 
 const { title, description } = Astro.props;
+const currentPath = Astro.url.pathname;
+
+const chronologyLinks = [
+  { href: '/calendar', label: 'Calendar', description: 'Civil dates and festival rhythm' },
+  { href: '/timeline', label: 'Timeline', description: 'Chronological lore events' },
+];
 ---
 
 <header class="bg-base-100 pb-4">
@@ -20,4 +26,30 @@ const { title, description } = Astro.props;
     textClass="text-base md:text-lg opacity-95"
     seed={title}
   />
+
+  <div class="container mx-auto px-4">
+    <div class="flex flex-col gap-4 rounded-2xl border border-base-300 bg-base-200/60 px-5 py-4 shadow-sm md:flex-row md:items-center md:justify-between">
+      <div class="space-y-1">
+        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-ink-700">Chronology Tools</p>
+        <p class="text-sm text-ink-800">Use the civic calendar and lore timeline to place events, festivals, and seasonal rhythms in-world.</p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        {chronologyLinks.map((link) => (
+          <a
+            href={link.href}
+            class:list={[
+              'btn btn-sm',
+              currentPath === link.href || currentPath.startsWith(link.href + '/')
+                ? 'btn-primary'
+                : 'btn-outline',
+            ]}
+            aria-current={currentPath === link.href || currentPath.startsWith(link.href + '/') ? 'page' : undefined}
+            title={link.description}
+          >
+            {link.label}
+          </a>
+        ))}
+      </div>
+    </div>
+  </div>
 </header>

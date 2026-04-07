@@ -57,6 +57,9 @@ Each collection follows a two-file pattern:
 
 **Known improvement area**: Current index pages duplicate the same filtering, grid layout, and tag extraction logic inline. The preferred direction is to reduce this duplication — either through a shared index page component that accepts a collection name, or through utility functions that extract the repeated patterns. Use judgment: a small shared utility is better than a complex abstraction.
 
+### Reference-Specific Routing
+Reference routes live under `/references/**`. Calendar, timeline, and maps are reference surfaces, not content collections. Keep their page/layout/navigation work gathered under the Reference route family while leaving calendar APIs under `/api/calendar/*`.
+
 ### Campaign-Specific Routing
 Sessions use nested routes: `/campaigns/[campaign]/sessions/[...slug].astro`. The `campaign` param comes from the URL; the session's `data.campaign` field is the foreign key linking back to the campaign slug.
 

@@ -3,8 +3,9 @@
 ## Status
 
 - Date: 2026-03-26
-- Status: Accepted
+- Status: Superseded in part by ADR-0018
 - Deciders: Brad
+- Note: Route placement and navigation portions were superseded on 2026-04-07 by `plans/adrs/0018-reference-domain-and-references-route-namespace-policy.md`; Lore event metadata policy remains active.
 
 ## Context and Problem Statement
 

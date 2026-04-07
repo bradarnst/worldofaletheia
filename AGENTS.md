@@ -67,9 +67,9 @@ Content is co-authored by two people (Brad and Barry) primarily in Obsidian, syn
 ### Framework
 - Astro native first
 
-### Three-Domain Model
+### Four-Layer Model
 
-The site is organized into three logical domains, each with its own layout hierarchy, navigation, and content collections:
+The site is organized into four logical layers, each with its own layout hierarchy, navigation, and content responsibilities:
 
 #### 1. Canon — World of Aletheia
 Stable reference material: lore, places, sentients, bestiary, flora, factions.
@@ -81,7 +81,13 @@ documentation, game systems, meta-content, how-to guides.
 - Routes: `/about`, `/systems`, `/systems/gurps/*`, `/meta`
 - Layout chain: `BaseLayout → UsingAletheiaLayout → UsingAletheiaContentLayout`
 
-#### 3. Campaigns
+#### 3. Reference
+Shared world-reference surfaces: calendar, timeline, and maps. These are not content collections; they are reference experiences built on shared world and utility data.
+- Routes: `/references`, `/references/calendar`, `/references/timeline`, `/references/maps`
+- Layout chain: `BaseLayout → ReferenceLayout`
+- Calendar APIs remain under `/api/calendar/*`
+
+#### 4. Campaigns
 Campaign overviews and session logs. This is the **first domain targeted for interactive features** (Astro Islands) and eventual extraction as an independent service.
 - Routes: `/campaigns`, `/campaigns/[campaign]/sessions/*`
 - Layout chain: `BaseLayout → CampaignsLayout → CampaignsContentLayout`

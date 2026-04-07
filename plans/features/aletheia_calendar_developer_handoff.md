@@ -93,6 +93,8 @@ Example:
 | Solis | Deorum |
 | Aestivus | Primus |
 
+These month-start examples show the within-year cadence for a representative year that begins on Primus. Because Leap Day participates in the weekday cycle, the first day of the year after a leap year advances by one weekday.
+
 ---
 
 ## 4. Leap Year and Leap Day
@@ -116,15 +118,14 @@ Leap Day is special:
 - Occurs **during the Mid‑Summer Festival**
 - Inserted **after festival day 3**
 - **Not part of any month**
-- **Not part of the weekday cycle**
+- **Part of the weekday cycle**
+- Takes the **next weekday after festival day 3**
 
-Weekdays pause and resume normally afterward.
+Leap Day is intercalary, but it still occupies a real place in the public weekly rhythm.
 
-Leap Day does not belong to the weekly cycle.
+This allows wall calendars, market schedules, and festival observances to represent it visually without inventing a fake numbered date.
 
-The weekday sequence pauses for Leap Day and resumes on the following day.
-
-As a result, Leap Day does **not shift the weekday pattern of the calendar**, and month start days remain consistent across years.
+As a result, Leap years **do shift the later weekday pattern of the calendar by one day**, and the first day of the year after a leap year begins one weekday later than the first day of the leap year.
 
 ---
 
@@ -238,9 +239,10 @@ Day 6
 Important:
 
 - Festival days are **normal dated days**
-- **Only Leap Day is outside the month and week**
+- **Only Leap Day is outside the month**
+- Leap Day still belongs to the **weekday cycle**
 
-Only Leap Day lies outside the normal calendar structure.
+Only Leap Day lies outside the normal month structure.
 
 The other festival days are ordinary calendar dates that retain their month and weekday designations but are culturally recognized as part of the festival period.
 
@@ -274,11 +276,10 @@ Advantages:
 
 ## 11. Weekday Calculation
 
-Because Leap Day does not advance the week:
+Because Leap Day does advance the week:
 
 ```
-weekIndex = absDay − numberOfLeapDaysBefore(absDay)
-weekday = weekIndex % 6
+weekday = absDay % 6
 ```
 
 Mapping:
@@ -299,17 +300,17 @@ Mapping:
 Recommended query format:
 
 ```
-/calendar?date=1105-Amoris-17
-/calendar?date=1105-Solis-29
-/calendar?date=1110-Leapday
+/references/calendar?date=1105-Amoris-17
+/references/calendar?date=1105-Solis-29
+/references/calendar?date=1110-Leapday
 ```
 
 Optional festival shortcuts:
 
 ```
-/calendar?date=1105-Festival
-/calendar?date=1105-Festival-2
-/calendar?date=1110-Festival-Leapday
+/references/calendar?date=1105-Festival
+/references/calendar?date=1105-Festival-2
+/references/calendar?date=1110-Festival-Leapday
 ```
 
 ---
@@ -352,11 +353,24 @@ durationDays
 
 Display:
 
-- 31 days
+- 31 dated month cells
 - 6 weekday columns
-- lunar phase icons
+- tiny lunar phase icons
 - festival highlights
-- events
+- visible Leap Day marker/interstitial when applicable
+- light event density (count or a very small number of titles)
+- previous/next month controls
+- click/select interaction that opens day detail
+
+### Week View
+
+Display:
+
+- 6 real weekday items, including Leap Day when it falls inside the selected week
+- tiny lunar phase icons
+- festival and Leap Day indicators
+- short event snippets
+- previous/next week controls
 
 ### Day View
 
@@ -364,7 +378,14 @@ Display:
 
 - weekday
 - moon phase
-- events
+- festival / Leap Day / eclipse indicators when applicable
+- full agenda-style event list for the selected day
+- previous/next day controls if a dedicated day mode is implemented
+
+Optional follow-on:
+
+- month agenda mode
+- week agenda mode
 
 ### Timeline View
 
@@ -416,7 +437,7 @@ The calendar engine must support:
 
 1. Absolute day index
 2. Month/day conversion
-3. Weekday calculation (skipping Leap Day)
+3. Weekday calculation (including Leap Day)
 4. Leap year rule
 5. Leap Day handling
 6. Lunar phase calculation
@@ -429,10 +450,12 @@ Once those are implemented, the rest of the UI becomes straightforward.
 
 ### Calendar Stability Guarantee
 
-Because Leap Day lies outside both the week and the month system:
+Because Leap Day lies outside the month system but remains inside the week system:
 
 - month lengths never change
-- weekday sequences remain stable
-- month start weekdays follow the same pattern every year
+- each month still contains 31 dated days
+- each new month still begins one weekday later than the previous month within a given year
+- leap years advance the weekday alignment of subsequent dates by one day
+- public calendars can render Leap Day as a visible intercalary civic day without inventing a fake numbered date
 
-This design ensures that date calculations remain simple and predictable.
+This design keeps date calculations simple while preserving civic legibility.

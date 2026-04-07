@@ -81,7 +81,7 @@ Chosen option: Option 3 - selective indexability with layered crawler governance
 ### Policy
 
 1. Public Canon and Using Aletheia surfaces are indexable by default.
-2. Canon utility routes (`/calendar`, `/timeline`) are indexable.
+2. Reference routes (`/references/calendar`, `/references/timeline`, `/references/maps`) are indexable when publicly available.
 3. Auth/account/session-facing routes use `noindex,nofollow`.
 4. Protected campaign/member content remains inaccessible and non-indexable by access control, independent of crawler directives.
 5. `robots.txt` provides advisory crawl rules and sitemap references but is not treated as a security boundary.
@@ -105,4 +105,4 @@ Chosen option: Option 3 - selective indexability with layered crawler governance
 
 - Does not change Obsidian-first content authoring flow.
 - Does not introduce new service/adaptor/contract layers.
-- Does not alter core three-domain information architecture.
+- Aligns with the four-layer information architecture after ADR-0018 and does not otherwise change content-source or service boundaries.

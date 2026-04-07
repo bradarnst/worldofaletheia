@@ -26,12 +26,13 @@ Do NOT recommend introducing service/adapter/contract layers unless one or more 
 - A real external API boundary
 - A second active data source
 
-## Three-Domain Boundaries
+## Four-Layer Boundaries
 
-| Domain | Collections | Layout Chain | Interactive? |
+| Layer | Collections / Surfaces | Layout Chain | Interactive? |
 |--------|-------------|-------------|--------------|
 | Canon (World of Aletheia) | lore, places, sentients, bestiary, flora, factions | BaseLayout → WorldAletheiaLayout → WorldAletheiaContentLayout | No — remains fully static |
 | Using Aletheia | systems, meta | BaseLayout → UsingAletheiaLayout → UsingAletheiaContentLayout | No — remains fully static |
+| Reference | calendar, timeline, maps | BaseLayout → ReferenceLayout | No by default; remains static-first |
 | Campaigns | campaigns, sessions | BaseLayout → CampaignsLayout → CampaignsContentLayout | Yes — first domain for Astro Islands |
 
 ## Astro-Native Architecture

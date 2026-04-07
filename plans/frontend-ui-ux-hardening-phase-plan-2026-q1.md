@@ -110,7 +110,7 @@ This phase assumes hero parity fixes and layout debug cleanup are already comple
 
 **Tasks**
 1. Review links to unimplemented routes and decide: implement, hide, or label as upcoming.
-2. Keep top-level wayfinding consistent with three-domain model.
+2. Keep top-level wayfinding consistent with the current four-layer model (Canon, Using Aletheia, Reference, Campaigns).
 
 **Dependencies**
 - WP-3 complete.

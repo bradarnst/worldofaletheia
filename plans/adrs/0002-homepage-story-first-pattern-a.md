@@ -5,6 +5,7 @@
 - **Date:** 2026-02-11
 - **Status:** Accepted
 - **Deciders:** Brad
+- **Note:** The original three-domain wording predates ADR-0018; the story-first homepage principle remains active under the current four-layer model.
 
 ## Context and Problem Statement
 
@@ -24,7 +25,7 @@ The project needs a homepage pattern that prioritizes onboarding for new visitor
 - **New visitor orientation first**: quickly communicate what Aletheia is and where to start
 - **Clear hierarchy**: reduce equal-weight UI choices above the fold
 - **Cognitive simplicity**: lower decision fatigue on first visit
-- **Domain model clarity**: reinforce three-domain model Canon, Using, Campaigns
+- **Domain model clarity**: reinforce the top-level site model clearly for visitors
 - **Discovery and personality**: expose freshness and serendipity without clutter
 - **Navigation coherence**: preserve global and section nav as primary utility wayfinding
 

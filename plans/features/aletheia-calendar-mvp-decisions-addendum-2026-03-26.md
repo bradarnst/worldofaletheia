@@ -16,12 +16,12 @@ This addendum freezes implementation-critical choices before coding starts, so p
 
 ## Locked Decisions
 
-1. Calendar and timeline are Canon utility surfaces, not content collections.
-   - Routes: `/calendar` and `/timeline`
+1. Calendar and timeline are Reference surfaces, not content collections.
+   - Routes: `/references/calendar` and `/references/timeline`
    - Both pages remain Astro server-rendered for MVP.
 
-2. Canon navigation includes direct links to both utility pages.
-   - Add `Calendar` and `Timeline` tabs under Canon navigation.
+2. Global navigation should link to the Reference layer, not expose Calendar and Timeline as separate one-off primary links.
+   - Canon navigation remains collection-focused.
 
 3. Calendar URL/query contract supports both month naming styles.
    - Month can be provided as High Speech month name (`Amoris`) or numeric month (`1`-`12`).
@@ -60,5 +60,5 @@ This addendum freezes implementation-critical choices before coding starts, so p
 
 ## Implementation Notes
 
-- This addendum intentionally narrows ambiguity around field naming and route placement.
+- This addendum intentionally narrows ambiguity around field naming and route placement. Route namespace is now aligned with ADR-0018.
 - Broader chronology tooling (zoomable timelines, visual bands, export renderers) remains valid future work after MVP calendar and vertical timeline are stable.

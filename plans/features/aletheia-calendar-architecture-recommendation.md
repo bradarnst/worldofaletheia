@@ -99,7 +99,7 @@ Implement Aletheia calendar math **directly in project code** (custom determinis
 
 ### Rationale
 
-- Calendar is fictional with bespoke rules (25-hour day, 6-day week, leap-day excluded from week cycle).
+- Calendar is fictional with bespoke rules (25-hour day, 6-day week, intercalary Leap Day that still participates in the week cycle).
 - Given spec already defines formulas, custom implementation is straightforward and testable.
 - External libraries mostly target Gregorian/astronomical calendars and add mismatch risk.
 
@@ -283,7 +283,7 @@ All endpoints should return predictable JSON envelopes:
 
 - Enforce leap rule `year % 5 === 0` exactly.
 - Leap Day is valid only in leap years.
-- Leap Day excluded from weekday increment logic.
+- Leap Day participates in weekday increment logic and takes the next weekday after Festival Day 3.
 - Validate and reject invalid combinations (`1106-Leapday`, `day=32`, unknown month).
 
 ---
@@ -412,7 +412,7 @@ Future extensibility:
 ### Phase 1 — Core engine (pure functions)
 
 - Implement absolute-day conversion both directions.
-- Implement weekday calculation excluding leap day.
+- Implement weekday calculation including leap day.
 - Implement lunar phase + labels + full-moon tolerance.
 - Implement festival determination.
 - Add comprehensive unit tests for boundary years/dates.
@@ -425,9 +425,9 @@ Future extensibility:
 
 ### Phase 3 — Calendar island + views
 
-- Month view first, then week and year.
-- URL sync (`/calendar?date=...&view=month|week|year`).
-- Add keyboard navigation and loading/error states.
+- Month view first, then week and year, plus selected-day agenda/detail presentation.
+- URL sync (`/references/calendar?date=...&view=month|week|year`).
+- Add explicit previous/next controls for the active view, keyboard navigation, and loading/error states.
 
 ### Phase 4 — Content integration + timeline
 
@@ -464,6 +464,6 @@ Future extensibility:
 
 Implement the calendar as an **Astro-native feature with canonical shared math engine + static-first Astro rendering + island interactivity only where needed**.
 
-Then implement timeline support as a **required Phase 2 build-time ingestion layer** from markdown events, keeping timeline/calendar outputs fully static and deterministic.
+Then implement timeline support as a **required Phase 2 build-time ingestion layer** from markdown events, keeping Reference chronology outputs fully static and deterministic.
 
 This preserves low complexity today, avoids premature service extraction, and keeps a clean contract seam for future eclipse modeling or multi-consumer API evolution.

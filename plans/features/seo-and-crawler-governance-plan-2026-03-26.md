@@ -15,7 +15,7 @@ This plan defines a practical, Astro-native rollout path aligned with existing a
 - **ADR-0004 (Astro-native):** no speculative service layer for SEO/crawler behavior.
 - **ADR-0010 (cloud-default content):** canonical verification uses cloud-parity lane.
 - **ADR-0011 (discovery index):** search/discovery remains D1-index backed where implemented.
-- **ADR-0014 (calendar/timeline):** `/calendar` and `/timeline` are canon utility surfaces and should be indexable.
+- **ADR-0018 (Reference domain):** `/references/calendar`, `/references/timeline`, and `/references/maps` are public reference surfaces and should be indexable.
 
 ## Current baseline (as observed)
 
@@ -32,7 +32,7 @@ This plan defines a practical, Astro-native rollout path aligned with existing a
 - **Index + follow**
   - Canon routes (`/`, `/lore/**`, `/places/**`, `/sentients/**`, `/bestiary/**`, `/flora/**`, `/factions/**`)
   - Using Aletheia routes (`/about`, `/systems/**`, `/meta/**`)
-  - Canon utilities (`/calendar`, `/timeline`)
+  - Reference surfaces (`/references/calendar`, `/references/timeline`, `/references/maps`)
   - Public campaign overview/discovery content only where visibility is truly public
 
 - **Noindex + nofollow**
