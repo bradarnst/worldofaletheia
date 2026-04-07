@@ -37,7 +37,7 @@ Project is in a stronger post-foundation state: CI covers the core local quality
 
 6. **Calendar API follow-on work is live**
     - Same-origin JSON endpoints now exist for `/api/calendar/month`, `/api/calendar/week`, `/api/calendar/year`, `/api/calendar/moon-phase`, and `/api/calendar/date-diff`.
-    - The server-rendered `/calendar` and `/timeline` pages still use the same shared engine directly.
+    - The server-rendered `/references/calendar` and `/references/timeline` pages still use the same shared engine directly.
 
 7. **Validation baseline is healthy**
      - `pnpm test`: passing (105 tests)
@@ -67,7 +67,7 @@ Project is in a stronger post-foundation state: CI covers the core local quality
     - Remote lanes should be added only with explicit secret handling and failure ownership.
 
 2. **Build consumers on top of the new calendar API surface**
-    - Calendar and timeline foundations exist, and `/api/calendar/*` is now available for richer UI or tooling consumers.
+    - Reference-domain calendar and timeline foundations exist, and `/api/calendar/*` is now available for richer UI or tooling consumers.
     - References:
       - `plans/adrs/0014-calendar-and-timeline-canon-utility-routes-and-lore-event-metadata-policy.md`
       - `plans/features/aletheia_calendar_developer_handoff.md`
@@ -102,7 +102,7 @@ Project is in a stronger post-foundation state: CI covers the core local quality
 ## Immediate Recommended Sequence
 
 1. Decide whether remote parity deserves a secret-backed CI lane.
-2. Build the next calendar/timeline consumer on top of `/api/calendar/*`.
+2. Build the next `/references/calendar` consumer on top of `/api/calendar/*`.
 3. Reassess campaign-domain follow-ons once the simplified pipeline settles.
 
 ## Open Task Count Snapshot (from active planning docs)

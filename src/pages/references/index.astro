@@ -1,0 +1,56 @@
+---
+import ReferenceLayout from '@layouts/ReferenceLayout.astro';
+
+const referenceCards = [
+  {
+    href: '/references/calendar',
+    title: 'Calendar',
+    description: 'Civic dates, direct date lookup, date math, festivals, and lunar rhythm.',
+    cta: 'Open calendar',
+  },
+  {
+    href: '/references/timeline',
+    title: 'Timeline',
+    description: 'Chronological lore browsing built from dated events and shared calendar indexing.',
+    cta: 'Open timeline',
+  },
+  {
+    href: '/references/maps',
+    title: 'Maps',
+    description: 'World and regional map surfaces, with an MVP placeholder now and richer viewers later.',
+    cta: 'Open maps',
+  },
+];
+---
+
+<ReferenceLayout
+  title="Reference - World of Aletheia"
+  description="Shared world-reference surfaces for chronology, lookup, and map context."
+>
+  <section class="space-y-6">
+    <div class="card border border-base-300 bg-base-100 shadow-sm">
+      <div class="card-body gap-3">
+        <h2 class="card-title text-xl text-ink-950">What lives in Reference</h2>
+        <p class="text-sm text-ink-800 md:text-base">
+          Use Reference when you need inspection, lookup, or visualization of shared world knowledge rather than browsing authored Canon or Using Aletheia collections.
+        </p>
+      </div>
+    </div>
+
+    <div class="grid gap-6 lg:grid-cols-3">
+      {referenceCards.map((card) => (
+        <article class="card border border-base-300 bg-base-100 shadow-sm">
+          <div class="card-body gap-4">
+            <div class="space-y-2">
+              <h2 class="card-title text-2xl text-ink-950">{card.title}</h2>
+              <p class="text-sm text-ink-800 md:text-base">{card.description}</p>
+            </div>
+            <div class="card-actions justify-end">
+              <a href={card.href} class="btn btn-sm btn-primary">{card.cta}</a>
+            </div>
+          </div>
+        </article>
+      ))}
+    </div>
+  </section>
+</ReferenceLayout>

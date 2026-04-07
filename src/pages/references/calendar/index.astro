@@ -1,7 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import AletheiaMonthGrid from '@components/calendar/AletheiaMonthGrid.astro';
-import WorldAletheiaLayout from '@layouts/WorldAletheiaLayout.astro';
+import ReferenceLayout from '@layouts/ReferenceLayout.astro';
 import { getFilteredCollection } from '@utils/content-filter';
 import {
   MONTHS,
@@ -39,7 +39,7 @@ function buildCalendarHref(view: CalendarView, date: AletheiaDate): string {
     searchParams.set('date', formatAletheiaDate(date));
   }
 
-  return `/calendar?${searchParams.toString()}`;
+  return `/references/calendar?${searchParams.toString()}`;
 }
 
 function buildTimelineHref(date: AletheiaDate): string {
@@ -53,7 +53,7 @@ function buildTimelineHref(date: AletheiaDate): string {
     searchParams.set('day', String(date.day));
   }
 
-  return `/timeline?${searchParams.toString()}`;
+  return `/references/timeline?${searchParams.toString()}`;
 }
 
 function getWeekNavigationDate(date: AletheiaDate, deltaWeeks: number): AletheiaDate {
@@ -111,100 +111,94 @@ const monthSelectValue = selectedDate.kind === 'month' ? String(selectedDate.mon
 const dayInputValue = selectedDate.kind === 'month' ? String(selectedDate.day) : String(monthReferenceDate.day);
 ---
 
-<WorldAletheiaLayout title="Calendar - World of Aletheia" description="View the civic calendar of Aletheia by month, week, or year.">
-  <section class="space-y-8">
-    <div class="hero rounded-3xl border border-base-300 bg-gradient-to-br from-base-100 via-base-100 to-base-200 shadow-sm">
-      <div class="hero-content w-full max-w-none px-6 py-10 lg:px-10">
-        <div class="w-full space-y-5">
+<ReferenceLayout title="Aletheia Calendar - Reference" description="View the civic calendar of Aletheia by month, week, or year.">
+  <section class="space-y-6">
+    <div class="grid gap-6 xl:grid-cols-[minmax(0,1.8fr)_minmax(320px,1fr)]">
+      <div class="card bg-base-100 shadow-sm border border-base-300">
+        <div class="card-body gap-5">
           <div class="space-y-2">
-            <p class="text-sm font-semibold uppercase tracking-[0.3em] text-ink-700">Canon Utility</p>
-            <h1 class="text-4xl font-bold text-ink-950">Aletheia Calendar</h1>
-            <p class="max-w-3xl text-lg text-ink-800">
-              The civic calendar of Aletheia tracks twelve 31-day months, a six-day week, and a Mid-Summer festival anchored to the moon.
+            <p class="text-sm font-semibold uppercase tracking-[0.24em] text-ink-700">Reference Surface</p>
+            <h2 class="text-2xl font-bold text-ink-950">Calendar Views</h2>
+            <p class="text-sm text-ink-800 md:text-base">
+              The civic calendar tracks twelve 31-day months, a six-day week, the Mid-Summer festival, and dated lore events projected from Canon.
             </p>
           </div>
 
-          <div class="grid gap-4 lg:grid-cols-[minmax(0,1.8fr)_minmax(320px,1fr)]">
-            <div class="card bg-base-100 shadow-sm border border-base-300">
-              <div class="card-body gap-5">
-                <div class="flex flex-wrap items-center gap-3">
-                  <a href={buildCalendarHref('month', selectedDate)} class:list={['btn btn-sm', selection.view === 'month' ? 'btn-primary' : 'btn-outline']}>
-                    Month
-                  </a>
-                  <a href={buildCalendarHref('week', selectedDate)} class:list={['btn btn-sm', selection.view === 'week' ? 'btn-primary' : 'btn-outline']}>
-                    Week
-                  </a>
-                  <a href={buildCalendarHref('year', selectedDate)} class:list={['btn btn-sm', selection.view === 'year' ? 'btn-primary' : 'btn-outline']}>
-                    Year
-                  </a>
-                  <a href={buildTimelineHref(selectedDate)} class="btn btn-sm btn-outline">Timeline from here</a>
-                </div>
+          <div class="flex flex-wrap items-center gap-3">
+            <a href={buildCalendarHref('month', selectedDate)} class:list={['btn btn-sm', selection.view === 'month' ? 'btn-primary' : 'btn-outline']}>
+              Month
+            </a>
+            <a href={buildCalendarHref('week', selectedDate)} class:list={['btn btn-sm', selection.view === 'week' ? 'btn-primary' : 'btn-outline']}>
+              Week
+            </a>
+            <a href={buildCalendarHref('year', selectedDate)} class:list={['btn btn-sm', selection.view === 'year' ? 'btn-primary' : 'btn-outline']}>
+              Year
+            </a>
+            <a href={buildTimelineHref(selectedDate)} class="btn btn-sm btn-outline">Timeline from here</a>
+          </div>
 
-                <form method="get" class="grid gap-4 md:grid-cols-2 xl:grid-cols-[auto_minmax(9rem,1fr)_minmax(13rem,1fr)_auto_auto] xl:items-end">
-                  <label class="form-control gap-2">
-                    <span class="label-text font-semibold text-ink-800">View</span>
-                    <select name="view" class="select select-bordered w-full">
-                      <option value="month" selected={selection.view === 'month'}>Month</option>
-                      <option value="week" selected={selection.view === 'week'}>Week</option>
-                      <option value="year" selected={selection.view === 'year'}>Year</option>
-                    </select>
-                  </label>
+          <form method="get" class="grid gap-4 md:grid-cols-2 xl:grid-cols-[auto_minmax(9rem,1fr)_minmax(13rem,1fr)_auto_auto] xl:items-end">
+            <label class="form-control gap-2">
+              <span class="label-text font-semibold text-ink-800">View</span>
+              <select name="view" class="select select-bordered w-full">
+                <option value="month" selected={selection.view === 'month'}>Month</option>
+                <option value="week" selected={selection.view === 'week'}>Week</option>
+                <option value="year" selected={selection.view === 'year'}>Year</option>
+              </select>
+            </label>
 
-                  <label class="form-control gap-2">
-                    <span class="label-text font-semibold text-ink-800">Year</span>
-                    <input name="year" type="number" min="0" value={selectedDate.year} class="input input-bordered w-full" />
-                  </label>
+            <label class="form-control gap-2">
+              <span class="label-text font-semibold text-ink-800">Year</span>
+              <input name="year" type="number" min="0" value={selectedDate.year} class="input input-bordered w-full" />
+            </label>
 
-                  <label class="form-control gap-2">
-                    <span class="label-text font-semibold text-ink-800">Month</span>
-                    <select name="month" class="select select-bordered w-full">
-                      {MONTHS.map((monthName, index) => (
-                        <option value={index + 1} selected={monthSelectValue === String(index + 1)}>
-                          {index + 1} - {monthName}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+            <label class="form-control gap-2">
+              <span class="label-text font-semibold text-ink-800">Month</span>
+              <select name="month" class="select select-bordered w-full">
+                {MONTHS.map((monthName, index) => (
+                  <option value={index + 1} selected={monthSelectValue === String(index + 1)}>
+                    {index + 1} - {monthName}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-                  <label class="form-control gap-2">
-                    <span class="label-text font-semibold text-ink-800">Day</span>
-                    <input name="day" type="number" min="1" max="31" value={dayInputValue} class="input input-bordered w-full" />
-                  </label>
+            <label class="form-control gap-2">
+              <span class="label-text font-semibold text-ink-800">Day</span>
+              <input name="day" type="number" min="1" max="31" value={dayInputValue} class="input input-bordered w-full" />
+            </label>
 
-                  <button type="submit" class="btn btn-primary">Go</button>
-                </form>
+            <button type="submit" class="btn btn-primary">Go</button>
+          </form>
 
-                <p class="text-sm text-ink-700">
-                  Direct date URLs also work: <code>1105-Amoris-17</code>, <code>1105-4-17</code>, and <code>1110-Leapday</code> via the <code>date</code> query string.
-                </p>
-              </div>
-            </div>
+          <p class="text-sm text-ink-700">
+            Direct date URLs also work: <code>1105-Amoris-17</code>, <code>1105-4-17</code>, and <code>1110-Leapday</code> via the <code>date</code> query string.
+          </p>
+        </div>
+      </div>
 
-            <div class="card bg-base-100 shadow-sm border border-base-300">
-              <div class="card-body gap-4">
-                <div>
-                  <p class="text-sm font-semibold uppercase tracking-[0.24em] text-ink-700">Selected Date</p>
-                  <h2 class="mt-2 text-2xl font-bold text-ink-950">{formatAletheiaDateLabel(selectedEnrichedDate)}</h2>
-                </div>
+      <div class="card bg-base-100 shadow-sm border border-base-300">
+        <div class="card-body gap-4">
+          <div>
+            <p class="text-sm font-semibold uppercase tracking-[0.24em] text-ink-700">Selected Date</p>
+            <h2 class="mt-2 text-2xl font-bold text-ink-950">{formatAletheiaDateLabel(selectedEnrichedDate)}</h2>
+          </div>
 
-                <div class="flex flex-wrap gap-2 text-sm">
-                  {selectedDate.kind === 'month' && <span class="badge badge-outline">{selectedEnrichedDate.weekday}</span>}
-                  <span class="badge badge-outline">{selectedEnrichedDate.moonPhaseLabel}</span>
-                  {'isFestivalDay' in selectedEnrichedDate && selectedEnrichedDate.isFestivalDay && (
-                    <span class="badge badge-warning">Festival Day {selectedEnrichedDate.festivalDayNumber}</span>
-                  )}
-                  {'isFestivalLeapDay' in selectedEnrichedDate && selectedEnrichedDate.isFestivalLeapDay && (
-                    <span class="badge badge-warning">Festival Leap Day</span>
-                  )}
-                </div>
+          <div class="flex flex-wrap gap-2 text-sm">
+            {selectedDate.kind === 'month' && <span class="badge badge-outline">{selectedEnrichedDate.weekday}</span>}
+            <span class="badge badge-outline">{selectedEnrichedDate.moonPhaseLabel}</span>
+            {'isFestivalDay' in selectedEnrichedDate && selectedEnrichedDate.isFestivalDay && (
+              <span class="badge badge-warning">Festival Day {selectedEnrichedDate.festivalDayNumber}</span>
+            )}
+            {'isFestivalLeapDay' in selectedEnrichedDate && selectedEnrichedDate.isFestivalLeapDay && (
+              <span class="badge badge-warning">Festival Leap Day</span>
+            )}
+          </div>
 
-                <div class="flex items-center justify-between gap-3">
-                  <a href={previousHref} class="btn btn-sm btn-outline">Previous</a>
-                  <p class="text-center text-sm text-ink-700">{calendarTitle}</p>
-                  <a href={nextHref} class="btn btn-sm btn-outline">Next</a>
-                </div>
-              </div>
-            </div>
+          <div class="flex items-center justify-between gap-3">
+            <a href={previousHref} class="btn btn-sm btn-outline">Previous</a>
+            <p class="text-center text-sm text-ink-700">{calendarTitle}</p>
+            <a href={nextHref} class="btn btn-sm btn-outline">Next</a>
           </div>
         </div>
       </div>
@@ -231,7 +225,7 @@ const dayInputValue = selectedDate.kind === 'month' ? String(selectedDate.day) :
               <div class="card-body gap-2">
                 <h3 class="card-title text-xl text-ink-950">Leap Day Watch</h3>
                 <p class="text-ink-800">
-                  Leap Day falls outside every month and weekday, but it still occurs inside this year's Mid-Summer festival.
+                  Leap Day remains an intercalary festival day outside the month structure, so the current MVP view calls it out separately within Mid-Summer.
                 </p>
                 <p class="text-sm text-ink-700">{formatAletheiaDateLabel(monthData.leapDay, { includeWeekday: false })}</p>
               </div>
@@ -283,7 +277,7 @@ const dayInputValue = selectedDate.kind === 'month' ? String(selectedDate.day) :
 
             {weekData.leapDay && selectedDate.kind === 'leapday' && (
               <div class="rounded-xl border border-warning/60 bg-warning/10 p-4 text-sm text-ink-800">
-                Leap Day stands outside the six-day week. The cards below show the surrounding weekday cycle, with the Leap Day break called out between festival days three and four.
+                Leap Day is still rendered as a separate interstitial in the current MVP week view, between festival days three and four.
               </div>
             )}
 
@@ -318,9 +312,9 @@ const dayInputValue = selectedDate.kind === 'month' ? String(selectedDate.day) :
                       <div class="card-body flex-row items-center justify-between gap-3 p-4">
                         <div>
                           <p class="text-xs font-semibold uppercase tracking-[0.2em] text-ink-700">Leap Day Interlude</p>
-                          <p class="text-sm text-ink-800">{formatAletheiaDateLabel(weekData.leapDay, { includeWeekday: false })} pauses the weekday cycle before it resumes.</p>
+                          <p class="text-sm text-ink-800">{formatAletheiaDateLabel(weekData.leapDay, { includeWeekday: false })} is called out separately in the current MVP rendering.</p>
                         </div>
-                        <span class="badge badge-warning">Outside the week</span>
+                        <span class="badge badge-warning">Intercalary day</span>
                       </div>
                     </div>
                   )}
@@ -360,4 +354,4 @@ const dayInputValue = selectedDate.kind === 'month' ? String(selectedDate.day) :
       </div>
     )}
   </section>
-</WorldAletheiaLayout>
+</ReferenceLayout>

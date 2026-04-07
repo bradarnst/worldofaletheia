@@ -1,6 +1,6 @@
 ---
 import { getCollection } from 'astro:content';
-import WorldAletheiaLayout from '@layouts/WorldAletheiaLayout.astro';
+import ReferenceLayout from '@layouts/ReferenceLayout.astro';
 import { getFilteredCollection } from '@utils/content-filter';
 import {
   MONTHS,
@@ -26,7 +26,7 @@ function buildCalendarHref(dateString: string, year: number, monthIndex?: number
     searchParams.set('day', String(day));
   }
 
-  return `/calendar?${searchParams.toString()}`;
+  return `/references/calendar?${searchParams.toString()}`;
 }
 
 const loreEntries = getFilteredCollection(await getCollection('lore'));
@@ -45,65 +45,63 @@ const dayValue = Astro.url.searchParams.get('day') ?? '';
 const yearValue = Astro.url.searchParams.get('year') ?? '';
 ---
 
-<WorldAletheiaLayout title="Timeline - World of Aletheia" description="Read the chronological lore timeline of Aletheia.">
-  <section class="space-y-8">
-    <div class="hero rounded-3xl border border-base-300 bg-gradient-to-br from-base-100 via-base-100 to-base-200 shadow-sm">
-      <div class="hero-content w-full max-w-none px-6 py-10 lg:px-10">
-        <div class="w-full grid gap-6 lg:grid-cols-[minmax(0,1.8fr)_minmax(320px,1fr)]">
-          <div class="space-y-4">
-            <div class="space-y-2">
-              <p class="text-sm font-semibold uppercase tracking-[0.3em] text-ink-700">Canon Utility</p>
-              <h1 class="text-4xl font-bold text-ink-950">Aletheia Timeline</h1>
-              <p class="max-w-3xl text-lg text-ink-800">
-                A vertical chronology of dated lore entries. The MVP timeline is intentionally simple: one scrollable sequence ordered by the shared calendar engine's absolute day index.
-              </p>
-            </div>
-            <div class="flex flex-wrap gap-3">
-              <a href="/calendar" class="btn btn-outline btn-sm">Calendar</a>
-              <a href="/timeline" class="btn btn-outline btn-sm">Reset timeline</a>
-            </div>
+<ReferenceLayout title="Aletheia Timeline - Reference" description="Read the chronological lore timeline of Aletheia.">
+  <section class="space-y-6">
+    <div class="grid gap-6 lg:grid-cols-[minmax(0,1.8fr)_minmax(320px,1fr)]">
+      <div class="card bg-base-100 shadow-sm border border-base-300">
+        <div class="card-body gap-4">
+          <div class="space-y-2">
+            <p class="text-sm font-semibold uppercase tracking-[0.24em] text-ink-700">Reference Surface</p>
+            <h2 class="text-2xl font-bold text-ink-950">Chronological Lore</h2>
+            <p class="text-sm text-ink-800 md:text-base">
+              The MVP timeline stays intentionally simple: one scrollable sequence of dated lore entries ordered by the shared calendar engine&apos;s absolute day index.
+            </p>
+          </div>
+          <div class="flex flex-wrap gap-3">
+            <a href="/references/calendar" class="btn btn-outline btn-sm">Calendar</a>
+            <a href="/references/timeline" class="btn btn-outline btn-sm">Reset timeline</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="card bg-base-100 shadow-sm border border-base-300">
+        <div class="card-body gap-4">
+          <div>
+            <h2 class="card-title text-xl text-ink-950">Start From</h2>
+            <p class="text-sm text-ink-700">Use numeric month filters or a direct <code>date</code> query string in the URL.</p>
           </div>
 
-          <div class="card bg-base-100 shadow-sm border border-base-300">
-            <div class="card-body gap-4">
-              <div>
-                <h2 class="card-title text-xl text-ink-950">Start From</h2>
-                <p class="text-sm text-ink-700">Use numeric month filters or a direct <code>date</code> query string in the URL.</p>
-              </div>
+          <form method="get" class="grid gap-4 md:grid-cols-2 xl:grid-cols-4 xl:items-end">
+            <label class="form-control gap-2">
+              <span class="label-text font-semibold text-ink-800">Year</span>
+              <input name="year" type="number" min="0" value={yearValue} class="input input-bordered w-full" />
+            </label>
 
-              <form method="get" class="grid gap-4 md:grid-cols-2 xl:grid-cols-4 xl:items-end">
-                <label class="form-control gap-2">
-                  <span class="label-text font-semibold text-ink-800">Year</span>
-                  <input name="year" type="number" min="0" value={yearValue} class="input input-bordered w-full" />
-                </label>
+            <label class="form-control gap-2">
+              <span class="label-text font-semibold text-ink-800">Month</span>
+              <select name="month" class="select select-bordered w-full">
+                <option value="">Any month</option>
+                {MONTHS.map((monthName, index) => (
+                  <option value={index + 1} selected={monthValue === String(index + 1)}>
+                    {index + 1} - {monthName}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-                <label class="form-control gap-2">
-                  <span class="label-text font-semibold text-ink-800">Month</span>
-                  <select name="month" class="select select-bordered w-full">
-                    <option value="">Any month</option>
-                    {MONTHS.map((monthName, index) => (
-                      <option value={index + 1} selected={monthValue === String(index + 1)}>
-                        {index + 1} - {monthName}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+            <label class="form-control gap-2">
+              <span class="label-text font-semibold text-ink-800">Day</span>
+              <input name="day" type="number" min="1" max="31" value={dayValue} class="input input-bordered w-full" />
+            </label>
 
-                <label class="form-control gap-2">
-                  <span class="label-text font-semibold text-ink-800">Day</span>
-                  <input name="day" type="number" min="1" max="31" value={dayValue} class="input input-bordered w-full" />
-                </label>
+            <button type="submit" class="btn btn-primary">Apply</button>
+          </form>
 
-                <button type="submit" class="btn btn-primary">Apply</button>
-              </form>
-
-              {timelineStartDate ? (
-                <p class="text-sm text-ink-700">Showing events on or after <strong>{formatAletheiaDateLabel(timelineStartDate)}</strong>.</p>
-              ) : (
-                <p class="text-sm text-ink-700">Showing the full dated lore timeline.</p>
-              )}
-            </div>
-          </div>
+          {timelineStartDate ? (
+            <p class="text-sm text-ink-700">Showing events on or after <strong>{formatAletheiaDateLabel(timelineStartDate)}</strong>.</p>
+          ) : (
+            <p class="text-sm text-ink-700">Showing the full dated lore timeline.</p>
+          )}
         </div>
       </div>
     </div>
@@ -112,7 +110,7 @@ const yearValue = Astro.url.searchParams.get('year') ?? '';
       <div class="card-body gap-6">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 class="text-2xl font-bold text-ink-950">Chronological Lore</h2>
+            <h2 class="text-2xl font-bold text-ink-950">Timeline Results</h2>
             <p class="text-sm text-ink-700">{visibleEvents.length} event{visibleEvents.length === 1 ? '' : 's'} in the current timeline window.</p>
           </div>
         </div>
@@ -171,4 +169,4 @@ const yearValue = Astro.url.searchParams.get('year') ?? '';
       </div>
     </div>
   </section>
-</WorldAletheiaLayout>
+</ReferenceLayout>

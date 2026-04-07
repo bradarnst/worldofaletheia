@@ -10,10 +10,11 @@ This started as a practical tool for our table (my brother and I as GMs, plus ou
 
 ## What This Project Is
 
-World of Aletheia is an Astro-first site with three product domains:
+World of Aletheia is an Astro-first site with four product domains:
 
 - **Canon** (`/lore`, `/places`, `/sentients`, `/bestiary`, `/flora`, `/factions`) for world reference content
 - **Using Aletheia** (`/systems`, `/meta`, `/about`) for play/system documentation
+- **Reference** (`/references`, `/references/calendar`, `/references/timeline`, `/references/maps`) for shared lookup and visualization surfaces
 - **Campaigns** (`/campaigns/**`) for campaign-specific content with runtime access control
 
 Design-wise, the homepage follows a story-first pattern instead of acting like a sitemap. The visual layer is intentionally curated (hero governance, multi-theme support, readability-first structure), and discovery tools are woven directly into collection pages.
@@ -24,9 +25,10 @@ Core capabilities currently implemented:
 
 - **Content publishing and domain separation** across 23 Astro collections with schema validation in `src/content.config.ts`
 - **Taxonomy-aware discovery** on high-volume collections (latest/grouped views, type/subtype/tag filtering, pagination)
-- **Chronology tools** with live canon utility routes:
-  - `/calendar` (month/week/year views)
-  - `/timeline` (dated lore event chronology)
+- **Reference surfaces** with live chronology routes:
+  - `/references/calendar` (month/week/year views)
+  - `/references/timeline` (dated lore event chronology)
+  - `/references/maps` (Reference-domain map placeholder)
   - `/api/calendar/*` (month/week/year, moon phase, and date-diff JSON contracts)
 - **Campaign family model** with explicit campaign collections (`campaignLore`, `campaignPlaces`, `campaignCharacters`, `campaignScenes`, `campaignAdventures`, `campaignHooks`, etc.)
 - **Campaign access boundaries** using Better Auth + D1 membership checks and fail-closed behavior for protected content
@@ -137,7 +139,7 @@ Key recent decisions:
 - ADR-0010: cloud-default content source mode
 - ADR-0011: D1 metadata index for discovery/search
 - ADR-0013: campaign-domain collection taxonomy refactor
-- ADR-0014: calendar/timeline canon utility policy
+- ADR-0018: Reference domain and `/references/*` route namespace policy
 
 ## Why This Repo Is Public
 

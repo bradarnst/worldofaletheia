@@ -1,0 +1,32 @@
+---
+import ReferenceLayout from '@layouts/ReferenceLayout.astro';
+---
+
+<ReferenceLayout
+  title="Maps - Reference"
+  description="World and regional map surfaces for Aletheia, with a simple MVP placeholder in place now."
+>
+  <section class="space-y-6">
+    <div class="card border border-base-300 bg-base-100 shadow-sm">
+      <div class="card-body gap-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <h2 class="card-title text-xl text-ink-950">Maps MVP</h2>
+          <span class="badge badge-outline">Placeholder</span>
+        </div>
+        <p class="text-sm text-ink-800 md:text-base">
+          The stable Maps route now exists so cartographic work can grow inside the Reference domain without adding more one-off navigation exceptions.
+        </p>
+        <div class="grid gap-4 md:grid-cols-2">
+          <div class="rounded-xl border border-base-300 bg-base-200/60 p-4">
+            <h3 class="font-semibold text-ink-950">Current scope</h3>
+            <p class="mt-2 text-sm text-ink-800">Route scaffolding, Reference navigation, and a stable destination for future world and regional map surfaces.</p>
+          </div>
+          <div class="rounded-xl border border-base-300 bg-base-200/60 p-4">
+            <h3 class="font-semibold text-ink-950">Later follow-ons</h3>
+            <p class="mt-2 text-sm text-ink-800">Curated map displays, region navigation, zoomable viewers, and print/export work can now land here without another route migration.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</ReferenceLayout>

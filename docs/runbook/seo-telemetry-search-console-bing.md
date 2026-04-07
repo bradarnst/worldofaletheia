@@ -22,8 +22,9 @@ After verification:
    - `/about`
    - `/lore`
    - `/systems`
-   - `/calendar`
-   - `/timeline`
+   - `/references`
+   - `/references/calendar`
+   - `/references/timeline`
 
 ## Query Themes to Watch
 
@@ -62,7 +63,7 @@ Review in parallel with Cloudflare analytics:
 When telemetry shows weak performance:
 
 1. improve page title/description specificity
-2. strengthen internal links between canon, systems, calendar, and timeline surfaces
+2. strengthen internal links between canon, systems, and Reference surfaces
 3. tighten or loosen Cloudflare rules based on observed abuse
 4. re-submit affected URLs after meaningful metadata or content updates
 

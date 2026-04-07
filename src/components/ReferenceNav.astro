@@ -1,0 +1,33 @@
+---
+const currentPath = Astro.url.pathname;
+
+const links = [
+  { href: '/references', label: 'Overview' },
+  { href: '/references/calendar', label: 'Calendar' },
+  { href: '/references/timeline', label: 'Timeline' },
+  { href: '/references/maps', label: 'Maps' },
+];
+
+function isActive(href: string): boolean {
+  if (href === '/references') {
+    return currentPath === href;
+  }
+
+  return currentPath === href || currentPath.startsWith(`${href}/`);
+}
+---
+
+<div class="tabs nav-readable tabs-border bg-base-200 justify-center gap-1 p-1 h-12">
+  {links.map((link) => (
+    <a
+      href={link.href}
+      class:list={[
+        'tab tab-sm',
+        isActive(link.href) ? 'tab-active' : '',
+      ]}
+      aria-current={isActive(link.href) ? 'page' : undefined}
+    >
+      {link.label}
+    </a>
+  ))}
+</div>
