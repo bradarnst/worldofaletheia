@@ -236,6 +236,36 @@ export function createCalendarMonthApiResponse(searchParams: URLSearchParams, co
         : null,
       events: slot.events.map(toEventSummary),
     }));
+  const slots = monthData.slots.map((slot) => {
+    if (slot.kind === 'empty') {
+      return {
+        kind: 'empty',
+      };
+    }
+
+    return {
+      kind: slot.kind,
+      date: formatAletheiaDate(slot.date),
+      label: formatAletheiaDateLabel(slot.date),
+      absDay: slot.date.absDay,
+      weekday: slot.date.weekday,
+      weekdayIndex: slot.date.weekdayIndex,
+      monthless: slot.kind === 'leapday',
+      festival: slot.kind === 'leapday'
+        ? {
+            label: 'Festival Leap Day',
+            isLeapDay: true,
+          }
+        : slot.date.isFestivalDay
+          ? {
+              dayNumber: slot.date.festivalDayNumber,
+              label: `Festival Day ${slot.date.festivalDayNumber}`,
+              isLeapDay: false,
+            }
+          : null,
+      events: slot.events.map(toEventSummary),
+    };
+  });
 
   return jsonResponse({
     view: 'month',
@@ -272,6 +302,7 @@ export function createCalendarMonthApiResponse(searchParams: URLSearchParams, co
         }
       : null,
     days,
+    slots,
   }, meta);
 }
 

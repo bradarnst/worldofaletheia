@@ -128,7 +128,14 @@ export interface CalendarMonthSlotDay {
   events: NormalizedLoreEvent[];
 }
 
-export type CalendarMonthSlot = CalendarMonthSlotEmpty | CalendarMonthSlotDay;
+export interface CalendarMonthSlotLeapDay {
+  kind: 'leapday';
+  key: string;
+  date: EnrichedLeapDayDate;
+  events: NormalizedLoreEvent[];
+}
+
+export type CalendarMonthSlot = CalendarMonthSlotEmpty | CalendarMonthSlotDay | CalendarMonthSlotLeapDay;
 
 export interface CalendarMonthLeapDayPlacement {
   leapDay: EnrichedLeapDayDate;
@@ -754,10 +761,6 @@ export function buildCalendarMonthData(
     });
   }
 
-  while (slots.length % DAYS_PER_WEEK !== 0) {
-    slots.push({ kind: 'empty', key: `empty-${year}-${monthIndex}-tail-${slots.length}` });
-  }
-
   const leapDayPlacementForYear = getLeapDayPlacementForYear(year);
   const leapDayPlacement = leapDayPlacementForYear !== null && (
     leapDayPlacementForYear.afterDate.monthIndex === monthIndex
@@ -770,6 +773,20 @@ export function buildCalendarMonthData(
   if (leapDayPlacementForYear !== null && leapDayPlacementForYear.anchorMonthIndex === monthIndex) {
     const leapDayEvents = eventProjectionMap.get(leapDayPlacementForYear.leapDay.absDay) ?? [];
     leapDayEvents.forEach((event) => eventIds.add(event.id));
+
+    const insertAfterIndex = slots.findIndex((slot) => slot.kind === 'day' && slot.date.absDay === leapDayPlacementForYear.afterDate.absDay);
+    if (insertAfterIndex !== -1) {
+      slots.splice(insertAfterIndex + 1, 0, {
+        kind: 'leapday',
+        key: `${year}-leapday`,
+        date: leapDayPlacementForYear.leapDay,
+        events: leapDayEvents,
+      });
+    }
+  }
+
+  while (slots.length % DAYS_PER_WEEK !== 0) {
+    slots.push({ kind: 'empty', key: `empty-${year}-${monthIndex}-tail-${slots.length}` });
   }
 
   return {

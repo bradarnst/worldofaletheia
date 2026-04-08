@@ -162,6 +162,7 @@ describe('Aletheia calendar engine', () => {
     const monthData = buildCalendarMonthData(1110, monthWithLeapDay.monthIndex, new Map());
     expect(monthData.leapDayPlacement?.afterDate.kind).toBe('month');
     expect(monthData.leapDayPlacement?.beforeDate.kind).toBe('month');
+    expect(monthData.slots.some((slot) => slot.kind === 'leapday')).toBe(true);
   });
 
   it('builds selected-day detail data for month dates and Leap Day', () => {

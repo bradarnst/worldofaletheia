@@ -64,6 +64,7 @@ describe('Aletheia calendar API helpers', () => {
     expect(body.ok).toBe(true);
     expect(body.data.leapDayPlacement).not.toBeNull();
     expect(body.data.leapDayPlacement.festivalPosition).toBe('between-festival-day-3-and-4');
+    expect(body.data.slots.some((slot: { kind: string }) => slot.kind === 'leapday')).toBe(true);
   });
 
   it('builds week payloads around a direct date query', async () => {

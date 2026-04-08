@@ -211,7 +211,7 @@ const currentViewDateHref = (date: AletheiaDate) => buildCalendarHref(selection.
           </div>
 
           <div class="flex flex-wrap items-center justify-between gap-3">
-            <p class="text-sm text-ink-700">Month view keeps event density light and renders Leap Day as a visible interstitial marker instead of a fake numbered date.</p>
+            <p class="text-sm text-ink-700">Month view keeps event density light and renders Leap Day as its own weekday slot without inventing a fake numbered date.</p>
             <span class="badge badge-outline">{monthData.eventCount} dated lore events</span>
           </div>
 

@@ -1,7 +1,6 @@
 ---
-import CalendarLeapDayMarker from '@components/calendar/CalendarLeapDayMarker.astro';
 import MoonPhaseIcon from '@components/calendar/MoonPhaseIcon.astro';
-import type { AletheiaDate, CalendarMonthData } from '~/lib/aletheia-calendar';
+import type { AletheiaDate, CalendarMonthData, CalendarMonthSlot } from '~/lib/aletheia-calendar';
 
 interface Props {
   month: CalendarMonthData;
@@ -18,10 +17,13 @@ const {
 } = Astro.props;
 
 const weekdayLabels = ['Primus', 'Secundus', 'Tertius', 'Quartus', 'Quintus', 'Deorum'];
-const slotRows: CalendarMonthData['slots'][][] = [];
+const visibleSlots = compact
+  ? month.slots.filter((slot) => slot.kind !== 'leapday')
+  : month.slots;
+const slotRows: CalendarMonthSlot[][] = [];
 
-for (let index = 0; index < month.slots.length; index += 6) {
-  slotRows.push(month.slots.slice(index, index + 6));
+for (let index = 0; index < visibleSlots.length; index += 6) {
+  slotRows.push(visibleSlots.slice(index, index + 6));
 }
 ---
 
@@ -33,86 +35,74 @@ for (let index = 0; index < month.slots.length; index += 6) {
   </div>
 
   <div class="space-y-3">
-    {slotRows.map((row) => {
-      const rowLeapDayPlacement = !compact && month.leapDayPlacement !== null && row.some((slot) => (
-        slot.kind === 'day'
-        && (
-          slot.date.absDay === month.leapDayPlacement?.afterDate.absDay
-          || slot.date.absDay === month.leapDayPlacement?.beforeDate.absDay
-        )
-      ))
-        ? month.leapDayPlacement
-        : null;
+    {slotRows.map((row) => (
+      <div class:list={[
+        'grid grid-cols-6 gap-2',
+        compact ? 'text-xs' : 'text-sm',
+      ]}>
+        {row.map((slot) => {
+          if (slot.kind === 'empty') {
+            return <div class:list={['rounded-xl border border-dashed border-base-300/70 bg-base-200/25', compact ? 'min-h-20' : 'min-h-36']} aria-hidden="true" />;
+          }
 
-      return (
-        <>
-          <div class:list={[
-            'grid grid-cols-6 gap-2',
-            compact ? 'text-xs' : 'text-sm',
-          ]}>
-            {row.map((slot) => {
-              if (slot.kind === 'empty') {
-                return <div class:list={['rounded-xl border border-dashed border-base-300/70 bg-base-200/25', compact ? 'min-h-20' : 'min-h-36']} aria-hidden="true" />;
-              }
+          const isSelected = selectedAbsDay === slot.date.absDay;
+          const visibleEvents = compact ? [] : slot.events.slice(0, 1);
+          const hiddenEventCount = compact ? slot.events.length : Math.max(slot.events.length - visibleEvents.length, 0);
+          const href = !compact ? getDateHref?.(slot.date) : undefined;
+          const Wrapper = href ? 'a' : 'div';
+          const isLeapDay = slot.kind === 'leapday';
 
-              const isSelected = selectedAbsDay === slot.date.absDay;
-              const visibleEvents = compact ? [] : slot.events.slice(0, 1);
-              const hiddenEventCount = compact ? slot.events.length : Math.max(slot.events.length - visibleEvents.length, 0);
-              const href = !compact ? getDateHref?.(slot.date) : undefined;
-              const Wrapper = href ? 'a' : 'div';
-
-              return (
-                <Wrapper
-                  href={href}
-                  class:list={[
-                    'rounded-xl border bg-base-100 p-2 shadow-sm transition-colors',
-                    compact ? 'min-h-20' : 'min-h-36',
-                    href ? 'block hover:border-primary hover:bg-base-100' : 'block',
-                    isSelected ? 'border-primary shadow-md ring-1 ring-primary/40' : 'border-base-300',
-                    slot.date.isFestivalDay ? 'bg-warning/10' : '',
-                  ]}
-                >
-                  <div class="flex items-start justify-between gap-2">
-                    <div>
-                      <p class:list={['font-semibold text-ink-950', compact ? 'text-sm' : 'text-base']}>
-                        {slot.date.day}
-                      </p>
-                      {!compact && <p class="text-xs text-ink-700">{slot.date.weekday}</p>}
-                    </div>
-                    <div class="flex flex-col items-end gap-1">
-                      <span class="inline-flex items-center rounded-full border border-base-300 bg-base-100 px-2 py-1 text-ink-700" title={slot.date.moonPhaseLabel}>
-                        <MoonPhaseIcon label={slot.date.moonPhaseLabel} size={compact ? 14 : 16} />
-                        <span class="sr-only">{slot.date.moonPhaseLabel}</span>
-                      </span>
-                      {slot.date.isFestivalDay && (
-                        <span class="badge badge-warning badge-sm">F{slot.date.festivalDayNumber}</span>
-                      )}
-                      {compact && slot.events.length > 0 && (
-                        <span class="badge badge-primary badge-sm">{slot.events.length}</span>
-                      )}
-                    </div>
-                  </div>
-
-                  {!compact && (
-                    <div class="mt-3 space-y-2">
-                      {visibleEvents.map((event) => (
-                        <span class="block rounded-lg border border-base-300 bg-base-200/60 px-2 py-1 text-xs text-ink-800">
-                          {event.title}
-                        </span>
-                      ))}
-                      {hiddenEventCount > 0 && (
-                        <p class="text-xs font-medium text-ink-700">+{hiddenEventCount} more</p>
-                      )}
-                    </div>
+          return (
+            <Wrapper
+              href={href}
+              class:list={[
+                'rounded-xl border bg-base-100 p-2 shadow-sm transition-colors',
+                compact ? 'min-h-20' : 'min-h-36',
+                href ? 'block hover:border-primary hover:bg-base-100' : 'block',
+                isSelected ? 'border-primary shadow-md ring-1 ring-primary/40' : 'border-base-300',
+                isLeapDay ? 'bg-warning/10' : slot.date.isFestivalDay ? 'bg-warning/10' : '',
+              ]}
+            >
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <p class:list={['font-semibold text-ink-950', compact ? 'text-sm' : 'text-base']}>
+                    {isLeapDay ? 'Leap Day' : slot.date.day}
+                  </p>
+                  {!compact && <p class="text-xs text-ink-700">{slot.date.weekday}</p>}
+                  {!compact && isLeapDay && <p class="text-xs text-ink-700">Festival Leap Day</p>}
+                </div>
+                <div class="flex flex-col items-end gap-1">
+                  <span class="inline-flex items-center rounded-full border border-base-300 bg-base-100 px-2 py-1 text-ink-700" title={slot.date.moonPhaseLabel}>
+                    <MoonPhaseIcon label={slot.date.moonPhaseLabel} size={compact ? 14 : 16} />
+                    <span class="sr-only">{slot.date.moonPhaseLabel}</span>
+                  </span>
+                  {slot.kind === 'day' && slot.date.isFestivalDay && (
+                    <span class="badge badge-warning badge-sm">F{slot.date.festivalDayNumber}</span>
                   )}
-                </Wrapper>
-              );
-            })}
-          </div>
+                  {isLeapDay && <span class="badge badge-warning badge-sm">FLD</span>}
+                  {!compact && isLeapDay && <span class="badge badge-outline badge-sm">Monthless</span>}
+                  {compact && slot.events.length > 0 && (
+                    <span class="badge badge-primary badge-sm">{slot.events.length}</span>
+                  )}
+                </div>
+              </div>
 
-          {rowLeapDayPlacement && <CalendarLeapDayMarker placement={rowLeapDayPlacement} />}
-        </>
-      );
-    })}
+              {!compact && (
+                <div class="mt-3 space-y-2">
+                  {visibleEvents.map((event) => (
+                    <span class="block rounded-lg border border-base-300 bg-base-200/60 px-2 py-1 text-xs text-ink-800">
+                      {event.title}
+                    </span>
+                  ))}
+                  {hiddenEventCount > 0 && (
+                    <p class="text-xs font-medium text-ink-700">+{hiddenEventCount} more</p>
+                  )}
+                </div>
+              )}
+            </Wrapper>
+          );
+        })}
+      </div>
+    ))}
   </div>
 </div>
