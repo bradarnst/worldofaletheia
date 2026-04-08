@@ -50,6 +50,7 @@ const baseSchema = z.object({
 
 const sharedLoreTypes = ['cosmology', 'religion', 'economy', 'history', 'geography', 'food_and_drink', 'culture', 'language', 'warfare', 'domestication', 'magic', 'technology', 'structure', 'other'] as const;
 const loreTypes = [...sharedLoreTypes, 'event'] as const;
+const metaTypes = ['info', 'technical', 'content', 'reference'] as const;
 
 const loreSchema = baseSchema.extend({
   title: z.string(),
@@ -162,12 +163,13 @@ const systemsSchema = baseSchema.extend({
 
 const metaSchema = baseSchema.extend({
   title: z.string(),
+  type: z.enum(metaTypes).optional().default('info'),
   excerpt: z.string().optional(),
 });
 
 const campaignsSchema = baseSchema.omit({ status: true }).extend({
   title: z.string(),
-  type: z.string().trim().min(1).optional().default('campaign'),
+  type: z.string().trim().min(1).default('campaign'),
   // Legacy field retained for backward compatibility with pre-family campaign metadata.
   // Campaign family is now represented by explicit collections (campaignLore, campaignPlaces, etc.).
   subtype: z.string().trim().min(1).optional(),

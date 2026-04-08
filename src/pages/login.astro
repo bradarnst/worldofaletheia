@@ -94,6 +94,10 @@ const callbackURL = new URL(next, Astro.url.origin).toString();
         body: JSON.stringify(body),
         redirect: 'manual',
       });
+      const isJsonResponse = response.headers.get('content-type')?.includes('application/json');
+      const data = isJsonResponse
+        ? await response.json() as { url?: string; error?: string }
+        : null;
 
       if (response.status === 302 || response.status === 303) {
         const location = response.headers.get('Location');
@@ -104,8 +108,7 @@ const callbackURL = new URL(next, Astro.url.origin).toString();
       }
 
       if (response.ok) {
-        const data = await response.json();
-        if (data.url) {
+        if (data?.url) {
           window.location.href = data.url;
           return;
         }
@@ -127,4 +130,3 @@ const callbackURL = new URL(next, Astro.url.origin).toString();
     }
   });
 </script>
-

@@ -17,6 +17,7 @@ import {
   getMonthReferenceDate,
   getNextMonthDate,
   getPreviousMonthDate,
+  getYearNavigationDate,
   getYearViewYear,
   normalizeLoreEvents,
   resolveCalendarSelection,
@@ -58,21 +59,6 @@ function buildTimelineHref(date: AletheiaDate): string {
 
 function getWeekNavigationDate(date: AletheiaDate, deltaWeeks: number): AletheiaDate {
   return shiftAletheiaDate(date, deltaWeeks * 6);
-}
-
-function getYearNavigationDate(date: AletheiaDate, deltaYears: number): AletheiaDate {
-  const year = Math.max(0, date.year + deltaYears);
-  if (date.kind === 'leapday') {
-    return { kind: 'leapday', year };
-  }
-
-  return {
-    kind: 'month',
-    year,
-    monthIndex: date.monthIndex,
-    monthName: date.monthName,
-    day: date.day,
-  };
 }
 
 const loreEntries = getFilteredCollection(await getCollection('lore'));

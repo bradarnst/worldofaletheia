@@ -17,9 +17,7 @@ const {
 } = Astro.props;
 
 const weekdayLabels = ['Primus', 'Secundus', 'Tertius', 'Quartus', 'Quintus', 'Deorum'];
-const visibleSlots = compact
-  ? month.slots.filter((slot) => slot.kind !== 'leapday')
-  : month.slots;
+const visibleSlots: CalendarMonthSlot[] = month.slots;
 const slotRows: CalendarMonthSlot[][] = [];
 
 for (let index = 0; index < visibleSlots.length; index += 6) {
@@ -66,7 +64,7 @@ for (let index = 0; index < visibleSlots.length; index += 6) {
               <div class="flex items-start justify-between gap-2">
                 <div>
                   <p class:list={['font-semibold text-ink-950', compact ? 'text-sm' : 'text-base']}>
-                    {isLeapDay ? 'Leap Day' : slot.date.day}
+                    {isLeapDay ? (compact ? 'FLD' : 'Leap Day') : slot.date.day}
                   </p>
                   {!compact && <p class="text-xs text-ink-700">{slot.date.weekday}</p>}
                   {!compact && isLeapDay && <p class="text-xs text-ink-700">Festival Leap Day</p>}

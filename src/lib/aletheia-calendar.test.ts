@@ -9,6 +9,7 @@ import {
   formatAletheiaDate,
   fromAbsDay,
   getMonthReferenceDate,
+  getYearNavigationDate,
   isLeapYear,
   normalizeLoreEvent,
   parseAletheiaDate,
@@ -56,7 +57,7 @@ describe('Aletheia calendar engine', () => {
     const leapDay = parseAletheiaDate('1110-Festival-Leapday');
     const festivalDayFour = parseAletheiaDate('1110-Festival-4');
 
-    if (!festivalDayThree || !leapDay || !festivalDayFour) {
+    if (!festivalDayThree || festivalDayThree.kind !== 'month' || !leapDay || leapDay.kind !== 'leapday' || !festivalDayFour || festivalDayFour.kind !== 'month') {
       throw new Error('expected festival dates');
     }
 
@@ -163,6 +164,20 @@ describe('Aletheia calendar engine', () => {
     expect(monthData.leapDayPlacement?.afterDate.kind).toBe('month');
     expect(monthData.leapDayPlacement?.beforeDate.kind).toBe('month');
     expect(monthData.slots.some((slot) => slot.kind === 'leapday')).toBe(true);
+
+    const afterIndex = monthData.slots.findIndex((slot) => slot.kind === 'day' && slot.date.absDay === monthWithLeapDay.leapDayPlacement?.afterDate.absDay);
+    expect(monthData.slots[afterIndex + 1]?.kind).toBe('leapday');
+  });
+
+  it('normalizes Leap Day year navigation to a valid destination date', () => {
+    const leapDay = parseAletheiaDate('1110-Leapday');
+
+    if (!leapDay) {
+      throw new Error('expected leap day selection');
+    }
+
+    expect(getYearNavigationDate(leapDay, -1)).toEqual(getMonthReferenceDate({ kind: 'leapday', year: 1109 }));
+    expect(formatAletheiaDate(getYearNavigationDate(leapDay, 5))).toBe('1115-Leapday');
   });
 
   it('builds selected-day detail data for month dates and Leap Day', () => {

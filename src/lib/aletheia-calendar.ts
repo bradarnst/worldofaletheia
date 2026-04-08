@@ -679,12 +679,15 @@ function getLeapDayPlacementForYear(year: number): CalendarMonthLeapDayPlacement
   }
 
   const leapDay = enrichDate({ kind: 'leapday', year });
-  const afterDate = enrichDate(fromAbsDay(leapDayAbsDay - 1));
-  const beforeDate = enrichDate(fromAbsDay(leapDayAbsDay + 1));
+  const rawAfterDate = fromAbsDay(leapDayAbsDay - 1);
+  const rawBeforeDate = fromAbsDay(leapDayAbsDay + 1);
 
-  if (afterDate.kind !== 'month' || beforeDate.kind !== 'month') {
+  if (rawAfterDate.kind !== 'month' || rawBeforeDate.kind !== 'month') {
     throw new Error(`Leap Day in year '${year}' must be bracketed by month dates`);
   }
+
+  const afterDate = enrichDate(rawAfterDate);
+  const beforeDate = enrichDate(rawBeforeDate);
 
   return {
     leapDay,
@@ -727,6 +730,21 @@ export function getNextMonthDate(date: AletheiaDate): MonthDate {
 
 export function getYearViewYear(date: AletheiaDate): number {
   return date.year;
+}
+
+export function getYearNavigationDate(date: AletheiaDate, deltaYears: number): AletheiaDate {
+  const year = Math.max(0, date.year + deltaYears);
+
+  if (date.kind === 'leapday') {
+    return isLeapYear(year)
+      ? { kind: 'leapday', year }
+      : getMonthReferenceDate({ kind: 'leapday', year });
+  }
+
+  return {
+    ...date,
+    year,
+  };
 }
 
 export function buildCalendarMonthData(
