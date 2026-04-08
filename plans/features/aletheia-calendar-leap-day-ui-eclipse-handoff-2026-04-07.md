@@ -49,7 +49,14 @@ Deliver:
 - calendar/API rendering of computed eclipses
 - no map path/coverage logic yet
 
-### Step 5 - Deferred non-calendar work
+### Step 5 - Calendar interaction and agenda modes (future tranche)
+
+Deliver:
+- stronger selection model across day/week/month/year surfaces
+- explicit secondary navigation actions for opening deeper detail
+- separate agenda views for day, week, month, and year
+
+### Step 6 - Deferred non-calendar work
 
 Remote parity automation remains intentionally delayed and is not part of this handoff.
 
@@ -60,10 +67,12 @@ Remote parity automation remains intentionally delayed and is not part of this h
 3. Week view must treat Leap Day as a real week item, not a gap or side note.
 4. Month view should render Leap Day as a distinct labeled interstitial marker anchored between the adjacent dated cells that bracket it; do not hide it in a legend, paint only half-cells, or invent a fake `day 32`.
 5. Year view should annotate the containing month with an explicit Leap Day chip/summary rather than forcing Leap Day into the mini-grid as a numbered date.
-6. Day detail is required; separate month/week agenda modes are optional follow-on enhancements.
+6. Day detail is required; broader agenda modes are a later follow-on interaction step.
 7. Moon phases should use small inline SVG icons, not just text abbreviations.
-8. Eclipses are computed astronomy/calendar data, not authored content entries.
-9. Eclipse geographic path/coverage is explicitly out of scope for this tranche.
+8. Do not surface `Monthless` as a visible UI label; keep Leap Day specialness legible through placement and intercalary/festival language instead.
+9. Remove explanatory helper copy where the calendar view itself should communicate the model clearly.
+10. Eclipses are computed astronomy/calendar data, not authored content entries.
+11. Eclipse geographic path/coverage is explicitly out of scope for this tranche.
 
 ## High-Level Design
 
@@ -150,6 +159,7 @@ Required UI outcomes:
   - full lore event list for that day
   - computed details: weekday, moon, festival, Leap Day, eclipses later
   - Leap Day uses the same agenda/detail pattern as any other selectable day
+  - avoid extra explanatory callout copy that repeats what the surrounding UI already makes clear
 
 Recommended component additions:
 - `src/components/calendar/MoonPhaseIcon.astro`
@@ -191,8 +201,9 @@ Explicitly out of scope:
 2. Change core engine weekday logic and Leap Day enrichment.
 3. Update week/month/year builders so Leap Day has explicit placement semantics.
 4. Update API helpers and add day/detail payload.
-5. Update calendar UI components and Reference navigation.
-6. Add eclipse schedule logic only after the Leap Day and day-detail/UI work is stable.
+5. Close out the UI tranche by removing implementation-note copy and non-canonical visible labels such as `Monthless`.
+6. Update calendar UI components and Reference navigation.
+7. Add eclipse schedule logic only after the Leap Day and day-detail/UI work is stable.
 
 ## Validation Requirements
 

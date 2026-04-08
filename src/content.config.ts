@@ -50,7 +50,7 @@ const baseSchema = z.object({
 
 const sharedLoreTypes = ['cosmology', 'religion', 'economy', 'history', 'geography', 'food_and_drink', 'culture', 'language', 'warfare', 'domestication', 'magic', 'technology', 'structure', 'other'] as const;
 const loreTypes = [...sharedLoreTypes, 'event'] as const;
-const metaTypes = ['info', 'technical', 'content', 'reference'] as const;
+const metaTypes = ['info', 'technical', 'content', 'reference', 'governance'] as const;
 
 const loreSchema = baseSchema.extend({
   title: z.string(),
@@ -163,7 +163,7 @@ const systemsSchema = baseSchema.extend({
 
 const metaSchema = baseSchema.extend({
   title: z.string(),
-  type: z.enum(metaTypes).optional().default('info'),
+  type: z.enum(metaTypes).default('info'),
   excerpt: z.string().optional(),
 });
 

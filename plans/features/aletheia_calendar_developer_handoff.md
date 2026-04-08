@@ -368,7 +368,7 @@ Display:
 
 - 6 real weekday items, including Leap Day when it falls inside the selected week
 - tiny inline SVG lunar phase icons
-- Leap Day rendered as a normal week item/card with explicit monthless/intercalary labeling
+- Leap Day rendered as a normal week item/card with explicit intercalary/festival labeling
 - festival and Leap Day indicators
 - short event snippets
 - previous/next week controls in the view header
@@ -386,8 +386,11 @@ Display:
 
 Optional follow-on:
 
+- stronger selection model for day/week/month/year
+- explicit secondary open/go-to actions distinct from primary selection
 - month agenda mode
 - week agenda mode
+- year agenda mode
 
 ### Timeline View
 

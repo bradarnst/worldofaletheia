@@ -25,7 +25,6 @@ const { day } = Astro.props;
           {day.date.moonPhaseLabel}
         </span>
         {day.date.kind === 'leapday' && <span class="badge badge-warning">Intercalary Day</span>}
-        {day.date.kind === 'leapday' && <span class="badge badge-outline">Monthless</span>}
         {day.date.kind === 'month' && day.date.isFestivalDay && (
           <span class="badge badge-warning">Festival Day {day.date.festivalDayNumber}</span>
         )}

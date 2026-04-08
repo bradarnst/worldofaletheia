@@ -17,7 +17,9 @@ const {
 } = Astro.props;
 
 const weekdayLabels = ['Primus', 'Secundus', 'Tertius', 'Quartus', 'Quintus', 'Deorum'];
-const visibleSlots: CalendarMonthSlot[] = month.slots;
+const visibleSlots: CalendarMonthSlot[] = compact
+  ? month.slots.filter((slot) => slot.kind !== 'leapday')
+  : month.slots;
 const slotRows: CalendarMonthSlot[][] = [];
 
 for (let index = 0; index < visibleSlots.length; index += 6) {
@@ -50,6 +52,53 @@ for (let index = 0; index < visibleSlots.length; index += 6) {
           const Wrapper = href ? 'a' : 'div';
           const isLeapDay = slot.kind === 'leapday';
 
+          if (isLeapDay) {
+            const placement = month.leapDayPlacement;
+
+            return (
+              <Wrapper
+                href={href}
+                class:list={[
+                  'rounded-xl border border-warning/60 bg-warning/10 px-3 py-3 shadow-sm',
+                  compact ? 'min-h-20' : 'min-h-36',
+                  href ? 'block hover:border-primary hover:bg-warning/15' : 'block',
+                  isSelected ? 'ring-1 ring-primary/40 border-primary' : '',
+                ]}
+              >
+                <div class="flex items-start justify-between gap-2">
+                  <div>
+                    <p class="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-ink-700">Intercalary</p>
+                    <p class="mt-1 font-semibold text-ink-950">Festival Leap Day</p>
+                    <p class="text-xs text-ink-700">{slot.date.weekday}</p>
+                  </div>
+                  <span class="inline-flex items-center rounded-full border border-warning/60 bg-base-100 px-2 py-1 text-ink-700" title={slot.date.moonPhaseLabel}>
+                    <MoonPhaseIcon label={slot.date.moonPhaseLabel} size={compact ? 14 : 16} />
+                    <span class="sr-only">{slot.date.moonPhaseLabel}</span>
+                  </span>
+                </div>
+
+                {!compact && placement && (
+                  <p class="mt-3 text-xs text-ink-800">
+                    Between {placement.afterDate.monthName} {placement.afterDate.day} and {placement.beforeDate.monthName} {placement.beforeDate.day}.
+                  </p>
+                )}
+
+                {!compact && slot.events.length > 0 && (
+                  <div class="mt-3 space-y-2">
+                    {slot.events.slice(0, 1).map((event) => (
+                      <span class="block rounded-lg border border-base-300 bg-base-200/60 px-2 py-1 text-xs text-ink-800">
+                        {event.title}
+                      </span>
+                    ))}
+                    {slot.events.length > 1 && (
+                      <p class="text-xs font-medium text-ink-700">+{slot.events.length - 1} more</p>
+                    )}
+                  </div>
+                )}
+              </Wrapper>
+            );
+          }
+
           return (
             <Wrapper
               href={href}
@@ -58,16 +107,15 @@ for (let index = 0; index < visibleSlots.length; index += 6) {
                 compact ? 'min-h-20' : 'min-h-36',
                 href ? 'block hover:border-primary hover:bg-base-100' : 'block',
                 isSelected ? 'border-primary shadow-md ring-1 ring-primary/40' : 'border-base-300',
-                isLeapDay ? 'bg-warning/10' : slot.date.isFestivalDay ? 'bg-warning/10' : '',
+                slot.date.isFestivalDay ? 'bg-warning/10' : '',
               ]}
             >
               <div class="flex items-start justify-between gap-2">
                 <div>
                   <p class:list={['font-semibold text-ink-950', compact ? 'text-sm' : 'text-base']}>
-                    {isLeapDay ? (compact ? 'FLD' : 'Leap Day') : slot.date.day}
+                    {slot.date.day}
                   </p>
                   {!compact && <p class="text-xs text-ink-700">{slot.date.weekday}</p>}
-                  {!compact && isLeapDay && <p class="text-xs text-ink-700">Festival Leap Day</p>}
                 </div>
                 <div class="flex flex-col items-end gap-1">
                   <span class="inline-flex items-center rounded-full border border-base-300 bg-base-100 px-2 py-1 text-ink-700" title={slot.date.moonPhaseLabel}>
@@ -77,8 +125,6 @@ for (let index = 0; index < visibleSlots.length; index += 6) {
                   {slot.kind === 'day' && slot.date.isFestivalDay && (
                     <span class="badge badge-warning badge-sm">F{slot.date.festivalDayNumber}</span>
                   )}
-                  {isLeapDay && <span class="badge badge-warning badge-sm">FLD</span>}
-                  {!compact && isLeapDay && <span class="badge badge-outline badge-sm">Monthless</span>}
                   {compact && slot.events.length > 0 && (
                     <span class="badge badge-primary badge-sm">{slot.events.length}</span>
                   )}
