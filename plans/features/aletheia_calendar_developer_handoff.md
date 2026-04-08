@@ -355,11 +355,11 @@ Display:
 
 - 31 dated month cells
 - 6 weekday columns
-- tiny lunar phase icons
+- tiny inline SVG lunar phase icons
 - festival highlights
-- visible Leap Day marker/interstitial when applicable
+- visible labeled Leap Day interstitial marker anchored between the adjacent dates that bracket it
 - light event density (count or a very small number of titles)
-- previous/next month controls
+- previous/next month controls in the view header
 - click/select interaction that opens day detail
 
 ### Week View
@@ -367,10 +367,11 @@ Display:
 Display:
 
 - 6 real weekday items, including Leap Day when it falls inside the selected week
-- tiny lunar phase icons
+- tiny inline SVG lunar phase icons
+- Leap Day rendered as a normal week item/card with explicit monthless/intercalary labeling
 - festival and Leap Day indicators
 - short event snippets
-- previous/next week controls
+- previous/next week controls in the view header
 
 ### Day View
 
@@ -380,6 +381,7 @@ Display:
 - moon phase
 - festival / Leap Day / eclipse indicators when applicable
 - full agenda-style event list for the selected day
+- Leap Day uses the same agenda/detail interaction model as other selectable days
 - previous/next day controls if a dedicated day mode is implemented
 
 Optional follow-on:

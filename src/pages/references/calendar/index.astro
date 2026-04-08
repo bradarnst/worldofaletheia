@@ -1,26 +1,26 @@
 ---
 import { getCollection } from 'astro:content';
+import CalendarDayAgenda from '@components/calendar/CalendarDayAgenda.astro';
 import AletheiaMonthGrid from '@components/calendar/AletheiaMonthGrid.astro';
+import MoonPhaseIcon from '@components/calendar/MoonPhaseIcon.astro';
 import ReferenceLayout from '@layouts/ReferenceLayout.astro';
 import { getFilteredCollection } from '@utils/content-filter';
 import {
   MONTHS,
+  buildCalendarDayData,
   buildCalendarMonthData,
   buildCalendarWeekData,
   buildCalendarYearData,
   buildEventProjectionMap,
-  enrichDate,
   formatAletheiaDate,
   formatAletheiaDateLabel,
-  formatAletheiaDateRange,
   getMonthReferenceDate,
   getNextMonthDate,
-  getNonLeapDayIndex,
   getPreviousMonthDate,
   getYearViewYear,
-  monthDateFromNonLeapDayIndex,
   normalizeLoreEvents,
   resolveCalendarSelection,
+  shiftAletheiaDate,
   type AletheiaDate,
   type CalendarView,
 } from '~/lib/aletheia-calendar';
@@ -57,15 +57,13 @@ function buildTimelineHref(date: AletheiaDate): string {
 }
 
 function getWeekNavigationDate(date: AletheiaDate, deltaWeeks: number): AletheiaDate {
-  const anchorDate = date.kind === 'leapday' ? getMonthReferenceDate(date) : date;
-  const nextIndex = Math.max(0, getNonLeapDayIndex(anchorDate) + (deltaWeeks * 6));
-  return monthDateFromNonLeapDayIndex(nextIndex);
+  return shiftAletheiaDate(date, deltaWeeks * 6);
 }
 
 function getYearNavigationDate(date: AletheiaDate, deltaYears: number): AletheiaDate {
   const year = Math.max(0, date.year + deltaYears);
   if (date.kind === 'leapday') {
-    return { kind: 'month', year, monthIndex: 1, monthName: 'Brumalis', day: 1 };
+    return { kind: 'leapday', year };
   }
 
   return {
@@ -83,8 +81,8 @@ const eventProjectionMap = buildEventProjectionMap(loreEvents);
 
 const selection = resolveCalendarSelection(Astro.url.searchParams);
 const selectedDate = selection.date;
-const selectedEnrichedDate = enrichDate(selectedDate);
-const selectedDateEvents = eventProjectionMap.get(selectedEnrichedDate.absDay) ?? [];
+const selectedDayData = buildCalendarDayData(selectedDate, eventProjectionMap);
+const selectedEnrichedDate = selectedDayData.date;
 const monthReferenceDate = getMonthReferenceDate(selectedDate);
 
 const monthData = buildCalendarMonthData(monthReferenceDate.year, monthReferenceDate.monthIndex, eventProjectionMap);
@@ -102,13 +100,9 @@ const nextHref = selection.view === 'week'
     ? buildCalendarHref('year', getYearNavigationDate(selectedDate, 1))
     : buildCalendarHref('month', getNextMonthDate(selectedDate));
 
-const calendarTitle = selection.view === 'week'
-  ? 'Week View'
-  : selection.view === 'year'
-    ? `Year ${getYearViewYear(selectedDate)}`
-    : `${monthData.monthName} ${monthData.year}`;
 const monthSelectValue = selectedDate.kind === 'month' ? String(selectedDate.monthIndex) : String(monthReferenceDate.monthIndex);
 const dayInputValue = selectedDate.kind === 'month' ? String(selectedDate.day) : String(monthReferenceDate.day);
+const currentViewDateHref = (date: AletheiaDate) => buildCalendarHref(selection.view, date);
 ---
 
 <ReferenceLayout title="Aletheia Calendar - Reference" description="View the civic calendar of Aletheia by month, week, or year.">
@@ -120,7 +114,7 @@ const dayInputValue = selectedDate.kind === 'month' ? String(selectedDate.day) :
             <p class="text-sm font-semibold uppercase tracking-[0.24em] text-ink-700">Reference Surface</p>
             <h2 class="text-2xl font-bold text-ink-950">Calendar Views</h2>
             <p class="text-sm text-ink-800 md:text-base">
-              The civic calendar tracks twelve 31-day months, a six-day week, the Mid-Summer festival, and dated lore events projected from Canon.
+              The civic calendar tracks twelve 31-day months, a six-day week, a weekday-bearing Leap Day, and dated lore events projected from Canon.
             </p>
           </div>
 
@@ -185,142 +179,95 @@ const dayInputValue = selectedDate.kind === 'month' ? String(selectedDate.day) :
           </div>
 
           <div class="flex flex-wrap gap-2 text-sm">
-            {selectedDate.kind === 'month' && <span class="badge badge-outline">{selectedEnrichedDate.weekday}</span>}
-            <span class="badge badge-outline">{selectedEnrichedDate.moonPhaseLabel}</span>
-            {'isFestivalDay' in selectedEnrichedDate && selectedEnrichedDate.isFestivalDay && (
+            <span class="badge badge-outline">{selectedEnrichedDate.weekday}</span>
+            <span class="badge badge-outline gap-2">
+              <MoonPhaseIcon label={selectedEnrichedDate.moonPhaseLabel} size={14} />
+              {selectedEnrichedDate.moonPhaseLabel}
+            </span>
+            {selectedEnrichedDate.kind === 'month' && selectedEnrichedDate.isFestivalDay && (
               <span class="badge badge-warning">Festival Day {selectedEnrichedDate.festivalDayNumber}</span>
             )}
-            {'isFestivalLeapDay' in selectedEnrichedDate && selectedEnrichedDate.isFestivalLeapDay && (
-              <span class="badge badge-warning">Festival Leap Day</span>
-            )}
+            {selectedEnrichedDate.kind === 'leapday' && <span class="badge badge-warning">Festival Leap Day</span>}
+            {selectedEnrichedDate.kind === 'leapday' && <span class="badge badge-outline">Monthless</span>}
           </div>
 
-          <div class="flex items-center justify-between gap-3">
-            <a href={previousHref} class="btn btn-sm btn-outline">Previous</a>
-            <p class="text-center text-sm text-ink-700">{calendarTitle}</p>
-            <a href={nextHref} class="btn btn-sm btn-outline">Next</a>
+          <div class="rounded-xl border border-base-300 bg-base-200/60 p-4 text-sm text-ink-800">
+            Selected-day detail is now shared across month, week, and year views so Leap Day uses the same agenda model as any other date.
           </div>
         </div>
       </div>
     </div>
 
     {selection.view === 'month' && (
-      <div class="grid gap-6 xl:grid-cols-[minmax(0,1.8fr)_minmax(320px,1fr)]">
-        <div class="card bg-base-100 shadow-sm border border-base-300">
-          <div class="card-body gap-5">
-            <div class="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p class="text-sm font-semibold uppercase tracking-[0.24em] text-ink-700">Month View</p>
-                <h2 class="text-2xl font-bold text-ink-950">{monthData.monthName} {monthData.year}</h2>
-              </div>
-              <span class="badge badge-outline">{monthData.eventCount} dated lore events</span>
+      <div class="card bg-base-100 shadow-sm border border-base-300">
+        <div class="card-body gap-5">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <a href={previousHref} class="btn btn-sm btn-outline">Previous month</a>
+            <div class="text-center">
+              <p class="text-sm font-semibold uppercase tracking-[0.24em] text-ink-700">Month View</p>
+              <h2 class="text-2xl font-bold text-ink-950">{monthData.monthName} {monthData.year}</h2>
             </div>
-            <AletheiaMonthGrid month={monthData} selectedAbsDay={selectedEnrichedDate.absDay} />
+            <a href={nextHref} class="btn btn-sm btn-outline">Next month</a>
           </div>
-        </div>
 
-        <div class="space-y-6">
-          {monthData.leapDay && (
-            <div class="card border border-warning/60 bg-warning/10 shadow-sm">
-              <div class="card-body gap-2">
-                <h3 class="card-title text-xl text-ink-950">Leap Day Watch</h3>
-                <p class="text-ink-800">
-                  Leap Day remains an intercalary festival day outside the month structure, so the current MVP view calls it out separately within Mid-Summer.
-                </p>
-                <p class="text-sm text-ink-700">{formatAletheiaDateLabel(monthData.leapDay, { includeWeekday: false })}</p>
-              </div>
-            </div>
-          )}
-
-          <div class="card bg-base-100 shadow-sm border border-base-300">
-            <div class="card-body gap-4">
-              <div class="flex items-center justify-between gap-3">
-                <div>
-                  <h3 class="card-title text-xl text-ink-950">On this date</h3>
-                  <p class="text-sm text-ink-700">Lore events projected onto the selected day.</p>
-                </div>
-                <span class="badge badge-outline">{selectedDateEvents.length}</span>
-              </div>
-
-              {selectedDateEvents.length > 0 ? (
-                <div class="space-y-3">
-                  {selectedDateEvents.map((event) => (
-                    <article class="rounded-xl border border-base-300 bg-base-200/60 p-3">
-                      <div class="flex items-start justify-between gap-3">
-                        <div>
-                          <a href={event.href} class="font-semibold text-ink-950 transition-colors hover:text-primary">{event.title}</a>
-                          <p class="text-sm text-ink-700">{formatAletheiaDateRange(event.startDate, event.endDate)}</p>
-                        </div>
-                        {!event.isSingleDay && <span class="badge badge-outline">{event.durationDays} days</span>}
-                      </div>
-                      {event.excerpt && <p class="mt-2 text-sm text-ink-800">{event.excerpt}</p>}
-                    </article>
-                  ))}
-                </div>
-              ) : (
-                <p class="text-sm text-ink-700">No lore events are projected onto this day yet.</p>
-              )}
-            </div>
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <p class="text-sm text-ink-700">Month view keeps event density light and renders Leap Day as a visible interstitial marker instead of a fake numbered date.</p>
+            <span class="badge badge-outline">{monthData.eventCount} dated lore events</span>
           </div>
+
+          <AletheiaMonthGrid month={monthData} selectedAbsDay={selectedEnrichedDate.absDay} getDateHref={currentViewDateHref} />
         </div>
       </div>
     )}
 
     {selection.view === 'week' && (
-      <div class="space-y-6">
-        <div class="card bg-base-100 shadow-sm border border-base-300">
-          <div class="card-body gap-5">
-            <div>
+      <div class="card bg-base-100 shadow-sm border border-base-300">
+        <div class="card-body gap-5">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <a href={previousHref} class="btn btn-sm btn-outline">Previous week</a>
+            <div class="text-center">
               <p class="text-sm font-semibold uppercase tracking-[0.24em] text-ink-700">Week View</p>
               <h2 class="text-2xl font-bold text-ink-950">Six civic days around {formatAletheiaDateLabel(selectedEnrichedDate)}</h2>
             </div>
+            <a href={nextHref} class="btn btn-sm btn-outline">Next week</a>
+          </div>
 
-            {weekData.leapDay && selectedDate.kind === 'leapday' && (
-              <div class="rounded-xl border border-warning/60 bg-warning/10 p-4 text-sm text-ink-800">
-                Leap Day is still rendered as a separate interstitial in the current MVP week view, between festival days three and four.
-              </div>
-            )}
-
-            <div class="grid gap-4 xl:grid-cols-6">
-              {weekData.items.map((item) => (
-                <>
-                  <article class:list={[
-                    'card border shadow-sm',
-                    item.date.absDay === selectedEnrichedDate.absDay ? 'border-primary bg-base-100 ring-1 ring-primary/40' : 'border-base-300 bg-base-100',
-                  ]}>
-                    <div class="card-body gap-3 p-4">
-                      <div>
-                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-ink-700">{item.date.weekday}</p>
-                        <h3 class="mt-1 text-lg font-bold text-ink-950">{item.date.monthName} {item.date.day}</h3>
-                        <p class="text-sm text-ink-700">Year {item.date.year}</p>
-                      </div>
-                      <div class="flex flex-wrap gap-2 text-xs">
-                        <span class="badge badge-outline">{item.date.moonPhaseLabel}</span>
-                        {item.date.isFestivalDay && <span class="badge badge-warning">Festival {item.date.festivalDayNumber}</span>}
-                      </div>
-                      <div class="space-y-2 text-sm text-ink-800">
-                        {item.events.length > 0 ? item.events.slice(0, 3).map((event) => (
-                          <a href={event.href} class="block rounded-lg border border-base-300 bg-base-200/60 px-2 py-1 transition-colors hover:border-primary">
-                            {event.title}
-                          </a>
-                        )) : <p>No events.</p>}
-                      </div>
-                    </div>
-                  </article>
-                  {item.hasLeapDayAfter && weekData.leapDay && (
-                    <div class="card border border-warning/60 bg-warning/10 shadow-sm xl:col-span-6">
-                      <div class="card-body flex-row items-center justify-between gap-3 p-4">
-                        <div>
-                          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-ink-700">Leap Day Interlude</p>
-                          <p class="text-sm text-ink-800">{formatAletheiaDateLabel(weekData.leapDay, { includeWeekday: false })} is called out separately in the current MVP rendering.</p>
-                        </div>
-                        <span class="badge badge-warning">Intercalary day</span>
-                      </div>
-                    </div>
-                  )}
-                </>
-              ))}
-            </div>
+          <div class="grid gap-4 xl:grid-cols-6">
+            {weekData.items.map((item) => (
+              <article class:list={[
+                'card border shadow-sm',
+                item.date.absDay === selectedEnrichedDate.absDay ? 'border-primary bg-base-100 ring-1 ring-primary/40' : 'border-base-300 bg-base-100',
+                item.date.kind === 'leapday' ? 'bg-warning/10' : '',
+              ]}>
+                <div class="card-body gap-3 p-4">
+                  <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-ink-700">{item.date.weekday}</p>
+                    <h3 class="mt-1 text-lg font-bold text-ink-950">
+                      <a href={buildCalendarHref('week', item.date)} class="transition-colors hover:text-primary">
+                        {item.date.kind === 'month' ? `${item.date.monthName} ${item.date.day}` : 'Leap Day'}
+                      </a>
+                    </h3>
+                    <p class="text-sm text-ink-700">Year {item.date.year}</p>
+                  </div>
+                  <div class="flex flex-wrap gap-2 text-xs">
+                    <span class="badge badge-outline gap-2">
+                      <MoonPhaseIcon label={item.date.moonPhaseLabel} size={14} />
+                      {item.date.moonPhaseLabel}
+                    </span>
+                    {item.date.kind === 'month' && item.date.isFestivalDay && <span class="badge badge-warning">Festival {item.date.festivalDayNumber}</span>}
+                    {item.date.kind === 'leapday' && <span class="badge badge-warning">Intercalary</span>}
+                    {item.date.kind === 'leapday' && <span class="badge badge-outline">Monthless</span>}
+                  </div>
+                  <div class="space-y-2 text-sm text-ink-800">
+                    {item.events.length > 0 ? item.events.slice(0, 3).map((event) => (
+                      <a href={event.href} class="block rounded-lg border border-base-300 bg-base-200/60 px-2 py-1 transition-colors hover:border-primary">
+                        {event.title}
+                      </a>
+                    )) : <p>No events.</p>}
+                  </div>
+                </div>
+              </article>
+            ))}
           </div>
         </div>
       </div>
@@ -330,20 +277,34 @@ const dayInputValue = selectedDate.kind === 'month' ? String(selectedDate.day) :
       <div class="card bg-base-100 shadow-sm border border-base-300">
         <div class="card-body gap-6">
           <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
+            <a href={previousHref} class="btn btn-sm btn-outline">Previous year</a>
+            <div class="text-center">
               <p class="text-sm font-semibold uppercase tracking-[0.24em] text-ink-700">Year View</p>
               <h2 class="text-2xl font-bold text-ink-950">Year {getYearViewYear(selectedDate)}</h2>
             </div>
+            <a href={nextHref} class="btn btn-sm btn-outline">Next year</a>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <p class="text-sm text-ink-700">Leap Day is summarized on the month card that contains its insertion point, without forcing it into the compact mini-grid.</p>
             <a href={buildTimelineHref(selectedDate)} class="btn btn-sm btn-outline">View timeline from this year</a>
           </div>
 
           <div class="grid gap-6 xl:grid-cols-2">
             {yearData.map((yearMonth) => (
               <section class="rounded-2xl border border-base-300 bg-base-100 p-4 shadow-sm">
-                <div class="mb-4 flex items-center justify-between gap-3">
-                  <a href={buildCalendarHref('month', { kind: 'month', year: yearMonth.year, monthIndex: yearMonth.monthIndex, monthName: yearMonth.monthName, day: 1 })} class="text-lg font-semibold text-ink-950 transition-colors hover:text-primary">
-                    {yearMonth.monthName}
-                  </a>
+                <div class="mb-4 flex items-start justify-between gap-3">
+                  <div>
+                    <a href={buildCalendarHref('month', { kind: 'month', year: yearMonth.year, monthIndex: yearMonth.monthIndex, monthName: yearMonth.monthName, day: 1 })} class="text-lg font-semibold text-ink-950 transition-colors hover:text-primary">
+                      {yearMonth.monthName}
+                    </a>
+                    {yearMonth.leapDayPlacement && yearMonth.leapDayPlacement.anchorMonthIndex === yearMonth.monthIndex && (
+                      <div class="mt-2 flex flex-wrap gap-2">
+                        <span class="badge badge-warning">Leap Day</span>
+                        <span class="badge badge-outline">{yearMonth.leapDayPlacement.leapDay.weekday}</span>
+                      </div>
+                    )}
+                  </div>
                   <span class="badge badge-outline">{yearMonth.eventCount} events</span>
                 </div>
                 <AletheiaMonthGrid month={yearMonth} compact={true} selectedAbsDay={monthReferenceDate.year === yearMonth.year && monthReferenceDate.monthIndex === yearMonth.monthIndex ? selectedEnrichedDate.absDay : undefined} />
@@ -353,5 +314,7 @@ const dayInputValue = selectedDate.kind === 'month' ? String(selectedDate.day) :
         </div>
       </div>
     )}
+
+    <CalendarDayAgenda day={selectedDayData} />
   </section>
 </ReferenceLayout>

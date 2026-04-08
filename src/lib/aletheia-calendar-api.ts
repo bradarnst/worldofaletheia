@@ -1,6 +1,7 @@
 import { getCollection } from 'astro:content';
 import { getFilteredCollection } from '@utils/content-filter';
 import {
+  buildCalendarDayData,
   buildCalendarMonthData,
   buildCalendarWeekData,
   buildCalendarYearData,
@@ -16,6 +17,7 @@ import {
   resolveCalendarSelection,
   toAbsDay,
   type AletheiaDate,
+  type CalendarDayData,
   type CalendarMonthData,
   type CalendarWeekData,
   type EnrichedAletheiaDate,
@@ -105,6 +107,79 @@ function toMoonSummary(date: EnrichedAletheiaDate) {
   };
 }
 
+function toDateSummary(date: EnrichedAletheiaDate) {
+  return {
+    kind: date.kind,
+    date: formatAletheiaDate(date),
+    label: formatAletheiaDateLabel(date),
+    absDay: date.absDay,
+    weekday: date.weekday,
+    weekdayIndex: date.weekdayIndex,
+    moon: toMoonSummary(date),
+    festival: date.kind === 'leapday'
+      ? {
+          label: 'Festival Leap Day',
+          isLeapDay: true,
+          position: 'between-festival-day-3-and-4',
+        }
+      : date.isFestivalDay
+        ? {
+            dayNumber: date.festivalDayNumber,
+            label: `Festival Day ${date.festivalDayNumber}`,
+            isLeapDay: false,
+          }
+        : null,
+  };
+}
+
+function toDayDetailPayload(dayData: CalendarDayData) {
+  return {
+    view: 'day',
+    kind: dayData.date.kind,
+    date: formatAletheiaDate(dayData.date),
+    label: formatAletheiaDateLabel(dayData.date),
+    absDay: dayData.date.absDay,
+    weekday: dayData.date.weekday,
+    weekdayIndex: dayData.date.weekdayIndex,
+    moon: toMoonSummary(dayData.date),
+    month: dayData.date.kind === 'month'
+      ? {
+          month: dayData.date.monthName,
+          monthIndex: dayData.date.monthIndex,
+          day: dayData.date.day,
+        }
+      : null,
+    isLeapDay: dayData.date.kind === 'leapday',
+    festival: dayData.date.kind === 'leapday'
+      ? {
+          label: 'Festival Leap Day',
+          isLeapDay: true,
+          position: 'between-festival-day-3-and-4',
+        }
+      : dayData.date.isFestivalDay
+        ? {
+            dayNumber: dayData.date.festivalDayNumber,
+            label: `Festival Day ${dayData.date.festivalDayNumber}`,
+            isLeapDay: false,
+          }
+        : null,
+    previousDate: dayData.previousDate
+      ? {
+          date: formatAletheiaDate(dayData.previousDate),
+          label: formatAletheiaDateLabel(dayData.previousDate),
+        }
+      : null,
+    nextDate: dayData.nextDate
+      ? {
+          date: formatAletheiaDate(dayData.nextDate),
+          label: formatAletheiaDateLabel(dayData.nextDate),
+        }
+      : null,
+    events: dayData.events.map(toEventSummary),
+    eclipses: [],
+  };
+}
+
 function buildFestivalSummary(yearData: CalendarMonthData[], year: number) {
   const festivalDays = yearData
     .flatMap((month) => month.slots)
@@ -149,6 +224,7 @@ export function createCalendarMonthApiResponse(searchParams: URLSearchParams, co
       date: formatAletheiaDate(slot.date),
       label: formatAletheiaDateLabel(slot.date),
       absDay: slot.date.absDay,
+      kind: slot.date.kind,
       weekday: slot.date.weekday,
       weekdayIndex: slot.date.weekdayIndex,
       moon: toMoonSummary(slot.date),
@@ -170,8 +246,29 @@ export function createCalendarMonthApiResponse(searchParams: URLSearchParams, co
     weekdayColumns: ['Primus', 'Secundus', 'Tertius', 'Quartus', 'Quintus', 'Deorum'],
     leapDay: monthData.leapDay
       ? {
+          kind: monthData.leapDay.kind,
           date: formatAletheiaDate(monthData.leapDay),
-          label: formatAletheiaDateLabel(monthData.leapDay, { includeWeekday: false }),
+          label: formatAletheiaDateLabel(monthData.leapDay),
+          weekday: monthData.leapDay.weekday,
+          weekdayIndex: monthData.leapDay.weekdayIndex,
+        }
+      : null,
+    leapDayPlacement: monthData.leapDayPlacement
+      ? {
+          date: formatAletheiaDate(monthData.leapDayPlacement.leapDay),
+          label: formatAletheiaDateLabel(monthData.leapDayPlacement.leapDay),
+          weekday: monthData.leapDayPlacement.weekday,
+          weekdayIndex: monthData.leapDayPlacement.weekdayIndex,
+          afterDate: {
+            date: formatAletheiaDate(monthData.leapDayPlacement.afterDate),
+            label: formatAletheiaDateLabel(monthData.leapDayPlacement.afterDate),
+          },
+          beforeDate: {
+            date: formatAletheiaDate(monthData.leapDayPlacement.beforeDate),
+            label: formatAletheiaDateLabel(monthData.leapDayPlacement.beforeDate),
+          },
+          festivalPosition: monthData.leapDayPlacement.festivalPosition,
+          anchorMonthIndex: monthData.leapDayPlacement.anchorMonthIndex,
         }
       : null,
     days,
@@ -188,27 +285,18 @@ export function createCalendarWeekApiResponse(searchParams: URLSearchParams, con
     anchorDate: formatAletheiaDate(selection.date),
     anchorLabel: formatAletheiaDateLabel(selection.date),
     weekdays: weekData.items.map((item) => ({
-      date: formatAletheiaDate(item.date),
-      label: formatAletheiaDateLabel(item.date),
-      absDay: item.date.absDay,
-      weekday: item.date.weekday,
-      weekdayIndex: item.date.weekdayIndex,
-      moon: toMoonSummary(item.date),
-      festival: item.date.isFestivalDay
+      ...toDateSummary(item.date),
+      month: item.date.kind === 'month'
         ? {
-            dayNumber: item.date.festivalDayNumber,
-            label: `Festival Day ${item.date.festivalDayNumber}`,
+            month: item.date.monthName,
+            monthIndex: item.date.monthIndex,
+            day: item.date.day,
           }
         : null,
-      hasLeapDayAfter: item.hasLeapDayAfter,
+      intercalary: item.date.kind === 'leapday',
+      monthless: item.date.kind === 'leapday',
       events: item.events.map(toEventSummary),
     })),
-    leapDay: weekData.leapDay
-      ? {
-          date: formatAletheiaDate(weekData.leapDay),
-          label: formatAletheiaDateLabel(weekData.leapDay, { includeWeekday: false }),
-        }
-      : null,
   }, meta);
 }
 
@@ -238,10 +326,26 @@ export function createCalendarYearApiResponse(searchParams: URLSearchParams, con
         startWeekday: firstDaySlot?.date.weekday ?? null,
         eventCount: month.eventCount,
         fullMoonDates,
+        leapDay: month.leapDayPlacement && month.leapDayPlacement.anchorMonthIndex === month.monthIndex
+          ? {
+              date: formatAletheiaDate(month.leapDayPlacement.leapDay),
+              label: formatAletheiaDateLabel(month.leapDayPlacement.leapDay),
+              weekday: month.leapDayPlacement.weekday,
+              festivalPosition: month.leapDayPlacement.festivalPosition,
+            }
+          : null,
       };
     }),
     festival: buildFestivalSummary(yearData, year),
   }, meta);
+}
+
+export function createCalendarDayApiResponse(searchParams: URLSearchParams, context: CalendarApiContext): Response {
+  const meta = getCommonMeta(searchParams);
+  const selection = resolveCalendarSelection(new URLSearchParams([...searchParams, ['view', 'month']]));
+  const dayData = buildCalendarDayData(selection.date, context.eventProjectionMap);
+
+  return jsonResponse(toDayDetailPayload(dayData), meta);
 }
 
 export function createCalendarMoonPhaseApiResponse(searchParams: URLSearchParams): Response {

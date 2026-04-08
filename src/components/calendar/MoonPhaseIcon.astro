@@ -1,0 +1,65 @@
+---
+import type { MoonPhaseLabel } from '~/lib/aletheia-calendar';
+
+interface Props {
+  label: MoonPhaseLabel;
+  size?: number;
+  class?: string;
+}
+
+const {
+  label,
+  size = 16,
+  class: className = '',
+} = Astro.props;
+
+const iconClass = className || 'text-ink-700';
+---
+
+{label === 'New Moon' && (
+  <svg aria-hidden="true" width={size} height={size} viewBox="0 0 16 16" class={iconClass}>
+    <circle cx="8" cy="8" r="6" fill="currentColor" />
+  </svg>
+)}
+{label === 'Full Moon' && (
+  <svg aria-hidden="true" width={size} height={size} viewBox="0 0 16 16" class={iconClass}>
+    <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.5" />
+    <circle cx="8" cy="8" r="5" fill="currentColor" opacity="0.18" />
+  </svg>
+)}
+{label === 'First Quarter' && (
+  <svg aria-hidden="true" width={size} height={size} viewBox="0 0 16 16" class={iconClass}>
+    <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.5" />
+    <path d="M8 2a6 6 0 0 1 0 12Z" fill="currentColor" />
+  </svg>
+)}
+{label === 'Last Quarter' && (
+  <svg aria-hidden="true" width={size} height={size} viewBox="0 0 16 16" class={iconClass}>
+    <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.5" />
+    <path d="M8 2a6 6 0 0 0 0 12Z" fill="currentColor" />
+  </svg>
+)}
+{label === 'Waxing Crescent' && (
+  <svg aria-hidden="true" width={size} height={size} viewBox="0 0 16 16" class={iconClass}>
+    <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.5" />
+    <path d="M10.5 2.7a4.9 4.9 0 1 0 0 10.6A6 6 0 0 1 10.5 2.7Z" fill="currentColor" />
+  </svg>
+)}
+{label === 'Waxing Gibbous' && (
+  <svg aria-hidden="true" width={size} height={size} viewBox="0 0 16 16" class={iconClass}>
+    <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.5" />
+    <path d="M5.5 2.7a4.9 4.9 0 1 1 0 10.6A6 6 0 0 0 5.5 2.7Z" fill="currentColor" />
+  </svg>
+)}
+{label === 'Waning Gibbous' && (
+  <svg aria-hidden="true" width={size} height={size} viewBox="0 0 16 16" class={iconClass}>
+    <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.5" />
+    <path d="M10.5 2.7a4.9 4.9 0 1 0 0 10.6A6 6 0 0 0 10.5 2.7Z" fill="currentColor" />
+  </svg>
+)}
+{label === 'Waning Crescent' && (
+  <svg aria-hidden="true" width={size} height={size} viewBox="0 0 16 16" class={iconClass}>
+    <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.5" />
+    <path d="M5.5 2.7a4.9 4.9 0 1 1 0 10.6A6 6 0 0 1 5.5 2.7Z" fill="currentColor" />
+  </svg>
+)}

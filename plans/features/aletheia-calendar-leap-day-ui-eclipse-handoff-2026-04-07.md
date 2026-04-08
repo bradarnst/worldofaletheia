@@ -58,11 +58,12 @@ Remote parity automation remains intentionally delayed and is not part of this h
 1. Leap Day is intercalary, festival-linked, and monthless.
 2. Leap Day is weekday-bearing and advances the weekly sequence.
 3. Week view must treat Leap Day as a real week item, not a gap or side note.
-4. Month and year views must show Leap Day explicitly, but not by inventing a fake `day 32`.
-5. Day detail is required; separate month/week agenda modes are optional follow-on enhancements.
-6. Moon phases should use small inline icons/SVG, not just text abbreviations.
-7. Eclipses are computed astronomy/calendar data, not authored content entries.
-8. Eclipse geographic path/coverage is explicitly out of scope for this tranche.
+4. Month view should render Leap Day as a distinct labeled interstitial marker anchored between the adjacent dated cells that bracket it; do not hide it in a legend, paint only half-cells, or invent a fake `day 32`.
+5. Year view should annotate the containing month with an explicit Leap Day chip/summary rather than forcing Leap Day into the mini-grid as a numbered date.
+6. Day detail is required; separate month/week agenda modes are optional follow-on enhancements.
+7. Moon phases should use small inline SVG icons, not just text abbreviations.
+8. Eclipses are computed astronomy/calendar data, not authored content entries.
+9. Eclipse geographic path/coverage is explicitly out of scope for this tranche.
 
 ## High-Level Design
 
@@ -129,23 +130,26 @@ Primary implementation surface:
 Required UI outcomes:
 - Month view
   - compact day cells
-  - tiny moon icon in each cell
+  - tiny inline SVG moon icon in each cell
   - light event density (count or one title max)
   - clickable day selection
-  - explicit Leap Day interstitial/strip/tile near its festival insertion point
-  - clear previous/next month controls
+  - a distinct labeled Leap Day interstitial marker anchored between the adjacent dates before and after Leap Day
+  - clear previous/next month controls placed in the view header
 - Week view
   - six real week items, including Leap Day when present
+  - Leap Day rendered with the same structural day card treatment as other days, with its monthless identity called out in labels/badges
   - short event snippets
   - computed badges (festival, full moon, eclipse later)
-  - clear previous/next week controls
+  - clear previous/next week controls placed in the view header
 - Year view
-  - visible Leap Day annotation on the containing month card
-  - clear previous/next year controls
+  - visible Leap Day chip/summary on the containing month card
+  - no attempt to force Leap Day into the month mini-grid as a numbered cell
+  - clear previous/next year controls placed in the view header
 - Day detail
   - first-class agenda-style selected-day section
   - full lore event list for that day
   - computed details: weekday, moon, festival, Leap Day, eclipses later
+  - Leap Day uses the same agenda/detail pattern as any other selectable day
 
 Recommended component additions:
 - `src/components/calendar/MoonPhaseIcon.astro`

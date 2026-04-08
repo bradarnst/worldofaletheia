@@ -76,6 +76,8 @@ export interface EnrichedMonthDate extends MonthDate {
 
 export interface EnrichedLeapDayDate extends LeapDayDate {
   absDay: number;
+  weekdayIndex: number;
+  weekday: WeekdayName;
   moonPhase: number;
   moonPhaseLabel: MoonPhaseLabel;
   moonPhaseShortLabel: string;
@@ -128,6 +130,16 @@ export interface CalendarMonthSlotDay {
 
 export type CalendarMonthSlot = CalendarMonthSlotEmpty | CalendarMonthSlotDay;
 
+export interface CalendarMonthLeapDayPlacement {
+  leapDay: EnrichedLeapDayDate;
+  afterDate: EnrichedMonthDate;
+  beforeDate: EnrichedMonthDate;
+  weekdayIndex: number;
+  weekday: WeekdayName;
+  festivalPosition: 'between-festival-day-3-and-4';
+  anchorMonthIndex: number;
+}
+
 export interface CalendarMonthData {
   year: number;
   monthIndex: number;
@@ -135,17 +147,23 @@ export interface CalendarMonthData {
   slots: CalendarMonthSlot[];
   eventCount: number;
   leapDay: EnrichedLeapDayDate | null;
+  leapDayPlacement: CalendarMonthLeapDayPlacement | null;
 }
 
 export interface CalendarWeekItem {
-  date: EnrichedMonthDate;
+  date: EnrichedAletheiaDate;
   events: NormalizedLoreEvent[];
-  hasLeapDayAfter: boolean;
 }
 
 export interface CalendarWeekData {
   items: CalendarWeekItem[];
-  leapDay: EnrichedLeapDayDate | null;
+}
+
+export interface CalendarDayData {
+  date: EnrichedAletheiaDate;
+  events: NormalizedLoreEvent[];
+  previousDate: EnrichedAletheiaDate | null;
+  nextDate: EnrichedAletheiaDate | null;
 }
 
 export interface CalendarSelection {
@@ -155,6 +173,10 @@ export interface CalendarSelection {
 
 function normalizeModulo(value: number, divisor: number): number {
   return ((value % divisor) + divisor) % divisor;
+}
+
+function getWeekdayIndex(absDay: number): number {
+  return normalizeModulo(absDay, DAYS_PER_WEEK);
 }
 
 function isNonNegativeInteger(value: string): boolean {
@@ -420,6 +442,7 @@ export function enrichDate(date: MonthDate): EnrichedMonthDate;
 export function enrichDate(date: LeapDayDate): EnrichedLeapDayDate;
 export function enrichDate(date: AletheiaDate): EnrichedAletheiaDate {
   const absDay = toAbsDay(date);
+  const weekdayIndex = getWeekdayIndex(absDay);
   const moonPhase = getMoonPhase(absDay);
   const moonPhaseLabel = getMoonPhaseLabel(moonPhase);
   const moonPhaseShortLabel = getMoonPhaseShortLabel(moonPhaseLabel);
@@ -428,6 +451,8 @@ export function enrichDate(date: AletheiaDate): EnrichedAletheiaDate {
     return {
       ...date,
       absDay,
+      weekdayIndex,
+      weekday: WEEKDAYS[weekdayIndex],
       moonPhase,
       moonPhaseLabel,
       moonPhaseShortLabel,
@@ -437,7 +462,6 @@ export function enrichDate(date: AletheiaDate): EnrichedAletheiaDate {
     };
   }
 
-  const weekdayIndex = getNonLeapDayIndex(date) % DAYS_PER_WEEK;
   const festivalDayNumber = getFestivalDayNumber(date);
 
   return {
@@ -484,7 +508,12 @@ export function formatAletheiaDateLabel(
   options: { includeWeekday?: boolean } = {},
 ): string {
   if (date.kind === 'leapday') {
-    return `Leap Day, ${date.year}`;
+    if (options.includeWeekday === false) {
+      return `Leap Day, ${date.year}`;
+    }
+
+    const enriched = 'weekday' in date ? date : enrichDate(date);
+    return `${enriched.weekday}, Leap Day, ${enriched.year}`;
   }
 
   const enriched = 'weekday' in date ? date : enrichDate(date);
@@ -631,6 +660,36 @@ export function getMonthReferenceDate(date: AletheiaDate): MonthDate {
   return getFestivalShortcutDate(date.year, 3);
 }
 
+export function shiftAletheiaDate(date: AletheiaDate, deltaDays: number): AletheiaDate {
+  const nextAbsDay = Math.max(0, toAbsDay(date) + deltaDays);
+  return fromAbsDay(nextAbsDay);
+}
+
+function getLeapDayPlacementForYear(year: number): CalendarMonthLeapDayPlacement | null {
+  const leapDayAbsDay = getLeapDayAbsDayForYear(year);
+  if (leapDayAbsDay === null) {
+    return null;
+  }
+
+  const leapDay = enrichDate({ kind: 'leapday', year });
+  const afterDate = enrichDate(fromAbsDay(leapDayAbsDay - 1));
+  const beforeDate = enrichDate(fromAbsDay(leapDayAbsDay + 1));
+
+  if (afterDate.kind !== 'month' || beforeDate.kind !== 'month') {
+    throw new Error(`Leap Day in year '${year}' must be bracketed by month dates`);
+  }
+
+  return {
+    leapDay,
+    afterDate,
+    beforeDate,
+    weekdayIndex: leapDay.weekdayIndex,
+    weekday: leapDay.weekday,
+    festivalPosition: 'between-festival-day-3-and-4',
+    anchorMonthIndex: afterDate.monthIndex,
+  };
+}
+
 export function getPreviousMonthDate(date: AletheiaDate): MonthDate {
   const referenceDate = getMonthReferenceDate(date);
   const previousMonthIndex = referenceDate.monthIndex === 1 ? MONTHS_PER_YEAR : referenceDate.monthIndex - 1;
@@ -699,9 +758,19 @@ export function buildCalendarMonthData(
     slots.push({ kind: 'empty', key: `empty-${year}-${monthIndex}-tail-${slots.length}` });
   }
 
-  const leapDay = getLeapDayAbsDayForYear(year) !== null && getFestivalMonthIndicesForYear(year).has(monthIndex)
-    ? enrichDate({ kind: 'leapday', year })
+  const leapDayPlacementForYear = getLeapDayPlacementForYear(year);
+  const leapDayPlacement = leapDayPlacementForYear !== null && (
+    leapDayPlacementForYear.afterDate.monthIndex === monthIndex
+    || leapDayPlacementForYear.beforeDate.monthIndex === monthIndex
+  )
+    ? leapDayPlacementForYear
     : null;
+  const leapDay = leapDayPlacement?.leapDay ?? null;
+
+  if (leapDayPlacementForYear !== null && leapDayPlacementForYear.anchorMonthIndex === monthIndex) {
+    const leapDayEvents = eventProjectionMap.get(leapDayPlacementForYear.leapDay.absDay) ?? [];
+    leapDayEvents.forEach((event) => eventIds.add(event.id));
+  }
 
   return {
     year,
@@ -710,15 +779,8 @@ export function buildCalendarMonthData(
     slots,
     eventCount: eventIds.size,
     leapDay,
+    leapDayPlacement,
   };
-}
-
-function getFestivalMonthIndicesForYear(year: number): Set<number> {
-  const indices = new Set<number>();
-  for (let festivalDayNumber = 1; festivalDayNumber <= 6; festivalDayNumber += 1) {
-    indices.add(getFestivalShortcutDate(year, festivalDayNumber).monthIndex);
-  }
-  return indices;
 }
 
 export function buildCalendarYearData(
@@ -732,29 +794,36 @@ export function buildCalendarWeekData(
   selectedDate: AletheiaDate,
   eventProjectionMap: Map<number, NormalizedLoreEvent[]>,
 ): CalendarWeekData {
-  const anchorNonLeapIndex = selectedDate.kind === 'leapday'
-    ? getNonLeapDayIndex(getFestivalShortcutDate(selectedDate.year, 3))
-    : getNonLeapDayIndex(selectedDate);
-  const weekStartIndex = anchorNonLeapIndex - normalizeModulo(anchorNonLeapIndex, DAYS_PER_WEEK);
+  const anchorAbsDay = toAbsDay(selectedDate);
+  const weekStartAbsDay = anchorAbsDay - normalizeModulo(anchorAbsDay, DAYS_PER_WEEK);
   const items: CalendarWeekItem[] = [];
-  const leapDayAbsDay = getLeapDayAbsDayForYear(selectedDate.year);
 
   for (let offset = 0; offset < DAYS_PER_WEEK; offset += 1) {
-    const date = enrichDate(monthDateFromNonLeapDayIndex(weekStartIndex + offset));
-    const nextDate = offset < DAYS_PER_WEEK - 1 ? enrichDate(monthDateFromNonLeapDayIndex(weekStartIndex + offset + 1)) : null;
+    const date = enrichAletheiaDate(fromAbsDay(weekStartAbsDay + offset));
 
     items.push({
       date,
       events: eventProjectionMap.get(date.absDay) ?? [],
-      hasLeapDayAfter: nextDate !== null && leapDayAbsDay !== null && leapDayAbsDay > date.absDay && leapDayAbsDay < nextDate.absDay,
     });
   }
 
-  const leapDay = selectedDate.kind === 'leapday' || items.some((item) => item.hasLeapDayAfter)
-    ? (leapDayAbsDay !== null ? enrichDate({ kind: 'leapday', year: selectedDate.year }) : null)
-    : null;
+  return { items };
+}
 
-  return { items, leapDay };
+export function buildCalendarDayData(
+  selectedDate: AletheiaDate,
+  eventProjectionMap: Map<number, NormalizedLoreEvent[]>,
+): CalendarDayData {
+  const date = enrichAletheiaDate(selectedDate);
+  const previousDate = date.absDay > 0 ? enrichAletheiaDate(fromAbsDay(date.absDay - 1)) : null;
+  const nextDate = enrichAletheiaDate(fromAbsDay(date.absDay + 1));
+
+  return {
+    date,
+    events: eventProjectionMap.get(date.absDay) ?? [],
+    previousDate,
+    nextDate,
+  };
 }
 
 function enrichAletheiaDate(date: AletheiaDate): EnrichedAletheiaDate {

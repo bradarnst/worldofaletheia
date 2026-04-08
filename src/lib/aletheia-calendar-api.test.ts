@@ -8,6 +8,7 @@ import {
   normalizeLoreEvents,
 } from '~/lib/aletheia-calendar';
 import {
+  createCalendarDayApiResponse,
   createCalendarDateDiffApiResponse,
   createCalendarMonthApiResponse,
   createCalendarMoonPhaseApiResponse,
@@ -52,6 +53,19 @@ describe('Aletheia calendar API helpers', () => {
     expect(eventDay.events[0].title).toBe('The Cataclysm');
   });
 
+  it('exposes Leap Day placement metadata in month payloads', async () => {
+    const yearBody = await parseJson(createCalendarYearApiResponse(new URLSearchParams({ year: '1110' }), createContext()));
+    const leapMonth = yearBody.data.months.find((month: { leapDay: object | null; month: string }) => month.leapDay !== null);
+
+    expect(leapMonth).toBeDefined();
+
+    const body = await parseJson(createCalendarMonthApiResponse(new URLSearchParams({ year: '1110', month: leapMonth.month }), createContext()));
+
+    expect(body.ok).toBe(true);
+    expect(body.data.leapDayPlacement).not.toBeNull();
+    expect(body.data.leapDayPlacement.festivalPosition).toBe('between-festival-day-3-and-4');
+  });
+
   it('builds week payloads around a direct date query', async () => {
     const body = await parseJson(createCalendarWeekApiResponse(new URLSearchParams({ date: '1105-Amoris-17' }), createContext()));
 
@@ -61,6 +75,14 @@ describe('Aletheia calendar API helpers', () => {
     expect(body.data.weekdays).toHaveLength(6);
   });
 
+  it('includes Leap Day as a normal week item when selected', async () => {
+    const body = await parseJson(createCalendarWeekApiResponse(new URLSearchParams({ date: '1110-Leapday' }), createContext()));
+
+    expect(body.ok).toBe(true);
+    expect(body.data.weekdays).toHaveLength(6);
+    expect(body.data.weekdays.some((item: { kind: string }) => item.kind === 'leapday')).toBe(true);
+  });
+
   it('builds year payloads with festival summaries', async () => {
     const body = await parseJson(createCalendarYearApiResponse(new URLSearchParams({ year: '1110' }), createContext()));
 
@@ -68,6 +90,22 @@ describe('Aletheia calendar API helpers', () => {
     expect(body.data.view).toBe('year');
     expect(body.data.isLeapYear).toBe(true);
     expect(body.data.festival.days).toContain('1110-Leapday');
+    expect(body.data.months.some((month: { leapDay: object | null }) => month.leapDay !== null)).toBe(true);
+  });
+
+  it('builds selected-day payloads for month dates and Leap Day', async () => {
+    const monthBody = await parseJson(createCalendarDayApiResponse(new URLSearchParams({ date: '1105-Amoris-17' }), createContext()));
+    const leapBody = await parseJson(createCalendarDayApiResponse(new URLSearchParams({ date: '1110-Leapday' }), createContext()));
+
+    expect(monthBody.ok).toBe(true);
+    expect(monthBody.data.view).toBe('day');
+    expect(monthBody.data.kind).toBe('month');
+    expect(monthBody.data.events).toHaveLength(1);
+
+    expect(leapBody.ok).toBe(true);
+    expect(leapBody.data.kind).toBe('leapday');
+    expect(leapBody.data.isLeapDay).toBe(true);
+    expect(leapBody.data.weekday).toBeDefined();
   });
 
   it('builds moon phase payloads for valid dates', async () => {

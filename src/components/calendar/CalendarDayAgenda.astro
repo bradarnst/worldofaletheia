@@ -1,0 +1,83 @@
+---
+import MoonPhaseIcon from '@components/calendar/MoonPhaseIcon.astro';
+import {
+  formatAletheiaDateRange,
+  type CalendarDayData,
+} from '~/lib/aletheia-calendar';
+
+interface Props {
+  day: CalendarDayData;
+}
+
+const { day } = Astro.props;
+---
+
+<section class="card border border-base-300 bg-base-100 shadow-sm">
+  <div class="card-body gap-5">
+    <div class="flex flex-wrap items-start justify-between gap-4">
+      <div>
+        <p class="text-sm font-semibold uppercase tracking-[0.24em] text-ink-700">Day Detail</p>
+        <h2 class="mt-2 text-2xl font-bold text-ink-950">{day.date.kind === 'month' ? `${day.date.weekday}, ${day.date.monthName} ${day.date.day}, ${day.date.year}` : `${day.date.weekday}, Leap Day, ${day.date.year}`}</h2>
+      </div>
+      <div class="flex flex-wrap gap-2 text-sm">
+        <span class="badge badge-outline gap-2">
+          <MoonPhaseIcon label={day.date.moonPhaseLabel} size={14} />
+          {day.date.moonPhaseLabel}
+        </span>
+        {day.date.kind === 'leapday' && <span class="badge badge-warning">Intercalary Day</span>}
+        {day.date.kind === 'leapday' && <span class="badge badge-outline">Monthless</span>}
+        {day.date.kind === 'month' && day.date.isFestivalDay && (
+          <span class="badge badge-warning">Festival Day {day.date.festivalDayNumber}</span>
+        )}
+        {day.date.kind === 'leapday' && <span class="badge badge-warning">Festival Leap Day</span>}
+      </div>
+    </div>
+
+    <div class="grid gap-4 md:grid-cols-3">
+      <div class="rounded-xl border border-base-300 bg-base-200/60 p-4">
+        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-ink-700">Weekday</p>
+        <p class="mt-2 text-sm text-ink-900">{day.date.weekday}</p>
+      </div>
+      <div class="rounded-xl border border-base-300 bg-base-200/60 p-4">
+        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-ink-700">Moon</p>
+        <div class="mt-2 flex items-center gap-2 text-sm text-ink-900">
+          <MoonPhaseIcon label={day.date.moonPhaseLabel} size={16} />
+          <span>{day.date.moonPhaseLabel}</span>
+        </div>
+      </div>
+      <div class="rounded-xl border border-base-300 bg-base-200/60 p-4">
+        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-ink-700">Eclipses</p>
+        <p class="mt-2 text-sm text-ink-900">Deferred until Step 4.</p>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-between gap-3">
+      <div>
+        <h3 class="text-xl font-semibold text-ink-950">Agenda</h3>
+        <p class="text-sm text-ink-700">Full lore event detail for the selected day.</p>
+      </div>
+      <span class="badge badge-outline">{day.events.length}</span>
+    </div>
+
+    {day.events.length > 0 ? (
+      <div class="space-y-3">
+        {day.events.map((event) => (
+          <article class="rounded-xl border border-base-300 bg-base-200/60 p-4">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <a href={event.href} class="font-semibold text-ink-950 transition-colors hover:text-primary">{event.title}</a>
+                <p class="text-sm text-ink-700">{formatAletheiaDateRange(event.startDate, event.endDate)}</p>
+              </div>
+              {!event.isSingleDay && <span class="badge badge-outline">{event.durationDays} days</span>}
+            </div>
+            {event.excerpt && <p class="mt-3 text-sm text-ink-800">{event.excerpt}</p>}
+          </article>
+        ))}
+      </div>
+    ) : (
+      <div class="rounded-xl border border-dashed border-base-300 bg-base-200/40 p-6 text-sm text-ink-700">
+        No lore events are projected onto this day yet.
+      </div>
+    )}
+  </div>
+</section>
