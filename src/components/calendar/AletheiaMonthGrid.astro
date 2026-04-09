@@ -47,7 +47,7 @@ for (let index = 0; index < visibleSlots.length; index += 6) {
           const isSelected = selectedAbsDay === slot.date.absDay;
           const visibleEvents = compact ? [] : slot.events.slice(0, 1);
           const hiddenEventCount = compact ? slot.events.length : Math.max(slot.events.length - visibleEvents.length, 0);
-          const href = !compact ? getDateHref?.(slot.date) : undefined;
+          const href = getDateHref?.(slot.date);
           const Wrapper = href ? 'a' : 'div';
           const isLeapDay = slot.kind === 'leapday';
 
