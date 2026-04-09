@@ -2,6 +2,7 @@ import { getCollection } from 'astro:content';
 import { getFilteredCollection } from '@utils/content-filter';
 import {
   buildCalendarDayData,
+  buildEclipseProjectionMapForYearRange,
   buildCalendarMonthData,
   buildCalendarWeekData,
   buildCalendarYearData,
@@ -20,6 +21,7 @@ import {
   type CalendarDayData,
   type CalendarMonthData,
   type CalendarWeekData,
+  type EclipseOccurrence,
   type EnrichedAletheiaDate,
   type NormalizedLoreEvent,
 } from '~/lib/aletheia-calendar';
@@ -36,7 +38,7 @@ interface CalendarApiContext {
 }
 
 function parseYear(value: string | null): number | null {
-  if (!value || !/^\d+$/.test(value.trim())) {
+  if (!value || !/^-?\d+$/.test(value.trim())) {
     return null;
   }
 
@@ -104,6 +106,27 @@ function toMoonSummary(date: EnrichedAletheiaDate) {
     label: date.moonPhaseLabel,
     shortLabel: date.moonPhaseShortLabel,
     isFullMoon: date.isFullMoon,
+  };
+}
+
+function toEclipseOccurrence(eclipse: EclipseOccurrence) {
+  return {
+    kind: eclipse.kind,
+    peakDaynum: eclipse.peakDaynum,
+    date: formatAletheiaDate(eclipse.date),
+    label: formatAletheiaDateLabel(eclipse.date),
+    hour: eclipse.hour,
+    minute: eclipse.minute,
+    seasonIndex: eclipse.seasonIndex,
+  };
+}
+
+function toEclipseSummaryPayload(eclipses: EclipseOccurrence[]) {
+  return {
+    eclipses: eclipses.map(toEclipseOccurrence),
+    eclipseCount: eclipses.length,
+    solarCount: eclipses.filter((eclipse) => eclipse.kind === 'solar').length,
+    lunarCount: eclipses.filter((eclipse) => eclipse.kind === 'lunar').length,
   };
 }
 
@@ -176,7 +199,7 @@ function toDayDetailPayload(dayData: CalendarDayData) {
         }
       : null,
     events: dayData.events.map(toEventSummary),
-    eclipses: [],
+    ...toEclipseSummaryPayload(dayData.eclipses),
   };
 }
 
@@ -217,7 +240,8 @@ export function createCalendarMonthApiResponse(searchParams: URLSearchParams, co
     return errorResponse('Month endpoint requires valid year and month query parameters.', meta);
   }
 
-  const monthData = buildCalendarMonthData(year, month.monthIndex, context.eventProjectionMap);
+  const eclipseProjectionMap = buildEclipseProjectionMapForYearRange(year, year);
+  const monthData = buildCalendarMonthData(year, month.monthIndex, context.eventProjectionMap, eclipseProjectionMap);
   const days = monthData.slots
     .filter((slot): slot is Extract<CalendarMonthData['slots'][number], { kind: 'day' }> => slot.kind === 'day')
     .map((slot) => ({
@@ -234,6 +258,8 @@ export function createCalendarMonthApiResponse(searchParams: URLSearchParams, co
             label: `Festival Day ${slot.date.festivalDayNumber}`,
           }
         : null,
+      eclipses: slot.eclipses.map(toEclipseOccurrence),
+      eclipseCount: slot.eclipses.length,
       events: slot.events.map(toEventSummary),
     }));
   const slots = monthData.slots.map((slot) => {
@@ -263,6 +289,8 @@ export function createCalendarMonthApiResponse(searchParams: URLSearchParams, co
               isLeapDay: false,
             }
           : null,
+      eclipses: slot.eclipses.map(toEclipseOccurrence),
+      eclipseCount: slot.eclipses.length,
       events: slot.events.map(toEventSummary),
     };
   });
@@ -303,13 +331,15 @@ export function createCalendarMonthApiResponse(searchParams: URLSearchParams, co
       : null,
     days,
     slots,
+    ...toEclipseSummaryPayload(monthData.eclipseSummary.eclipses),
   }, meta);
 }
 
 export function createCalendarWeekApiResponse(searchParams: URLSearchParams, context: CalendarApiContext): Response {
   const meta = getCommonMeta(searchParams);
   const selection = resolveCalendarSelection(new URLSearchParams([...searchParams, ['view', 'week']]));
-  const weekData = buildCalendarWeekData(selection.date, context.eventProjectionMap);
+  const eclipseProjectionMap = buildEclipseProjectionMapForYearRange(selection.date.year - 1, selection.date.year + 1);
+  const weekData = buildCalendarWeekData(selection.date, context.eventProjectionMap, eclipseProjectionMap);
 
   return jsonResponse({
     view: 'week',
@@ -326,8 +356,11 @@ export function createCalendarWeekApiResponse(searchParams: URLSearchParams, con
         : null,
       intercalary: item.date.kind === 'leapday',
       monthless: item.date.kind === 'leapday',
+      eclipses: item.eclipses.map(toEclipseOccurrence),
+      eclipseCount: item.eclipses.length,
       events: item.events.map(toEventSummary),
     })),
+    ...toEclipseSummaryPayload(weekData.eclipseSummary.eclipses),
   }, meta);
 }
 
@@ -338,7 +371,8 @@ export function createCalendarYearApiResponse(searchParams: URLSearchParams, con
     return errorResponse('Year endpoint requires a valid year query parameter.', meta);
   }
 
-  const yearData = buildCalendarYearData(year, context.eventProjectionMap);
+  const eclipseProjectionMap = buildEclipseProjectionMapForYearRange(year, year);
+  const yearData = buildCalendarYearData(year, context.eventProjectionMap, eclipseProjectionMap);
 
   return jsonResponse({
     view: 'year',
@@ -357,6 +391,9 @@ export function createCalendarYearApiResponse(searchParams: URLSearchParams, con
         startWeekday: firstDaySlot?.date.weekday ?? null,
         eventCount: month.eventCount,
         fullMoonDates,
+        eclipseCount: month.eclipseSummary.eclipseCount,
+        solarCount: month.eclipseSummary.solarCount,
+        lunarCount: month.eclipseSummary.lunarCount,
         leapDay: month.leapDayPlacement && month.leapDayPlacement.anchorMonthIndex === month.monthIndex
           ? {
               date: formatAletheiaDate(month.leapDayPlacement.leapDay),
@@ -368,13 +405,15 @@ export function createCalendarYearApiResponse(searchParams: URLSearchParams, con
       };
     }),
     festival: buildFestivalSummary(yearData, year),
+    ...toEclipseSummaryPayload(yearData.flatMap((month) => month.eclipseSummary.eclipses)),
   }, meta);
 }
 
 export function createCalendarDayApiResponse(searchParams: URLSearchParams, context: CalendarApiContext): Response {
   const meta = getCommonMeta(searchParams);
   const selection = resolveCalendarSelection(new URLSearchParams([...searchParams, ['view', 'month']]));
-  const dayData = buildCalendarDayData(selection.date, context.eventProjectionMap);
+  const eclipseProjectionMap = buildEclipseProjectionMapForYearRange(selection.date.year - 1, selection.date.year + 1);
+  const dayData = buildCalendarDayData(selection.date, context.eventProjectionMap, eclipseProjectionMap);
 
   return jsonResponse(toDayDetailPayload(dayData), meta);
 }

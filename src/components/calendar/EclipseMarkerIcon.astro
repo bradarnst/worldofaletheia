@@ -1,0 +1,29 @@
+---
+import type { EclipseKind } from '~/lib/aletheia-calendar';
+
+interface Props {
+  kind: EclipseKind;
+  size?: number;
+  class?: string;
+}
+
+const {
+  kind,
+  size = 12,
+  class: className = '',
+} = Astro.props;
+
+const iconClass = className || 'text-warning';
+---
+
+{kind === 'solar' ? (
+  <svg aria-hidden="true" width={size} height={size} viewBox="0 0 16 16" class={iconClass}>
+    <circle cx="8" cy="8" r="4.5" fill="none" stroke="currentColor" stroke-width="1.5" />
+    <circle cx="8" cy="8" r="2" fill="currentColor" />
+  </svg>
+) : (
+  <svg aria-hidden="true" width={size} height={size} viewBox="0 0 16 16" class={iconClass}>
+    <path d="M10.8 2.6a5.4 5.4 0 1 0 0 10.8A6.2 6.2 0 0 1 10.8 2.6Z" fill="currentColor" />
+    <circle cx="8" cy="8" r="5.6" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.8" />
+  </svg>
+)}

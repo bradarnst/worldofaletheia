@@ -1,6 +1,8 @@
 ---
 import { getCollection } from 'astro:content';
 import CalendarDayAgenda from '@components/calendar/CalendarDayAgenda.astro';
+import CalendarEclipseLegend from '@components/calendar/CalendarEclipseLegend.astro';
+import EclipseMarkerIcon from '@components/calendar/EclipseMarkerIcon.astro';
 import AletheiaMonthGrid from '@components/calendar/AletheiaMonthGrid.astro';
 import MoonPhaseIcon from '@components/calendar/MoonPhaseIcon.astro';
 import ReferenceLayout from '@layouts/ReferenceLayout.astro';
@@ -8,6 +10,7 @@ import { getFilteredCollection } from '@utils/content-filter';
 import {
   MONTHS,
   buildCalendarDayData,
+  buildEclipseProjectionMapForYearRange,
   buildCalendarMonthData,
   buildCalendarWeekData,
   buildCalendarYearData,
@@ -67,13 +70,17 @@ const eventProjectionMap = buildEventProjectionMap(loreEvents);
 
 const selection = resolveCalendarSelection(Astro.url.searchParams);
 const selectedDate = selection.date;
-const selectedDayData = buildCalendarDayData(selectedDate, eventProjectionMap);
+const eclipseProjectionMap = buildEclipseProjectionMapForYearRange(selectedDate.year - 1, selectedDate.year + 1);
+const selectedDayData = buildCalendarDayData(selectedDate, eventProjectionMap, eclipseProjectionMap);
 const selectedEnrichedDate = selectedDayData.date;
 const monthReferenceDate = getMonthReferenceDate(selectedDate);
 
-const monthData = buildCalendarMonthData(monthReferenceDate.year, monthReferenceDate.monthIndex, eventProjectionMap);
-const weekData = buildCalendarWeekData(selectedDate, eventProjectionMap);
-const yearData = buildCalendarYearData(getYearViewYear(selectedDate), eventProjectionMap);
+const monthData = buildCalendarMonthData(monthReferenceDate.year, monthReferenceDate.monthIndex, eventProjectionMap, eclipseProjectionMap);
+const weekData = buildCalendarWeekData(selectedDate, eventProjectionMap, eclipseProjectionMap);
+const yearData = buildCalendarYearData(getYearViewYear(selectedDate), eventProjectionMap, eclipseProjectionMap);
+const yearEclipseCount = yearData.reduce((total, month) => total + month.eclipseSummary.eclipseCount, 0);
+const yearSolarCount = yearData.reduce((total, month) => total + month.eclipseSummary.solarCount, 0);
+const yearLunarCount = yearData.reduce((total, month) => total + month.eclipseSummary.lunarCount, 0);
 
 const previousHref = selection.view === 'week'
   ? buildCalendarHref('week', getWeekNavigationDate(selectedDate, -1))
@@ -116,6 +123,8 @@ const currentViewDateHref = (date: AletheiaDate) => buildCalendarHref(selection.
             </a>
             <a href={buildTimelineHref(selectedDate)} class="btn btn-sm btn-outline">Timeline from here</a>
           </div>
+
+          <CalendarEclipseLegend />
 
           <form method="get" class="grid gap-4 md:grid-cols-2 xl:grid-cols-[auto_minmax(9rem,1fr)_minmax(13rem,1fr)_auto_auto] xl:items-end">
             <label class="form-control gap-2">
@@ -175,6 +184,8 @@ const currentViewDateHref = (date: AletheiaDate) => buildCalendarHref(selection.
             )}
             {selectedEnrichedDate.kind === 'leapday' && <span class="badge badge-warning">Intercalary Day</span>}
             {selectedEnrichedDate.kind === 'leapday' && <span class="badge badge-warning">Festival Leap Day</span>}
+            {selectedDayData.eclipseSummary.solarCount > 0 && <span class="badge badge-warning gap-1"><EclipseMarkerIcon kind="solar" size={12} />Solar eclipse occurs</span>}
+            {selectedDayData.eclipseSummary.lunarCount > 0 && <span class="badge badge-warning gap-1"><EclipseMarkerIcon kind="lunar" size={12} />Lunar eclipse occurs</span>}
           </div>
         </div>
       </div>
@@ -193,7 +204,15 @@ const currentViewDateHref = (date: AletheiaDate) => buildCalendarHref(selection.
           </div>
 
           <div class="flex justify-end">
-            <span class="badge badge-outline">{monthData.eventCount} dated lore events</span>
+            <div class="flex flex-wrap items-center justify-end gap-2">
+              {monthData.eclipseSummary.eclipseCount > 0 && (
+                <>
+                  {monthData.eclipseSummary.solarCount > 0 && <span class="badge badge-outline gap-1"><EclipseMarkerIcon kind="solar" size={12} />{monthData.eclipseSummary.solarCount}</span>}
+                  {monthData.eclipseSummary.lunarCount > 0 && <span class="badge badge-outline gap-1"><EclipseMarkerIcon kind="lunar" size={12} />{monthData.eclipseSummary.lunarCount}</span>}
+                </>
+              )}
+              <span class="badge badge-outline">{monthData.eventCount} dated lore events</span>
+            </div>
           </div>
 
           <AletheiaMonthGrid month={monthData} selectedAbsDay={selectedEnrichedDate.absDay} getDateHref={currentViewDateHref} />
@@ -238,6 +257,16 @@ const currentViewDateHref = (date: AletheiaDate) => buildCalendarHref(selection.
                     {item.date.kind === 'month' && item.date.isFestivalDay && <span class="badge badge-warning">Festival {item.date.festivalDayNumber}</span>}
                     {item.date.kind === 'leapday' && <span class="badge badge-warning">Intercalary Day</span>}
                     {item.date.kind === 'leapday' && <span class="badge badge-warning">Festival Leap Day</span>}
+                    {item.eclipses.length > 0 && (
+                      <span class="inline-flex items-center gap-1 rounded-full border border-warning/40 bg-base-100 px-2 py-1 text-warning">
+                        {item.eclipses.map((eclipse) => (
+                          <span title={`${eclipse.kind} eclipse occurs`}>
+                            <EclipseMarkerIcon kind={eclipse.kind} size={11} />
+                            <span class="sr-only">{eclipse.kind} eclipse occurs</span>
+                          </span>
+                        ))}
+                      </span>
+                    )}
                   </div>
                   <div class="space-y-2 text-sm text-ink-800">
                     {item.events.length > 0 ? item.events.slice(0, 3).map((event) => (
@@ -250,6 +279,14 @@ const currentViewDateHref = (date: AletheiaDate) => buildCalendarHref(selection.
               </article>
             ))}
           </div>
+          {weekData.eclipseSummary.eclipseCount > 0 && (
+            <div class="flex justify-end">
+              <div class="flex flex-wrap items-center gap-2">
+                {weekData.eclipseSummary.solarCount > 0 && <span class="badge badge-outline gap-1"><EclipseMarkerIcon kind="solar" size={12} />{weekData.eclipseSummary.solarCount}</span>}
+                {weekData.eclipseSummary.lunarCount > 0 && <span class="badge badge-outline gap-1"><EclipseMarkerIcon kind="lunar" size={12} />{weekData.eclipseSummary.lunarCount}</span>}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     )}
@@ -267,7 +304,15 @@ const currentViewDateHref = (date: AletheiaDate) => buildCalendarHref(selection.
           </div>
 
           <div class="flex justify-end">
-            <a href={buildTimelineHref(selectedDate)} class="btn btn-sm btn-outline">View timeline from this year</a>
+            <div class="flex flex-wrap items-center justify-end gap-2">
+              {yearEclipseCount > 0 && (
+                <>
+                  {yearSolarCount > 0 && <span class="badge badge-outline gap-1"><EclipseMarkerIcon kind="solar" size={12} />{yearSolarCount}</span>}
+                  {yearLunarCount > 0 && <span class="badge badge-outline gap-1"><EclipseMarkerIcon kind="lunar" size={12} />{yearLunarCount}</span>}
+                </>
+              )}
+              <a href={buildTimelineHref(selectedDate)} class="btn btn-sm btn-outline">View timeline from this year</a>
+            </div>
           </div>
 
           <div class="grid gap-6 xl:grid-cols-2">
@@ -284,6 +329,12 @@ const currentViewDateHref = (date: AletheiaDate) => buildCalendarHref(selection.
                         <span class="badge badge-warning">Festival Leap Day</span>
                         <span class="badge badge-warning">Intercalary Day</span>
                         <span class="badge badge-outline">{yearMonth.leapDayPlacement.leapDay.weekday}</span>
+                      </div>
+                    )}
+                    {yearMonth.eclipseSummary.eclipseCount > 0 && (
+                      <div class="mt-2 flex flex-wrap gap-2">
+                        {yearMonth.eclipseSummary.solarCount > 0 && <span class="badge badge-outline gap-1"><EclipseMarkerIcon kind="solar" size={12} />{yearMonth.eclipseSummary.solarCount}</span>}
+                        {yearMonth.eclipseSummary.lunarCount > 0 && <span class="badge badge-outline gap-1"><EclipseMarkerIcon kind="lunar" size={12} />{yearMonth.eclipseSummary.lunarCount}</span>}
                       </div>
                     )}
                   </div>

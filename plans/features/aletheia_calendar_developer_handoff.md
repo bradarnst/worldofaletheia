@@ -359,8 +359,10 @@ Display:
 - festival highlights
 - visible labeled Leap Day interstitial marker anchored between the adjacent dates that bracket it
 - light event density (count or a very small number of titles)
+- very small eclipse markers when eclipses occur on a day
 - previous/next month controls in the view header
 - click/select interaction that opens day detail
+- compact calendar legend/key indicating solar and lunar eclipse markers
 
 ### Week View
 
@@ -370,6 +372,7 @@ Display:
 - tiny inline SVG lunar phase icons
 - Leap Day rendered as a normal week item/card with explicit intercalary/festival labeling
 - festival and Leap Day indicators
+- very small eclipse markers/icons without extra default badge text
 - short event snippets
 - previous/next week controls in the view header
 
@@ -380,6 +383,7 @@ Display:
 - weekday
 - moon phase
 - festival / Leap Day / eclipse indicators when applicable
+- explicit notice when a solar or lunar eclipse occurs on the selected day
 - full agenda-style event list for the selected day
 - Leap Day uses the same agenda/detail interaction model as other selectable days
 - previous/next day controls if a dedicated day mode is implemented
@@ -395,6 +399,13 @@ Optional follow-on:
 ### Timeline View
 
 Chronological event list sorted by `absDay`.
+
+### Eclipse UI Notes
+
+- Eclipse markers are always on by default in the first tranche; no user toggle.
+- Use a compact legend/key in the calendar header to explain solar and lunar eclipse markers.
+- Calendar wording stays location-neutral: `solar eclipse occurs` / `lunar eclipse occurs`.
+- Path, coverage, and map-based visibility belong to a later atlas/cartography step.
 
 ---
 

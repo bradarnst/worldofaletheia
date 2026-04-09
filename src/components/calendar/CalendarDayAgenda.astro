@@ -1,5 +1,6 @@
 ---
 import MoonPhaseIcon from '@components/calendar/MoonPhaseIcon.astro';
+import EclipseMarkerIcon from '@components/calendar/EclipseMarkerIcon.astro';
 import {
   formatAletheiaDateRange,
   type CalendarDayData,
@@ -46,7 +47,20 @@ const { day } = Astro.props;
       </div>
       <div class="rounded-xl border border-base-300 bg-base-200/60 p-4">
         <p class="text-xs font-semibold uppercase tracking-[0.18em] text-ink-700">Eclipses</p>
-        <p class="mt-2 text-sm text-ink-900">Deferred until Step 4.</p>
+        {day.eclipses.length > 0 ? (
+          <div class="mt-2 space-y-2">
+            {day.eclipses.map((eclipse) => (
+              <div class="flex items-center gap-2 text-sm text-ink-900">
+                <EclipseMarkerIcon kind={eclipse.kind} size={14} />
+                <span>
+                  {eclipse.kind} eclipse occurs at {String(eclipse.hour).padStart(2, '0')}:{String(eclipse.minute).padStart(2, '0')}.
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p class="mt-2 text-sm text-ink-900">No solar or lunar eclipse occurs on this date.</p>
+        )}
       </div>
     </div>
 

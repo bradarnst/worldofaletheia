@@ -19,6 +19,7 @@ export const CALENDAR_VIEWS = ['month', 'week', 'year'] as const;
 export type MonthName = (typeof MONTHS)[number];
 export type WeekdayName = (typeof WEEKDAYS)[number];
 export type CalendarView = (typeof CALENDAR_VIEWS)[number];
+export type EclipseKind = 'solar' | 'lunar';
 export type MoonPhaseLabel =
   | 'New Moon'
   | 'Waxing Crescent'
@@ -34,7 +35,13 @@ export const MONTHS_PER_YEAR = 12;
 export const DAYS_PER_WEEK = 6;
 export const DATED_DAYS_PER_YEAR = DAYS_PER_MONTH * MONTHS_PER_YEAR;
 export const LEAP_INTERVAL_YEARS = 5;
+export const LOCAL_DAY_HOURS = 25;
+export const MINUTES_PER_LOCAL_DAY = LOCAL_DAY_HOURS * 60;
+export const TROPICAL_YEAR_DAYS = 372.2;
 export const LUNAR_CYCLE_DAYS = 31.1;
+export const NODAL_PRECESSION_DAYS = 6922.92;
+export const ECLIPSE_YEAR_DAYS = 353.3;
+export const ECLIPSE_SEASON_HALF_WIDTH_DAYS = 17.5;
 export const FULL_MOON_TOLERANCE = 0.02;
 export const DEFAULT_ALETHEIA_YEAR = 1105;
 export const FESTIVAL_SEARCH_MONTH_INDEX = 6;
@@ -88,6 +95,28 @@ export interface EnrichedLeapDayDate extends LeapDayDate {
 
 export type EnrichedAletheiaDate = EnrichedMonthDate | EnrichedLeapDayDate;
 
+export interface EclipseOccurrence {
+  kind: EclipseKind;
+  peakDaynum: number;
+  date: EnrichedAletheiaDate;
+  hour: number;
+  minute: number;
+  seasonIndex: number;
+}
+
+export interface EclipseSummary {
+  eclipses: EclipseOccurrence[];
+  eclipseCount: number;
+  solarCount: number;
+  lunarCount: number;
+}
+
+export interface CalendarDaynumDate {
+  date: AletheiaDate;
+  hour: number;
+  minute: number;
+}
+
 export interface NormalizedLoreEvent {
   id: string;
   slug: string;
@@ -126,6 +155,7 @@ export interface CalendarMonthSlotDay {
   key: string;
   date: EnrichedMonthDate;
   events: NormalizedLoreEvent[];
+  eclipses: EclipseOccurrence[];
 }
 
 export interface CalendarMonthSlotLeapDay {
@@ -133,6 +163,7 @@ export interface CalendarMonthSlotLeapDay {
   key: string;
   date: EnrichedLeapDayDate;
   events: NormalizedLoreEvent[];
+  eclipses: EclipseOccurrence[];
 }
 
 export type CalendarMonthSlot = CalendarMonthSlotEmpty | CalendarMonthSlotDay | CalendarMonthSlotLeapDay;
@@ -155,20 +186,25 @@ export interface CalendarMonthData {
   eventCount: number;
   leapDay: EnrichedLeapDayDate | null;
   leapDayPlacement: CalendarMonthLeapDayPlacement | null;
+  eclipseSummary: EclipseSummary;
 }
 
 export interface CalendarWeekItem {
   date: EnrichedAletheiaDate;
   events: NormalizedLoreEvent[];
+  eclipses: EclipseOccurrence[];
 }
 
 export interface CalendarWeekData {
   items: CalendarWeekItem[];
+  eclipseSummary: EclipseSummary;
 }
 
 export interface CalendarDayData {
   date: EnrichedAletheiaDate;
   events: NormalizedLoreEvent[];
+  eclipses: EclipseOccurrence[];
+  eclipseSummary: EclipseSummary;
   previousDate: EnrichedAletheiaDate | null;
   nextDate: EnrichedAletheiaDate | null;
 }
@@ -186,8 +222,8 @@ function getWeekdayIndex(absDay: number): number {
   return normalizeModulo(absDay, DAYS_PER_WEEK);
 }
 
-function isNonNegativeInteger(value: string): boolean {
-  return /^\d+$/.test(value);
+function isIntegerToken(value: string): boolean {
+  return /^-?\d+$/.test(value);
 }
 
 function parseYearToken(value: string | null | undefined): number | null {
@@ -196,7 +232,7 @@ function parseYearToken(value: string | null | undefined): number | null {
   }
 
   const trimmed = value.trim();
-  if (!isNonNegativeInteger(trimmed)) {
+  if (!isIntegerToken(trimmed)) {
     return null;
   }
 
@@ -235,7 +271,7 @@ export function parseMonthValue(value: string | null | undefined): { monthIndex:
     return null;
   }
 
-  if (isNonNegativeInteger(trimmed)) {
+  if (isIntegerToken(trimmed)) {
     const monthIndex = Number.parseInt(trimmed, 10);
     if (monthIndex < 1 || monthIndex > MONTHS_PER_YEAR) {
       return null;
@@ -258,12 +294,22 @@ export function parseMonthValue(value: string | null | undefined): { monthIndex:
   };
 }
 
-function getLeapYearsBeforeYear(year: number): number {
-  if (year <= 0) {
+function countLeapYearsInRange(startYear: number, endYear: number): number {
+  if (startYear > endYear) {
     return 0;
   }
 
-  return Math.floor((year + LEAP_INTERVAL_YEARS - 1) / LEAP_INTERVAL_YEARS);
+  return Math.floor(endYear / LEAP_INTERVAL_YEARS) - Math.floor((startYear - 1) / LEAP_INTERVAL_YEARS);
+}
+
+function getLeapYearsBeforeYear(year: number): number {
+  if (year > 0) {
+    return countLeapYearsInRange(0, year - 1);
+  }
+  if (year < 0) {
+    return -countLeapYearsInRange(year, -1);
+  }
+  return 1; // Year 0 is itself a leap year
 }
 
 function getYearStartAbsDay(year: number): number {
@@ -346,6 +392,85 @@ export function isFullMoon(absDay: number): boolean {
   return Math.abs(getMoonPhase(absDay) - 0.5) < FULL_MOON_TOLERANCE;
 }
 
+function getEclipseAnchorDaynum(): number {
+  return dateToDaynum({ kind: 'month', year: 0, monthIndex: 3, monthName: 'Vernalis', day: 21 }, 13, 47);
+}
+
+function getNearestSyzygyDaynum(seasonCenterDaynum: number, kind: EclipseKind): number {
+  const offset = kind === 'solar' ? 0 : (LUNAR_CYCLE_DAYS / 2);
+  const cycleIndex = Math.round((seasonCenterDaynum - getEclipseAnchorDaynum() - offset) / LUNAR_CYCLE_DAYS);
+  return getEclipseAnchorDaynum() + offset + (cycleIndex * LUNAR_CYCLE_DAYS);
+}
+
+function buildEclipseOccurrence(kind: EclipseKind, peakDaynum: number, seasonIndex: number): EclipseOccurrence {
+  const peakDate = daynumToDate(peakDaynum);
+
+  const date = peakDate.date.kind === 'leapday'
+    ? enrichDate(peakDate.date as LeapDayDate)
+    : enrichDate(peakDate.date as MonthDate);
+
+  return {
+    kind,
+    peakDaynum,
+    date,
+    hour: peakDate.hour,
+    minute: peakDate.minute,
+    seasonIndex,
+  };
+}
+
+export function buildEclipseSummary(eclipses: EclipseOccurrence[]): EclipseSummary {
+  return {
+    eclipses,
+    eclipseCount: eclipses.length,
+    solarCount: eclipses.filter((eclipse) => eclipse.kind === 'solar').length,
+    lunarCount: eclipses.filter((eclipse) => eclipse.kind === 'lunar').length,
+  };
+}
+
+export function getEclipseOccurrencesForDaynumRange(startDaynum: number, endDaynumExclusive: number): EclipseOccurrence[] {
+  const anchor = getEclipseAnchorDaynum();
+  const startSeasonIndex = Math.floor((startDaynum - ECLIPSE_SEASON_HALF_WIDTH_DAYS - anchor) / ECLIPSE_YEAR_DAYS) - 1;
+  const endSeasonIndex = Math.ceil((endDaynumExclusive + ECLIPSE_SEASON_HALF_WIDTH_DAYS - anchor) / ECLIPSE_YEAR_DAYS) + 1;
+  const eclipses: EclipseOccurrence[] = [];
+
+  for (let seasonIndex = startSeasonIndex; seasonIndex <= endSeasonIndex; seasonIndex += 1) {
+    const seasonCenterDaynum = anchor + (seasonIndex * ECLIPSE_YEAR_DAYS);
+
+    for (const kind of ['solar', 'lunar'] as const) {
+      const peakDaynum = getNearestSyzygyDaynum(seasonCenterDaynum, kind);
+      if (Math.abs(peakDaynum - seasonCenterDaynum) > ECLIPSE_SEASON_HALF_WIDTH_DAYS) {
+        continue;
+      }
+
+      if (peakDaynum < startDaynum || peakDaynum >= endDaynumExclusive) {
+        continue;
+      }
+
+      eclipses.push(buildEclipseOccurrence(kind, peakDaynum, seasonIndex));
+    }
+  }
+
+  return eclipses.sort((left, right) => left.peakDaynum - right.peakDaynum);
+}
+
+export function buildEclipseProjectionMapForYearRange(startYear: number, endYear: number): Map<number, EclipseOccurrence[]> {
+  const rangeStartYear = Math.min(startYear, endYear);
+  const rangeEndYear = Math.max(startYear, endYear);
+  const startDaynum = getYearStartAbsDay(rangeStartYear);
+  const endDaynumExclusive = getYearStartAbsDay(rangeEndYear + 1);
+  const eclipses = getEclipseOccurrencesForDaynumRange(startDaynum, endDaynumExclusive);
+  const projectionMap = new Map<number, EclipseOccurrence[]>();
+
+  eclipses.forEach((eclipse) => {
+    const bucket = projectionMap.get(eclipse.date.absDay) ?? [];
+    bucket.push(eclipse);
+    projectionMap.set(eclipse.date.absDay, bucket);
+  });
+
+  return projectionMap;
+}
+
 function getFestivalSearchStartOffset(): number {
   return ((FESTIVAL_SEARCH_MONTH_INDEX - 1) * DAYS_PER_MONTH) + (FESTIVAL_SEARCH_DAY - 1);
 }
@@ -418,8 +543,8 @@ export function toAbsDay(date: AletheiaDate): number {
 }
 
 export function fromAbsDay(absDay: number): AletheiaDate {
-  if (!Number.isInteger(absDay) || absDay < 0) {
-    throw new Error(`Absolute day '${absDay}' must be a non-negative integer`);
+  if (!Number.isInteger(absDay)) {
+    throw new Error(`Absolute day '${absDay}' must be an integer`);
   }
 
   let year = Math.floor(absDay / DATED_DAYS_PER_YEAR);
@@ -443,6 +568,44 @@ export function fromAbsDay(absDay: number): AletheiaDate {
   }
 
   return monthDateFromYearOffset(year, yearOffset);
+}
+
+export function dateToDaynum(date: AletheiaDate, hour = 0, minute = 0): number {
+  if (!Number.isInteger(hour) || hour < 0 || hour >= LOCAL_DAY_HOURS) {
+    throw new Error(`Hour '${hour}' is out of range for a ${LOCAL_DAY_HOURS}-hour day`);
+  }
+
+  if (!Number.isInteger(minute) || minute < 0 || minute >= 60) {
+    throw new Error(`Minute '${minute}' is out of range`);
+  }
+
+  const totalMinutes = (hour * 60) + minute;
+  return toAbsDay(date) + (totalMinutes / MINUTES_PER_LOCAL_DAY);
+}
+
+export function daynumToDate(daynum: number): CalendarDaynumDate {
+  if (!Number.isFinite(daynum)) {
+    throw new Error(`Day number '${daynum}' must be finite`);
+  }
+
+  let absDay = Math.floor(daynum);
+  let totalMinutes = Math.round((daynum - absDay) * MINUTES_PER_LOCAL_DAY);
+
+  if (totalMinutes >= MINUTES_PER_LOCAL_DAY) {
+    absDay += 1;
+    totalMinutes -= MINUTES_PER_LOCAL_DAY;
+  }
+
+  if (totalMinutes < 0) {
+    absDay -= 1;
+    totalMinutes += MINUTES_PER_LOCAL_DAY;
+  }
+
+  return {
+    date: fromAbsDay(absDay),
+    hour: Math.floor(totalMinutes / 60),
+    minute: normalizeModulo(totalMinutes, 60),
+  };
 }
 
 export function enrichDate(date: MonthDate): EnrichedMonthDate;
@@ -751,6 +914,7 @@ export function buildCalendarMonthData(
   year: number,
   monthIndex: number,
   eventProjectionMap: Map<number, NormalizedLoreEvent[]>,
+  eclipseProjectionMap: Map<number, EclipseOccurrence[]> = new Map(),
 ): CalendarMonthData {
   const monthName = getMonthName(monthIndex);
   const slots: CalendarMonthSlot[] = [];
@@ -770,12 +934,14 @@ export function buildCalendarMonthData(
   for (let day = 1; day <= DAYS_PER_MONTH; day += 1) {
     const date = enrichDate({ kind: 'month', year, monthIndex, monthName, day });
     const events = eventProjectionMap.get(date.absDay) ?? [];
+    const eclipses = eclipseProjectionMap.get(date.absDay) ?? [];
     events.forEach((event) => eventIds.add(event.id));
     slots.push({
       kind: 'day',
       key: `${year}-${monthIndex}-${day}`,
       date,
       events,
+      eclipses,
     });
   }
 
@@ -790,6 +956,7 @@ export function buildCalendarMonthData(
 
   if (leapDayPlacementForYear !== null && leapDayPlacementForYear.anchorMonthIndex === monthIndex) {
     const leapDayEvents = eventProjectionMap.get(leapDayPlacementForYear.leapDay.absDay) ?? [];
+    const leapDayEclipses = eclipseProjectionMap.get(leapDayPlacementForYear.leapDay.absDay) ?? [];
     leapDayEvents.forEach((event) => eventIds.add(event.id));
 
     const insertAfterIndex = slots.findIndex((slot) => slot.kind === 'day' && slot.date.absDay === leapDayPlacementForYear.afterDate.absDay);
@@ -799,6 +966,7 @@ export function buildCalendarMonthData(
         key: `${year}-leapday`,
         date: leapDayPlacementForYear.leapDay,
         events: leapDayEvents,
+        eclipses: leapDayEclipses,
       });
     }
   }
@@ -815,19 +983,22 @@ export function buildCalendarMonthData(
     eventCount: eventIds.size,
     leapDay,
     leapDayPlacement,
+    eclipseSummary: buildEclipseSummary(slots.flatMap((slot) => slot.kind === 'empty' ? [] : slot.eclipses)),
   };
 }
 
 export function buildCalendarYearData(
   year: number,
   eventProjectionMap: Map<number, NormalizedLoreEvent[]>,
+  eclipseProjectionMap: Map<number, EclipseOccurrence[]> = new Map(),
 ): CalendarMonthData[] {
-  return MONTHS.map((_, monthIndex) => buildCalendarMonthData(year, monthIndex + 1, eventProjectionMap));
+  return MONTHS.map((_, monthIndex) => buildCalendarMonthData(year, monthIndex + 1, eventProjectionMap, eclipseProjectionMap));
 }
 
 export function buildCalendarWeekData(
   selectedDate: AletheiaDate,
   eventProjectionMap: Map<number, NormalizedLoreEvent[]>,
+  eclipseProjectionMap: Map<number, EclipseOccurrence[]> = new Map(),
 ): CalendarWeekData {
   const anchorAbsDay = toAbsDay(selectedDate);
   const weekStartAbsDay = anchorAbsDay - normalizeModulo(anchorAbsDay, DAYS_PER_WEEK);
@@ -839,23 +1010,31 @@ export function buildCalendarWeekData(
     items.push({
       date,
       events: eventProjectionMap.get(date.absDay) ?? [],
+      eclipses: eclipseProjectionMap.get(date.absDay) ?? [],
     });
   }
 
-  return { items };
+  return {
+    items,
+    eclipseSummary: buildEclipseSummary(items.flatMap((item) => item.eclipses)),
+  };
 }
 
 export function buildCalendarDayData(
   selectedDate: AletheiaDate,
   eventProjectionMap: Map<number, NormalizedLoreEvent[]>,
+  eclipseProjectionMap: Map<number, EclipseOccurrence[]> = new Map(),
 ): CalendarDayData {
   const date = enrichAletheiaDate(selectedDate);
+  const eclipses = eclipseProjectionMap.get(date.absDay) ?? [];
   const previousDate = date.absDay > 0 ? enrichAletheiaDate(fromAbsDay(date.absDay - 1)) : null;
   const nextDate = enrichAletheiaDate(fromAbsDay(date.absDay + 1));
 
   return {
     date,
     events: eventProjectionMap.get(date.absDay) ?? [],
+    eclipses,
+    eclipseSummary: buildEclipseSummary(eclipses),
     previousDate,
     nextDate,
   };

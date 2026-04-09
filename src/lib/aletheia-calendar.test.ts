@@ -1,15 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildCalendarDayData,
+  buildEclipseProjectionMapForYearRange,
   buildCalendarMonthData,
   buildCalendarWeekData,
   buildCalendarYearData,
   buildEventProjectionMap,
+  dateToDaynum,
+  daynumToDate,
   enrichDate,
   formatAletheiaDate,
   fromAbsDay,
+  getEclipseOccurrencesForDaynumRange,
   getMonthReferenceDate,
   getYearNavigationDate,
+  LUNAR_CYCLE_DAYS,
   isLeapYear,
   normalizeLoreEvent,
   parseAletheiaDate,
@@ -80,7 +85,12 @@ describe('Aletheia calendar engine', () => {
       throw new Error('expected month dates');
     }
 
-    expect(enrichDate(yearZero).weekday).toBe('Primus');
+    // Note: with a 6-day week, a 373-day leap year (372+1) adds 373%6=1 extra
+    // weekday. Since only year 0 and year 5 are leap in this range, year 0
+    // starts on Secundus; year 1 (non-leap, 372d) also starts on Secundus because
+    // 373+372=745 and 745%6=1. Year 5 (leap) starts on Secundus; year 6 starts
+    // on Tertius (2234%6=2).
+    expect(enrichDate(yearZero).weekday).toBe('Secundus');
     expect(enrichDate(yearOne).weekday).toBe('Secundus');
     expect(enrichDate(yearFive).weekday).toBe('Secundus');
     expect(enrichDate(yearSix).weekday).toBe('Tertius');
@@ -198,6 +208,53 @@ describe('Aletheia calendar engine', () => {
     expect(leapDayData.date.weekday).toBeDefined();
     expect(leapDayData.previousDate?.kind).toBe('month');
     expect(leapDayData.nextDate?.kind).toBe('month');
+  });
+
+  it('round-trips fractional day numbers for negative years', () => {
+    const date = { kind: 'month' as const, year: -5, monthIndex: 3, monthName: 'Vernalis' as const, day: 21 };
+    const daynum = dateToDaynum(date, 13, 47);
+
+    expect(daynumToDate(daynum)).toEqual({
+      date,
+      hour: 13,
+      minute: 47,
+    });
+  });
+
+  it('generates deterministic eclipses from the canonical anchor', () => {
+    const anchorDate = { kind: 'month' as const, year: 0, monthIndex: 3, monthName: 'Vernalis' as const, day: 21 };
+    const anchorDaynum = dateToDaynum(anchorDate, 13, 47);
+    const eclipses = getEclipseOccurrencesForDaynumRange(anchorDaynum - 0.01, anchorDaynum + LUNAR_CYCLE_DAYS);
+
+    expect(eclipses[0]).toMatchObject({
+      kind: 'solar',
+      hour: 13,
+      minute: 47,
+      seasonIndex: 0,
+    });
+    expect(formatAletheiaDate(eclipses[0].date)).toBe('0-Vernalis-21');
+    expect(eclipses.some((eclipse) => eclipse.kind === 'lunar')).toBe(true);
+  });
+
+  it('keeps negative-year eclipse conversion consistent', () => {
+    const startDaynum = dateToDaynum({ kind: 'month', year: -5, monthIndex: 1, monthName: 'Brumalis', day: 1 });
+    const endDaynum = dateToDaynum({ kind: 'month', year: -4, monthIndex: 1, monthName: 'Brumalis', day: 1 });
+    const eclipses = getEclipseOccurrencesForDaynumRange(startDaynum, endDaynum);
+
+    expect(eclipses.length).toBeGreaterThan(0);
+    eclipses.forEach((eclipse) => {
+      expect(formatAletheiaDate(daynumToDate(eclipse.peakDaynum).date)).toBe(formatAletheiaDate(eclipse.date));
+    });
+  });
+
+  it('projects eclipse summaries into month and day data', () => {
+    const eclipseProjectionMap = buildEclipseProjectionMapForYearRange(0, 0);
+    const monthData = buildCalendarMonthData(0, 3, new Map(), eclipseProjectionMap);
+    const dayData = buildCalendarDayData({ kind: 'month', year: 0, monthIndex: 3, monthName: 'Vernalis', day: 21 }, new Map(), eclipseProjectionMap);
+
+    expect(monthData.eclipseSummary.solarCount).toBeGreaterThan(0);
+    expect(dayData.eclipseSummary.eclipseCount).toBeGreaterThan(0);
+    expect(dayData.eclipses[0]?.kind).toBe('solar');
   });
 
   it('resolves direct date query parameters before numeric fields', () => {

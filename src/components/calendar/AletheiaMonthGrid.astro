@@ -1,5 +1,6 @@
 ---
 import MoonPhaseIcon from '@components/calendar/MoonPhaseIcon.astro';
+import EclipseMarkerIcon from '@components/calendar/EclipseMarkerIcon.astro';
 import type { AletheiaDate, CalendarMonthData, CalendarMonthSlot } from '~/lib/aletheia-calendar';
 
 interface Props {
@@ -77,6 +78,17 @@ for (let index = 0; index < visibleSlots.length; index += 6) {
                   </span>
                 </div>
 
+                {!compact && slot.eclipses.length > 0 && (
+                  <div class="mt-2 flex items-center gap-1 text-warning">
+                    {slot.eclipses.map((eclipse) => (
+                      <span title={`${eclipse.kind} eclipse occurs`}>
+                        <EclipseMarkerIcon kind={eclipse.kind} size={12} />
+                        <span class="sr-only">{eclipse.kind} eclipse occurs</span>
+                      </span>
+                    ))}
+                  </div>
+                )}
+
                 {!compact && placement && (
                   <p class="mt-3 text-xs text-ink-800">
                     Between {placement.afterDate.monthName} {placement.afterDate.day} and {placement.beforeDate.monthName} {placement.beforeDate.day}.
@@ -124,6 +136,16 @@ for (let index = 0; index < visibleSlots.length; index += 6) {
                   </span>
                   {slot.kind === 'day' && slot.date.isFestivalDay && (
                     <span class="badge badge-warning badge-sm">F{slot.date.festivalDayNumber}</span>
+                  )}
+                  {!compact && slot.eclipses.length > 0 && (
+                    <span class="inline-flex items-center gap-1 rounded-full border border-warning/40 bg-base-100 px-2 py-1 text-warning">
+                      {slot.eclipses.map((eclipse) => (
+                        <span title={`${eclipse.kind} eclipse occurs`}>
+                          <EclipseMarkerIcon kind={eclipse.kind} size={11} />
+                          <span class="sr-only">{eclipse.kind} eclipse occurs</span>
+                        </span>
+                      ))}
+                    </span>
                   )}
                   {compact && slot.events.length > 0 && (
                     <span class="badge badge-primary badge-sm">{slot.events.length}</span>

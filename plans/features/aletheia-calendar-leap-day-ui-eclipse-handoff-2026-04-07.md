@@ -46,7 +46,9 @@ Deliver:
 
 Deliver:
 - deterministic eclipse-season and eclipse-date computation
+- a fractional continuous day-number layer for eclipse timing tied to the canonical civil calendar
 - calendar/API rendering of computed eclipses
+- compact eclipse UI with always-on markers, a small legend, and selected-date/view summaries
 - no map path/coverage logic yet
 
 ### Step 5 - Calendar interaction and agenda modes (future tranche)
@@ -72,7 +74,12 @@ Remote parity automation remains intentionally delayed and is not part of this h
 8. Do not surface `Monthless` as a visible UI label; keep Leap Day specialness legible through placement and intercalary/festival language instead.
 9. Remove explanatory helper copy where the calendar view itself should communicate the model clearly.
 10. Eclipses are computed astronomy/calendar data, not authored content entries.
-11. Eclipse geographic path/coverage is explicitly out of scope for this tranche.
+11. The first eclipse tranche should not add a display toggle; eclipse markers are rare enough to stay always visible by default.
+12. Use a compact header legend/key to explain eclipse markers rather than per-cell text labels.
+13. Week view should keep eclipse treatment visually light; do not add extra badge text there if the icon/legend combination is sufficient.
+14. Selected-date detail may state that a solar or lunar eclipse occurs on that date, while week/month/year surfaces may use compact summary text such as counts or occurrence notices.
+15. Until path/coverage work lands, calendar wording must stay location-neutral: `solar eclipse occurs` / `lunar eclipse occurs`, not `visible here` or `total here`.
+16. Eclipse geographic path/coverage is explicitly out of scope for this tranche.
 
 ## High-Level Design
 
@@ -146,7 +153,7 @@ Required UI outcomes:
   - clear previous/next month controls placed in the view header
 - Week view
   - six real week items, including Leap Day when present
-  - Leap Day rendered with the same structural day card treatment as other days, with its monthless identity called out in labels/badges
+  - Leap Day rendered with the same structural day card treatment as other days, using intercalary/festival language rather than a literal `Monthless` label
   - short event snippets
   - computed badges (festival, full moon, eclipse later)
   - clear previous/next week controls placed in the view header
@@ -184,16 +191,64 @@ Primary implementation surface later:
 - `src/lib/aletheia-calendar-api.ts`
 - `/references/calendar` UI detail components
 
-Scope for Step 3:
-- compute eclipse seasons and occurrences from supplied canonical constants
-- attach eclipses to enriched dates/day payloads
-- show eclipse markers in calendar views and detail panels
+Canonical constants for this tranche:
+- tropical year `Y = 372.2` local days
+- synodic month `S = 31.1` local days
+- nodal precession `D = 6922.92` local days
+- eclipse year `E = 353.3` local days
+- eclipse season half-width `W = 17.5` local days
+- anchor instant `day0 = date_to_daynum(0, 3, 21, 13, 47)`
+
+Engine requirements:
+- add a fractional continuous day-number layer for eclipse timing
+- preserve the existing civil calendar as the source of month/day naming and Leap Day placement
+- support negative years and leap years consistently in both forward and inverse conversions
+- provide deterministic conversion helpers equivalent to:
+  - `date_to_daynum(year, month, day, hour, minute)`
+  - `daynum_to_date(daynum)`
+- generate eclipse seasons by season index and derive solar/lunar candidates from the nearest syzygy points
+- project the resulting peak instants back onto the civil calendar as day-level enrichments with optional time-of-day detail
+
+Recommended data shape:
+- per eclipse occurrence:
+  - `kind` = `solar` | `lunar`
+  - `peakDaynum`
+  - `date`
+  - `hour`
+  - `minute`
+  - `seasonIndex`
+- per day/view summary:
+  - `eclipses`
+  - `eclipseCount`
+  - `solarCount`
+  - `lunarCount`
+
+Required UI outcomes:
+- Month view
+  - very small eclipse markers in day cells
+  - marker-only treatment, relying on the legend rather than text in the cell
+- Week view
+  - very small eclipse markers/icons only; avoid extra eclipse badge text in the default card treatment
+- Year view
+  - month-card eclipse summaries such as counts by kind
+- Selected date / day detail
+  - explicit notice when a solar or lunar eclipse occurs that day
+  - optional peak time display if available from the generated occurrence
+- Calendar header
+  - a compact legend/key that indicates the calendar includes solar and lunar eclipse markers
+- View summaries
+  - week/month/year headers may include compact summary notices or counts when eclipses fall in the active range
+
+Content wording constraints:
+- use location-neutral language such as `solar eclipse occurs` and `lunar eclipse occurs`
+- do not imply map-aware visibility, local path, or totality information in the calendar UI
 
 Explicitly out of scope:
 - map footprint
 - regional visibility polygons
 - totality path rendering
 - place-aware eclipse filtering
+- separate eclipse display toggles in the first tranche
 
 ## Recommended Implementation Order
 
@@ -203,7 +258,7 @@ Explicitly out of scope:
 4. Update API helpers and add day/detail payload.
 5. Close out the UI tranche by removing implementation-note copy and non-canonical visible labels such as `Monthless`.
 6. Update calendar UI components and Reference navigation.
-7. Add eclipse schedule logic only after the Leap Day and day-detail/UI work is stable.
+7. Add eclipse schedule logic, compact marker UI, and summary/legend treatment only after the Leap Day and day-detail/UI work is stable.
 
 ## Validation Requirements
 
@@ -216,6 +271,9 @@ Required implementation checks:
   - week payloads containing Leap Day as a normal week item
   - month/year payloads exposing Leap Day placement metadata
   - selected-day/detail payloads for both month dates and Leap Day
+  - deterministic solar/lunar eclipse generation from the canonical anchor and constants
+  - negative-year eclipse generation consistency
+  - day/view payloads exposing eclipse occurrences and summary counts
 
 ## Non-Goals
 
@@ -224,13 +282,18 @@ Required implementation checks:
 - No timeline mixing of computed eclipses by default.
 - No service extraction or external astronomy library adoption.
 
-## Input Still Needed From Worldbuilding
+## Eclipse Inputs Locked
 
-For the eclipse step, code can proceed once the following canonical constants are supplied:
-- epoch anchor for eclipse calculations
-- lunar/orbital cycle values
-- season cadence or node rule
-- solar vs lunar trigger thresholds
-- optional subtype or magnitude rules if desired
+The following canonical eclipse inputs are now supplied for Step 4:
+- epoch anchor / first solar-eclipse instant: `date_to_daynum(0, 3, 21, 13, 47)`
+- tropical year `Y = 372.2`
+- synodic month `S = 31.1`
+- nodal precession `D = 6922.92`
+- eclipse year `E = 353.3`
+- eclipse season half-width `W = 17.5`
+- season-center / nearest-syzygy generation model described in this handoff
 
-The Leap Day and UI/UX work does not need those eclipse constants and should proceed first.
+Still deferred:
+- map path/coverage vector math
+- local visibility phrasing in calendar UI
+- any place-aware or atlas-aware eclipse rendering
