@@ -575,13 +575,17 @@ const yearAgendaGroups: AgendaGroup[] = yearData
             const view = agenda === 'day' ? 'month' : agenda;
             url.searchParams.set('view', view);
             url.searchParams.set('agenda', agenda);
-            window.location.replace(url.toString());
+            requestAnimationFrame(() => {
+              window.location.replace(url.toString());
+            });
             return;
           }
 
           if (savedDisplay === 'calendar' && allowedCalendarViews.includes(savedCalendarView || '') && savedCalendarView !== 'month') {
             url.searchParams.set('view', savedCalendarView);
-            window.location.replace(url.toString());
+            requestAnimationFrame(() => {
+              window.location.replace(url.toString());
+            });
             return;
           }
         } catch {
