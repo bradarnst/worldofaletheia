@@ -25,11 +25,10 @@ const { day } = Astro.props;
           <MoonPhaseIcon label={day.date.moonPhaseLabel} size={14} />
           {day.date.moonPhaseLabel}
         </span>
-        {day.date.kind === 'leapday' && <span class="badge badge-warning">Intercalary Day</span>}
+        {day.date.kind === 'leapday' && <span class="badge badge-warning">FLD</span>}
         {day.date.kind === 'month' && day.date.isFestivalDay && (
           <span class="badge badge-warning">Festival Day {day.date.festivalDayNumber}</span>
         )}
-        {day.date.kind === 'leapday' && <span class="badge badge-warning">Festival Leap Day</span>}
       </div>
     </div>
 

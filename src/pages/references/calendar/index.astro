@@ -182,8 +182,7 @@ const currentViewDateHref = (date: AletheiaDate) => buildCalendarHref(selection.
             {selectedEnrichedDate.kind === 'month' && selectedEnrichedDate.isFestivalDay && (
               <span class="badge badge-warning">Festival Day {selectedEnrichedDate.festivalDayNumber}</span>
             )}
-            {selectedEnrichedDate.kind === 'leapday' && <span class="badge badge-warning">Intercalary Day</span>}
-            {selectedEnrichedDate.kind === 'leapday' && <span class="badge badge-warning">Festival Leap Day</span>}
+            {selectedEnrichedDate.kind === 'leapday' && <span class="badge badge-warning">FLD</span>}
             {selectedDayData.eclipseSummary.solarCount > 0 && <span class="badge badge-warning gap-1"><EclipseMarkerIcon kind="solar" size={12} />Solar eclipse occurs</span>}
             {selectedDayData.eclipseSummary.lunarCount > 0 && <span class="badge badge-warning gap-1"><EclipseMarkerIcon kind="lunar" size={12} />Lunar eclipse occurs</span>}
           </div>
@@ -255,8 +254,7 @@ const currentViewDateHref = (date: AletheiaDate) => buildCalendarHref(selection.
                       {item.date.moonPhaseLabel}
                     </span>
                     {item.date.kind === 'month' && item.date.isFestivalDay && <span class="badge badge-warning">Festival {item.date.festivalDayNumber}</span>}
-                    {item.date.kind === 'leapday' && <span class="badge badge-warning">Intercalary Day</span>}
-                    {item.date.kind === 'leapday' && <span class="badge badge-warning">Festival Leap Day</span>}
+                    {item.date.kind === 'leapday' && <span class="badge badge-warning">FLD</span>}
                     {item.eclipses.length > 0 && (
                       <span class="inline-flex items-center gap-1 rounded-full border border-warning/40 bg-base-100 px-2 py-1 text-warning">
                         {item.eclipses.map((eclipse) => (
@@ -324,13 +322,6 @@ const currentViewDateHref = (date: AletheiaDate) => buildCalendarHref(selection.
                       {yearMonth.monthName}
                       <span class="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-ink-700">Open</span>
                     </a>
-                    {yearMonth.leapDayPlacement && yearMonth.leapDayPlacement.anchorMonthIndex === yearMonth.monthIndex && (
-                      <div class="mt-2 flex flex-wrap gap-2">
-                        <span class="badge badge-warning">Festival Leap Day</span>
-                        <span class="badge badge-warning">Intercalary Day</span>
-                        <span class="badge badge-outline">{yearMonth.leapDayPlacement.leapDay.weekday}</span>
-                      </div>
-                    )}
                     {yearMonth.eclipseSummary.eclipseCount > 0 && (
                       <div class="mt-2 flex flex-wrap gap-2">
                         {yearMonth.eclipseSummary.solarCount > 0 && <span class="badge badge-outline gap-1"><EclipseMarkerIcon kind="solar" size={12} />{yearMonth.eclipseSummary.solarCount}</span>}
