@@ -391,7 +391,12 @@ Display:
 Optional follow-on:
 
 - stronger selection model for day/week/month/year
+- compact top panels that stay at current size or smaller, including removal of labels like `Reference Surface` and `Selected Date`
+- slightly smaller selected-title treatment where needed to preserve compactness
+- removal of redundant `Month View`, `Week View`, and `Year View` headings when context already shows the active view
 - explicit secondary open/go-to actions distinct from primary selection
+- overflow handled through an explicit modal/detail action rather than enlarging the summary panel
+- removal of the always-visible bottom day-detail panel in favor of compact summary plus modal/detail and agenda views
 - month agenda mode
 - week agenda mode
 - year agenda mode

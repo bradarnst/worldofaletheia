@@ -8,27 +8,30 @@ import {
 
 interface Props {
   day: CalendarDayData;
+  closeHref?: string;
+  previousHref?: string;
+  nextHref?: string;
 }
 
-const { day } = Astro.props;
+const {
+  day,
+  closeHref,
+  previousHref,
+  nextHref,
+} = Astro.props;
 ---
 
-<section class="card border border-base-300 bg-base-100 shadow-sm">
+<section id="calendar-agenda" class="card border border-base-300 bg-base-100 shadow-sm">
   <div class="card-body gap-5">
     <div class="flex flex-wrap items-start justify-between gap-4">
       <div>
-        <p class="text-sm font-semibold uppercase tracking-[0.24em] text-ink-700">Day Detail</p>
-        <h2 class="mt-2 text-2xl font-bold text-ink-950">{day.date.kind === 'month' ? `${day.date.weekday}, ${day.date.monthName} ${day.date.day}, ${day.date.year}` : `${day.date.weekday}, Leap Day, ${day.date.year}`}</h2>
+        <h2 class="text-xl font-semibold text-ink-950">{day.date.kind === 'month' ? `${day.date.weekday}, ${day.date.monthName} ${day.date.day}, ${day.date.year}` : `${day.date.weekday}, Leap Day, ${day.date.year}`}</h2>
+        <p class="mt-1 text-sm text-ink-700">Full agenda for the selected day.</p>
       </div>
-      <div class="flex flex-wrap gap-2 text-sm">
-        <span class="badge badge-outline gap-2">
-          <MoonPhaseIcon label={day.date.moonPhaseLabel} size={14} />
-          {day.date.moonPhaseLabel}
-        </span>
-        {day.date.kind === 'leapday' && <span class="badge badge-warning">FLD</span>}
-        {day.date.kind === 'month' && day.date.isFestivalDay && (
-          <span class="badge badge-warning">Festival Day {day.date.festivalDayNumber}</span>
-        )}
+      <div class="flex flex-wrap items-center gap-2">
+        {previousHref && <a href={previousHref} class="btn btn-sm btn-outline">Previous day</a>}
+        {nextHref && <a href={nextHref} class="btn btn-sm btn-outline">Next day</a>}
+        {closeHref && <a href={closeHref} class="btn btn-sm btn-outline">Hide agenda</a>}
       </div>
     </div>
 

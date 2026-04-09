@@ -55,7 +55,13 @@ Deliver:
 
 Deliver:
 - stronger selection model across day/week/month/year surfaces
+- compact summary panels that stay at their current size or smaller
+- tighter top-panel layout with removal of superfluous labels such as `Reference Surface` and `Selected Date`
+- modestly smaller selected-title treatment where needed
+- removal of redundant view headings such as `Month View`, `Week View`, and `Year View` when the active state is already clear
 - explicit secondary navigation actions for opening deeper detail
+- overflow handled through an explicit modal/detail action rather than panel growth or internal scrolling as the primary strategy
+- removal of the always-visible bottom day-detail panel in favor of the compact top summary plus modal/detail and agenda views
 - separate agenda views for day, week, month, and year
 
 ### Step 6 - Deferred non-calendar work
@@ -80,6 +86,11 @@ Remote parity automation remains intentionally delayed and is not part of this h
 14. Selected-date detail may state that a solar or lunar eclipse occurs on that date, while week/month/year surfaces may use compact summary text such as counts or occurrence notices.
 15. Until path/coverage work lands, calendar wording must stay location-neutral: `solar eclipse occurs` / `lunar eclipse occurs`, not `visible here` or `total here`.
 16. Eclipse geographic path/coverage is explicitly out of scope for this tranche.
+17. Step 5 summary panels should remain at their current size or smaller; they should not become dominant layout regions.
+18. When selected content exceeds the compact panel footprint, use an explicit modal/detail action rather than nested scrolling as the primary solution.
+19. Step 5 should remove superfluous meta labels such as `Reference Surface` and `Selected Date` where the surrounding card structure already communicates context.
+20. Step 5 should remove redundant `Month View`, `Week View`, and `Year View` headings when the current view is already obvious from the controls and layout.
+21. The always-visible bottom day-detail panel should be removed; compact top-of-page summary plus modal/detail and agenda views become the preferred detail pattern.
 
 ## High-Level Design
 

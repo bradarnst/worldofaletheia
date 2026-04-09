@@ -1,0 +1,121 @@
+---
+interface AgendaBadge {
+  label: string;
+  tone?: 'default' | 'warning';
+}
+
+interface AgendaEntry {
+  title: string;
+  href?: string;
+  meta?: string;
+  excerpt?: string;
+  badges?: AgendaBadge[];
+}
+
+interface AgendaGroup {
+  title: string;
+  subtitle?: string;
+  badges?: AgendaBadge[];
+  entries: AgendaEntry[];
+  emptyText?: string;
+}
+
+interface Props {
+  title: string;
+  description?: string;
+  groups: AgendaGroup[];
+  emptyMessage: string;
+  closeHref?: string;
+  previousHref?: string;
+  previousLabel?: string;
+  nextHref?: string;
+  nextLabel?: string;
+}
+
+const {
+  title,
+  description,
+  groups,
+  emptyMessage,
+  closeHref,
+  previousHref,
+  previousLabel = 'Previous',
+  nextHref,
+  nextLabel = 'Next',
+} = Astro.props;
+---
+
+<section id="calendar-agenda" class="card border border-base-300 bg-base-100 shadow-sm">
+  <div class="card-body gap-5">
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div class="space-y-1">
+        <h2 class="text-xl font-semibold text-ink-950">{title}</h2>
+        {description && <p class="text-sm text-ink-700">{description}</p>}
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        {previousHref && <a href={previousHref} class="btn btn-sm btn-outline">{previousLabel}</a>}
+        {nextHref && <a href={nextHref} class="btn btn-sm btn-outline">{nextLabel}</a>}
+        {closeHref && <a href={closeHref} class="btn btn-sm btn-outline">Hide agenda</a>}
+      </div>
+    </div>
+
+    {groups.length > 0 ? (
+      <div class="space-y-4">
+        {groups.map((group) => (
+          <section class="rounded-2xl border border-base-300 bg-base-100 p-4 shadow-sm">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h3 class="text-lg font-semibold text-ink-950">{group.title}</h3>
+                {group.subtitle && <p class="text-sm text-ink-700">{group.subtitle}</p>}
+              </div>
+              {group.badges && group.badges.length > 0 && (
+                <div class="flex flex-wrap gap-2">
+                  {group.badges.map((badge) => (
+                    <span class:list={['badge', badge.tone === 'warning' ? 'badge-warning' : 'badge-outline']}>
+                      {badge.label}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {group.entries.length > 0 ? (
+              <div class="mt-4 space-y-3">
+                {group.entries.map((entry) => (
+                  <article class="rounded-xl border border-base-300 bg-base-200/60 p-4">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        {entry.href ? (
+                          <a href={entry.href} class="font-semibold text-ink-950 transition-colors hover:text-primary">{entry.title}</a>
+                        ) : (
+                          <p class="font-semibold text-ink-950">{entry.title}</p>
+                        )}
+                        {entry.meta && <p class="text-sm text-ink-700">{entry.meta}</p>}
+                      </div>
+                      {entry.badges && entry.badges.length > 0 && (
+                        <div class="flex flex-wrap gap-2">
+                          {entry.badges.map((badge) => (
+                            <span class:list={['badge', badge.tone === 'warning' ? 'badge-warning' : 'badge-outline']}>
+                              {badge.label}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {entry.excerpt && <p class="mt-3 text-sm text-ink-800">{entry.excerpt}</p>}
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p class="mt-4 text-sm text-ink-700">{group.emptyText ?? 'No agenda items.'}</p>
+            )}
+          </section>
+        ))}
+      </div>
+    ) : (
+      <div class="rounded-xl border border-dashed border-base-300 bg-base-200/40 p-6 text-sm text-ink-700">
+        {emptyMessage}
+      </div>
+    )}
+  </div>
+</section>

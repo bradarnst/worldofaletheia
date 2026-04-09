@@ -1,5 +1,6 @@
 ---
 import { getCollection } from 'astro:content';
+import CalendarAgendaList from '@components/calendar/CalendarAgendaList.astro';
 import CalendarDayAgenda from '@components/calendar/CalendarDayAgenda.astro';
 import CalendarEclipseLegend from '@components/calendar/CalendarEclipseLegend.astro';
 import EclipseMarkerIcon from '@components/calendar/EclipseMarkerIcon.astro';
@@ -27,9 +28,33 @@ import {
   shiftAletheiaDate,
   type AletheiaDate,
   type CalendarView,
+  type EnrichedAletheiaDate,
 } from '~/lib/aletheia-calendar';
 
-function buildCalendarHref(view: CalendarView, date: AletheiaDate): string {
+type AgendaMode = 'day' | 'week' | 'month' | 'year';
+
+interface AgendaBadge {
+  label: string;
+  tone?: 'default' | 'warning';
+}
+
+interface AgendaEntry {
+  title: string;
+  href?: string;
+  meta?: string;
+  excerpt?: string;
+  badges?: AgendaBadge[];
+}
+
+interface AgendaGroup {
+  title: string;
+  subtitle?: string;
+  badges?: AgendaBadge[];
+  entries: AgendaEntry[];
+  emptyText?: string;
+}
+
+function buildCalendarHref(view: CalendarView, date: AletheiaDate, options: { agenda?: AgendaMode | null } = {}): string {
   const searchParams = new URLSearchParams({
     view,
     year: String(date.year),
@@ -41,6 +66,10 @@ function buildCalendarHref(view: CalendarView, date: AletheiaDate): string {
     searchParams.set('date', formatAletheiaDate(date));
   } else {
     searchParams.set('date', formatAletheiaDate(date));
+  }
+
+  if (options.agenda) {
+    searchParams.set('agenda', options.agenda);
   }
 
   return `/references/calendar?${searchParams.toString()}`;
@@ -70,6 +99,12 @@ const eventProjectionMap = buildEventProjectionMap(loreEvents);
 
 const selection = resolveCalendarSelection(Astro.url.searchParams);
 const selectedDate = selection.date;
+const agendaParam = Astro.url.searchParams.get('agenda');
+const agendaMode: AgendaMode | null = agendaParam === 'day' || agendaParam === 'week' || agendaParam === 'month' || agendaParam === 'year'
+  ? agendaParam
+  : null;
+const isAgendaMode = agendaMode !== null;
+const activeGranularity = isAgendaMode ? agendaMode : selection.view;
 const eclipseProjectionMap = buildEclipseProjectionMapForYearRange(selectedDate.year - 1, selectedDate.year + 1);
 const selectedDayData = buildCalendarDayData(selectedDate, eventProjectionMap, eclipseProjectionMap);
 const selectedEnrichedDate = selectedDayData.date;
@@ -83,56 +118,163 @@ const yearSolarCount = yearData.reduce((total, month) => total + month.eclipseSu
 const yearLunarCount = yearData.reduce((total, month) => total + month.eclipseSummary.lunarCount, 0);
 
 const previousHref = selection.view === 'week'
-  ? buildCalendarHref('week', getWeekNavigationDate(selectedDate, -1))
+  ? buildCalendarHref('week', getWeekNavigationDate(selectedDate, -1), { agenda: agendaMode })
   : selection.view === 'year'
-    ? buildCalendarHref('year', getYearNavigationDate(selectedDate, -1))
-    : buildCalendarHref('month', getPreviousMonthDate(selectedDate));
+    ? buildCalendarHref('year', getYearNavigationDate(selectedDate, -1), { agenda: agendaMode })
+    : buildCalendarHref('month', getPreviousMonthDate(selectedDate), { agenda: agendaMode });
 const nextHref = selection.view === 'week'
-  ? buildCalendarHref('week', getWeekNavigationDate(selectedDate, 1))
+  ? buildCalendarHref('week', getWeekNavigationDate(selectedDate, 1), { agenda: agendaMode })
   : selection.view === 'year'
-    ? buildCalendarHref('year', getYearNavigationDate(selectedDate, 1))
-    : buildCalendarHref('month', getNextMonthDate(selectedDate));
+    ? buildCalendarHref('year', getYearNavigationDate(selectedDate, 1), { agenda: agendaMode })
+    : buildCalendarHref('month', getNextMonthDate(selectedDate), { agenda: agendaMode });
 
 const monthSelectValue = selectedDate.kind === 'month' ? String(selectedDate.monthIndex) : String(monthReferenceDate.monthIndex);
 const dayInputValue = selectedDate.kind === 'month' ? String(selectedDate.day) : String(monthReferenceDate.day);
-const currentViewDateHref = (date: AletheiaDate) => buildCalendarHref(selection.view, date);
+const currentViewDateHref = (date: AletheiaDate) => buildCalendarHref(selection.view, date, { agenda: agendaMode });
+const buildAgendaHref = (mode: AgendaMode) => `${buildCalendarHref(selection.view, selectedDate, { agenda: mode })}#calendar-agenda`;
+const clearAgendaHref = buildCalendarHref(selection.view, selectedDate);
+const agendaDefaultMode: AgendaMode = agendaMode ?? selection.view;
+const agendaToggleHref = buildAgendaHref(agendaDefaultMode);
+const dayAgendaPreviousHref = `${buildCalendarHref(selection.view, shiftAletheiaDate(selectedDate, -1), { agenda: 'day' })}#calendar-agenda`;
+const dayAgendaNextHref = `${buildCalendarHref(selection.view, shiftAletheiaDate(selectedDate, 1), { agenda: 'day' })}#calendar-agenda`;
+const weekAgendaPreviousHref = `${buildCalendarHref('week', getWeekNavigationDate(selectedDate, -1), { agenda: 'week' })}#calendar-agenda`;
+const weekAgendaNextHref = `${buildCalendarHref('week', getWeekNavigationDate(selectedDate, 1), { agenda: 'week' })}#calendar-agenda`;
+const monthAgendaPreviousHref = `${buildCalendarHref('month', getPreviousMonthDate(selectedDate), { agenda: 'month' })}#calendar-agenda`;
+const monthAgendaNextHref = `${buildCalendarHref('month', getNextMonthDate(selectedDate), { agenda: 'month' })}#calendar-agenda`;
+const yearAgendaPreviousHref = `${buildCalendarHref('year', getYearNavigationDate(selectedDate, -1), { agenda: 'year' })}#calendar-agenda`;
+const yearAgendaNextHref = `${buildCalendarHref('year', getYearNavigationDate(selectedDate, 1), { agenda: 'year' })}#calendar-agenda`;
+const calendarModeOptions = [
+  { value: 'month', label: 'Month' },
+  { value: 'week', label: 'Week' },
+  { value: 'year', label: 'Year' },
+] as const;
+const agendaModeOptions = [
+  { value: 'day', label: 'Day' },
+  { value: 'week', label: 'Week' },
+  { value: 'month', label: 'Month' },
+  { value: 'year', label: 'Year' },
+] as const;
+
+function getDateBadges(date: EnrichedAletheiaDate, eclipseCount: number): AgendaBadge[] {
+  const badges: AgendaBadge[] = [];
+
+  if (date.kind === 'leapday') {
+    badges.push({ label: 'FLD', tone: 'warning' });
+  }
+
+  if (date.kind === 'month' && date.isFestivalDay) {
+    badges.push({ label: `F${date.festivalDayNumber}`, tone: 'warning' });
+  }
+
+  if (eclipseCount > 0) {
+    badges.push({ label: `${eclipseCount} eclipse${eclipseCount === 1 ? '' : 's'}` });
+  }
+
+  return badges;
+}
+
+const weekAgendaGroups: AgendaGroup[] = weekData.items.map((item) => ({
+  title: formatAletheiaDateLabel(item.date),
+  badges: getDateBadges(item.date, item.eclipses.length),
+  entries: item.events.map((event) => ({
+    title: event.title,
+    href: event.href,
+    meta: event.isSingleDay ? formatAletheiaDateLabel(event.startDate) : `${formatAletheiaDateLabel(event.startDate)} to ${formatAletheiaDateLabel(event.endDate)}`,
+    excerpt: event.excerpt,
+    badges: event.isSingleDay ? [] : [{ label: `${event.durationDays} days` }],
+  })),
+  emptyText: item.eclipses.length > 0 ? 'No projected lore events on this day.' : 'No projected lore events on this day.',
+}));
+
+const monthAgendaGroups: AgendaGroup[] = monthData.slots
+  .filter((slot): slot is Exclude<typeof monthData.slots[number], { kind: 'empty' }> => slot.kind !== 'empty')
+  .filter((slot) => slot.events.length > 0 || slot.eclipses.length > 0 || slot.date.absDay === selectedEnrichedDate.absDay)
+  .map((slot) => ({
+    title: formatAletheiaDateLabel(slot.date),
+    badges: getDateBadges(slot.date, slot.eclipses.length),
+    entries: slot.events.map((event) => ({
+      title: event.title,
+      href: event.href,
+      meta: event.isSingleDay ? formatAletheiaDateLabel(event.startDate) : `${formatAletheiaDateLabel(event.startDate)} to ${formatAletheiaDateLabel(event.endDate)}`,
+      excerpt: event.excerpt,
+      badges: event.isSingleDay ? [] : [{ label: `${event.durationDays} days` }],
+    })),
+    emptyText: slot.eclipses.length > 0 ? 'No projected lore events on this date.' : 'No projected lore events on this date.',
+  }));
+
+const yearAgendaGroups: AgendaGroup[] = yearData
+  .filter((month) => month.eventCount > 0 || month.eclipseSummary.eclipseCount > 0 || month.leapDayPlacement !== null)
+  .map((month) => ({
+    title: `${month.monthName} ${month.year}`,
+    badges: [
+      ...(month.leapDayPlacement ? [{ label: 'FLD', tone: 'warning' as const }] : []),
+      ...(month.eclipseSummary.eclipseCount > 0 ? [{ label: `${month.eclipseSummary.eclipseCount} eclipse${month.eclipseSummary.eclipseCount === 1 ? '' : 's'}` }] : []),
+    ],
+    entries: month.slots
+      .filter((slot): slot is Exclude<typeof month.slots[number], { kind: 'empty' }> => slot.kind !== 'empty')
+      .filter((slot) => slot.events.length > 0 || slot.eclipses.length > 0 || slot.kind === 'leapday')
+      .map((slot) => ({
+        title: formatAletheiaDateLabel(slot.date),
+        href: buildCalendarHref('month', slot.date, { agenda: 'day' }),
+        meta: slot.events.length > 0 ? `${slot.events.length} event${slot.events.length === 1 ? '' : 's'}` : 'No projected lore events',
+        badges: getDateBadges(slot.date, slot.eclipses.length),
+      })),
+    emptyText: 'No notable dates in this month.',
+  }));
 ---
 
 <ReferenceLayout title="Aletheia Calendar - Reference" description="View the civic calendar of Aletheia by month, week, or year.">
   <section class="space-y-6">
-    <div class="grid gap-6 xl:grid-cols-[minmax(0,1.8fr)_minmax(320px,1fr)]">
+    <div class="grid gap-4 xl:grid-cols-[minmax(0,1.8fr)_minmax(320px,1fr)]">
       <div class="card bg-base-100 shadow-sm border border-base-300">
-        <div class="card-body gap-5">
-          <div class="space-y-2">
-            <p class="text-sm font-semibold uppercase tracking-[0.24em] text-ink-700">Reference Surface</p>
-            <h2 class="text-2xl font-bold text-ink-950">Calendar Views</h2>
-            <p class="text-sm text-ink-800 md:text-base">
-              The civic calendar tracks twelve 31-day months, a six-day week, a weekday-bearing Leap Day, and dated lore events projected from Canon.
-            </p>
-          </div>
+        <div class="card-body gap-3">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div class="space-y-1">
+              <h2 class="text-xl font-semibold text-ink-950">Calendar</h2>
+              <p class="text-sm text-ink-800 md:text-base">
+                Twelve 31-day months, a six-day week, Leap Day, projected lore events, and eclipse markers.
+              </p>
+            </div>
 
-          <div class="flex flex-wrap items-center gap-3">
-            <a href={buildCalendarHref('month', selectedDate)} class:list={['btn btn-sm', selection.view === 'month' ? 'btn-primary' : 'btn-outline']}>
-              Month
-            </a>
-            <a href={buildCalendarHref('week', selectedDate)} class:list={['btn btn-sm', selection.view === 'week' ? 'btn-primary' : 'btn-outline']}>
-              Week
-            </a>
-            <a href={buildCalendarHref('year', selectedDate)} class:list={['btn btn-sm', selection.view === 'year' ? 'btn-primary' : 'btn-outline']}>
-              Year
-            </a>
-            <a href={buildTimelineHref(selectedDate)} class="btn btn-sm btn-outline">Timeline from here</a>
+            <div class="flex items-center gap-2">
+              <div class="join" aria-label="Display mode">
+                <a
+                  href={clearAgendaHref}
+                  class:list={['btn btn-xs join-item js-calendar-display-toggle', !isAgendaMode ? 'btn-primary' : 'btn-outline']}
+                  title="Show calendar view"
+                  aria-label="Show calendar view"
+                  data-display-mode="calendar"
+                >
+                  Cal
+                </a>
+                <a
+                  href={agendaToggleHref}
+                  class:list={['btn btn-xs join-item js-calendar-display-toggle', isAgendaMode ? 'btn-primary' : 'btn-outline']}
+                  title="Show agenda view"
+                  aria-label="Show agenda view"
+                  data-display-mode="agenda"
+                >
+                  Ag
+                </a>
+              </div>
+              <a href={buildTimelineHref(selectedDate)} class="btn btn-sm btn-outline">Timeline</a>
+            </div>
           </div>
 
           <CalendarEclipseLegend />
 
-          <form method="get" class="grid gap-4 md:grid-cols-2 xl:grid-cols-[auto_minmax(9rem,1fr)_minmax(13rem,1fr)_auto_auto] xl:items-end">
+          <form method="get" class="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(7rem,9rem)_minmax(7rem,1fr)_minmax(10rem,1fr)_auto_auto] xl:items-end js-calendar-control-form" data-display-mode={isAgendaMode ? 'agenda' : 'calendar'} data-active-granularity={activeGranularity}>
+            {isAgendaMode && <input type="hidden" name="view" value={agendaMode === 'day' ? 'month' : agendaMode} class="js-calendar-view-input" />}
             <label class="form-control gap-2">
-              <span class="label-text font-semibold text-ink-800">View</span>
-              <select name="view" class="select select-bordered w-full">
-                <option value="month" selected={selection.view === 'month'}>Month</option>
-                <option value="week" selected={selection.view === 'week'}>Week</option>
-                <option value="year" selected={selection.view === 'year'}>Year</option>
+              <span class="label-text font-semibold text-ink-800">{isAgendaMode ? 'Agenda' : 'View'}</span>
+              <select
+                name={isAgendaMode ? 'agenda' : 'view'}
+                class="select select-bordered w-full js-calendar-granularity"
+                data-display-mode={isAgendaMode ? 'agenda' : 'calendar'}
+              >
+                {(isAgendaMode ? agendaModeOptions : calendarModeOptions).map((option) => (
+                  <option value={option.value} selected={activeGranularity === option.value}>{option.label}</option>
+                ))}
               </select>
             </label>
 
@@ -159,19 +301,12 @@ const currentViewDateHref = (date: AletheiaDate) => buildCalendarHref(selection.
 
             <button type="submit" class="btn btn-primary">Go</button>
           </form>
-
-          <p class="text-sm text-ink-700">
-            Direct date URLs also work: <code>1105-Amoris-17</code>, <code>1105-4-17</code>, and <code>1110-Leapday</code> via the <code>date</code> query string.
-          </p>
         </div>
       </div>
 
       <div class="card bg-base-100 shadow-sm border border-base-300">
-        <div class="card-body gap-4">
-          <div>
-            <p class="text-sm font-semibold uppercase tracking-[0.24em] text-ink-700">Selected Date</p>
-            <h2 class="mt-2 text-2xl font-bold text-ink-950">{formatAletheiaDateLabel(selectedEnrichedDate)}</h2>
-          </div>
+        <div class="card-body gap-3">
+          <h2 class="text-lg font-semibold text-ink-950">{formatAletheiaDateLabel(selectedEnrichedDate)}</h2>
 
           <div class="flex flex-wrap gap-2 text-sm">
             <span class="badge badge-outline">{selectedEnrichedDate.weekday}</span>
@@ -186,18 +321,18 @@ const currentViewDateHref = (date: AletheiaDate) => buildCalendarHref(selection.
             {selectedDayData.eclipseSummary.solarCount > 0 && <span class="badge badge-warning gap-1"><EclipseMarkerIcon kind="solar" size={12} />Solar eclipse occurs</span>}
             {selectedDayData.eclipseSummary.lunarCount > 0 && <span class="badge badge-warning gap-1"><EclipseMarkerIcon kind="lunar" size={12} />Lunar eclipse occurs</span>}
           </div>
+
         </div>
       </div>
     </div>
 
-    {selection.view === 'month' && (
+    {!isAgendaMode && selection.view === 'month' && (
       <div class="card bg-base-100 shadow-sm border border-base-300">
         <div class="card-body gap-5">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <a href={previousHref} class="btn btn-sm btn-outline">Previous month</a>
             <div class="text-center">
-              <p class="text-sm font-semibold uppercase tracking-[0.24em] text-ink-700">Month View</p>
-              <h2 class="text-2xl font-bold text-ink-950">{monthData.monthName} {monthData.year}</h2>
+              <h2 class="text-xl font-semibold text-ink-950">{monthData.monthName} {monthData.year}</h2>
             </div>
             <a href={nextHref} class="btn btn-sm btn-outline">Next month</a>
           </div>
@@ -219,14 +354,13 @@ const currentViewDateHref = (date: AletheiaDate) => buildCalendarHref(selection.
       </div>
     )}
 
-    {selection.view === 'week' && (
+    {!isAgendaMode && selection.view === 'week' && (
       <div class="card bg-base-100 shadow-sm border border-base-300">
         <div class="card-body gap-5">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <a href={previousHref} class="btn btn-sm btn-outline">Previous week</a>
             <div class="text-center">
-              <p class="text-sm font-semibold uppercase tracking-[0.24em] text-ink-700">Week View</p>
-              <h2 class="text-2xl font-bold text-ink-950">Six civic days around {formatAletheiaDateLabel(selectedEnrichedDate)}</h2>
+              <h2 class="text-xl font-semibold text-ink-950">Around {formatAletheiaDateLabel(selectedEnrichedDate)}</h2>
             </div>
             <a href={nextHref} class="btn btn-sm btn-outline">Next week</a>
           </div>
@@ -242,7 +376,7 @@ const currentViewDateHref = (date: AletheiaDate) => buildCalendarHref(selection.
                   <div>
                     <p class="text-xs font-semibold uppercase tracking-[0.2em] text-ink-700">{item.date.weekday}</p>
                     <h3 class="mt-1 text-lg font-bold text-ink-950">
-                      <a href={buildCalendarHref('week', item.date)} class="transition-colors hover:text-primary">
+                      <a href={buildCalendarHref('week', item.date, { agenda: agendaMode })} class="transition-colors hover:text-primary">
                         {item.date.kind === 'month' ? `${item.date.monthName} ${item.date.day}` : 'Leap Day'}
                       </a>
                     </h3>
@@ -289,14 +423,13 @@ const currentViewDateHref = (date: AletheiaDate) => buildCalendarHref(selection.
       </div>
     )}
 
-    {selection.view === 'year' && (
+    {!isAgendaMode && selection.view === 'year' && (
       <div class="card bg-base-100 shadow-sm border border-base-300">
         <div class="card-body gap-6">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <a href={previousHref} class="btn btn-sm btn-outline">Previous year</a>
             <div class="text-center">
-              <p class="text-sm font-semibold uppercase tracking-[0.24em] text-ink-700">Year View</p>
-              <h2 class="text-2xl font-bold text-ink-950">Year {getYearViewYear(selectedDate)}</h2>
+              <h2 class="text-xl font-semibold text-ink-950">Year {getYearViewYear(selectedDate)}</h2>
             </div>
             <a href={nextHref} class="btn btn-sm btn-outline">Next year</a>
           </div>
@@ -318,7 +451,7 @@ const currentViewDateHref = (date: AletheiaDate) => buildCalendarHref(selection.
               <section class="rounded-2xl border border-base-300 bg-base-100 p-4 shadow-sm">
                 <div class="mb-4 flex items-start justify-between gap-3">
                   <div>
-                    <a href={buildCalendarHref('month', { kind: 'month', year: yearMonth.year, monthIndex: yearMonth.monthIndex, monthName: yearMonth.monthName, day: 1 })} class="inline-flex items-center gap-2 rounded-lg px-2 py-1 -mx-2 text-lg font-semibold text-ink-950 transition-colors hover:bg-base-200 hover:text-primary">
+                    <a href={buildCalendarHref('month', { kind: 'month', year: yearMonth.year, monthIndex: yearMonth.monthIndex, monthName: yearMonth.monthName, day: 1 }, { agenda: agendaMode })} class="inline-flex items-center gap-2 rounded-lg px-2 py-1 -mx-2 text-lg font-semibold text-ink-950 transition-colors hover:bg-base-200 hover:text-primary">
                       {yearMonth.monthName}
                       <span class="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-ink-700">Open</span>
                     </a>
@@ -339,6 +472,151 @@ const currentViewDateHref = (date: AletheiaDate) => buildCalendarHref(selection.
       </div>
     )}
 
-    <CalendarDayAgenda day={selectedDayData} />
+    {agendaMode === 'day' && (
+      <CalendarDayAgenda
+        day={selectedDayData}
+        closeHref={clearAgendaHref}
+        previousHref={dayAgendaPreviousHref}
+        nextHref={dayAgendaNextHref}
+      />
+    )}
+
+    {agendaMode === 'week' && (
+      <CalendarAgendaList
+        title="Week agenda"
+        description="Full event list for the six civic days in the active week."
+        groups={weekAgendaGroups}
+        emptyMessage="No projected lore events fall within this week."
+        closeHref={clearAgendaHref}
+        previousHref={weekAgendaPreviousHref}
+        previousLabel="Previous week"
+        nextHref={weekAgendaNextHref}
+        nextLabel="Next week"
+      />
+    )}
+
+    {agendaMode === 'month' && (
+      <CalendarAgendaList
+        title={`${monthData.monthName} agenda`}
+        description="Full month agenda for selected and notable dates."
+        groups={monthAgendaGroups}
+        emptyMessage="No projected lore events or eclipses fall within this month."
+        closeHref={clearAgendaHref}
+        previousHref={monthAgendaPreviousHref}
+        previousLabel="Previous month"
+        nextHref={monthAgendaNextHref}
+        nextLabel="Next month"
+      />
+    )}
+
+    {agendaMode === 'year' && (
+      <CalendarAgendaList
+        title={`Year ${getYearViewYear(selectedDate)} agenda`}
+        description="Month-by-month summary of notable dates across the active year."
+        groups={yearAgendaGroups}
+        emptyMessage="No projected lore events or eclipses fall within this year."
+        closeHref={clearAgendaHref}
+        previousHref={yearAgendaPreviousHref}
+        previousLabel="Previous year"
+        nextHref={yearAgendaNextHref}
+        nextLabel="Next year"
+      />
+    )}
   </section>
+
+  <script is:inline>
+    (() => {
+      const DISPLAY_KEY = 'aletheia-calendar-display-mode';
+      const CALENDAR_VIEW_KEY = 'aletheia-calendar-view';
+      const AGENDA_VIEW_KEY = 'aletheia-calendar-agenda-view';
+      const allowedCalendarViews = ['month', 'week', 'year'];
+      const allowedAgendaViews = ['day', 'week', 'month', 'year'];
+      const path = window.location.pathname;
+
+      if (path !== '/references/calendar') {
+        return;
+      }
+
+      const url = new URL(window.location.href);
+      const form = document.querySelector('.js-calendar-control-form');
+      if (!(form instanceof HTMLFormElement)) {
+        return;
+      }
+
+      const currentDisplayMode = form.dataset.displayMode === 'agenda' ? 'agenda' : 'calendar';
+      const currentGranularity = form.dataset.activeGranularity || 'month';
+      const granularitySelect = form.querySelector('.js-calendar-granularity');
+      const hiddenViewInput = form.querySelector('.js-calendar-view-input');
+
+      const savePreference = (displayMode, granularity) => {
+        try {
+          localStorage.setItem(DISPLAY_KEY, displayMode);
+          if (displayMode === 'agenda' && allowedAgendaViews.includes(granularity)) {
+            localStorage.setItem(AGENDA_VIEW_KEY, granularity);
+          }
+          if (displayMode === 'calendar' && allowedCalendarViews.includes(granularity)) {
+            localStorage.setItem(CALENDAR_VIEW_KEY, granularity);
+          }
+        } catch {
+          // Ignore storage access issues
+        }
+      };
+
+      savePreference(currentDisplayMode, currentGranularity);
+
+      if (!url.search) {
+        try {
+          const savedDisplay = localStorage.getItem(DISPLAY_KEY);
+          const savedCalendarView = localStorage.getItem(CALENDAR_VIEW_KEY);
+          const savedAgendaView = localStorage.getItem(AGENDA_VIEW_KEY);
+
+          if (savedDisplay === 'agenda') {
+            const agenda = allowedAgendaViews.includes(savedAgendaView || '') ? savedAgendaView : 'month';
+            const view = agenda === 'day' ? 'month' : agenda;
+            url.searchParams.set('view', view);
+            url.searchParams.set('agenda', agenda);
+            window.location.replace(url.toString());
+            return;
+          }
+
+          if (savedDisplay === 'calendar' && allowedCalendarViews.includes(savedCalendarView || '') && savedCalendarView !== 'month') {
+            url.searchParams.set('view', savedCalendarView);
+            window.location.replace(url.toString());
+            return;
+          }
+        } catch {
+          // Ignore storage access issues
+        }
+      }
+
+      document.querySelectorAll('.js-calendar-display-toggle').forEach((link) => {
+        if (!(link instanceof HTMLAnchorElement)) {
+          return;
+        }
+
+        link.addEventListener('click', () => {
+          const displayMode = link.dataset.displayMode === 'agenda' ? 'agenda' : 'calendar';
+          const granularity = displayMode === 'agenda'
+            ? (allowedAgendaViews.includes(currentGranularity) ? currentGranularity : 'month')
+            : (allowedCalendarViews.includes(currentGranularity) ? currentGranularity : 'month');
+          savePreference(displayMode, granularity);
+        });
+      });
+
+      form.addEventListener('submit', () => {
+        if (!(granularitySelect instanceof HTMLSelectElement)) {
+          return;
+        }
+
+        const mode = form.dataset.displayMode === 'agenda' ? 'agenda' : 'calendar';
+        const granularity = granularitySelect.value;
+
+        if (mode === 'agenda' && hiddenViewInput instanceof HTMLInputElement) {
+          hiddenViewInput.value = granularity === 'day' ? 'month' : granularity;
+        }
+
+        savePreference(mode, granularity);
+      });
+    })();
+  </script>
 </ReferenceLayout>
