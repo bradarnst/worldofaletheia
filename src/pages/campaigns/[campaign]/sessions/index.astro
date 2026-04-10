@@ -6,14 +6,14 @@ import {
   canViewCampaignContentAsync,
   resolveCampaignContentVisibility,
 } from '@utils/campaign-access';
+import { extractCampaignSlugFromEntryId } from '@utils/campaign-collections';
 import { createCampaignRequestAccessResolver } from '~/lib/campaign-request-access';
 
 export async function getStaticPaths() {
   const campaignsCollection = await getCollection('campaigns');
 
   return campaignsCollection.map((item) => ({
-    // id format: campaigns/{slug}/Campaign - {slug}
-    params: { campaign: item.id.split('/')[1] ?? item.id },
+    params: { campaign: extractCampaignSlugFromEntryId(item.id) || item.id },
   }));
 }
 
@@ -29,7 +29,7 @@ try {
     getCollection('campaigns'),
     getCollection('sessions'),
   ]);
-  campaignEntry = campaignsCollection.find((entry) => entry.id.split('/')[1] === campaign) ?? null;
+  campaignEntry = campaignsCollection.find((entry) => extractCampaignSlugFromEntryId(entry.id) === campaign) ?? null;
   allSessions = sessionsCollection;
 } catch (error) {
   console.error('campaign.sessions.index_unavailable', {
@@ -44,7 +44,7 @@ if (!campaignEntry && !contentUnavailable) {
 }
 
 const campaignDetail = {
-  slug: campaignEntry?.id.split('/')[1] ?? campaign ?? '',
+  slug: campaignEntry ? extractCampaignSlugFromEntryId(campaignEntry.id) : campaign ?? '',
   title: campaignEntry?.data.title ?? 'Campaign Sessions',
   excerpt: campaignEntry?.data.excerpt,
 };

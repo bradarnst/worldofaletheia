@@ -6,6 +6,7 @@ import {
   canViewCampaignContentAsync,
   resolveCampaignContentVisibility,
 } from '@utils/campaign-access';
+import { extractCampaignSlugFromEntryId } from '@utils/campaign-collections';
 import { createCampaignRequestAccessResolver } from '~/lib/campaign-request-access';
 
 export async function getStaticPaths() {
@@ -45,8 +46,7 @@ try {
   ]);
 
   campaignEntry = campaignsCollection.find((entry) => {
-    // id format: campaigns/{slug}/Campaign - {slug}
-    const campaignSlug = entry.id.split('/')[1];
+    const campaignSlug = extractCampaignSlugFromEntryId(entry.id);
     return campaignSlug === campaign || entry.data.campaign === campaign;
   }) ?? null;
 
@@ -90,7 +90,7 @@ const session = {
 };
 
 const campaignDetail = {
-  slug: campaignEntry?.id.split('/')[1] ?? campaign ?? '',
+  slug: campaignEntry ? extractCampaignSlugFromEntryId(campaignEntry.id) : campaign ?? '',
   title: campaignEntry?.data.title ?? 'Campaign',
 };
 

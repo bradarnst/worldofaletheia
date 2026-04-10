@@ -3,6 +3,7 @@ import { getCollection } from 'astro:content';
 import CampaignsLayout from '@layouts/CampaignsLayout.astro';
 import TagCloud from '@components/TagCloud.astro';
 import { getAllCampaignFamilyEntries } from '@utils/campaign-content';
+import { extractCampaignSlugFromEntryId } from '@utils/campaign-collections';
 import {
   resolveCampaignContentVisibility,
   type CampaignVisibility,
@@ -22,8 +23,7 @@ const [campaigns, sessions, familyEntries] = await Promise.all([
 
 const campaignVisibilityBySlug = new Map<string, CampaignVisibility>();
 for (const campaign of campaigns) {
-  const parts = campaign.id.split('/');
-  const slug = parts[1] ?? campaign.id;
+  const slug = extractCampaignSlugFromEntryId(campaign.id) || campaign.id;
   campaignVisibilityBySlug.set(slug, campaign.data.visibility);
 }
 
@@ -35,8 +35,7 @@ for (const session of sessions) {
 
 const campaignRecordCounts = new Map<string, CampaignRecordCounter>();
 for (const campaign of campaigns) {
-  const parts = campaign.id.split('/');
-  const slug = parts[1] ?? campaign.id;
+  const slug = extractCampaignSlugFromEntryId(campaign.id) || campaign.id;
   campaignRecordCounts.set(slug, {
     total: 0,
     publicCount: 0,
@@ -71,9 +70,7 @@ for (const entry of [...sessions, ...familyEntries]) {
 }
 
 const campaignSummaries = campaigns.map((entry) => {
-  const parts = entry.id.split('/');
-  // id format: campaigns/{slug}/Campaign - {slug}.md -> ['campaigns', slug, 'Campaign - slug']
-  const slug = parts[1] ?? entry.id;
+  const slug = extractCampaignSlugFromEntryId(entry.id) || entry.id;
   const recordCounts = campaignRecordCounts.get(slug) ?? {
     total: 0,
     publicCount: 0,

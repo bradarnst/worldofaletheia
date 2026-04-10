@@ -120,9 +120,9 @@ export function isCampaignDomainCollection(collection: string): collection is Ca
 }
 
 export function extractCampaignSlugFromEntryId(id: string): string {
-  // id format: campaigns/{slug}/Campaign - {slug} or campaigns/{slug}/{family}/{slug}
+  // Support both legacy ids like campaigns/{slug}/... and current ids like {slug}/index or {slug}/{family}/{slug}.
   const parts = id.split('/');
-  return parts[1] ?? '';
+  return parts[0] === 'campaigns' ? (parts[1] ?? '') : (parts[0] ?? '');
 }
 
 export function extractCampaignFamilySlugFromEntryId(id: string): string {
