@@ -430,11 +430,14 @@ export class ContentIndexRepo {
     filters: ContentIndexFilters,
   ): Promise<ContentIndexFacetCount[]> {
     const where = buildWhereClause(filters);
+    // Qualify column references to avoid ambiguity in JOINs
+    const qualify = (col: string) => `content_index.${col}`;
     const query =
       facet === 'tag'
         ? `
-            SELECT tag.value AS value, COUNT(DISTINCT content_index.collection || ':' || content_index.id) AS total_count
-            FROM content_index, json_each(content_index.tags_json) AS tag
+            SELECT tag.value AS value, COUNT(DISTINCT ${qualify('collection')} || ':' || ${qualify('id')}) AS total_count
+            FROM content_index
+            INNER JOIN json_each(content_index.tags_json) AS tag
             WHERE ${where.sql}
               AND tag.value IS NOT NULL
               AND tag.value <> ''
@@ -442,13 +445,13 @@ export class ContentIndexRepo {
             ORDER BY tag.value ASC
           `
         : `
-            SELECT ${facet} AS value, COUNT(*) AS total_count
+            SELECT ${qualify(facet)} AS value, COUNT(*) AS total_count
             FROM content_index
             WHERE ${where.sql}
-              AND ${facet} IS NOT NULL
-              AND ${facet} <> ''
-            GROUP BY ${facet}
-            ORDER BY ${facet} ASC
+              AND ${qualify(facet)} IS NOT NULL
+              AND ${qualify(facet)} <> ''
+            GROUP BY ${qualify(facet)}
+            ORDER BY ${qualify(facet)} ASC
           `;
     const result = await this.db.prepare(query).bind(...where.values).all<FacetRow>();
     return result.results

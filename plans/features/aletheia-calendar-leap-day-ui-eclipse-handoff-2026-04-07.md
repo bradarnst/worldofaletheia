@@ -2,7 +2,8 @@
 
 ## Status
 
-- Status: Ready for implementation handoff
+- Status: Steps 1-5 implemented; retained as the settled calendar handoff
+- Priority tracking: use `.kilo/plans/1775545082688-jolly-meadow.md`
 - Owner decision: Brad selected the revised civic Leap Day rule on 2026-04-07
 - Related ADR: `plans/adrs/0017-civic-leap-day-weekday-participation-policy.md`
 
@@ -12,11 +13,11 @@ This handoff rebases the active calendar workstream around one newly locked rule
 
 - Leap Day remains outside month numbering, but it does participate in the weekday cycle.
 
-This handoff now assumes ADR-0018 route migration into the Reference domain. The Leap Day rule must land after the Reference rehome begins but before richer calendar UI or eclipse enrichment, because it changes the core date/weekday model those features depend on.
+This handoff now assumes ADR-0018 route migration into the Reference domain. The Leap Day rule landed after the Reference rehome began and before richer calendar UI and eclipse enrichment, because it changes the core date/weekday model those features depend on.
 
 ## Ordered Delivery Sequence
 
-### Step 1 - Reference domain and route rehome
+### Step 1 - Reference domain and route rehome (completed)
 
 Required first.
 
@@ -26,14 +27,14 @@ Deliver:
 - route move from `/timeline` to `/references/timeline`
 - updated internal links, sitemap, canonicals, and tests
 
-### Step 2 - Canon and engine rebase for Leap Day
+### Step 2 - Canon and engine rebase for Leap Day (completed)
 
 Deliver:
 - revised calendar arithmetic and weekday invariants
 - updated docs/contracts/tests
 - visible Leap Day placement metadata for UI consumers
 
-### Step 3 - Calendar UI/UX uplift
+### Step 3 - Calendar UI/UX uplift (completed)
 
 Deliver:
 - explicit previous/next controls for month/week/year navigation
@@ -42,7 +43,7 @@ Deliver:
 - events shown by density: light in month, richer in week, full in day detail
 - visible Leap Day treatment in month, week, and year views
 
-### Step 4 - Eclipse schedule enrichment
+### Step 4 - Eclipse schedule enrichment (completed)
 
 Deliver:
 - deterministic eclipse-season and eclipse-date computation
@@ -51,7 +52,7 @@ Deliver:
 - compact eclipse UI with always-on markers, a small legend, and selected-date/view summaries
 - no map path/coverage logic yet
 
-### Step 5 - Calendar interaction and agenda modes (future tranche)
+### Step 5 - Calendar interaction and agenda modes (completed)
 
 Deliver:
 - stronger selection model across day/week/month/year surfaces
@@ -75,7 +76,7 @@ Remote parity automation remains intentionally delayed and is not part of this h
 3. Week view must treat Leap Day as a real week item, not a gap or side note.
 4. Month view should render Leap Day as a distinct labeled interstitial marker anchored between the adjacent dated cells that bracket it; do not hide it in a legend, paint only half-cells, or invent a fake `day 32`.
 5. Year view should annotate the containing month with an explicit Leap Day chip/summary rather than forcing Leap Day into the mini-grid as a numbered date.
-6. Day detail is required; broader agenda modes are a later follow-on interaction step.
+6. Day detail is required, and day/week/month/year agenda modes are part of the settled interaction model.
 7. Moon phases should use small inline SVG icons, not just text abbreviations.
 8. Do not surface `Monthless` as a visible UI label; keep Leap Day specialness legible through placement and intercalary/festival language instead.
 9. Remove explanatory helper copy where the calendar view itself should communicate the model clearly.
@@ -86,11 +87,11 @@ Remote parity automation remains intentionally delayed and is not part of this h
 14. Selected-date detail may state that a solar or lunar eclipse occurs on that date, while week/month/year surfaces may use compact summary text such as counts or occurrence notices.
 15. Until path/coverage work lands, calendar wording must stay location-neutral: `solar eclipse occurs` / `lunar eclipse occurs`, not `visible here` or `total here`.
 16. Eclipse geographic path/coverage is explicitly out of scope for this tranche.
-17. Step 5 summary panels should remain at their current size or smaller; they should not become dominant layout regions.
-18. When selected content exceeds the compact panel footprint, use an explicit modal/detail action rather than nested scrolling as the primary solution.
-19. Step 5 should remove superfluous meta labels such as `Reference Surface` and `Selected Date` where the surrounding card structure already communicates context.
-20. Step 5 should remove redundant `Month View`, `Week View`, and `Year View` headings when the current view is already obvious from the controls and layout.
-21. The always-visible bottom day-detail panel should be removed; compact top-of-page summary plus modal/detail and agenda views become the preferred detail pattern.
+17. Summary panels remain at their current size or smaller; they do not become dominant layout regions.
+18. When selected content exceeds the compact panel footprint, an explicit modal/detail action is the primary solution instead of nested scrolling.
+19. Superfluous meta labels such as `Reference Surface` and `Selected Date` are removed where the surrounding card structure already communicates context.
+20. Redundant `Month View`, `Week View`, and `Year View` headings are removed when the current view is already obvious from the controls and layout.
+21. The always-visible bottom day-detail panel is removed; compact top-of-page summary plus modal/detail and agenda views are the preferred detail pattern.
 
 ## High-Level Design
 
@@ -144,7 +145,7 @@ Recommended payload shape changes:
   - festival summary
   - leap-day flag if applicable
   - projected lore events
-  - future eclipse list
+  - computed eclipse list
 - optional follow-on endpoint if scope allows: `/api/calendar/date-shift?date=...&days=...`
 
 ### 3. Calendar UI/UX changes
@@ -197,7 +198,7 @@ This keeps lore content visible without overloading the month grid.
 
 ### 5. Eclipse tranche design
 
-Primary implementation surface later:
+Primary implementation surface:
 - `src/lib/aletheia-calendar.ts`
 - `src/lib/aletheia-calendar-api.ts`
 - `/references/calendar` UI detail components
@@ -261,7 +262,7 @@ Explicitly out of scope:
 - place-aware eclipse filtering
 - separate eclipse display toggles in the first tranche
 
-## Recommended Implementation Order
+## Implemented Order
 
 1. Update docs/contracts and lock test expectations for the revised Leap Day rule.
 2. Change core engine weekday logic and Leap Day enrichment.

@@ -4,6 +4,21 @@ import { glob } from 'astro/loaders';
 import { createR2MarkdownCollectionLoader } from './lib/r2-content-loader.mjs';
 import { resolveCollectionSource } from './lib/content-source-mode';
 import { parseAletheiaDate, toAbsDay } from './lib/aletheia-calendar';
+import {
+  LORE_TYPES,
+  PLACES_TYPES,
+  SENTIENTS_TYPES,
+  BESTIARY_TYPES,
+  FLORA_TYPES,
+  FACTIONS_TYPES,
+  SYSTEMS_TYPES,
+  META_TYPES,
+  SESSIONS_TYPES,
+  CAMPAIGN_CHARACTERS_TYPES,
+  CAMPAIGN_SCENES_TYPES,
+  CAMPAIGN_ADVENTURES_TYPES,
+  CAMPAIGN_HOOKS_TYPES,
+} from './lib/content-types';
 
 function createMarkdownLoader(collection: string, pattern: string, base: string) {
   if (resolveCollectionSource(collection) === 'cloud') {
@@ -48,13 +63,9 @@ const baseSchema = z.object({
   })).optional(),
 });
 
-const sharedLoreTypes = ['cosmology', 'religion', 'economy', 'history', 'geography', 'food_and_drink', 'culture', 'language', 'warfare', 'domestication', 'magic', 'technology', 'structure', 'other'] as const;
-const loreTypes = [...sharedLoreTypes, 'event'] as const;
-const metaTypes = ['info', 'technical', 'content', 'reference', 'governance'] as const;
-
 const loreSchema = baseSchema.extend({
   title: z.string(),
-  type: z.enum(loreTypes),
+  type: z.enum(LORE_TYPES),
   excerpt: z.string().optional(),
   aletheia_date: z.string().trim().min(1).optional(),
   aletheia_date_end: z.string().trim().min(1).optional(),
@@ -119,7 +130,7 @@ const loreSchema = baseSchema.extend({
 
 const placesSchema = baseSchema.extend({
   title: z.string(),
-  type: z.enum(['location', 'landmark', 'dungeon', 'settlement', 'region', 'polity', 'adminDivision', 'water', 'biome']),
+  type: z.enum(PLACES_TYPES),
   excerpt: z.string().optional(),
   coordinates: z.object({
     x: z.number(),
@@ -129,41 +140,41 @@ const placesSchema = baseSchema.extend({
 
 const sentientsSchema = baseSchema.extend({
   title: z.string(),
-  type: z.enum(['race', 'species', 'culture', 'organization', 'deity']),
+  type: z.enum(SENTIENTS_TYPES),
   excerpt: z.string().optional(),
   alignment: z.enum(['lawful', 'neutral', 'chaotic', 'good', 'evil', 'any']).optional(),
 });
 
 const bestiarySchema = baseSchema.extend({
   title: z.string(),
-  type: z.enum(['monster', 'animal', 'beast', 'spirit', 'construct', 'elemental']),
+  type: z.enum(BESTIARY_TYPES),
   excerpt: z.string().optional(),
   challengeRating: z.number().optional(),
 });
 
 const floraSchema = baseSchema.extend({
   title: z.string(),
-  type: z.enum(['tree', 'flower', 'fungus', 'herb', 'fruit', 'plant', 'crop']),
+  type: z.enum(FLORA_TYPES),
   excerpt: z.string().optional(),
 });
 
 const factionsSchema = baseSchema.extend({
   title: z.string(),
-  type: z.enum(['political', 'guild', 'criminal', 'government', 'religion', 'military', 'police', 'school', 'order']),
+  type: z.enum(FACTIONS_TYPES),
   excerpt: z.string().optional(),
   alignment: z.enum(['lawful', 'neutral', 'chaotic', 'good', 'evil', 'any']).optional(),
 });
 
 const systemsSchema = baseSchema.extend({
   title: z.string(),
-  type: z.enum(['general', 'gurps']),
+  type: z.enum(SYSTEMS_TYPES),
   subtype: z.enum(['magic', 'combat', 'skill', 'language', 'character', 'economy', 'social', 'equipment']),
   excerpt: z.string().optional(),
 });
 
 const metaSchema = baseSchema.extend({
   title: z.string(),
-  type: z.enum(metaTypes).default('info'),
+  type: z.enum(META_TYPES).default('info'),
   excerpt: z.string().optional(),
 });
 
@@ -181,7 +192,7 @@ const campaignsSchema = baseSchema.omit({ status: true }).extend({
 
 const sessionsSchema = baseSchema.extend({
   title: z.string(),
-  type: z.enum(['session', 'encounter', 'battle', 'note']),
+  type: z.enum(SESSIONS_TYPES),
   excerpt: z.string().optional(),
   campaign: z.string(),
   visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('campaignMembers'),
@@ -191,7 +202,7 @@ const sessionsSchema = baseSchema.extend({
 
 const campaignLoreSchema = baseSchema.extend({
   title: z.string(),
-  type: z.enum(sharedLoreTypes),
+  type: z.enum(LORE_TYPES),
   excerpt: z.string().optional(),
   campaign: z.string(),
   visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('campaignMembers'),
@@ -233,14 +244,14 @@ const campaignMetaSchema = metaSchema.extend({
 });
 
 const campaignCharactersSchema = sentientsSchema.extend({
-  type: z.enum(['pc', 'npc', 'ally', 'adversary', 'patron', 'creature', 'group', 'other']),
+  type: z.enum(CAMPAIGN_CHARACTERS_TYPES),
   campaign: z.string(),
   visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('campaignMembers'),
 });
 
 const campaignScenesSchema = baseSchema.extend({
   title: z.string(),
-  type: z.enum(['scene', 'combat', 'social', 'travel', 'downtime', 'investigation', 'flashback', 'other']),
+  type: z.enum(CAMPAIGN_SCENES_TYPES),
   excerpt: z.string().optional(),
   campaign: z.string(),
   visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('campaignMembers'),
@@ -249,7 +260,7 @@ const campaignScenesSchema = baseSchema.extend({
 
 const campaignAdventuresSchema = baseSchema.extend({
   title: z.string(),
-  type: z.enum(['arc', 'mission', 'quest', 'contract', 'dungeon', 'journey', 'heist', 'other']),
+  type: z.enum(CAMPAIGN_ADVENTURES_TYPES),
   excerpt: z.string().optional(),
   campaign: z.string(),
   visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('campaignMembers'),
@@ -258,7 +269,7 @@ const campaignAdventuresSchema = baseSchema.extend({
 
 const campaignHooksSchema = baseSchema.extend({
   title: z.string(),
-  type: z.enum(['rumor', 'lead', 'job', 'threat', 'mystery', 'opportunity', 'other']),
+  type: z.enum(CAMPAIGN_HOOKS_TYPES),
   excerpt: z.string().optional(),
   campaign: z.string(),
   visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('campaignMembers'),

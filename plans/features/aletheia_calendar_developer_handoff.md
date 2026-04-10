@@ -1,6 +1,12 @@
 
 # Aletheia Calendar – Developer Hand-Off Specification
 
+## Status
+
+- Status: canonical implementation-facing spec for the settled calendar model
+- Delivery state: Step 4 eclipse enrichment and Step 5 interaction/agenda decisions are implemented
+- Priority tracking: use `.kilo/plans/1775545082688-jolly-meadow.md` for queue order; this document captures behavior, not sequencing
+
 ## Overview
 
 The Calendar of Aletheia is a **solar civic calendar with a lunar-triggered festival**.  
@@ -388,7 +394,7 @@ Display:
 - Leap Day uses the same agenda/detail interaction model as other selectable days
 - previous/next day controls if a dedicated day mode is implemented
 
-Optional follow-on:
+### Shared Interaction Requirements
 
 - stronger selection model for day/week/month/year
 - compact top panels that stay at current size or smaller, including removal of labels like `Reference Surface` and `Selected Date`
@@ -396,6 +402,7 @@ Optional follow-on:
 - removal of redundant `Month View`, `Week View`, and `Year View` headings when context already shows the active view
 - explicit secondary open/go-to actions distinct from primary selection
 - overflow handled through an explicit modal/detail action rather than enlarging the summary panel
+- day agenda mode
 - removal of the always-visible bottom day-detail panel in favor of compact summary plus modal/detail and agenda views
 - month agenda mode
 - week agenda mode
@@ -466,6 +473,8 @@ The calendar engine must support:
 8. Festival determination
 9. Event ingestion
 10. Timeline sorting
+11. Deterministic eclipse generation plus compact marker/legend summaries
+12. Compact selection/detail and agenda modes across day/week/month/year
 
 Once those are implemented, the rest of the UI becomes straightforward.
 

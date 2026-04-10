@@ -2,13 +2,14 @@
 
 ## Status
 
-- Status: Ready for implementation handoff
+- Status: Implemented; retained as the Reference rehome record
+- Priority tracking: use `.kilo/plans/1775545082688-jolly-meadow.md`
 - Related ADR: `plans/adrs/0018-reference-domain-and-references-route-namespace-policy.md`
 - Related prior ADR: `plans/adrs/0014-calendar-and-timeline-canon-utility-routes-and-lore-event-metadata-policy.md` (route placement superseded; lore event metadata still active)
 
 ## Purpose
 
-This handoff defines the new Reference layer and the route migration required before further calendar UI work proceeds.
+This handoff records the new Reference layer and the route migration that unlocked later calendar UI work.
 
 The core decision is:
 
@@ -70,7 +71,7 @@ Remain unchanged for now:
 - `/api/calendar/year`
 - `/api/calendar/moon-phase`
 - `/api/calendar/date-diff`
-- future `/api/calendar/day`
+- `/api/calendar/day`
 
 ### Migration rule
 
@@ -188,7 +189,7 @@ Required updates:
 - indexability policy continues to allow Reference surfaces to be indexed
 - remove stale mentions of `/calendar` and `/timeline` as root routes from SEO docs
 
-## Recommended Implementation Order
+## Implemented Order
 
 1. Add ADR and doc updates for the new Reference domain.
 2. Create Reference layout/nav and Reference landing page.

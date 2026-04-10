@@ -6,6 +6,8 @@
     "dev": "astro dev",
     "dev:fast": "astro dev",
     "build": "astro build",
+    "build:prod": "CONTENT_SOURCE_MODE=cloud CONTENT_LOADER_D1_MODE=remote pnpm build",
+    "build:staging": "CONTENT_SOURCE_MODE=cloud CONTENT_LOADER_D1_MODE=remote CONTENT_LOADER_D1_ENV=staging pnpm build",
     "preview": "astro preview",
     "dev:cf:build": "CONTENT_SOURCE_MODE=cloud CONTENT_LOADER_D1_MODE=local astro build",
     "dev:cf": "wrangler dev ./dist/server/entry.mjs --config ./dist/server/wrangler.json --local",
@@ -40,7 +42,7 @@
     "content:sync:dry-run": "node ./scripts/content-sync/index.mjs --dry-run",
     "content:sync:staging:dry-run": "CONTENT_INDEX_SYNC_MODE=remote CONTENT_INDEX_SYNC_ENV=staging node ./scripts/content-sync/index.mjs --dry-run",
     "content:sync:prod:dry-run": "CONTENT_INDEX_SYNC_MODE=remote CONTENT_INDEX_SYNC_ENV= node ./scripts/content-sync/index.mjs --dry-run",
-    "content:validate": "node ./scripts/content-sync/index.mjs --validate-only",
+    "content:sync:validate": "node ./scripts/content-sync/index.mjs --validate-only",
     "campaign:rename": "node ./scripts/rename-campaign-slug.mjs"
   },
   "dependencies": {

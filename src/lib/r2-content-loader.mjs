@@ -4,6 +4,7 @@ import { Readable } from 'node:stream';
 import { pathToFileURL } from 'node:url';
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { loadCollectionLookupRows } from './content-index-loader.mjs';
+import { COLLECTION_TYPES } from './content-types';
 
 let cachedConfig = null;
 let cachedClient = null;
@@ -231,41 +232,32 @@ export function createR2MarkdownCollectionLoader(collection) {
       const entries = await loadCollectionLookupRows(collection);
       const parseFrontmatter = await getParseFrontmatter();
 
-      // Valid type values per collection (for data sanitization)
-      const VALID_TYPES = {
-        lore: ['cosmology', 'religion', 'economy', 'history', 'geography', 'food_and_drink', 'culture', 'language', 'warfare', 'domestication', 'magic', 'technology', 'structure', 'other', 'event'],
-        places: ['location', 'landmark', 'dungeon', 'settlement', 'region', 'inhabitants', 'water'],
-        sentients: ['race', 'species', 'culture', 'organization', 'deity'],
-        bestiary: ['monster', 'animal', 'beast', 'spirit', 'construct', 'elemental'],
-        flora: ['tree', 'flower', 'fungus', 'herb', 'fruit', 'plant', 'crop'],
-        factions: ['political', 'guild', 'criminal', 'government', 'religion', 'military', 'police', 'school', 'order'],
-        systems: ['general', 'gurps'],
-        sessions: ['session', 'encounter', 'battle', 'note'],
-        campaignLore: ['cosmology', 'religion', 'economy', 'history', 'geography', 'food_and_drink', 'culture', 'language', 'warfare', 'domestication', 'magic', 'technology', 'structure', 'other'],
-        campaignPlaces: ['location', 'landmark', 'dungeon', 'settlement', 'region', 'inhabitants', 'water'],
-        campaignSentients: ['race', 'species', 'culture', 'organization', 'deity'],
-        campaignBestiary: ['monster', 'animal', 'beast', 'spirit', 'construct', 'elemental'],
-        campaignFlora: ['tree', 'flower', 'fungus', 'herb', 'fruit', 'plant', 'crop'],
-        campaignFactions: ['political', 'guild', 'criminal', 'government', 'religion', 'military', 'police', 'school', 'order'],
-        campaignSystems: ['general', 'gurps'],
-        campaignCharacters: ['pc', 'npc', 'ally', 'adversary', 'patron', 'creature', 'group', 'other'],
-        campaignScenes: ['scene', 'combat', 'social', 'travel', 'downtime', 'investigation', 'flashback', 'other'],
-        campaignAdventures: ['arc', 'mission', 'quest', 'contract', 'dungeon', 'journey', 'heist', 'other'],
-        campaignHooks: ['rumor', 'lead', 'job', 'threat', 'mystery', 'opportunity', 'other'],
-      };
-
       for (const entry of entries) {
-        const markdown = await getObjectText(entry.r2Key);
-        const { frontmatter, content } = parseFrontmatter(markdown);
-        
+        let markdown;
+        try {
+          markdown = await getObjectText(entry.r2Key);
+        } catch (err) {
+          console.error(`[r2-loader] ${collection}: failed to fetch ${entry.r2Key}: ${err.message}`);
+          continue;
+        }
+
+        let parsed;
+        try {
+          parsed = parseFrontmatter(markdown);
+        } catch (err) {
+          console.error(`[r2-loader] ${collection}: failed to parse frontmatter for ${entry.r2Key}: ${err.message}`);
+          continue;
+        }
+        const { frontmatter, content } = parsed;
+
         // Inject campaign field from D1 lookup data for campaign family collections
         const enrichedFrontmatter = { ...frontmatter };
         if (entry.campaignSlug && !enrichedFrontmatter.campaign) {
           enrichedFrontmatter.campaign = entry.campaignSlug;
         }
-        
+
         // Sanitize type field if it has invalid values
-        const validTypes = VALID_TYPES[collection];
+        const validTypes = COLLECTION_TYPES[collection];
         if (validTypes) {
           let typeVal = enrichedFrontmatter.type ? String(enrichedFrontmatter.type).trim() : '';
           // Determine fallback: prefer 'location' for places, 'other' for others, else first valid
@@ -283,21 +275,34 @@ export function createR2MarkdownCollectionLoader(collection) {
             enrichedFrontmatter.type = typeVal;
           }
         }
-        
-        const data = await context.parseData({
-          id: entry.id,
-          data: enrichedFrontmatter,
-          filePath: `cloud://${entry.r2Key}`,
-        });
+
+        let data;
+        try {
+          data = await context.parseData({
+            id: entry.id,
+            data: enrichedFrontmatter,
+            filePath: `cloud://${entry.r2Key}`,
+          });
+        } catch (err) {
+          console.error(`[r2-loader] ${collection}: schema validation failed for ${entry.id} (${entry.r2Key}): ${err.message}`);
+          console.error(`[r2-loader]   frontmatter:`, JSON.stringify(enrichedFrontmatter));
+          throw err;
+        }
 
         // Pre-process markdown to replace relative image paths with R2 handler URLs
         // BEFORE Astro's markdown processor runs, so it never sees relative paths
         const preprocessedContent = preprocessMarkdownImages(content, entry.r2Key);
 
-        // Render markdown to HTML using the content layer's markdown processor
-        const rendered = await context.renderMarkdown(preprocessedContent, {
-          fileURL: `cloud://${entry.r2Key}`,
-        });
+        let rendered;
+        try {
+          // Render markdown to HTML using the content layer's markdown processor
+          rendered = await context.renderMarkdown(preprocessedContent, {
+            fileURL: `cloud://${entry.r2Key}`,
+          });
+        } catch (err) {
+          console.error(`[r2-loader] ${collection}: renderMarkdown failed for ${entry.id} (${entry.r2Key}): ${err.message}`);
+          throw err;
+        }
 
         context.store.set({
           id: entry.id,

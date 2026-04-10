@@ -1,5 +1,12 @@
 # Option 3 TODO — Unified Membership + GM Roles (High-Level Upgrade Plan)
 
+## Status
+
+- Status: ADR accepted and code handoff drafted on 2026-04-09
+- ADR: `plans/adrs/0019-campaign-membership-role-unification.md`
+- Migration strategy: `plans/campaign-membership-role-unification-migration-strategy-2026-04-09.md`
+- Code handoff: `plans/campaign-membership-role-unification-lld-handoff-2026-04-09.md`
+
 ## Context
 
 Option 3 consolidates campaign authorization into a single table model:
@@ -21,10 +28,10 @@ This is a post-stabilization simplification, not a launch blocker.
 
 ## Upgrade TODO
 
-- [ ] Draft and accept ADR for unified role model (Option 3), including migration and rollback policy.
+- [x] Draft ADR and migration strategy for unified role model (Option 3), including migration and rollback policy.
 - [ ] Add or confirm role constraints in schema (`role IN ('member','gm')`) and future extension policy.
 - [ ] Backfill existing GM assignments into `campaign_memberships` as `role='gm'`.
-- [ ] Define conflict policy when `member` and `gm` rows overlap (promote-to-gm or explicit coexistence rule).
+- [x] Define conflict policy when `member` and `gm` rows overlap (`gm` wins for the unified row).
 - [ ] Update runtime authorization to query only `campaign_memberships`.
 - [ ] Remove runtime reads of `campaign_gm_assignments` and GM config/env in staging/prod.
 - [ ] Deprecate GM operator templates; replace with membership role upsert/revoke templates.
@@ -36,19 +43,21 @@ This is a post-stabilization simplification, not a launch blocker.
 
 ## Rollout Strategy
 
-### Phase A — Compatibility window
+### Phase A — Preflight + constrained backfill
 
-- Keep writes dual-targeted if needed for a short window.
-- Read path remains current until validation passes.
+- Freeze GM operator mutations during cutover.
+- Rebuild `campaign_memberships` with a role constraint and backfill `campaign_gm_assignments` rows as `role='gm'`.
+- Keep `campaign_gm_assignments` temporarily for rollback/parity checks only.
 
 ### Phase B — Single-read switch
 
 - Switch resolver to read only role-based memberships.
 - Validate authorization behavior across visibility levels.
 
-### Phase C — Decommission
+### Phase C — Burn-in + decommission
 
-- Remove GM-assignment table and related templates.
+- Run parity verification between legacy GM rows and `campaign_memberships WHERE role='gm'`.
+- Remove GM-assignment table and related templates after burn-in.
 - Finalize docs and remove fallback references.
 
 ## Done Criteria
