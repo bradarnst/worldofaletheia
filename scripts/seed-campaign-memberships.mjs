@@ -44,25 +44,6 @@ function normalizeMembershipConfig(rawConfig) {
     normalized[userId] = campaigns;
   }
 
-  const gmAssignments = rawConfig.gmAssignments;
-  if (gmAssignments && typeof gmAssignments === 'object' && !Array.isArray(gmAssignments)) {
-    for (const [campaignSlug, value] of Object.entries(gmAssignments)) {
-      if (!campaignSlug || !value || typeof value !== 'object' || Array.isArray(value)) {
-        continue;
-      }
-
-      const userId = value.userId;
-      if (typeof userId !== 'string' || userId.length === 0) {
-        continue;
-      }
-
-      normalized[userId] = {
-        ...(normalized[userId] || {}),
-        [campaignSlug]: 'gm',
-      };
-    }
-  }
-
   return normalized;
 }
 
@@ -81,13 +62,6 @@ function createInsertStatements(config) {
         `INSERT OR IGNORE INTO campaign_memberships (id, user_id, campaign_slug, role, created_at)
 VALUES (${toSqlString(id)}, ${toSqlString(userId)}, ${toSqlString(campaignSlug)}, ${toSqlString(role)}, ${toSqlString(nowIso)});`,
       );
-
-      if (role === 'gm') {
-        statements.push(
-          `INSERT OR IGNORE INTO campaign_gm_assignments (campaign_slug, user_id, created_at)
-VALUES (${toSqlString(campaignSlug)}, ${toSqlString(userId)}, ${toSqlString(nowIso)});`,
-        );
-      }
     }
   }
 

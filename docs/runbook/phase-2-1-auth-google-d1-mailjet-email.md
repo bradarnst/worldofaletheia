@@ -73,8 +73,7 @@ Ordered migration files are:
 7. `migrations/0007_content_index_r2_lookup.sql`
 8. `migrations/0008_content_index_collection_scoped_identity.sql`
 9. `migrations/0009_campaign_memberships_role_unification.sql`
-
-`migrations/0010_drop_campaign_gm_assignments.sql` is intentionally deferred until after burn-in parity checks.
+10. `migrations/0010_drop_campaign_gm_assignments.sql`
 
 Policy constraints:
 
@@ -104,8 +103,7 @@ Campaign entitlement authority after cutover:
 
 - Better Auth remains the auth/session boundary.
 - staging/prod entitlement authority: D1 `campaign_memberships`
-- `campaign_memberships.role = 'gm'` is the only live GM authority after Release 1 cutover.
-- `campaign_gm_assignments` remains burn-in parity data only until `0010` is approved.
+- `campaign_memberships.role = 'gm'` is the only live GM authority.
 - localhost-only fallback uses `CAMPAIGN_MEMBERSHIPS` or [`config/campaign-access.config.json`](config/campaign-access.config.json).
 
 ## 5) Secret provisioning
@@ -213,16 +211,6 @@ This command builds Astro Cloudflare server output, applies local D1 migration/s
     ORDER BY campaign_slug ASC, user_id ASC;
     ```
 
-    - during burn-in, verify parity remains clean:
-
-    ```sql
-    SELECT campaign_slug, user_id
-    FROM campaign_gm_assignments
-    EXCEPT
-    SELECT campaign_slug, user_id
-    FROM campaign_memberships
-    WHERE role = 'gm';
-    ```
 5. Test contact relay with Mailjet sandbox mode:
    - `POST /api/contact` with valid JSON returns `{ "ok": true }`
 
@@ -257,7 +245,7 @@ This command builds Astro Cloudflare server output, applies local D1 migration/s
 ## 11) Rollback notes
 
 - Better Auth session plumbing is unchanged by this tranche.
-- Application rollback path is code-only revert of auth route/resolver updates plus regeneration of legacy GM rows from `campaign_memberships WHERE role = 'gm'` if needed.
+- Application rollback after Release 2 is forward-fix on top of canonical `campaign_memberships` roles.
 - As emergency local fallback, `CAMPAIGN_MEMBERSHIPS` can still be enabled for localhost-only development behavior.
 
 ## 12) Operator SOP — Active MVP path (Option A2: Wrangler-applied D1 SQL files)
@@ -345,8 +333,6 @@ Available templates:
 - membership grant/upsert: [`scripts/operator-sql/templates/membership-grant.sql`](scripts/operator-sql/templates/membership-grant.sql)
 - membership revoke: [`scripts/operator-sql/templates/membership-revoke.sql`](scripts/operator-sql/templates/membership-revoke.sql)
 - membership role update: [`scripts/operator-sql/templates/membership-role-update.sql`](scripts/operator-sql/templates/membership-role-update.sql)
-- GM assignment upsert (deprecated burn-in parity only): [`scripts/operator-sql/templates/gm-assignment-upsert.sql`](scripts/operator-sql/templates/gm-assignment-upsert.sql)
-- GM assignment revoke (deprecated burn-in parity only): [`scripts/operator-sql/templates/gm-assignment-revoke.sql`](scripts/operator-sql/templates/gm-assignment-revoke.sql)
 - auth account link upsert: [`scripts/operator-sql/templates/account-link-upsert.sql`](scripts/operator-sql/templates/account-link-upsert.sql)
 - auth account link revoke: [`scripts/operator-sql/templates/account-link-revoke.sql`](scripts/operator-sql/templates/account-link-revoke.sql)
 

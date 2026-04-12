@@ -13,6 +13,7 @@ export const orderedMigrations = [
   './migrations/0007_content_index_r2_lookup.sql',
   './migrations/0008_content_index_collection_scoped_identity.sql',
   './migrations/0009_campaign_memberships_role_unification.sql',
+  './migrations/0010_drop_campaign_gm_assignments.sql',
 ];
 
 export function parseArgs(argv) {
@@ -512,14 +513,9 @@ export function collectDryRunMetricsFromInspector(inspector) {
     'campaign_memberships_table_exists',
     `SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='campaign_memberships';`,
   );
-  const gmAssignmentsTableExists = inspector.queryNumeric(
-    'campaign_gm_assignments_table_exists',
-    `SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='campaign_gm_assignments';`,
-  );
-  const metrics = [userTableExists, membershipTableExists, gmAssignmentsTableExists];
+  const metrics = [userTableExists, membershipTableExists];
   const userExists = userTableExists.error ? false : userTableExists.value === 1;
   const membershipTablePresent = membershipTableExists.error ? false : membershipTableExists.value === 1;
-  const gmAssignmentsTablePresent = gmAssignmentsTableExists.error ? false : gmAssignmentsTableExists.value === 1;
 
   if (membershipTablePresent) {
     metrics.push(
@@ -562,18 +558,6 @@ export function collectDryRunMetricsFromInspector(inspector) {
         error: 'campaign_memberships table not present yet (would be created by migration plan)',
       },
     );
-  }
-
-  if (gmAssignmentsTablePresent) {
-    metrics.push(
-      inspector.queryNumeric('campaign_gm_assignments_total', `SELECT COUNT(*) FROM campaign_gm_assignments;`),
-    );
-  } else {
-    metrics.push({
-      label: 'campaign_gm_assignments_total',
-      value: 0,
-      error: 'campaign_gm_assignments table not present yet (would be created by migration plan)',
-    });
   }
 
   if (userExists) {
@@ -632,8 +616,8 @@ function printPlanSummary(baseArgs) {
   }
 
   console.log('\n=== Dry-run: what would change ===');
-  console.log('- Ensure campaign membership + GM assignment tables/indexes exist (idempotent create-if-missing).');
-  console.log('- Rebuild campaign membership authority into a constrained role model and keep legacy GM rows for burn-in parity.');
+  console.log('- Ensure campaign membership authority exists and remains constrained to the canonical role model.');
+  console.log('- Apply legacy GM-table decommission so final schema relies only on campaign_memberships roles.');
   console.log('- Ensure Better Auth core tables/user columns/indexes exist (idempotent create-if-missing).');
   console.log('- Ensure content discovery index table + supporting indexes exist (idempotent create-if-missing).');
   console.log('- Normalize email values to trim(lower(email)) and backfill email_canonical where needed.');

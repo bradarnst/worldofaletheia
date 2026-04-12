@@ -3,7 +3,6 @@ FROM sqlite_master
 WHERE type = 'table'
   AND name IN (
     'campaign_memberships',
-    'campaign_gm_assignments',
     'user',
     'account',
     'session',

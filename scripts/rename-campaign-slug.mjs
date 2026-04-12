@@ -121,14 +121,8 @@ export function renameCampaignSlugInAccessConfig(rawConfig, fromSlug, toSlug) {
   const configObject = rawConfig && typeof rawConfig === 'object' && !Array.isArray(rawConfig)
     ? rawConfig
     : {};
-  const hasLegacyGmAssignments = Boolean(
-    configObject.gmAssignments && typeof configObject.gmAssignments === 'object' && !Array.isArray(configObject.gmAssignments),
-  );
   const memberships = configObject.memberships && typeof configObject.memberships === 'object' && !Array.isArray(configObject.memberships)
     ? configObject.memberships
-    : {};
-  const gmAssignments = configObject.gmAssignments && typeof configObject.gmAssignments === 'object' && !Array.isArray(configObject.gmAssignments)
-    ? configObject.gmAssignments
     : {};
 
   const updatedMemberships = Object.fromEntries(
@@ -150,15 +144,9 @@ export function renameCampaignSlugInAccessConfig(rawConfig, fromSlug, toSlug) {
     }),
   );
 
-  const updatedGmAssignments = {};
-  for (const [campaignSlug, value] of Object.entries(gmAssignments)) {
-    updatedGmAssignments[campaignSlug === fromSlug ? toSlug : campaignSlug] = value;
-  }
-
   return {
     ...configObject,
     memberships: updatedMemberships,
-    ...(hasLegacyGmAssignments ? { gmAssignments: updatedGmAssignments } : {}),
   };
 }
 

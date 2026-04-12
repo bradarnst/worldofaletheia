@@ -1,7 +1,6 @@
 import { type CampaignMembershipRepo, createCampaignMembershipRepoFromLocals } from '~/lib/campaign-membership-repo';
 import { getRequestSession, type RequestSession } from '~/lib/auth-session';
 import {
-  normalizeCampaignMembershipConfig,
   normalizeCampaignMembershipEntries,
   type CampaignMembershipRole,
 } from '@utils/campaign-membership-config';
@@ -24,8 +23,8 @@ function parseMembershipConfig(rawConfig: string | undefined): Map<string, Map<s
     }
 
     const membershipConfig =
-      parsed && typeof parsed === 'object' && !Array.isArray(parsed) && ('memberships' in parsed || 'gmAssignments' in parsed)
-        ? normalizeCampaignMembershipConfig(parsed).memberships
+      parsed && typeof parsed === 'object' && !Array.isArray(parsed) && 'memberships' in parsed
+        ? normalizeCampaignMembershipEntries((parsed as { memberships?: unknown }).memberships)
         : normalizeCampaignMembershipEntries(parsed);
     const bySession = new Map<string, Map<string, CampaignMembershipRole>>();
 

@@ -66,34 +66,9 @@ export function normalizeCampaignMembershipConfig(rawConfig: unknown): CampaignM
     return EMPTY_CONFIG;
   }
 
-  const configObject = rawConfig as {
-    memberships?: unknown;
-    gmAssignments?: unknown;
+  return {
+    memberships: normalizeCampaignMembershipEntries((rawConfig as { memberships?: unknown }).memberships),
   };
-  const memberships = normalizeCampaignMembershipEntries(configObject.memberships);
-
-  if (configObject.gmAssignments && typeof configObject.gmAssignments === 'object' && !Array.isArray(configObject.gmAssignments)) {
-    for (const [campaignSlug, value] of Object.entries(configObject.gmAssignments)) {
-      if (!campaignSlug || !value || typeof value !== 'object' || Array.isArray(value)) {
-        continue;
-      }
-
-      const userId = (value as { userId?: unknown }).userId;
-      if (typeof userId !== 'string' || userId.length === 0) {
-        continue;
-      }
-
-      const existingEntry = memberships[userId] ?? { campaigns: {} };
-      memberships[userId] = {
-        campaigns: {
-          ...existingEntry.campaigns,
-          [campaignSlug]: 'gm',
-        },
-      };
-    }
-  }
-
-  return { memberships };
 }
 
 export function getCampaignMembershipConfigForEnv(): string {

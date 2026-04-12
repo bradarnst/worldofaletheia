@@ -8,7 +8,7 @@ describe('campaign membership config normalization', () => {
     expect(normalizeCampaignMembershipConfig({ memberships: [] })).toEqual({ memberships: {} });
   });
 
-  it('normalizes legacy arrays, role maps, and gmAssignments into one membership-role source', () => {
+  it('normalizes legacy arrays and role maps into one membership-role source', () => {
     const result = normalizeCampaignMembershipConfig({
       memberships: {
         jim: { campaigns: { brad: 'member', barry: 'gm', broken: 'owner' } },
@@ -16,20 +16,13 @@ describe('campaign membership config normalization', () => {
         broken1: { campaigns: [123, 'brad'] },
         broken2: { campaigns: 'barry' },
       },
-      gmAssignments: {
-        brad: { userId: 'jim' },
-        barry: { userId: 'tom' },
-        broken1: { userId: '' },
-        broken2: { noUserId: 'x' },
-      },
     });
 
     expect(result).toEqual({
       memberships: {
-        jim: { campaigns: { brad: 'gm', barry: 'gm' } },
+        jim: { campaigns: { brad: 'member', barry: 'gm' } },
         fred: { campaigns: { brad: 'member', barry: 'member' } },
         broken1: { campaigns: { brad: 'member' } },
-        tom: { campaigns: { barry: 'gm' } },
       },
     });
   });

@@ -12,12 +12,6 @@ SET user_id = '9aa8cec9-7234-4e84-9485-088e61596e64',
     updated_at = datetime('now')
 WHERE user_id = 'brad';
 
--- Update campaign_gm_assignments: replace 'brad' with Google user ID (if any exist)
-UPDATE campaign_gm_assignments
-SET user_id = '9aa8cec9-7234-4e84-9485-088e61596e64',
-    updated_at = datetime('now')
-WHERE user_id = 'brad';
-
 COMMIT;
 
 -- Verification: check Brad's memberships now point to correct user_id

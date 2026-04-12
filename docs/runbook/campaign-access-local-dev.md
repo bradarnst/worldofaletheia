@@ -1,6 +1,6 @@
 # Campaign Access (local/dev fallback)
 
-This runbook describes the legacy local/dev fallback gate for campaign content.
+This runbook describes the local/dev fallback gate for campaign content.
 
 Primary Phase 2.1 operational flow now lives in [`docs/runbook/phase-2-1-auth-google-d1-mailjet-email.md`](docs/runbook/phase-2-1-auth-google-d1-mailjet-email.md).
 
@@ -39,9 +39,9 @@ Set `CAMPAIGN_MEMBERSHIPS` as JSON in your environment:
 
 The gate reads cookie `aletheia-dev-session=<sessionId>` and checks the configured role for that campaign slug.
 
-Legacy compatibility note:
+Compatibility note:
 
-- legacy array form is still accepted during transition and normalizes to `member`:
+- legacy array form is still accepted and normalizes to `member`:
 
 ```json
 {

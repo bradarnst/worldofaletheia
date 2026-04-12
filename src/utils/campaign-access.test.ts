@@ -261,16 +261,11 @@ describe('campaign access resolver', () => {
     ).toBe('gm');
   });
 
-  it('supports legacy full-config fallback shapes by normalizing gmAssignments into gm roles', () => {
+  it('supports role-map fallback shapes for gm visibility in the local resolver', () => {
     const resolver = createCampaignAccessResolver({
       cookieHeader: 'aletheia-dev-session=jim',
       membershipConfigRaw: JSON.stringify({
-        memberships: {
-          jim: { campaigns: ['brad'] },
-        },
-        gmAssignments: {
-          brad: { userId: 'jim' },
-        },
+        jim: { campaigns: { brad: 'gm' } },
       }),
     });
 

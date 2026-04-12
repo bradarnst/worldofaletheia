@@ -112,9 +112,9 @@ describe('db-migrate-auth-plan wrangler parsing', () => {
     });
   });
 
-  it('includes migration 0009 in order and keeps 0010 deferred', () => {
-    expect(orderedMigrations.at(-1)).toBe('./migrations/0009_campaign_memberships_role_unification.sql');
-    expect(orderedMigrations).not.toContain('./migrations/0010_drop_campaign_gm_assignments.sql');
+  it('includes migration 0010 in order after the role unification migration', () => {
+    expect(orderedMigrations.at(-2)).toBe('./migrations/0009_campaign_memberships_role_unification.sql');
+    expect(orderedMigrations.at(-1)).toBe('./migrations/0010_drop_campaign_gm_assignments.sql');
   });
 
   it('reports invalid membership roles as a blocking conflict', () => {
@@ -145,12 +145,10 @@ describe('db-migrate-auth-plan wrangler parsing', () => {
         numeric: {
           user_table_exists: 0,
           campaign_memberships_table_exists: 1,
-          campaign_gm_assignments_table_exists: 1,
           campaign_memberships_total: 4,
           campaign_memberships_member_rows: 3,
           campaign_memberships_gm_rows: 1,
           campaign_memberships_invalid_role_rows: 0,
-          campaign_gm_assignments_total: 1,
         },
       }),
     );

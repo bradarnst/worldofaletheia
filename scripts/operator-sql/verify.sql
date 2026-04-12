@@ -20,55 +20,6 @@ SELECT user_id,
 FROM campaign_memberships
 ORDER BY campaign_slug ASC, user_id ASC;
 
-SELECT 'gm_assignments_total_legacy_burn_in' AS metric, COUNT(*) AS value
-FROM campaign_gm_assignments;
-
-SELECT 'gm_parity_missing_from_memberships' AS metric, COUNT(*) AS value
-FROM (
-  SELECT campaign_slug, user_id
-  FROM campaign_gm_assignments
-  EXCEPT
-  SELECT campaign_slug, user_id
-  FROM campaign_memberships
-  WHERE role = 'gm'
-);
-
-SELECT 'gm_parity_missing_from_legacy_table' AS metric, COUNT(*) AS value
-FROM (
-  SELECT campaign_slug, user_id
-  FROM campaign_memberships
-  WHERE role = 'gm'
-  EXCEPT
-  SELECT campaign_slug, user_id
-  FROM campaign_gm_assignments
-);
-
-SELECT 'gm_parity_missing_from_memberships' AS metric,
-       campaign_slug,
-       user_id
-FROM (
-  SELECT campaign_slug, user_id
-  FROM campaign_gm_assignments
-  EXCEPT
-  SELECT campaign_slug, user_id
-  FROM campaign_memberships
-  WHERE role = 'gm'
-)
-ORDER BY campaign_slug ASC, user_id ASC;
-
-SELECT 'gm_parity_missing_from_legacy_table' AS metric,
-       campaign_slug,
-       user_id
-FROM (
-  SELECT campaign_slug, user_id
-  FROM campaign_memberships
-  WHERE role = 'gm'
-  EXCEPT
-  SELECT campaign_slug, user_id
-  FROM campaign_gm_assignments
-)
-ORDER BY campaign_slug ASC, user_id ASC;
-
 SELECT 'auth_users_total' AS metric, COUNT(*) AS value
 FROM "user";
 

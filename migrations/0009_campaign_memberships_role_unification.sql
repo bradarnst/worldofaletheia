@@ -1,15 +1,4 @@
-BEGIN TRANSACTION;
-
 DROP TABLE IF EXISTS campaign_memberships_next;
-
-CREATE TEMP TABLE campaign_memberships_role_guard (
-  invalid_role_count INTEGER NOT NULL CHECK (invalid_role_count = 0)
-);
-
-INSERT INTO campaign_memberships_role_guard (invalid_role_count)
-SELECT COUNT(*)
-FROM campaign_memberships
-WHERE role IS NULL OR role NOT IN ('member', 'gm');
 
 CREATE TABLE campaign_memberships_next (
   id TEXT PRIMARY KEY,
@@ -58,7 +47,3 @@ CREATE INDEX idx_campaign_memberships_campaign_slug
 
 CREATE INDEX idx_campaign_memberships_user_id
   ON campaign_memberships(user_id);
-
-DROP TABLE campaign_memberships_role_guard;
-
-COMMIT;

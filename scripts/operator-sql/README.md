@@ -42,6 +42,7 @@ Conflict classes detected by runner include:
 1. canonical-email collisions under `trim(lower(email))`
 2. schema/object conflicts (required table names occupied by incompatible objects)
 3. required-column shape conflicts on existing auth tables
+4. invalid `campaign_memberships.role` values outside `member|gm`
 
 No `auth_email_conflicts` backlog table is used. Conflict handling is immediate: fail by default, or explicit `--force` override.
 
@@ -53,8 +54,6 @@ Template files:
 - `templates/membership-grant.sql`
 - `templates/membership-revoke.sql`
 - `templates/membership-role-update.sql`
-- `templates/gm-assignment-upsert.sql`
-- `templates/gm-assignment-revoke.sql`
 - `templates/account-link-upsert.sql`
 - `templates/account-link-revoke.sql`
 
