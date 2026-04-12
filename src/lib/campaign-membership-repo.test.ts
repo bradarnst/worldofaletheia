@@ -3,12 +3,12 @@ import { CampaignMembershipRepo } from './campaign-membership-repo';
 import type { D1DatabaseLike } from './d1';
 
 function createDbMock(overrides: {
-  first?: (values: unknown[]) => Promise<Record<string, unknown> | null>;
-  all?: (values: unknown[]) => Promise<{ results: Record<string, unknown>[] }>;
-  run?: (values: unknown[]) => Promise<unknown>;
+  first?: (query: string, values: unknown[]) => Promise<Record<string, unknown> | null>;
+  all?: (query: string, values: unknown[]) => Promise<{ results: Record<string, unknown>[] }>;
+  run?: (query: string, values: unknown[]) => Promise<unknown>;
 }): D1DatabaseLike {
   return {
-    prepare(_query: string) {
+    prepare(query: string) {
       let boundValues: unknown[] = [];
 
       return {
@@ -21,19 +21,19 @@ function createDbMock(overrides: {
             return Promise.resolve(null as T | null);
           }
 
-          return overrides.first(boundValues).then((result) => result as T | null);
+          return overrides.first(query, boundValues).then((result) => result as T | null);
         },
         all<T = Record<string, unknown>>() {
           if (!overrides.all) {
             return Promise.resolve({ results: [] as T[] });
           }
 
-          return overrides.all(boundValues).then((result) => ({
+          return overrides.all(query, boundValues).then((result) => ({
             results: result.results as T[],
           }));
         },
         run() {
-          return overrides.run ? overrides.run(boundValues) : Promise.resolve({});
+          return overrides.run ? overrides.run(query, boundValues) : Promise.resolve({});
         },
       };
     },
@@ -44,7 +44,10 @@ describe('CampaignMembershipRepo', () => {
   it('returns true when membership row exists', async () => {
     const repo = new CampaignMembershipRepo(
       createDbMock({
-        first: async () => ({ user_id: 'user-1', campaign_slug: 'brad' }),
+        first: async (query) => {
+          expect(query).toContain("role IN ('member', 'gm')");
+          return { user_id: 'user-1', campaign_slug: 'brad' };
+        },
       }),
     );
 
@@ -90,7 +93,12 @@ describe('CampaignMembershipRepo', () => {
   it('returns true when gm assignment row exists', async () => {
     const repo = new CampaignMembershipRepo(
       createDbMock({
-        first: async () => ({ user_id: 'gm-user' }),
+        first: async (query, values) => {
+          expect(query).toContain('FROM campaign_memberships');
+          expect(query).toContain("role = 'gm'");
+          expect(values).toEqual(['brad', 'gm-user']);
+          return { user_id: 'gm-user' };
+        },
       }),
     );
 
@@ -106,9 +114,15 @@ describe('CampaignMembershipRepo', () => {
   it('lists gm user ids for a campaign', async () => {
     const repo = new CampaignMembershipRepo(
       createDbMock({
-        all: async () => ({
-          results: [{ user_id: 'gm-a' }, { user_id: 'gm-b' }],
-        }),
+        all: async (query, values) => {
+          expect(query).toContain('FROM campaign_memberships');
+          expect(query).toContain("role = 'gm'");
+          expect(values).toEqual(['brad']);
+
+          return {
+            results: [{ user_id: 'gm-a' }, { user_id: 'gm-b' }],
+          };
+        },
       }),
     );
 

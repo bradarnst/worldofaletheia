@@ -1,53 +1,79 @@
 import membershipConfigJson from '../../config/campaign-access.config.json';
 
-interface MembershipEntry {
-  campaigns: string[];
-}
+export type CampaignMembershipRole = 'member' | 'gm';
 
-interface GmAssignmentEntry {
-  userId: string;
+export interface CampaignMembershipConfigEntry {
+  campaigns: Record<string, CampaignMembershipRole>;
 }
 
 export interface CampaignMembershipConfig {
-  memberships: Record<string, MembershipEntry>;
-  gmAssignments: Record<string, GmAssignmentEntry>;
+  memberships: Record<string, CampaignMembershipConfigEntry>;
 }
 
-const EMPTY_CONFIG: CampaignMembershipConfig = { memberships: {}, gmAssignments: {} };
+const EMPTY_CONFIG: CampaignMembershipConfig = { memberships: {} };
+
+function isCampaignMembershipRole(value: unknown): value is CampaignMembershipRole {
+  return value === 'member' || value === 'gm';
+}
+
+export function normalizeCampaignMembershipEntries(
+  rawMemberships: unknown,
+): Record<string, CampaignMembershipConfigEntry> {
+  if (!rawMemberships || typeof rawMemberships !== 'object' || Array.isArray(rawMemberships)) {
+    return {};
+  }
+
+  const memberships: Record<string, CampaignMembershipConfigEntry> = {};
+
+  for (const [userId, entry] of Object.entries(rawMemberships)) {
+    if (!userId || !entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      continue;
+    }
+
+    const campaignsRaw = (entry as { campaigns?: unknown }).campaigns;
+    const campaigns: Record<string, CampaignMembershipRole> = {};
+
+    if (Array.isArray(campaignsRaw)) {
+      for (const campaignSlug of campaignsRaw) {
+        if (typeof campaignSlug !== 'string' || campaignSlug.length === 0) {
+          continue;
+        }
+
+        campaigns[campaignSlug] = 'member';
+      }
+    } else if (campaignsRaw && typeof campaignsRaw === 'object' && !Array.isArray(campaignsRaw)) {
+      for (const [campaignSlug, role] of Object.entries(campaignsRaw)) {
+        if (!campaignSlug || !isCampaignMembershipRole(role)) {
+          continue;
+        }
+
+        campaigns[campaignSlug] = role;
+      }
+    }
+
+    if (Object.keys(campaigns).length === 0) {
+      continue;
+    }
+
+    memberships[userId] = { campaigns };
+  }
+
+  return memberships;
+}
 
 export function normalizeCampaignMembershipConfig(rawConfig: unknown): CampaignMembershipConfig {
   if (!rawConfig || typeof rawConfig !== 'object' || Array.isArray(rawConfig)) {
     return EMPTY_CONFIG;
   }
 
-  const candidate = rawConfig as { memberships?: unknown };
-  if (!candidate.memberships || typeof candidate.memberships !== 'object' || Array.isArray(candidate.memberships)) {
-    return EMPTY_CONFIG;
-  }
+  const configObject = rawConfig as {
+    memberships?: unknown;
+    gmAssignments?: unknown;
+  };
+  const memberships = normalizeCampaignMembershipEntries(configObject.memberships);
 
-  const memberships: Record<string, MembershipEntry> = {};
-
-  for (const [userId, entry] of Object.entries(candidate.memberships)) {
-    if (!userId || !entry || typeof entry !== 'object' || Array.isArray(entry)) {
-      continue;
-    }
-
-    const campaignsRaw = (entry as { campaigns?: unknown }).campaigns;
-    if (!Array.isArray(campaignsRaw)) {
-      continue;
-    }
-
-    const campaigns = campaignsRaw.filter(
-      (campaign): campaign is string => typeof campaign === 'string' && campaign.length > 0,
-    );
-
-    memberships[userId] = { campaigns };
-  }
-
-  const gmAssignmentsRaw = (rawConfig as { gmAssignments?: unknown }).gmAssignments;
-  const gmAssignments: Record<string, GmAssignmentEntry> = {};
-  if (gmAssignmentsRaw && typeof gmAssignmentsRaw === 'object' && !Array.isArray(gmAssignmentsRaw)) {
-    for (const [campaignSlug, value] of Object.entries(gmAssignmentsRaw)) {
+  if (configObject.gmAssignments && typeof configObject.gmAssignments === 'object' && !Array.isArray(configObject.gmAssignments)) {
+    for (const [campaignSlug, value] of Object.entries(configObject.gmAssignments)) {
       if (!campaignSlug || !value || typeof value !== 'object' || Array.isArray(value)) {
         continue;
       }
@@ -57,19 +83,20 @@ export function normalizeCampaignMembershipConfig(rawConfig: unknown): CampaignM
         continue;
       }
 
-      gmAssignments[campaignSlug] = { userId };
+      const existingEntry = memberships[userId] ?? { campaigns: {} };
+      memberships[userId] = {
+        campaigns: {
+          ...existingEntry.campaigns,
+          [campaignSlug]: 'gm',
+        },
+      };
     }
   }
 
-  return { memberships, gmAssignments };
+  return { memberships };
 }
 
 export function getCampaignMembershipConfigForEnv(): string {
   const normalized = normalizeCampaignMembershipConfig(membershipConfigJson);
   return JSON.stringify(normalized.memberships);
-}
-
-export function getCampaignGmAssignmentsForEnv(): string {
-  const normalized = normalizeCampaignMembershipConfig(membershipConfigJson);
-  return JSON.stringify(normalized.gmAssignments);
 }

@@ -154,7 +154,7 @@ describe('ContentIndexRepo', () => {
   it('returns grouped facet counts for type queries', async () => {
     const repo = new ContentIndexRepo(
       createDbMock((query, values) => {
-        expect(query).toContain('SELECT type AS value, COUNT(*) AS total_count');
+        expect(query).toContain('SELECT content_index.type AS value, COUNT(*) AS total_count');
         expect(values).toEqual(['systems', 'publish', 'published', 'review', 'draft']);
         return [
           { value: 'general', total_count: 3 },

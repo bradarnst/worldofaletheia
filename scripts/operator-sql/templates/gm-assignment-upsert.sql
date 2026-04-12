@@ -1,3 +1,4 @@
+-- Deprecated after membership-role cutover. Burn-in parity only.
 -- Assign or update campaign GM mapping.
 -- Replace placeholders before execution.
 

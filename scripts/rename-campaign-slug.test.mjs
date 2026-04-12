@@ -22,7 +22,7 @@ Body
     const updated = renameCampaignSlugInAccessConfig(
       {
         memberships: {
-          brad: { campaigns: ['brad', 'barry'] },
+          brad: { campaigns: { brad: 'gm', barry: 'member' } },
           fred: { campaigns: ['brad'] },
         },
         gmAssignments: {
@@ -34,11 +34,29 @@ Body
       'river-of-glass',
     );
 
-    expect(updated.memberships.brad.campaigns).toEqual(['river-of-glass', 'barry']);
+    expect(updated.memberships.brad.campaigns).toEqual({ 'river-of-glass': 'gm', barry: 'member' });
     expect(updated.memberships.fred.campaigns).toEqual(['river-of-glass']);
     expect(updated.gmAssignments).toEqual({
       'river-of-glass': { userId: 'brad' },
       barry: { userId: 'barry' },
+    });
+  });
+
+  it('does not introduce legacy gmAssignments when config already uses the unified shape', () => {
+    const updated = renameCampaignSlugInAccessConfig(
+      {
+        memberships: {
+          brad: { campaigns: { brad: 'gm', barry: 'member' } },
+        },
+      },
+      'brad',
+      'river-of-glass',
+    );
+
+    expect(updated).toEqual({
+      memberships: {
+        brad: { campaigns: { 'river-of-glass': 'gm', barry: 'member' } },
+      },
     });
   });
 });

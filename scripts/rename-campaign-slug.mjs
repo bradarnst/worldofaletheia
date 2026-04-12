@@ -121,6 +121,9 @@ export function renameCampaignSlugInAccessConfig(rawConfig, fromSlug, toSlug) {
   const configObject = rawConfig && typeof rawConfig === 'object' && !Array.isArray(rawConfig)
     ? rawConfig
     : {};
+  const hasLegacyGmAssignments = Boolean(
+    configObject.gmAssignments && typeof configObject.gmAssignments === 'object' && !Array.isArray(configObject.gmAssignments),
+  );
   const memberships = configObject.memberships && typeof configObject.memberships === 'object' && !Array.isArray(configObject.memberships)
     ? configObject.memberships
     : {};
@@ -134,9 +137,14 @@ export function renameCampaignSlugInAccessConfig(rawConfig, fromSlug, toSlug) {
         return [userId, entry];
       }
 
-      const campaigns = Array.isArray(entry.campaigns)
-        ? entry.campaigns.map((campaign) => (campaign === fromSlug ? toSlug : campaign))
-        : entry.campaigns;
+      let campaigns = entry.campaigns;
+      if (Array.isArray(entry.campaigns)) {
+        campaigns = entry.campaigns.map((campaign) => (campaign === fromSlug ? toSlug : campaign));
+      } else if (entry.campaigns && typeof entry.campaigns === 'object') {
+        campaigns = Object.fromEntries(
+          Object.entries(entry.campaigns).map(([campaignSlug, role]) => [campaignSlug === fromSlug ? toSlug : campaignSlug, role]),
+        );
+      }
 
       return [userId, { ...entry, campaigns }];
     }),
@@ -150,7 +158,7 @@ export function renameCampaignSlugInAccessConfig(rawConfig, fromSlug, toSlug) {
   return {
     ...configObject,
     memberships: updatedMemberships,
-    gmAssignments: updatedGmAssignments,
+    ...(hasLegacyGmAssignments ? { gmAssignments: updatedGmAssignments } : {}),
   };
 }
 

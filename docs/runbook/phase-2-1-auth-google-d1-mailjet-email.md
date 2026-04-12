@@ -11,7 +11,7 @@ Runtime vars (non-secret):
 - `EMAIL_REPLY_TO` (optional)
 - `CONTACT_TO_EMAIL`
 - `MAILJET_SANDBOX_MODE` (`on` or `off`)
-- `CAMPAIGN_GM_ASSIGNMENTS` (optional local/dev-only fallback JSON override for campaign → GM mapping)
+- `CAMPAIGN_MEMBERSHIPS` (optional local/dev-only fallback JSON override for user → campaign role map)
 
 Secrets:
 
@@ -69,6 +69,12 @@ Ordered migration files are:
 3. `migrations/0003_auth_core.sql`
 4. `migrations/0004_auth_email_hardening.sql`
 5. `migrations/0005_campaign_gm_assignments_multi.sql`
+6. `migrations/0006_content_index.sql`
+7. `migrations/0007_content_index_r2_lookup.sql`
+8. `migrations/0008_content_index_collection_scoped_identity.sql`
+9. `migrations/0009_campaign_memberships_role_unification.sql`
+
+`migrations/0010_drop_campaign_gm_assignments.sql` is intentionally deferred until after burn-in parity checks.
 
 Policy constraints:
 
@@ -94,11 +100,13 @@ pnpm db:seed:memberships:local
 
 The seed is idempotent (`INSERT OR IGNORE`) and will not overwrite existing membership rows.
 
-GM assignment source-of-truth:
+Campaign entitlement authority after cutover:
 
-- staging/prod: D1 `campaign_gm_assignments`
-- local/dev fallback only: `gmAssignments` in [`config/campaign-access.config.json`](config/campaign-access.config.json)
-- local/dev fallback only: optional env override through `CAMPAIGN_GM_ASSIGNMENTS`
+- Better Auth remains the auth/session boundary.
+- staging/prod entitlement authority: D1 `campaign_memberships`
+- `campaign_memberships.role = 'gm'` is the only live GM authority after Release 1 cutover.
+- `campaign_gm_assignments` remains burn-in parity data only until `0010` is approved.
+- localhost-only fallback uses `CAMPAIGN_MEMBERSHIPS` or [`config/campaign-access.config.json`](config/campaign-access.config.json).
 
 ## 5) Secret provisioning
 
@@ -163,7 +171,7 @@ EOF
 If needed for local/dev fallback override, add:
 
 ```bash
-CAMPAIGN_GM_ASSIGNMENTS={"brad":{"userId":"jim"},"barry":{"userId":"tom"}}
+CAMPAIGN_MEMBERSHIPS={"jim":{"campaigns":{"brad":"gm","barry":"member"}},"tom":{"campaigns":{"barry":"gm"}}}
 ```
 
 2. Ensure local DB schema is current:
@@ -192,17 +200,29 @@ This command builds Astro Cloudflare server output, applies local D1 migration/s
 2. Call `/api/auth/get-session` before login and confirm null/unauthenticated behavior.
 3. Complete sign-in (Google or email/password), then open `/account`.
 4. Verify campaign access behavior:
-   - unauthenticated: restricted routes show restricted message
-   - authenticated non-member: `campaignMembers` and `gm` routes remain blocked
-   - authenticated member: `campaignMembers` routes render
-   - authenticated campaign GM: `gm` and `campaignMembers` routes render
-   - verify GM rows in D1 for expected campaign/user pairs:
+    - unauthenticated: restricted routes show restricted message
+    - authenticated non-member: `campaignMembers` and `gm` routes remain blocked
+    - authenticated member: `campaignMembers` routes render
+    - authenticated campaign GM: `gm` and `campaignMembers` routes render
+    - verify canonical GM rows in D1 for expected campaign/user pairs:
 
-   ```sql
-   SELECT campaign_slug, user_id, created_at, updated_at
-   FROM campaign_gm_assignments
-   ORDER BY campaign_slug ASC, user_id ASC;
-   ```
+    ```sql
+    SELECT campaign_slug, user_id, role, created_at, updated_at
+    FROM campaign_memberships
+    WHERE role = 'gm'
+    ORDER BY campaign_slug ASC, user_id ASC;
+    ```
+
+    - during burn-in, verify parity remains clean:
+
+    ```sql
+    SELECT campaign_slug, user_id
+    FROM campaign_gm_assignments
+    EXCEPT
+    SELECT campaign_slug, user_id
+    FROM campaign_memberships
+    WHERE role = 'gm';
+    ```
 5. Test contact relay with Mailjet sandbox mode:
    - `POST /api/contact` with valid JSON returns `{ "ok": true }`
 
@@ -225,8 +245,8 @@ This command builds Astro Cloudflare server output, applies local D1 migration/s
 
 - Confirm user session exists at `/account`.
 - Confirm `campaign_memberships` row exists for `(user_id, campaign_slug)`.
-- For `visibility: gm`, confirm `campaign_gm_assignments` has a row for `(campaign_slug, user_id)` in D1.
-- In local-only fallback mode, confirm `CAMPAIGN_MEMBERSHIPS` JSON shape matches [`src/utils/campaign-membership-config.ts`](src/utils/campaign-membership-config.ts).
+- For `visibility: gm`, confirm the row in `campaign_memberships` has `role = 'gm'`.
+- In local-only fallback mode, confirm `CAMPAIGN_MEMBERSHIPS` JSON shape matches the role-map examples in [`docs/runbook/campaign-access-local-dev.md`](docs/runbook/campaign-access-local-dev.md).
 
 ### Contact endpoint returns `503 unavailable`
 
@@ -236,9 +256,9 @@ This command builds Astro Cloudflare server output, applies local D1 migration/s
 
 ## 11) Rollback notes
 
-- Membership migration is additive and non-destructive.
-- Application rollback path is code-only revert of auth route/resolver updates.
-- As emergency local fallback, `CAMPAIGN_MEMBERSHIPS` map can still be enabled for localhost-only development behavior.
+- Better Auth session plumbing is unchanged by this tranche.
+- Application rollback path is code-only revert of auth route/resolver updates plus regeneration of legacy GM rows from `campaign_memberships WHERE role = 'gm'` if needed.
+- As emergency local fallback, `CAMPAIGN_MEMBERSHIPS` can still be enabled for localhost-only development behavior.
 
 ## 12) Operator SOP — Active MVP path (Option A2: Wrangler-applied D1 SQL files)
 
@@ -325,8 +345,8 @@ Available templates:
 - membership grant/upsert: [`scripts/operator-sql/templates/membership-grant.sql`](scripts/operator-sql/templates/membership-grant.sql)
 - membership revoke: [`scripts/operator-sql/templates/membership-revoke.sql`](scripts/operator-sql/templates/membership-revoke.sql)
 - membership role update: [`scripts/operator-sql/templates/membership-role-update.sql`](scripts/operator-sql/templates/membership-role-update.sql)
-- GM assignment upsert: [`scripts/operator-sql/templates/gm-assignment-upsert.sql`](scripts/operator-sql/templates/gm-assignment-upsert.sql)
-- GM assignment revoke: [`scripts/operator-sql/templates/gm-assignment-revoke.sql`](scripts/operator-sql/templates/gm-assignment-revoke.sql)
+- GM assignment upsert (deprecated burn-in parity only): [`scripts/operator-sql/templates/gm-assignment-upsert.sql`](scripts/operator-sql/templates/gm-assignment-upsert.sql)
+- GM assignment revoke (deprecated burn-in parity only): [`scripts/operator-sql/templates/gm-assignment-revoke.sql`](scripts/operator-sql/templates/gm-assignment-revoke.sql)
 - auth account link upsert: [`scripts/operator-sql/templates/account-link-upsert.sql`](scripts/operator-sql/templates/account-link-upsert.sql)
 - auth account link revoke: [`scripts/operator-sql/templates/account-link-revoke.sql`](scripts/operator-sql/templates/account-link-revoke.sql)
 
@@ -423,7 +443,7 @@ All of the following must hold before declaring the Option A2 auth/email path pr
 Use deterministic inverse operations:
 
 - membership grant ↔ membership revoke
-- GM upsert ↔ GM revoke
+- membership role update ↔ membership role update/revoke
 - account-link upsert ↔ account-link revoke
 
 Always verify with:

@@ -1,4 +1,4 @@
-import membershipConfigJson from '../src/content/campaigns/access.config.json' with { type: 'json' };
+import membershipConfigJson from '../config/campaign-access.config.json' with { type: 'json' };
 
 function normalizeMembershipConfig(rawConfig) {
   if (!rawConfig || typeof rawConfig !== 'object' || Array.isArray(rawConfig)) {
@@ -17,16 +17,50 @@ function normalizeMembershipConfig(rawConfig) {
     }
 
     const campaignsRaw = value.campaigns;
-    if (!Array.isArray(campaignsRaw)) {
-      continue;
+    const campaigns = {};
+
+    if (Array.isArray(campaignsRaw)) {
+      for (const item of campaignsRaw) {
+        if (typeof item !== 'string' || item.length === 0) {
+          continue;
+        }
+
+        campaigns[item] = 'member';
+      }
+    } else if (campaignsRaw && typeof campaignsRaw === 'object') {
+      for (const [campaignSlug, role] of Object.entries(campaignsRaw)) {
+        if (!campaignSlug || (role !== 'member' && role !== 'gm')) {
+          continue;
+        }
+
+        campaigns[campaignSlug] = role;
+      }
     }
 
-    const campaigns = campaignsRaw.filter((item) => typeof item === 'string' && item.length > 0);
-    if (campaigns.length === 0) {
+    if (Object.keys(campaigns).length === 0) {
       continue;
     }
 
     normalized[userId] = campaigns;
+  }
+
+  const gmAssignments = rawConfig.gmAssignments;
+  if (gmAssignments && typeof gmAssignments === 'object' && !Array.isArray(gmAssignments)) {
+    for (const [campaignSlug, value] of Object.entries(gmAssignments)) {
+      if (!campaignSlug || !value || typeof value !== 'object' || Array.isArray(value)) {
+        continue;
+      }
+
+      const userId = value.userId;
+      if (typeof userId !== 'string' || userId.length === 0) {
+        continue;
+      }
+
+      normalized[userId] = {
+        ...(normalized[userId] || {}),
+        [campaignSlug]: 'gm',
+      };
+    }
   }
 
   return normalized;
@@ -41,12 +75,19 @@ function createInsertStatements(config) {
   const statements = [];
 
   for (const [userId, campaigns] of Object.entries(config)) {
-    for (const campaignSlug of campaigns) {
+    for (const [campaignSlug, role] of Object.entries(campaigns)) {
       const id = `${userId}:${campaignSlug}`.replace(/[^a-zA-Z0-9:_-]/g, '_');
       statements.push(
         `INSERT OR IGNORE INTO campaign_memberships (id, user_id, campaign_slug, role, created_at)
-VALUES (${toSqlString(id)}, ${toSqlString(userId)}, ${toSqlString(campaignSlug)}, 'member', ${toSqlString(nowIso)});`,
+VALUES (${toSqlString(id)}, ${toSqlString(userId)}, ${toSqlString(campaignSlug)}, ${toSqlString(role)}, ${toSqlString(nowIso)});`,
       );
+
+      if (role === 'gm') {
+        statements.push(
+          `INSERT OR IGNORE INTO campaign_gm_assignments (campaign_slug, user_id, created_at)
+VALUES (${toSqlString(campaignSlug)}, ${toSqlString(userId)}, ${toSqlString(nowIso)});`,
+        );
+      }
     }
   }
 
@@ -62,4 +103,3 @@ if (statements.length === 0) {
 }
 
 console.log(statements.join('\n'));
-

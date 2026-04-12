@@ -3,7 +3,7 @@
 import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 
-const orderedMigrations = [
+export const orderedMigrations = [
   './migrations/0001_campaign_memberships.sql',
   './migrations/0002_campaign_gm_assignments.sql',
   './migrations/0003_auth_core.sql',
@@ -12,6 +12,7 @@ const orderedMigrations = [
   './migrations/0006_content_index.sql',
   './migrations/0007_content_index_r2_lookup.sql',
   './migrations/0008_content_index_collection_scoped_identity.sql',
+  './migrations/0009_campaign_memberships_role_unification.sql',
 ];
 
 export function parseArgs(argv) {
@@ -360,19 +361,31 @@ function contentIndexUsesCollectionScopedPrimaryKey(baseArgs) {
   return requireNumericValue(check, 'content_index collection-scoped primary key check') === 2;
 }
 
-function buildConflictReport(baseArgs) {
+function createSchemaInspector(baseArgs) {
+  return {
+    queryNumeric(label, sql) {
+      return queryNumeric(baseArgs, label, sql);
+    },
+    queryText(sql) {
+      return queryText(baseArgs, sql);
+    },
+    tableExists(tableName) {
+      return tableExists(baseArgs, tableName);
+    },
+  };
+}
+
+export function buildConflictReportFromInspector(inspector) {
   const conflicts = [];
 
-  const objectTypeConflictCount = queryNumeric(
-    baseArgs,
+  const objectTypeConflictCount = inspector.queryNumeric(
     'schema_object_conflicts',
     `SELECT COUNT(*)
      FROM sqlite_master
      WHERE name IN ('campaign_memberships','campaign_gm_assignments','content_index','user','account','session','verification')
        AND type <> 'table';`,
   );
-  const objectTypeConflicts = queryText(
-    baseArgs,
+  const objectTypeConflicts = inspector.queryText(
     `SELECT name || ':' || type AS bad_object
      FROM sqlite_master
      WHERE name IN ('campaign_memberships','campaign_gm_assignments','content_index','user','account','session','verification')
@@ -389,16 +402,14 @@ function buildConflictReport(baseArgs) {
   }
 
   const requiredUserColumns = ['email', 'emailVerified', 'email_canonical'];
-  const userTableExists = queryNumeric(
-    baseArgs,
+  const userTableExists = inspector.queryNumeric(
     'user_table_exists',
     `SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='user';`,
   );
 
   if (requireNumericValue(userTableExists, 'user table existence check') === 1) {
     for (const column of requiredUserColumns) {
-      const hasColumn = queryNumeric(
-        baseArgs,
+      const hasColumn = inspector.queryNumeric(
         `user.${column}`,
         `SELECT COUNT(*) FROM pragma_table_info('user') WHERE name='${column}';`,
       );
@@ -411,8 +422,7 @@ function buildConflictReport(baseArgs) {
       }
     }
 
-    const duplicateCanonical = queryNumeric(
-      baseArgs,
+    const duplicateCanonical = inspector.queryNumeric(
       'duplicate_canonical_email_groups',
       `SELECT COUNT(*)
        FROM (
@@ -424,8 +434,7 @@ function buildConflictReport(baseArgs) {
        );`,
     );
     if (requireNumericValue(duplicateCanonical, 'canonical email collision detection') > 0) {
-      const duplicateDetails = queryText(
-        baseArgs,
+      const duplicateDetails = inspector.queryText(
         `SELECT trim(lower(email)) AS canonical_email,
                 COUNT(*) AS duplicate_count,
                 GROUP_CONCAT(id) AS conflicting_user_ids
@@ -446,14 +455,12 @@ function buildConflictReport(baseArgs) {
     }
   }
 
-  const verificationTableExists = queryNumeric(
-    baseArgs,
+  const verificationTableExists = inspector.queryNumeric(
     'verification_table_exists',
     `SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='verification';`,
   );
   if (requireNumericValue(verificationTableExists, 'verification table existence check') === 1) {
-    const hasExpiry = queryNumeric(
-      baseArgs,
+    const hasExpiry = inspector.queryNumeric(
       'verification.expiresAt',
       `SELECT COUNT(*) FROM pragma_table_info('verification') WHERE name='expiresAt';`,
     );
@@ -466,44 +473,120 @@ function buildConflictReport(baseArgs) {
     }
   }
 
+  if (inspector.tableExists('campaign_memberships')) {
+    const invalidRoleCount = inspector.queryNumeric(
+      'campaign_memberships_invalid_role_rows',
+      `SELECT COUNT(*)
+       FROM campaign_memberships
+       WHERE role IS NULL OR role NOT IN ('member', 'gm');`,
+    );
+
+    if (requireNumericValue(invalidRoleCount, 'campaign_memberships invalid role detection') > 0) {
+      const invalidRoleDetails = inspector.queryText(
+        `SELECT COALESCE(role, '<null>') AS role,
+                COUNT(*) AS row_count
+         FROM campaign_memberships
+         WHERE role IS NULL OR role NOT IN ('member', 'gm')
+         GROUP BY role
+         ORDER BY role;`,
+      );
+
+      conflicts.push({
+        type: 'invalid_membership_roles',
+        message:
+          'campaign_memberships contains unsupported role values. Repair invalid rows before applying migration 0009.',
+        details: invalidRoleDetails.output || invalidRoleDetails.error || 'No details available.',
+      });
+    }
+  }
+
   return conflicts;
 }
 
-function printPlanSummary(baseArgs) {
-  console.log('\n=== Ordered migration plan ===');
-  for (const [index, migration] of orderedMigrations.entries()) {
-    console.log(`${index + 1}. ${migration}`);
-  }
-
-  console.log('\n=== Dry-run: what would change ===');
-  console.log('- Ensure campaign membership + GM assignment tables/indexes exist (idempotent create-if-missing).');
-  console.log('- Ensure Better Auth core tables/user columns/indexes exist (idempotent create-if-missing).');
-  console.log('- Ensure content discovery index table + supporting indexes exist (idempotent create-if-missing).');
-  console.log('- Normalize email values to trim(lower(email)) and backfill email_canonical where needed.');
-  console.log('- Enforce strict unique canonical email index (fails immediately if duplicates remain).');
-
-  const userTableExists = queryNumeric(
-    baseArgs,
+export function collectDryRunMetricsFromInspector(inspector) {
+  const userTableExists = inspector.queryNumeric(
     'user_table_exists',
     `SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='user';`,
   );
-  const metrics = [userTableExists];
+  const membershipTableExists = inspector.queryNumeric(
+    'campaign_memberships_table_exists',
+    `SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='campaign_memberships';`,
+  );
+  const gmAssignmentsTableExists = inspector.queryNumeric(
+    'campaign_gm_assignments_table_exists',
+    `SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='campaign_gm_assignments';`,
+  );
+  const metrics = [userTableExists, membershipTableExists, gmAssignmentsTableExists];
   const userExists = userTableExists.error ? false : userTableExists.value === 1;
+  const membershipTablePresent = membershipTableExists.error ? false : membershipTableExists.value === 1;
+  const gmAssignmentsTablePresent = gmAssignmentsTableExists.error ? false : gmAssignmentsTableExists.value === 1;
+
+  if (membershipTablePresent) {
+    metrics.push(
+      inspector.queryNumeric('campaign_memberships_total', `SELECT COUNT(*) FROM campaign_memberships;`),
+      inspector.queryNumeric(
+        'campaign_memberships_member_rows',
+        `SELECT COUNT(*) FROM campaign_memberships WHERE role = 'member';`,
+      ),
+      inspector.queryNumeric(
+        'campaign_memberships_gm_rows',
+        `SELECT COUNT(*) FROM campaign_memberships WHERE role = 'gm';`,
+      ),
+      inspector.queryNumeric(
+        'campaign_memberships_invalid_role_rows',
+        `SELECT COUNT(*)
+         FROM campaign_memberships
+         WHERE role IS NULL OR role NOT IN ('member', 'gm');`,
+      ),
+    );
+  } else {
+    metrics.push(
+      {
+        label: 'campaign_memberships_total',
+        value: 0,
+        error: 'campaign_memberships table not present yet (would be created by migration plan)',
+      },
+      {
+        label: 'campaign_memberships_member_rows',
+        value: 0,
+        error: 'campaign_memberships table not present yet (would be created by migration plan)',
+      },
+      {
+        label: 'campaign_memberships_gm_rows',
+        value: 0,
+        error: 'campaign_memberships table not present yet (would be created by migration plan)',
+      },
+      {
+        label: 'campaign_memberships_invalid_role_rows',
+        value: 0,
+        error: 'campaign_memberships table not present yet (would be created by migration plan)',
+      },
+    );
+  }
+
+  if (gmAssignmentsTablePresent) {
+    metrics.push(
+      inspector.queryNumeric('campaign_gm_assignments_total', `SELECT COUNT(*) FROM campaign_gm_assignments;`),
+    );
+  } else {
+    metrics.push({
+      label: 'campaign_gm_assignments_total',
+      value: 0,
+      error: 'campaign_gm_assignments table not present yet (would be created by migration plan)',
+    });
+  }
 
   if (userExists) {
     metrics.push(
-      queryNumeric(
-        baseArgs,
+      inspector.queryNumeric(
         'users_with_non_canonical_email',
         `SELECT COUNT(*) FROM "user" WHERE email IS NOT NULL AND email <> trim(lower(email));`,
       ),
-      queryNumeric(
-        baseArgs,
+      inspector.queryNumeric(
         'users_with_missing_email_canonical',
         `SELECT COUNT(*) FROM "user" WHERE email IS NOT NULL AND (email_canonical IS NULL OR email_canonical <> trim(lower(email)));`,
       ),
-      queryNumeric(
-        baseArgs,
+      inspector.queryNumeric(
         'canonical_collision_groups',
         `SELECT COUNT(*)
          FROM (
@@ -535,6 +618,29 @@ function printPlanSummary(baseArgs) {
     );
   }
 
+  return metrics;
+}
+
+function buildConflictReport(baseArgs) {
+  return buildConflictReportFromInspector(createSchemaInspector(baseArgs));
+}
+
+function printPlanSummary(baseArgs) {
+  console.log('\n=== Ordered migration plan ===');
+  for (const [index, migration] of orderedMigrations.entries()) {
+    console.log(`${index + 1}. ${migration}`);
+  }
+
+  console.log('\n=== Dry-run: what would change ===');
+  console.log('- Ensure campaign membership + GM assignment tables/indexes exist (idempotent create-if-missing).');
+  console.log('- Rebuild campaign membership authority into a constrained role model and keep legacy GM rows for burn-in parity.');
+  console.log('- Ensure Better Auth core tables/user columns/indexes exist (idempotent create-if-missing).');
+  console.log('- Ensure content discovery index table + supporting indexes exist (idempotent create-if-missing).');
+  console.log('- Normalize email values to trim(lower(email)) and backfill email_canonical where needed.');
+  console.log('- Enforce strict unique canonical email index (fails immediately if duplicates remain).');
+
+  const metrics = collectDryRunMetricsFromInspector(createSchemaInspector(baseArgs));
+
   console.log('\n=== Dry-run metrics ===');
   for (const metric of metrics) {
     if (metric.error) {
@@ -547,6 +653,10 @@ function printPlanSummary(baseArgs) {
 
 function hasConflictType(conflicts, type) {
   return conflicts.some((conflict) => conflict.type === type);
+}
+
+function hasNonForceableConflict(conflicts) {
+  return hasConflictType(conflicts, 'invalid_membership_roles');
 }
 
 function applyForcedCanonicalCollisionOverwrite(baseArgs) {
@@ -617,6 +727,8 @@ function printConflictBlock(conflicts, { forced }) {
 
   if (!forced) {
     console.error('\nBlocked: conflict(s) detected. Re-run with --force only after operator review and approval.');
+  } else if (hasNonForceableConflict(conflicts)) {
+    console.error('\nBlocked: one or more conflicts are not forceable and must be repaired before migration can continue.');
   } else {
     console.warn('\nWarning: --force supplied. Proceeding despite detected conflict(s).');
   }
@@ -657,7 +769,7 @@ async function main() {
 
     if (conflicts.length > 0) {
       printConflictBlock(conflicts, { forced: args.force });
-      if (!args.force) {
+      if (hasNonForceableConflict(conflicts) || !args.force) {
         process.exitCode = 1;
         return;
       }

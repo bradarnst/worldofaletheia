@@ -5,7 +5,7 @@ interface MembershipRow {
   campaign_slug: string;
 }
 
-interface GmAssignmentRow {
+interface CampaignUserRow {
   user_id: string;
 }
 
@@ -32,6 +32,7 @@ export class CampaignMembershipRepo {
         `SELECT user_id, campaign_slug
          FROM campaign_memberships
          WHERE user_id = ?1 AND campaign_slug = ?2
+           AND role IN ('member', 'gm')
          LIMIT 1`,
       )
       .bind(userId, campaignSlug)
@@ -61,12 +62,13 @@ export class CampaignMembershipRepo {
     const row = await this.db
       .prepare(
         `SELECT user_id
-         FROM campaign_gm_assignments
+         FROM campaign_memberships
          WHERE campaign_slug = ?1 AND user_id = ?2
+           AND role = 'gm'
          LIMIT 1`,
       )
       .bind(campaignSlug, userId)
-      .first<GmAssignmentRow>();
+      .first<CampaignUserRow>();
 
     return Boolean(row);
   }
@@ -75,30 +77,43 @@ export class CampaignMembershipRepo {
     const result = await this.db
       .prepare(
         `SELECT user_id
-         FROM campaign_gm_assignments
+         FROM campaign_memberships
          WHERE campaign_slug = ?1
+           AND role = 'gm'
          ORDER BY user_id ASC`,
       )
       .bind(campaignSlug)
-      .all<GmAssignmentRow>();
+      .all<CampaignUserRow>();
 
     return result.results.map((row) => row.user_id);
   }
 
-  async seedFromMembershipMap(memberships: Record<string, { campaigns: string[] }>): Promise<void> {
+  async seedFromMembershipMap(
+    memberships: Record<string, { campaigns: string[] | Record<string, 'member' | 'gm'> }>,
+  ): Promise<void> {
     const statement = this.db.prepare(
-      `INSERT OR IGNORE INTO campaign_memberships
-       (id, user_id, campaign_slug, role, created_at)
-       VALUES (?1, ?2, ?3, 'member', ?4)`,
+      `INSERT INTO campaign_memberships
+       (id, user_id, campaign_slug, role, created_at, updated_at)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?5)
+       ON CONFLICT(user_id, campaign_slug) DO UPDATE SET
+         role = CASE
+           WHEN excluded.role = 'gm' THEN 'gm'
+           ELSE campaign_memberships.role
+         END,
+         updated_at = excluded.updated_at`,
     );
 
     const createdAt = toIsoNow();
     const operations: Promise<unknown>[] = [];
 
     for (const [userId, entry] of Object.entries(memberships)) {
-      for (const campaignSlug of entry.campaigns) {
+      const campaignEntries = Array.isArray(entry.campaigns)
+        ? entry.campaigns.map((campaignSlug) => [campaignSlug, 'member'] as const)
+        : Object.entries(entry.campaigns);
+
+      for (const [campaignSlug, role] of campaignEntries) {
         const id = createId(userId, campaignSlug);
-        operations.push(statement.bind(id, userId, campaignSlug, createdAt).run());
+        operations.push(statement.bind(id, userId, campaignSlug, role, createdAt).run());
       }
     }
 

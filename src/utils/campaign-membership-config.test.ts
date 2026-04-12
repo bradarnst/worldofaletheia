@@ -3,15 +3,15 @@ import { normalizeCampaignMembershipConfig } from './campaign-membership-config'
 
 describe('campaign membership config normalization', () => {
   it('returns empty config for invalid root shape', () => {
-    expect(normalizeCampaignMembershipConfig(null)).toEqual({ memberships: {}, gmAssignments: {} });
-    expect(normalizeCampaignMembershipConfig([])).toEqual({ memberships: {}, gmAssignments: {} });
-    expect(normalizeCampaignMembershipConfig({ memberships: [] })).toEqual({ memberships: {}, gmAssignments: {} });
+    expect(normalizeCampaignMembershipConfig(null)).toEqual({ memberships: {} });
+    expect(normalizeCampaignMembershipConfig([])).toEqual({ memberships: {} });
+    expect(normalizeCampaignMembershipConfig({ memberships: [] })).toEqual({ memberships: {} });
   });
 
-  it('keeps only valid user membership mappings', () => {
+  it('normalizes legacy arrays, role maps, and gmAssignments into one membership-role source', () => {
     const result = normalizeCampaignMembershipConfig({
       memberships: {
-        jim: { campaigns: ['brad'] },
+        jim: { campaigns: { brad: 'member', barry: 'gm', broken: 'owner' } },
         fred: { campaigns: ['brad', 'barry'] },
         broken1: { campaigns: [123, 'brad'] },
         broken2: { campaigns: 'barry' },
@@ -26,13 +26,10 @@ describe('campaign membership config normalization', () => {
 
     expect(result).toEqual({
       memberships: {
-        jim: { campaigns: ['brad'] },
-        fred: { campaigns: ['brad', 'barry'] },
-        broken1: { campaigns: ['brad'] },
-      },
-      gmAssignments: {
-        brad: { userId: 'jim' },
-        barry: { userId: 'tom' },
+        jim: { campaigns: { brad: 'gm', barry: 'gm' } },
+        fred: { campaigns: { brad: 'member', barry: 'member' } },
+        broken1: { campaigns: { brad: 'member' } },
+        tom: { campaigns: { barry: 'gm' } },
       },
     });
   });

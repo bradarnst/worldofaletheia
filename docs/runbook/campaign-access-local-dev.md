@@ -1,4 +1,4 @@
-# Campaign Access (legacy local/dev fallback)
+# Campaign Access (local/dev fallback)
 
 This runbook describes the legacy local/dev fallback gate for campaign content.
 
@@ -20,10 +20,11 @@ Plain `pnpm dev` is the fast lane for UI/content iteration and is not authoritat
 ## Model (fallback only)
 
 - `visibility: public` → visible to everyone
-- `visibility: campaignMembers` → requires local/dev session + membership mapping (GM also allowed)
-- `visibility: gm` → requires local/dev session id matching campaign GM assignment
+- `visibility: campaignMembers` → requires local/dev session + membership-role mapping (`member` or `gm`)
+- `visibility: gm` → requires local/dev session + membership-role mapping with `role = 'gm'`
 
 This path is intended for localhost-only fallback behavior when real auth/session/D1 integration is unavailable.
+Better Auth remains the authoritative auth/session boundary outside this localhost-only fallback lane.
 
 ## Configuration
 
@@ -31,25 +32,24 @@ Set `CAMPAIGN_MEMBERSHIPS` as JSON in your environment:
 
 ```json
 {
-  "dev123": { "campaigns": ["brad", "sample-campaign"] },
-  "dev999": { "campaigns": ["barry"] }
+  "dev123": { "campaigns": { "brad": "gm", "sample-campaign": "member" } },
+  "dev999": { "campaigns": { "barry": "member" } }
 }
 ```
 
-The gate reads cookie `aletheia-dev-session=<sessionId>` and checks if that session id is mapped to the campaign slug.
+The gate reads cookie `aletheia-dev-session=<sessionId>` and checks the configured role for that campaign slug.
 
-Set `CAMPAIGN_GM_ASSIGNMENTS` as JSON in your environment for GM-only checks:
+Legacy compatibility note:
+
+- legacy array form is still accepted during transition and normalizes to `member`:
 
 ```json
 {
-  "brad": { "userId": "dev123" },
-  "barry": { "userId": "dev999" }
+  "dev123": { "campaigns": ["brad", "sample-campaign"] }
 }
 ```
 
-The gate compares `aletheia-dev-session=<sessionId>` to `gmAssignments[campaignSlug].userId`.
-
-If you rename a campaign slug, update local membership/gm config to match the new slug or use the rename helper documented in [`docs/runbook/campaign-authoring-and-rename.md`](docs/runbook/campaign-authoring-and-rename.md).
+If you rename a campaign slug, update local membership config to match the new slug or use the rename helper documented in [`docs/runbook/campaign-authoring-and-rename.md`](docs/runbook/campaign-authoring-and-rename.md).
 
 Campaign visibility defaults are now maintained in [`config/campaign-access.config.json`](config/campaign-access.config.json).
 
@@ -75,7 +75,7 @@ Config format:
 1. Set env:
 
 ```bash
-export CAMPAIGN_MEMBERSHIPS='{"dev123":{"campaigns":["brad","sample-campaign"]}}'
+export CAMPAIGN_MEMBERSHIPS='{"dev123":{"campaigns":{"brad":"gm","sample-campaign":"member"}}}'
 ```
 
 2. Add browser cookie for local site:
@@ -88,4 +88,4 @@ aletheia-dev-session=dev123
 
 ## Current replacement status
 
-Phase 2.1 has replaced primary resolver internals with Better Auth session + D1 membership checks. The local cookie map path remains only as an explicit development fallback in [`createCampaignAccessResolverFromRequest()`](src/utils/campaign-access.ts:154).
+Phase 2.1 has replaced primary resolver internals with Better Auth session + D1 membership-role checks. The local cookie map path remains only as an explicit development fallback in `src/utils/campaign-access.ts`.

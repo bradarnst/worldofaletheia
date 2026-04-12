@@ -1,19 +1,18 @@
 import { type CampaignMembershipRepo, createCampaignMembershipRepoFromLocals } from '~/lib/campaign-membership-repo';
 import { getRequestSession, type RequestSession } from '~/lib/auth-session';
+import {
+  normalizeCampaignMembershipConfig,
+  normalizeCampaignMembershipEntries,
+  type CampaignMembershipRole,
+} from '@utils/campaign-membership-config';
 
 export type CampaignVisibility = 'public' | 'campaignMembers' | 'gm';
 
-interface MembershipEntry {
-  campaigns?: string[];
-}
-
-type MembershipConfig = Record<string, MembershipEntry>;
-type GmAssignmentsConfig = Record<string, { userId?: string }>;
 type CampaignAccessConfig = Record<string, { visibility?: CampaignVisibility }>;
 
 const DEFAULT_SESSION_COOKIE = 'aletheia-dev-session';
 
-function parseMembershipConfig(rawConfig: string | undefined): Map<string, Set<string>> {
+function parseMembershipConfig(rawConfig: string | undefined): Map<string, Map<string, CampaignMembershipRole>> {
   if (!rawConfig) {
     return new Map();
   }
@@ -24,15 +23,14 @@ function parseMembershipConfig(rawConfig: string | undefined): Map<string, Set<s
       return new Map();
     }
 
-    const membershipConfig = parsed as MembershipConfig;
-    const bySession = new Map<string, Set<string>>();
+    const membershipConfig =
+      parsed && typeof parsed === 'object' && !Array.isArray(parsed) && ('memberships' in parsed || 'gmAssignments' in parsed)
+        ? normalizeCampaignMembershipConfig(parsed).memberships
+        : normalizeCampaignMembershipEntries(parsed);
+    const bySession = new Map<string, Map<string, CampaignMembershipRole>>();
 
     for (const [sessionId, value] of Object.entries(membershipConfig)) {
-      const campaigns = Array.isArray(value?.campaigns)
-        ? value.campaigns.filter((campaign): campaign is string => typeof campaign === 'string' && campaign.length > 0)
-        : [];
-
-      bySession.set(sessionId, new Set(campaigns));
+      bySession.set(sessionId, new Map(Object.entries(value.campaigns)));
     }
 
     return bySession;
@@ -65,35 +63,6 @@ function parseCampaignAccessConfig(rawConfig: string | undefined): Map<string, C
 
       if (value.visibility === 'public' || value.visibility === 'campaignMembers' || value.visibility === 'gm') {
         byCampaign.set(slug, value.visibility);
-      }
-    }
-
-    return byCampaign;
-  } catch {
-    return new Map();
-  }
-}
-
-function parseGmAssignments(rawConfig: string | undefined): Map<string, string> {
-  if (!rawConfig) {
-    return new Map();
-  }
-
-  try {
-    const parsed = JSON.parse(rawConfig);
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      return new Map();
-    }
-
-    const byCampaign = new Map<string, string>();
-    for (const [campaignSlug, value] of Object.entries(parsed as GmAssignmentsConfig)) {
-      if (!campaignSlug || !value || typeof value !== 'object' || Array.isArray(value)) {
-        continue;
-      }
-
-      const userId = value.userId;
-      if (typeof userId === 'string' && userId.length > 0) {
-        byCampaign.set(campaignSlug, userId);
       }
     }
 
@@ -196,7 +165,6 @@ export function resolveCampaignContentVisibility(input: {
 export interface CampaignAccessResolver {
   hasCampaignAccess(campaignSlug: string): boolean;
   isCampaignGm(campaignSlug: string): boolean;
-  getCampaignGmUserId(campaignSlug: string): string | null;
   getCampaignVisibility(campaignSlug: string): CampaignVisibility | null;
 }
 
@@ -299,23 +267,16 @@ export function createCampaignAccessResolverFromRequest(options: {
   request: Request;
   locals: unknown;
   membershipConfigRaw: string | undefined;
-  gmAssignmentsConfigRaw?: string | undefined;
   allowLegacyEnvFallback?: boolean;
 }): AsyncCampaignAccessResolver {
-  const {
-    request,
-    locals,
-    membershipConfigRaw,
-    gmAssignmentsConfigRaw,
-    allowLegacyEnvFallback = false,
-  } = options;
+  const { request, locals, membershipConfigRaw, allowLegacyEnvFallback = false } = options;
   const legacyResolver = createCampaignAccessResolver({
     cookieHeader: request.headers.get('cookie'),
     membershipConfigRaw,
-    gmAssignmentsConfigRaw,
   });
 
   let resolvedSessionPromise: Promise<RequestSession | null> | null = null;
+  let repoPromise: Promise<CampaignMembershipRepo> | null = null;
   const membershipByCampaign = new Map<string, Promise<{ isMember: boolean; isGm: boolean }>>();
 
   return {
@@ -342,35 +303,23 @@ export function createCampaignAccessResolverFromRequest(options: {
           };
         }
 
-        let repo: CampaignMembershipRepo;
-        let isMember = false;
         try {
-          repo = await createCampaignMembershipRepoFromLocals(locals);
-          isMember = await repo.isUserMemberOfCampaign(session.user.id, campaignSlug);
-        } catch (error) {
-          console.error('campaign.membership.query_failed', {
-            message: error instanceof Error ? error.message : 'unknown error',
-            campaignSlug,
-          });
-          if (!allowLegacyEnvFallback) {
-            return { isMember: false, isGm: false };
+          if (!repoPromise) {
+            repoPromise = createCampaignMembershipRepoFromLocals(locals);
           }
 
-          return {
-            isMember: legacyResolver.hasCampaignAccess(campaignSlug),
-            isGm: legacyResolver.isCampaignGm(campaignSlug),
-          };
-        }
-
-        try {
-          const isGm = await repo.isUserGmOfCampaign(session.user.id, campaignSlug);
+          const repo = await repoPromise;
+          const [isMember, isGm] = await Promise.all([
+            repo.isUserMemberOfCampaign(session.user.id, campaignSlug),
+            repo.isUserGmOfCampaign(session.user.id, campaignSlug),
+          ]);
 
           return {
             isMember,
             isGm,
           };
         } catch (error) {
-          console.error('campaign.gm.query_failed', {
+          console.error('campaign.membership.lookup_failed', {
             message: error instanceof Error ? error.message : 'unknown error',
             campaignSlug,
           });
@@ -394,20 +343,12 @@ export function createCampaignAccessResolverFromRequest(options: {
 export function createCampaignAccessResolver(options: {
   cookieHeader: string | null | undefined;
   membershipConfigRaw: string | undefined;
-  gmAssignmentsConfigRaw?: string | undefined;
   campaignAccessConfigRaw?: string | undefined;
   cookieName?: string;
 }): CampaignAccessResolver {
-  const {
-    cookieHeader,
-    membershipConfigRaw,
-    gmAssignmentsConfigRaw,
-    campaignAccessConfigRaw,
-    cookieName = DEFAULT_SESSION_COOKIE,
-  } = options;
+  const { cookieHeader, membershipConfigRaw, campaignAccessConfigRaw, cookieName = DEFAULT_SESSION_COOKIE } = options;
   const sessionId = readCookieValue(cookieHeader, cookieName);
   const membershipsBySession = parseMembershipConfig(membershipConfigRaw);
-  const gmByCampaign = parseGmAssignments(gmAssignmentsConfigRaw);
   const campaignVisibilityBySlug = parseCampaignAccessConfig(campaignAccessConfigRaw);
 
   return {
@@ -416,22 +357,25 @@ export function createCampaignAccessResolver(options: {
         return false;
       }
 
-      const campaigns = membershipsBySession.get(sessionId);
-      if (!campaigns) {
+      const campaignsBySlug = membershipsBySession.get(sessionId);
+      if (!campaignsBySlug) {
         return false;
       }
 
-      return campaigns.has(campaignSlug);
+      const role = campaignsBySlug.get(campaignSlug);
+      return role === 'member' || role === 'gm';
     },
     isCampaignGm(campaignSlug: string): boolean {
       if (!sessionId) {
         return false;
       }
 
-      return gmByCampaign.get(campaignSlug) === sessionId;
-    },
-    getCampaignGmUserId(campaignSlug: string): string | null {
-      return gmByCampaign.get(campaignSlug) ?? null;
+      const campaignsBySlug = membershipsBySession.get(sessionId);
+      if (!campaignsBySlug) {
+        return false;
+      }
+
+      return campaignsBySlug.get(campaignSlug) === 'gm';
     },
     getCampaignVisibility(campaignSlug: string): CampaignVisibility | null {
       return campaignVisibilityBySlug.get(campaignSlug) ?? null;

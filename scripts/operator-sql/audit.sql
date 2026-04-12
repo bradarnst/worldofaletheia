@@ -120,12 +120,64 @@ FROM campaign_memberships
 GROUP BY role
 ORDER BY role;
 
-SELECT 'campaign_gm_assignments_total' AS metric, COUNT(*) AS value
-FROM campaign_gm_assignments;
+SELECT 'campaign_memberships_invalid_role_rows' AS metric, COUNT(*) AS value
+FROM campaign_memberships
+WHERE role IS NULL OR role NOT IN ('member', 'gm');
 
 SELECT campaign_slug,
        user_id,
+       role,
        created_at,
        updated_at
-FROM campaign_gm_assignments
-ORDER BY campaign_slug;
+FROM campaign_memberships
+WHERE role IS NULL OR role NOT IN ('member', 'gm')
+ORDER BY campaign_slug, user_id;
+
+SELECT 'campaign_gm_assignments_total_legacy_burn_in' AS metric, COUNT(*) AS value
+FROM campaign_gm_assignments;
+
+SELECT 'gm_parity_missing_from_memberships' AS metric, COUNT(*) AS value
+FROM (
+  SELECT campaign_slug, user_id
+  FROM campaign_gm_assignments
+  EXCEPT
+  SELECT campaign_slug, user_id
+  FROM campaign_memberships
+  WHERE role = 'gm'
+);
+
+SELECT 'gm_parity_missing_from_legacy_table' AS metric, COUNT(*) AS value
+FROM (
+  SELECT campaign_slug, user_id
+  FROM campaign_memberships
+  WHERE role = 'gm'
+  EXCEPT
+  SELECT campaign_slug, user_id
+  FROM campaign_gm_assignments
+);
+
+SELECT 'gm_parity_missing_from_memberships' AS metric,
+       campaign_slug,
+       user_id
+FROM (
+  SELECT campaign_slug, user_id
+  FROM campaign_gm_assignments
+  EXCEPT
+  SELECT campaign_slug, user_id
+  FROM campaign_memberships
+  WHERE role = 'gm'
+)
+ORDER BY campaign_slug, user_id;
+
+SELECT 'gm_parity_missing_from_legacy_table' AS metric,
+       campaign_slug,
+       user_id
+FROM (
+  SELECT campaign_slug, user_id
+  FROM campaign_memberships
+  WHERE role = 'gm'
+  EXCEPT
+  SELECT campaign_slug, user_id
+  FROM campaign_gm_assignments
+)
+ORDER BY campaign_slug, user_id;

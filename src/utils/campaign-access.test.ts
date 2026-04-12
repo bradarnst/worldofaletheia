@@ -261,14 +261,16 @@ describe('campaign access resolver', () => {
     ).toBe('gm');
   });
 
-  it('enforces gm visibility using campaign gm assignment mapping in legacy resolver', () => {
+  it('supports legacy full-config fallback shapes by normalizing gmAssignments into gm roles', () => {
     const resolver = createCampaignAccessResolver({
       cookieHeader: 'aletheia-dev-session=jim',
       membershipConfigRaw: JSON.stringify({
-        jim: { campaigns: ['brad'] },
-      }),
-      gmAssignmentsConfigRaw: JSON.stringify({
-        brad: { userId: 'jim' },
+        memberships: {
+          jim: { campaigns: ['brad'] },
+        },
+        gmAssignments: {
+          brad: { userId: 'jim' },
+        },
       }),
     });
 
@@ -450,7 +452,6 @@ describe('campaign access resolver', () => {
       }),
       locals: {},
       membershipConfigRaw: JSON.stringify({ dev123: { campaigns: ['brad'] } }),
-      gmAssignmentsConfigRaw: JSON.stringify({ brad: { userId: 'dev123' } }),
       allowLegacyEnvFallback: false,
     });
 
@@ -481,8 +482,7 @@ describe('campaign access resolver', () => {
         headers: { cookie: 'aletheia-dev-session=dev123; better-auth.session_token=abc123' },
       }),
       locals: {},
-      membershipConfigRaw: JSON.stringify({ dev123: { campaigns: ['brad'] } }),
-      gmAssignmentsConfigRaw: JSON.stringify({ brad: { userId: 'dev123' } }),
+      membershipConfigRaw: JSON.stringify({ dev123: { campaigns: { brad: 'gm' } } }),
       allowLegacyEnvFallback: true,
     });
 
@@ -530,8 +530,7 @@ describe('campaign access resolver', () => {
         headers: { cookie: 'aletheia-dev-session=dev123' },
       }),
       locals: {},
-      membershipConfigRaw: JSON.stringify({ dev123: { campaigns: ['brad'] } }),
-      gmAssignmentsConfigRaw: JSON.stringify({ brad: { userId: 'dev123' } }),
+      membershipConfigRaw: JSON.stringify({ dev123: { campaigns: { brad: 'gm' } } }),
       allowLegacyEnvFallback: true,
     });
 

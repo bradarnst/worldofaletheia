@@ -1,20 +1,26 @@
 {
   "memberships": {
     "brad": {
-      "campaigns": ["brad","barry"]
+      "campaigns": {
+        "barry": "member",
+        "brad": "gm"
+      }
     },
     "fred": {
-      "campaigns": ["brad"]
+      "campaigns": {
+        "brad": "member"
+      }
     },
     "tom": {
-      "campaigns": ["barry"]
+      "campaigns": {
+        "barry": "member"
+      }
     },
     "barry": {
-      "campaigns": ["barry","brad"]
+      "campaigns": {
+        "barry": "gm",
+        "brad": "member"
+      }
     }
-  },
-  "gmAssignments": {
-    "brad": { "userId": "brad" },
-    "barry": { "userId": "barry" }
   }
 }
