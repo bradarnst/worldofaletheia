@@ -91,8 +91,9 @@ These decisions should now be treated as the active baseline unless explicitly r
 
 - Cards still matter for collection pages and supporting surfaces.
 - Cards should be cleaner, tighter, and calmer than the current implementation.
-- If a card has a meaningful image, use it.
-- If no meaningful image exists, do not reserve empty image space.
+- Standard automated collection cards should not use default thumbnail images.
+- Collection-card atmosphere should come from page-level backgrounds rather than per-card imagery.
+- Special/manual content layouts may define explicit image slots when the content type warrants it.
 - Whole-card clickability is acceptable where appropriate.
 
 ## 2.9 Sidebar policy
@@ -115,6 +116,32 @@ Detailed visual treatment remains open, but the semantic split is settled.
 
 ---
 
+## 2.11 Collection and article surface policy
+
+- Standard collection landing pages may use subtle blurred/tinted image, texture, or gradient backgrounds at the page level.
+- Collection backgrounds are image-first in the current design pass.
+- Collection cards should remain opaque and scan-friendly.
+- Do not use bento layouts for primary paginated collection listings.
+- Do not use default thumbnail images on standard automated collection cards.
+- Standard article/content pages should not use top hero images.
+- Article pages should lead with breadcrumbs, title, summary, and world-context metadata rather than decorative media.
+- Collection pages should use a compact site-wide search bar with type and tag filtering.
+
+## 2.12 Footer and glyph flavor policy
+
+- Footer should be compact, restrained, and multi-column rather than large or promotional.
+- Footer should include About, Contribute, Contact, GitHub, and copyright, with socials optional later.
+- `Contribute` should remain easy to reach from global nav and footer.
+- Flavor on cards and navigation should gradually come from a curated icon/glyph library rather than heavier visual chrome.
+- The target icon system is a custom SVG set rather than a third-party library look.
+
+## 2.13 Summary fallback policy
+
+- Authored summary is preferred whenever available.
+- If summary is blank, generate a deterministic build-time or ingest-time fallback.
+- Summary fallback should remain reviewable and low-risk rather than highly stylistic.
+
+---
 ## 3) Provisional Decisions
 
 These are current decisions, but they should be validated in design prototype or first implementation pass before being treated as fixed.
