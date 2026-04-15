@@ -1,14 +1,16 @@
-# Collection and Article Surface Spec (Draft)
+# Collection and Article Surface Spec
 
 ## Status
 
 - Date: 2026-04-14
-- Status: Draft
+- Updated: 2026-04-15
+- Status: Approved baseline direction; detailed wireframe capture completed
 - Depends on:
   - `plans/ui-direction-spec-baseline-2026-04-13.md`
   - `plans/ui-direction-spec-refinement-2026-04-13.md`
   - `plans/ui-direction-spec-homepage-revision-2026-04-14.md`
   - `plans/ui-direction-decision-register-2026-04-14.md`
+  - `plans/ui-component-and-shell-spec-2026-04-15.md`
 - Scope: collection landing pages, article pages, card surfaces, footer direction, and icon/glyph flavor system
 
 ---
@@ -424,15 +426,13 @@ This should remain deterministic and low-risk in the first pass.
 
 ## 8) Still Needed for a Detailed First Cut
 
-The following is still needed to turn this into a more exact visual spec:
+The following is still needed to turn this into a more exact production spec:
 
 1. exact opacity/blur/overlay ranges for collection backgrounds
 2. exact collection intro/header heights
 3. exact responsive layout/breakpoint behavior for the compact search + type + tag bar
-4. exact article front-matter/world-context layout beyond the approved order
-5. exact footer column grouping and ordering of About / Contribute / Contact / GitHub / copyright
-6. actual collection background image assignments and whether each collection uses one fixed image or a rotating pool
-7. the larger custom SVG icon map for all enumerated Canon and Campaign type values
+4. actual collection background image assignments and whether each collection uses one fixed image or a rotating pool
+5. the larger custom SVG icon map for all enumerated Canon and Campaign type values
 
 ---
 

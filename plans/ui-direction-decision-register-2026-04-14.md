@@ -79,12 +79,17 @@ These decisions should now be treated as the active baseline unless explicitly r
 - Each item should include title and short description.
 - Small icons are approved where they help orientation.
 - The menu should feel atmospheric and premium, not generic product UI and not heavy like Daisy tabs.
+- Header layout should use full-width framing with branding left, main nav centered, and utilities right.
+- `Contribute` remains a visible direct destination in the right-side utility cluster, not a dropdown group.
+- `Login` should be present in the global header utility cluster.
+- Theme switching in the header should be icon-only.
+- `GitHub` should not appear in the global header; it remains a footer destination.
 
 ## 2.7 Homepage content policy
 
 - Do not place random Canon/Using/Campaign content directly on the first-pass homepage.
 - Favor explanatory and curated domain-support sections below the hero.
-- `Contribute` should have a dedicated page and be visible in global navigation.
+- `Contribute` should have a dedicated page and remain visible in the global header utility cluster.
 - `About` should remain easy to reach and may also appear as a homepage support section.
 
 ## 2.8 Card policy
@@ -132,6 +137,7 @@ Detailed visual treatment remains open, but the semantic split is settled.
 - Footer should be compact, restrained, and multi-column rather than large or promotional.
 - Footer should include About, Contribute, Contact, GitHub, and copyright, with socials optional later.
 - `Contribute` should remain easy to reach from global nav and footer.
+- Footer should read as one compact section rather than a stacked primary footer plus separate footer bar.
 - Flavor on cards and navigation should gradually come from a curated icon/glyph library rather than heavier visual chrome.
 - The target icon system is a custom SVG set rather than a third-party library look.
 
@@ -145,6 +151,12 @@ Detailed visual treatment remains open, but the semantic split is settled.
 ## 3) Provisional Decisions
 
 These are current decisions, but they should be validated in design prototype or first implementation pass before being treated as fixed.
+
+Wireframe validation update:
+
+- homepage, global navigation, collection landing, article shell, compact filter bar, and footer wireframes were approved on 2026-04-15
+- the approved outcomes are captured in `plans/ui-component-and-shell-spec-2026-04-15.md`
+- the remaining sections below are only the items still intentionally flexible after the approved wireframe pass
 
 ## 3.1 Hero height
 

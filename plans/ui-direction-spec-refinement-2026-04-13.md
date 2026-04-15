@@ -53,6 +53,7 @@ Provided references:
 
 - `https://www.navbar.gallery/navbar/alignui`
 - `https://www.navbar.gallery/navbar/fey`
+- `https://duna.com/`
 
 Working takeaway:
 
@@ -77,9 +78,9 @@ The global header should include:
 - top-level grouped navigation,
 - dropdowns with short descriptions,
 - a small icon per section or collection group where helpful,
-- `Contribute` as a visible destination,
-- room for search later,
-- theme switch affordance.
+- a right-side utility cluster for `Search`, `Login`, `Contribute`, and theme switching,
+- theme switch as an icon-only control,
+- `GitHub` kept in the footer rather than in the global header.
 
 ## 3.3 Dropdown structure
 
@@ -96,7 +97,8 @@ Recommended top-level groups:
 - Using Aletheia
 - Reference
 - Campaigns
-- Contribute
+
+`Contribute` remains important, but it is no longer a dropdown group. It should live in the right-side utility cluster as a direct destination.
 
 ### Example direction for dropdown content
 
@@ -126,10 +128,6 @@ Recommended top-level groups:
 - Campaign Index — current and archived campaigns
 - Sessions — public session material where available
 
-#### Contribute
-
-- Contribute — how to participate, propose edits, or collaborate
-
 ## 3.4 Navigation style guidance
 
 Preferred characteristics:
@@ -138,7 +136,8 @@ Preferred characteristics:
 - smaller visual chrome,
 - more textual clarity,
 - subtle icon support,
-- dropdowns that read like guided orientation rather than generic app menus.
+- dropdowns that read like guided orientation rather than generic app menus,
+- full-width header framing with branding left, primary nav centered, and utilities right.
 
 Avoid:
 
