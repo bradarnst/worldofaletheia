@@ -1,24 +1,10 @@
 ---
-const currentPath = Astro.url.pathname;
+import SectionSubnav from '@components/site/SectionSubnav.astro';
 
 const links = [
-  { href: '/meta', label: 'Meta' },
-  { href: '/systems', label: 'Systems' },
+  { href: '/systems', label: 'Systems', icon: 'Systems' },
+  { href: '/meta', label: 'Meta', icon: 'Meta' },
 ];
 ---
 
-<div class="tabs nav-readable tabs-border bg-base-200 justify-center gap-1 p-1 h-12">
-  {links.map((link) => (
-    <a
-      href={link.href}
-      class:list={[
-        'tab tab-sm',
-        currentPath === link.href || currentPath.startsWith(link.href + '/')
-          ? 'tab-active'
-          : ''
-      ]}
-    >
-      {link.label}
-    </a>
-  ))}
-</div>
+<SectionSubnav links={links} />

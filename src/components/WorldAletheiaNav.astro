@@ -1,28 +1,14 @@
 ---
-const currentPath = Astro.url.pathname;
+import SectionSubnav from '@components/site/SectionSubnav.astro';
 
 const links = [
-  { href: '/bestiary', label: 'Bestiary' },
-  { href: '/flora', label: 'Flora' },
-  { href: '/factions', label: 'Factions' },
-  { href: '/lore', label: 'Lore' },
-  { href: '/places', label: 'Places' },
-  { href: '/sentients', label: 'Sentients' },
+  { href: '/lore', label: 'Lore', icon: 'Lore' },
+  { href: '/places', label: 'Places', icon: 'Places' },
+  { href: '/sentients', label: 'Sentients', icon: 'Sentients' },
+  { href: '/factions', label: 'Factions', icon: 'Factions' },
+  { href: '/bestiary', label: 'Bestiary', icon: 'Bestiary' },
+  { href: '/flora', label: 'Flora', icon: 'Flora' },
 ];
 ---
 
-<div class="tabs nav-readable tabs-border bg-base-100 justify-center gap-1 p-1 h-12">
-  {links.map((link) => (
-    <a
-      href={link.href}
-      class:list={[
-        'tab tab-sm',
-        currentPath === link.href || currentPath.startsWith(link.href + '/')
-          ? 'tab-active'
-          : ''
-      ]}
-    >
-      {link.label}
-    </a>
-  ))}
-</div>
+<SectionSubnav links={links} />

@@ -8,6 +8,7 @@
 - Purpose: consolidate the revamp plan, direction specs, decision register, and page-surface rules into an implementation-facing plan
 - Primary audience: implementation agent / future coding pass
 - Scope: homepage, navigation, collection pages, article pages, footer, tokens, icon system, and phased Daisy extraction
+- Wireframe status: approved wireframes are frozen; `plans/ui-component-and-shell-spec-2026-04-15.md` is the layout source of truth for shell structure
 
 ## Source Documents
 

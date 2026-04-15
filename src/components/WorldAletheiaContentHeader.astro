@@ -1,88 +1,26 @@
 ---
+import ArticleContextHeader from '@components/site/ArticleContextHeader.astro';
+
 interface Props {
   title: string;
   author?: string;
   created?: Date;
   excerpt?: string;
   tags?: string[];
+  type?: string;
+  subtype?: string;
   parentChain?: Array<{ label: string; href: string }>;
   relationships?: Array<{ label: string; href: string; kind?: 'partOf' | 'connectedTo' }>;
 }
 
-const { title, author, created, excerpt, tags, parentChain = [], relationships = [] } = Astro.props;
-const partOf = relationships.filter((rel) => rel.kind === 'partOf');
-const connectedTo = relationships.filter((rel) => rel.kind !== 'partOf');
+const { title, author, created, excerpt, tags = [], type, subtype, parentChain = [], relationships = [] } = Astro.props;
+
+const details = [
+  type ? { label: 'Type', value: type.replace(/[_-]/g, ' ') } : null,
+  subtype ? { label: 'Subtype', value: subtype.replace(/[_-]/g, ' ') } : null,
+  author ? { label: 'Author', value: author } : null,
+  created ? { label: 'Created', value: created.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) } : null,
+].filter((item): item is { label: string; value: string } => item !== null);
 ---
 
-<header class="bg-base-100 pb-4">
-  <div class="container mx-auto px-4 py-8 text-center max-w-5xl">
-    {parentChain.length > 0 && (
-      <nav aria-label="World hierarchy" class="mb-4">
-        <ol class="flex flex-wrap justify-center items-center gap-2 text-sm meta-muted">
-          {parentChain.map((item, index) => (
-            <>
-              <li>
-                <a href={item.href} class="hover:text-primary-700 transition-colors">{item.label}</a>
-              </li>
-              {index < parentChain.length - 1 && <li aria-hidden="true">›</li>}
-            </>
-          ))}
-        </ol>
-      </nav>
-    )}
-
-    <h1 class="text-4xl font-bold text-ink-950 mb-4">{title}</h1>
-    
-    {excerpt && <p class="text-xl text-ink-700 mb-4">{excerpt}</p>}
-    
-    <div class="flex flex-wrap items-center justify-center gap-3 text-sm meta-muted mb-4">
-      {author && <span>By {author}</span>}
-      {author && created && <span>•</span>}
-      {created && <span>{created.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>}
-    </div>
-    
-    {tags && tags.length > 0 && (
-      <div class="flex flex-wrap gap-2 justify-center">
-        {tags.map((tag) => (
-          <span class="tag-chip">{tag}</span>
-        ))}
-      </div>
-    )}
-
-    {(partOf.length > 0 || connectedTo.length > 0) && (
-      <section class="mt-6 rounded-xl border border-base-300 bg-base-200/50 p-4 text-left">
-        <h2 class="text-sm font-semibold tracking-wide uppercase text-ink-700 mb-3">Related in the world</h2>
-
-        {partOf.length > 0 && (
-          <div class="mb-3">
-            <h3 class="text-xs font-semibold uppercase tracking-wide text-ink-600 mb-1">Part of</h3>
-            <ul class="space-y-1">
-              {partOf.map((item) => (
-                <li>
-                  <a href={item.href} class="text-sm text-primary-700 hover:text-primary-800 transition-colors">
-                    {item.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {connectedTo.length > 0 && (
-          <div>
-            <h3 class="text-xs font-semibold uppercase tracking-wide text-ink-600 mb-1">Connected to</h3>
-            <ul class="space-y-1">
-              {connectedTo.map((item) => (
-                <li>
-                  <a href={item.href} class="text-sm text-primary-700 hover:text-primary-800 transition-colors">
-                    {item.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </section>
-    )}
-  </div>
-</header>
+<ArticleContextHeader title={title} summary={excerpt} breadcrumbs={parentChain} details={details} relationships={relationships} tags={tags} />

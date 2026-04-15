@@ -1,0 +1,116 @@
+---
+interface Crumb {
+  label: string;
+  href: string;
+}
+
+interface Relationship {
+  label: string;
+  href: string;
+  kind?: 'partOf' | 'connectedTo';
+}
+
+interface Detail {
+  label: string;
+  value: string;
+}
+
+interface Props {
+  title: string;
+  summary?: string;
+  breadcrumbs?: Crumb[];
+  details?: Detail[];
+  relationships?: Relationship[];
+  tags?: string[];
+}
+
+const {
+  title,
+  summary,
+  breadcrumbs = [],
+  details = [],
+  relationships = [],
+  tags = [],
+} = Astro.props;
+
+const partOf = relationships.filter((rel) => rel.kind === 'partOf');
+const connectedTo = relationships.filter((rel) => rel.kind !== 'partOf');
+const primaryDetails = details.slice(0, 4);
+---
+
+<header class="border-b border-base-300/70 bg-base-100/94">
+  <div class="mx-auto max-w-3xl px-4 py-10 lg:px-8 lg:py-12">
+    {breadcrumbs.length > 0 && (
+      <nav aria-label="Breadcrumb" class="mb-5">
+        <ol class="flex flex-wrap items-center gap-2 text-sm text-ink-700">
+          {breadcrumbs.map((item, index) => (
+            <Fragment>
+              <li><a href={item.href} class="hover:text-primary">{item.label}</a></li>
+              {index < breadcrumbs.length - 1 && <li aria-hidden="true" class="text-ink-500">/</li>}
+            </Fragment>
+          ))}
+        </ol>
+      </nav>
+    )}
+
+    <div class="space-y-6">
+      <div class="space-y-4">
+        <h1 class="text-4xl font-bold text-ink-950 md:text-5xl">{title}</h1>
+        {summary && <p class="max-w-3xl text-lg leading-8 text-ink-700">{summary}</p>}
+      </div>
+
+      {(primaryDetails.length > 0 || partOf.length > 0 || connectedTo.length > 0 || tags.length > 0) && (
+        <section class="grid gap-5 rounded-3xl border border-base-300/80 bg-base-100 px-5 py-5 shadow-sm lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+          <div class="space-y-4">
+            {primaryDetails.length > 0 && (
+              <dl class="grid gap-3 sm:grid-cols-2">
+                {primaryDetails.map((detail) => (
+                  <div class="rounded-2xl bg-base-200/65 px-4 py-3">
+                    <dt class="text-xs font-semibold uppercase tracking-[0.18em] text-ink-600">{detail.label}</dt>
+                    <dd class="mt-1 text-sm text-ink-900">{detail.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+
+            {(partOf.length > 0 || connectedTo.length > 0) && (
+              <div class="grid gap-4 sm:grid-cols-2">
+                {partOf.length > 0 && (
+                  <div>
+                    <h2 class="text-xs font-semibold uppercase tracking-[0.18em] text-ink-600">Part of</h2>
+                    <ul class="mt-2 space-y-2 text-sm text-ink-800">
+                      {partOf.map((item) => (
+                        <li><a href={item.href} class="hover:text-primary">{item.label}</a></li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {connectedTo.length > 0 && (
+                  <div>
+                    <h2 class="text-xs font-semibold uppercase tracking-[0.18em] text-ink-600">Connected to</h2>
+                    <ul class="mt-2 space-y-2 text-sm text-ink-800">
+                      {connectedTo.map((item) => (
+                        <li><a href={item.href} class="hover:text-primary" title={item.label}>{item.label}</a></li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {tags.length > 0 && (
+            <div>
+              <h2 class="text-xs font-semibold uppercase tracking-[0.18em] text-ink-600">Tags</h2>
+              <div class="mt-3 flex flex-wrap gap-2">
+                {tags.map((tag) => (
+                  <span class="rounded-full border border-base-300/80 bg-base-200/65 px-3 py-1 text-xs font-medium text-ink-700">{tag}</span>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+    </div>
+  </div>
+</header>

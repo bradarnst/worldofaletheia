@@ -1,5 +1,7 @@
 ---
 import { Image } from 'astro:assets';
+import NavCardLink from '@components/site/NavCardLink.astro';
+import SiteGlyph from '@components/site/SiteGlyph.astro';
 import aletheiaLogo from '@images/aletheia-logo.png';
 
 const themes = [
@@ -9,120 +11,152 @@ const themes = [
   { value: 'jungle-nights', label: 'Jungle Nights' },
 ];
 
+const currentPath = Astro.url.pathname;
 const currentPathWithSearch = `${Astro.url.pathname}${Astro.url.search}`;
 const loginHref = `/login?next=${encodeURIComponent(currentPathWithSearch)}`;
+
+const navGroups = [
+  {
+    label: 'World of Aletheia',
+    icon: 'Canon',
+    matches: ['/aletheia-world-canon', '/lore', '/places', '/sentients', '/bestiary', '/flora', '/factions'],
+    items: [
+      { href: '/lore', title: 'Lore', description: 'Myths, histories, cosmology, and world truths.', icon: 'Lore' },
+      { href: '/places', title: 'Places', description: 'Regions, settlements, ruins, and terrain.', icon: 'Places' },
+      { href: '/sentients', title: 'Sentients', description: 'Peoples, cultures, lineages, and deities.', icon: 'Sentients' },
+      { href: '/bestiary', title: 'Bestiary', description: 'Creatures, monsters, animals, and spirits.', icon: 'Bestiary' },
+      { href: '/flora', title: 'Flora', description: 'Plants, fungi, herbs, and stranger growths.', icon: 'Flora' },
+      { href: '/factions', title: 'Factions', description: 'Guilds, powers, institutions, and rival orders.', icon: 'Factions' },
+    ],
+  },
+  {
+    label: 'Using Aletheia',
+    icon: 'Using',
+    matches: ['/using-aletheia', '/systems', '/meta', '/about'],
+    items: [
+      { href: '/systems', title: 'Systems', description: 'Rules support, mechanics context, and play material.', icon: 'Systems' },
+      { href: '/meta', title: 'Meta', description: 'Project notes, planning, and usage guidance.', icon: 'Meta' },
+      { href: '/about', title: 'About', description: 'How the world is built and how the site is used.', icon: 'About' },
+    ],
+  },
+  {
+    label: 'Reference',
+    icon: 'Reference',
+    matches: ['/references'],
+    items: [
+      { href: '/references/calendar', title: 'Calendar', description: 'Months, cycles, civic time, and seasonal structure.', icon: 'Calendar' },
+      { href: '/references/timeline', title: 'Timeline', description: 'Events placed into historical sequence.', icon: 'Timeline' },
+      { href: '/references/maps', title: 'Maps', description: 'Geography and spatial reference surfaces.', icon: 'Maps' },
+    ],
+  },
+  {
+    label: 'Campaigns',
+    icon: 'Campaigns',
+    matches: ['/campaigns'],
+    items: [
+      { href: '/campaigns', title: 'Campaign Index', description: 'Public campaigns, records, and evolving stories.', icon: 'Campaigns' },
+    ],
+  },
+];
+
+function isGroupActive(matches: string[]) {
+  return matches.some((prefix) => currentPath === prefix || currentPath.startsWith(`${prefix}/`));
+}
 ---
 
-<div class="navbar nav-readable bg-base-200 text-base-content sticky top-0 z-50 shadow-md border-b border-base-300">
-  
-  <!-- LEFT: Identity -->
-  <div class="navbar-start">
-    <!-- Mobile Dropdown (Hamburger) -->
-    <div class="dropdown">
-      <div tabindex="0" role="button" class="btn btn-ghost lg:hidden">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" /></svg>
-      </div>
-      <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-1 p-2 shadow bg-base-100 rounded-box w-56">
-        <!-- Mobile users get everything here -->
-        <li><a href="/" class="hover:text-primary" >Home</a></li>
-        <li><a href="/about" class="hover:text-primary" >About</a></li>
-        <li><a href="/lore" class="hover:text-primary" >Lore</a></li>
-        <li><a href="/sentients" class="hover:text-primary" >Sentients</a></li>
-        <li><a href="/places" class="hover:text-primary" >Places</a></li>
-        <li><a href="/factions" class="hover:text-primary" >Factions</a></li>
-        <li><a href="/bestiary" class="hover:text-primary" >Bestiary</a></li>
-        <li><a href="/flora" class="hover:text-primary" >Flora</a></li>
-        <li><a href="/references" class="hover:text-primary" >Reference</a></li>
-        <li><a href="/campaigns" class="hover:text-primary" >Campaigns</a></li>
-        <li><a href={loginHref} class="hover:text-primary">Sign in</a></li>
-        <li><a href="/systems" class="hover:text-primary" >Systems</a></li>
-        <li><a href="/meta" class="hover:text-primary" >Meta</a></li>
-        <li><a href="/systems/gurps" class="text-secondary hover:text-primary">GURPS</a></li>
-        <li class="menu-title mt-1"><span>Palette</span></li>
-        <li>
-          <select class="select select-sm select-bordered w-full js-theme-picker" aria-label="Select theme">
-            {themes.map((theme) => (
-              <option value={theme.value}>{theme.label}</option>
-            ))}
-          </select>
-        </li>
-        <!-- <li>
-          <a>Regions</a>
-          <ul class="p-2">
-            <li><a>Northern Wastes</a></li>
-            <li><a>Iron Guilds</a></li>
-          </ul>
-        </li> -->
-      </ul>
-    </div>
-    
-    <!-- Logo & Title -->
-    <a href="/" class="btn btn-ghost text-xl font-serif tracking-widest">
-      <Image src={aletheiaLogo} alt="World of Aletheia logo" width={48} height={32} class="h-8 w-12 mr-2" />
-        World of Aletheia
+<header class="sticky top-0 z-50 border-b border-base-300/70 bg-base-100/88 backdrop-blur-xl" style="font-family: var(--font-family-ui);">
+  <div class="mx-auto flex max-w-7xl items-center gap-3 px-4 py-2.5 lg:grid lg:grid-cols-[minmax(14rem,1fr)_auto_auto_auto] lg:gap-4 lg:px-8">
+    <a href="/" class="flex min-w-0 items-center gap-3 text-ink-950 transition hover:text-primary lg:min-w-[14rem]">
+      <Image src={aletheiaLogo} alt="World of Aletheia logo" width={48} height={32} class="h-8 w-12 shrink-0" />
+      <span class="min-w-0">
+        <span class="block truncate font-semibold tracking-[0.2em] text-[0.65rem] uppercase text-ink-600">World Archive</span>
+        <span class="block truncate text-lg font-semibold">World of Aletheia</span>
+      </span>
     </a>
-  </div>
 
-  <!-- CENTER: Main Navigation -->
-  <div class="navbar-center hidden lg:flex">
-    <ul class="menu menu-horizontal p-2 bg-base-100 shadow-lg rounded-t-none">
-      <li><a href="/" class="hover:text-accent">Home</a></li>
-      <li><a href="/aletheia-world-canon" class="hover:text-accent">World of Aletheia</a></li>
-      <li><a href="/using-aletheia" class="hover:text-accent">Using Aletheia</a></li>
-      <li><a href="/references" class="hover:text-accent">Reference</a></li>
-      <li><a href="/campaigns" class="hover:text-accent">Campaigns</a></li>
-    </ul>
-  </div>
-
-  <!-- RIGHT: Utilities & The "System" Link -->
-  <div class="navbar-end hidden lg:flex">
-    <ul class="menu menu-horizontal px-1">
-      <li>
-        <label class="input input-sm input-bordered flex items-center gap-2 pr-2" aria-label="Palette selector">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-4 w-4 opacity-85" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18Z" />
-            <circle cx="8.5" cy="10" r="1" fill="currentColor" />
-            <circle cx="12" cy="7.5" r="1" fill="currentColor" />
-            <circle cx="15.5" cy="10" r="1" fill="currentColor" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 15.5a2.5 2.5 0 0 0 5 0c0-1.1-.9-2-2-2H9.5" />
-          </svg>
-          <select class="bg-transparent js-theme-picker" aria-label="Select theme">
-            {themes.map((theme) => (
-              <option value={theme.value}>{theme.label}</option>
-            ))}
-          </select>
-        </label>
-      </li>
-      <li><a href="/about" class="hover:text-primary">About</a></li>
-      <li><a href={loginHref} class="hover:text-primary">Sign in</a></li>
-      
-      <!-- The "Regions" Dropdown (For quick jumping when NOT on homepage) -->
-      <!-- <li>
-        <details>
-          <summary>Atlas</summary>
-          <ul class="p-2 w-52 bg-base-100 shadow-xl rounded-t-none">
-             <li><a>Northern Wastes</a></li>
-             <li><a>Iron Guilds</a></li> -->
-             <!-- ... etc ... -->
-          <!-- </ul>
+    <nav class="hidden min-w-0 items-center justify-center gap-1.5 lg:flex lg:justify-self-center" aria-label="Primary" data-nav-root>
+      {navGroups.map((group) => (
+        <details class="group relative" data-nav-dropdown>
+          <summary class:list={[
+            'flex h-9 cursor-pointer list-none items-center gap-2 rounded-xl border px-3.5 text-sm font-medium transition-colors',
+            isGroupActive(group.matches)
+              ? 'border-primary/45 bg-primary/12 text-ink-950'
+              : 'border-transparent text-ink-700 hover:border-base-300/70 hover:bg-base-100 hover:text-ink-950',
+          ]} aria-expanded="false">
+            <SiteGlyph name={group.icon} class="h-4 w-4" />
+            <span>{group.label}</span>
+          </summary>
+          <div class="absolute left-1/2 top-full z-30 mt-2.5 hidden w-[32rem] max-w-[min(90vw,32rem)] -translate-x-1/2 rounded-2xl border border-base-300/80 bg-base-100/96 p-3.5 shadow-2xl group-open:block">
+            <div class:list={['grid gap-3', group.items.length > 3 ? 'md:grid-cols-2' : 'grid-cols-1']}>
+              {group.items.map((item) => (
+                <NavCardLink href={item.href} title={item.title} description={item.description} icon={item.icon} compact />
+              ))}
+            </div>
+          </div>
         </details>
-      </li> -->
+      ))}
+    </nav>
 
-      <!-- The GURPS Link (Visually Distinct) -->
-      <!-- <li> -->
-        <!-- <a class="btn btn-sm btn-outline btn-secondary ml-4"> -->
-        <!-- <li><a href="/gurps" class="text-secondary hover:text-gray-200">
-          GURPS
-        </a>
-      </li> -->
-    </ul>
+    <div class="hidden items-center lg:flex lg:justify-self-end">
+      <button type="button" class="inline-flex h-9 items-center gap-2 rounded-lg border border-base-300/70 bg-base-100 px-3 text-sm font-medium text-ink-600 transition hover:border-base-300 hover:text-ink-950" aria-label="Global search coming soon">
+        <SiteGlyph name="Search" class="h-4 w-4" />
+        <span>Search</span>
+      </button>
+    </div>
+
+    <div class="hidden items-center gap-2 lg:flex lg:justify-self-end">
+      <label class="relative isolate flex h-9 w-9 overflow-hidden rounded-lg border border-base-300/70 bg-base-100 text-ink-700 transition hover:border-base-300 hover:text-ink-950" aria-label="Theme selector" title="Theme">
+        <span class="sr-only">Theme</span>
+        <SiteGlyph name="Theme" class="h-4 w-4" />
+        <select class="absolute inset-0 cursor-pointer opacity-0 js-theme-picker" aria-label="Select theme">
+          {themes.map((theme) => (
+            <option value={theme.value}>{theme.label}</option>
+          ))}
+        </select>
+      </label>
+      <a href={loginHref} class="inline-flex h-9 items-center rounded-lg border border-base-300/70 px-4 text-sm font-medium text-ink-700 transition hover:border-primary/35 hover:text-ink-950">Login</a>
+      <a href="/contribute" class="inline-flex h-9 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-content transition hover:bg-primary/90">Contribute</a>
+    </div>
+
+    <details class="relative ml-auto lg:hidden" data-mobile-nav>
+      <summary class="flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-lg border border-base-300/70 bg-base-100 text-ink-800">
+        <SiteGlyph name="Menu" class="h-4 w-4" />
+      </summary>
+      <div class="absolute right-0 top-full z-40 mt-2.5 w-[min(92vw,24rem)] rounded-2xl border border-base-300/80 bg-base-100/98 p-4 shadow-2xl">
+        <div class="space-y-3">
+          {navGroups.map((group) => (
+            <details class="rounded-xl border border-base-300/70 bg-base-100/88 p-3">
+              <summary class="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-ink-950">
+                <span class="flex items-center gap-2"><SiteGlyph name={group.icon} class="h-4 w-4" />{group.label}</span>
+                <span class="text-ink-500">+</span>
+              </summary>
+              <div class="mt-3 space-y-3">
+                {group.items.map((item) => (
+                  <NavCardLink href={item.href} title={item.title} description={item.description} icon={item.icon} compact />
+                ))}
+              </div>
+            </details>
+          ))}
+
+          <div class="grid gap-2 sm:grid-cols-2">
+            <a href={loginHref} class="rounded-lg border border-base-300/70 px-4 py-3 text-sm font-medium text-ink-700">Login</a>
+            <a href="/contribute" class="rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-content">Contribute</a>
+          </div>
+
+          <label class="flex items-center gap-3 rounded-lg border border-base-300/70 px-4 py-3 text-sm font-medium text-ink-700">
+            <SiteGlyph name="Theme" class="h-4 w-4" />
+            <span class="min-w-0 flex-1">Theme</span>
+            <select class="min-w-0 bg-transparent js-theme-picker" aria-label="Select theme">
+              {themes.map((theme) => (
+                <option value={theme.value}>{theme.label}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </div>
+    </details>
   </div>
-  
-  <!-- Right-most for mobile (Search icon or profile) -->
-  <div class="navbar-end lg:hidden">
-     <!-- Mobile simplified end -->
-  </div>
-</div>
+</header>
 
 <script is:inline>
   (() => {
@@ -161,12 +195,72 @@ const loginHref = `/login?next=${encodeURIComponent(currentPathWithSearch)}`;
     document.querySelectorAll('.js-theme-picker').forEach((picker) => {
       if (picker instanceof HTMLSelectElement) {
         picker.value = initialTheme;
+        if (picker.dataset.themeBound === 'true') return;
+        picker.dataset.themeBound = 'true';
         picker.addEventListener('change', (event) => {
           const next = (event.currentTarget instanceof HTMLSelectElement)
             ? event.currentTarget.value
             : DEFAULT_THEME;
           applyTheme(next);
         });
+      }
+    });
+
+    const navRoot = document.querySelector('[data-nav-root]');
+    const mobileNav = document.querySelector('[data-mobile-nav]');
+    const dropdowns = navRoot instanceof HTMLElement
+      ? Array.from(navRoot.querySelectorAll('[data-nav-dropdown]')).filter((dropdown) => dropdown instanceof HTMLDetailsElement)
+      : [];
+
+    const closeDropdown = (dropdown) => {
+      dropdown.open = false;
+      const summary = dropdown.querySelector('summary');
+      if (summary instanceof HTMLElement) summary.setAttribute('aria-expanded', 'false');
+    };
+
+    dropdowns.forEach((dropdown) => {
+      const summary = dropdown.querySelector('summary');
+      if (summary instanceof HTMLElement) {
+        summary.setAttribute('aria-expanded', dropdown.open ? 'true' : 'false');
+      }
+
+      dropdown.addEventListener('toggle', () => {
+        if (summary instanceof HTMLElement) {
+          summary.setAttribute('aria-expanded', dropdown.open ? 'true' : 'false');
+        }
+
+        if (!dropdown.open) return;
+
+        dropdowns.forEach((otherDropdown) => {
+          if (otherDropdown !== dropdown) closeDropdown(otherDropdown);
+        });
+      });
+    });
+
+    document.addEventListener('click', (event) => {
+      if (!(event.target instanceof Node)) return;
+
+      if (!(navRoot instanceof HTMLElement) || !navRoot.contains(event.target)) {
+        dropdowns.forEach((dropdown) => closeDropdown(dropdown));
+      }
+
+      if (mobileNav instanceof HTMLDetailsElement && !mobileNav.contains(event.target)) {
+        mobileNav.open = false;
+      }
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+
+      const openDropdown = dropdowns.find((dropdown) => dropdown.open);
+      if (openDropdown) {
+        closeDropdown(openDropdown);
+        const summary = openDropdown.querySelector('summary');
+        if (summary instanceof HTMLElement) summary.focus();
+      }
+
+      if (mobileNav instanceof HTMLDetailsElement) {
+        mobileNav.open = false;
       }
     });
   })();

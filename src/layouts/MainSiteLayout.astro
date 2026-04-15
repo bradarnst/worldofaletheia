@@ -5,18 +5,21 @@ import GlobalNavigation from '@components/GlobalNavigation.astro';
 export interface Props {
   title?: string;
   description?: string;
+  fullBleed?: boolean;
 }
 
-const { title, description } = Astro.props;
+const { title, description, fullBleed = false } = Astro.props;
 ---
 
 <BaseLayout title={title} description={description}>
-	<GlobalNavigation />
-
-	<!-- Main content -->
-<main class="min-h-screen bg-base-100">
-		<div class="container mx-auto px-4 py-16">
-			<slot />
-		</div>
-	</main>
+  <GlobalNavigation />
+  <main class="min-h-screen bg-base-100">
+    {fullBleed ? (
+      <slot />
+    ) : (
+      <div class="mx-auto max-w-7xl px-4 py-12 lg:px-8 lg:py-16">
+        <slot />
+      </div>
+    )}
+  </main>
 </BaseLayout>

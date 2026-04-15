@@ -570,3 +570,44 @@ a:focus-visible {
     padding: 0 1rem;
   }
 }
+
+
+/* Approved shell utilities */
+details > summary {
+  list-style: none;
+}
+
+details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.collection-hero-shell {
+  background: linear-gradient(180deg, color-mix(in oklab, var(--color-base-100), var(--color-base-content) 10%) 0%, color-mix(in oklab, var(--color-base-100), var(--color-base-content) 4%) 100%);
+}
+
+.collection-hero-shell__backdrop {
+  background-image: var(--collection-bg-image);
+  background-position: center;
+  background-size: cover;
+  filter: blur(18px) saturate(0.78) brightness(0.72);
+  transform: scale(1.08);
+}
+
+.collection-hero-shell__tint {
+  background: linear-gradient(180deg, rgba(20, 16, 12, 0.52) 0%, rgba(20, 16, 12, 0.78) 100%);
+}
+
+[data-theme='savanna-days'] .collection-hero-shell__tint,
+[data-theme='lake-days'] .collection-hero-shell__tint {
+  background: linear-gradient(180deg, rgba(41, 30, 20, 0.34) 0%, rgba(41, 30, 20, 0.6) 100%);
+}
+
+[data-theme='savanna-nights'] .collection-hero-shell__backdrop,
+[data-theme='jungle-nights'] .collection-hero-shell__backdrop {
+  filter: blur(20px) saturate(0.7) brightness(0.58);
+}
+
+[data-theme='savanna-nights'] .collection-hero-shell__tint,
+[data-theme='jungle-nights'] .collection-hero-shell__tint {
+  background: linear-gradient(180deg, rgba(8, 9, 10, 0.48) 0%, rgba(8, 9, 10, 0.78) 100%);
+}

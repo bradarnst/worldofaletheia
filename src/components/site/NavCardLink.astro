@@ -1,0 +1,35 @@
+---
+import SiteGlyph from '@components/site/SiteGlyph.astro';
+
+interface Props {
+  href: string;
+  title: string;
+  description: string;
+  icon: string;
+  compact?: boolean;
+}
+
+const { href, title, description, icon, compact = false } = Astro.props;
+---
+
+<a
+  href={href}
+  class:list={[
+    'group flex border border-base-300/70 bg-base-100/92 transition duration-200 hover:border-primary/45 hover:bg-base-100 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+    compact ? 'gap-3 rounded-xl p-3' : 'gap-4 rounded-2xl p-4',
+  ]}
+>
+  <span class:list={[
+    'mt-0.5 flex items-center justify-center bg-base-200 text-ink-800 transition-colors group-hover:text-primary',
+    compact ? 'h-9 w-9 rounded-lg' : 'h-10 w-10 rounded-xl',
+  ]}>
+    <SiteGlyph name={icon} />
+  </span>
+  <span class="min-w-0 space-y-1">
+    <span class="block text-sm font-semibold text-ink-950 group-hover:text-primary transition-colors">{title}</span>
+    <span class:list={[
+      'block text-ink-700',
+      compact ? 'text-xs leading-5' : 'text-sm leading-6',
+    ]}>{description}</span>
+  </span>
+</a>

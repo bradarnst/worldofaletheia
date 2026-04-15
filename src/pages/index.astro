@@ -1,208 +1,88 @@
 ---
-import { getCollection } from 'astro:content';
 import Layout from '@layouts/MainSiteLayout.astro';
 import RandomHeroImage from '@components/RandomHeroImage.astro';
-import { getFilteredCollection } from '@utils/content-filter';
-import {
-  buildCampaignContentHref,
-  extractCampaignSlugFromEntryId,
-  extractCampaignFamilySlugFromEntryId,
-} from '@utils/campaign-collections';
-import { getAllCampaignFamilyEntries } from '@utils/campaign-content';
+import SiteGlyph from '@components/site/SiteGlyph.astro';
 
-const utcDay = Math.floor(Date.now() / 86400000);
-
-type DiscoveryItem = {
-  id: string;
-  title: string;
-  excerpt?: string;
-  created: Date;
-  domain: string;
-  url: string;
-};
-
-const pickCreated = (data: { created?: Date; ['created-date']?: Date }): Date =>
-  data.created ?? data['created-date'] ?? new Date(0);
-
-const toDiscoveryItems = <T extends { id: string; data: { title: string; excerpt?: string; created?: Date; ['created-date']?: Date } }>(
-  items: T[],
-  prefix: string,
-  domain: string,
-  buildUrl: (item: T) => string,
-): DiscoveryItem[] =>
-  items.map((item) => ({
-    id: `${prefix}:${item.id}`,
-    title: item.data.title,
-    excerpt: item.data.excerpt,
-    created: pickCreated(item.data),
-    domain,
-    url: buildUrl(item),
-  }));
-
-const [
-  lore,
-  places,
-  sentients,
-  bestiary,
-  flora,
-  factions,
-  systems,
-  campaigns,
-  meta,
-  sessions,
-  campaignFamilyEntries,
-] = await Promise.all([
-  getCollection('lore'),
-  getCollection('places'),
-  getCollection('sentients'),
-  getCollection('bestiary'),
-  getCollection('flora'),
-  getCollection('factions'),
-  getCollection('systems'),
-  getCollection('campaigns'),
-  getCollection('meta'),
-  getCollection('sessions'),
-  getAllCampaignFamilyEntries(),
-]);
-
-const visibleLore = getFilteredCollection(lore);
-const visiblePlaces = getFilteredCollection(places);
-const visibleSentients = getFilteredCollection(sentients);
-const visibleBestiary = getFilteredCollection(bestiary);
-const visibleFlora = getFilteredCollection(flora);
-const visibleFactions = getFilteredCollection(factions);
-const visibleSystems = getFilteredCollection(systems);
-const visibleMeta = getFilteredCollection(meta);
-const visibleSessions = getFilteredCollection(sessions).filter((item) => item.data.visibility === 'public');
-const visibleCampaignFamilyEntries = getFilteredCollection(campaignFamilyEntries).filter((item) => item.data.visibility === 'public');
-
-const discoveryPool: DiscoveryItem[] = [
-  ...toDiscoveryItems(visibleLore, 'lore', 'Canon', (item) => `/lore/${item.id}`),
-  ...toDiscoveryItems(visiblePlaces, 'places', 'Canon', (item) => `/places/${item.id}`),
-  ...toDiscoveryItems(visibleSentients, 'sentients', 'Canon', (item) => `/sentients/${item.id}`),
-  ...toDiscoveryItems(visibleBestiary, 'bestiary', 'Canon', (item) => `/bestiary/${item.id}`),
-  ...toDiscoveryItems(visibleFlora, 'flora', 'Canon', (item) => `/flora/${item.id}`),
-  ...toDiscoveryItems(visibleFactions, 'factions', 'Canon', (item) => `/factions/${item.id}`),
-  ...toDiscoveryItems(visibleSystems, 'systems', 'Using', (item) => `/systems/${item.id}`),
-  ...toDiscoveryItems(visibleMeta, 'meta', 'Using', (item) => `/meta/${item.id}`),
-  ...toDiscoveryItems(
-    campaigns.filter((item) => item.data.visibility === 'public'),
-    'campaigns',
-    'Campaigns',
-    (item) => buildCampaignContentHref('campaigns', extractCampaignSlugFromEntryId(item.id), extractCampaignSlugFromEntryId(item.id)),
-  ),
-  ...toDiscoveryItems(visibleSessions, 'sessions', 'Campaigns', (item) => {
-    const parts = item.id.split('/');
-    return buildCampaignContentHref('sessions', parts[parts.length - 1] ?? item.id, item.data.campaign);
-  }),
-  ...toDiscoveryItems(visibleCampaignFamilyEntries, 'campaignFamily', 'Campaigns', (item) =>
-    buildCampaignContentHref(item.collection, extractCampaignFamilySlugFromEntryId(item.id), item.data.campaign),
-  ),
+const supportSections = [
+  {
+    title: 'Canon',
+    href: '/aletheia-world-canon',
+    description: 'The enduring truths of Aletheia: history, peoples, places, creatures, and the long consequences of the Cataclysm.',
+    icon: 'Canon',
+  },
+  {
+    title: 'Using Aletheia',
+    href: '/using-aletheia',
+    description: 'Systems support, practical guidance, and play-facing material for using the setting at the table.',
+    icon: 'Using',
+  },
+  {
+    title: 'Campaigns',
+    href: '/campaigns',
+    description: 'Public campaign records, session material, and stories that reveal the world through play.',
+    icon: 'Campaigns',
+  },
+  {
+    title: 'Reference',
+    href: '/references',
+    description: 'Calendar, timeline, and map surfaces that support deeper exploration of the world and its history.',
+    icon: 'Reference',
+  },
+  {
+    title: 'Contribute',
+    href: '/contribute',
+    description: 'A place for collaboration, contributions, and future participation in the living archive of Aletheia.',
+    icon: 'Contribute',
+  },
+  {
+    title: 'About',
+    href: '/about',
+    description: 'Context for the project, the setting, and how this archive is built and maintained over time.',
+    icon: 'About',
+  },
 ];
-
-const sortedDiscovery = discoveryPool.sort((a, b) => b.created.getTime() - a.created.getTime());
-const latestItem = sortedDiscovery[0] ?? null;
-
-const randomPool = latestItem
-  ? sortedDiscovery.filter((item) => item.id !== latestItem.id)
-  : sortedDiscovery;
-const randomIndex = randomPool.length > 0 ? utcDay % randomPool.length : 0;
-const randomItem = randomPool.length > 0 ? randomPool[randomIndex] : null;
 ---
 
-<Layout title="World of Aletheia" description="A grounded fantasy world shaped by history, consequence, and fragile renewal.">
+<Layout title="World of Aletheia" description="A grounded fantasy world shaped by history, consequence, and fragile renewal." fullBleed>
   <RandomHeroImage
-    seed={utcDay}
     title="World of Aletheia"
     text="A grounded fantasy setting where power has consequences, histories are contested, and life endures in the wake of catastrophe."
+    heightClass="min-h-[calc(100vh-4.5rem)]"
+    sectionClass="px-0"
+    contentClass="hero-content text-neutral-content text-center px-6 relative z-10 mx-auto"
+    titleClass="mx-auto max-w-4xl text-5xl font-bold font-lora md:text-6xl"
+    textClass="mx-auto max-w-2xl text-base leading-8 opacity-95 md:text-lg"
   >
     <Fragment slot="actions">
-      <a href="/lore" class="btn btn-primary">Start with Lore</a>
-      <a href="/campaigns" class="btn btn-outline btn-neutral">Explore Campaigns</a>
+      <a href="/aletheia-world-canon" class="text-sm font-semibold uppercase tracking-[0.18em] text-paper-50 underline decoration-paper-100/50 underline-offset-8 transition hover:text-white">
+        Enter the world
+      </a>
+      <a href="/using-aletheia" class="text-sm font-semibold uppercase tracking-[0.18em] text-paper-50 underline decoration-paper-100/50 underline-offset-8 transition hover:text-white">
+        Using Aletheia
+      </a>
     </Fragment>
   </RandomHeroImage>
 
-  <section class="max-w-7xl mx-auto px-4 lg:px-0 py-8 space-y-6">
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <article class="card bg-base-100 shadow-md border border-base-300">
-        <div class="card-body">
-          <h2 class="card-title font-lora">Canon</h2>
-          <p>
-            Discover the core truths of Aletheia: creation, peoples, places, and the long shadow of the Cataclysm.
-          </p>
-          <div class="card-actions justify-end">
-            <a href="/aletheia-world-canon" class="btn btn-primary btn-sm">Read Canon</a>
-          </div>
-        </div>
-      </article>
-
-      <article class="card bg-base-100 shadow-md border border-base-300">
-        <div class="card-body">
-          <h2 class="card-title font-lora">Using Aletheia</h2>
-          <p>
-            Practical guidance, systems context, and support material for running stories in a gritty fantasy world.
-          </p>
-          <div class="card-actions justify-end">
-            <a href="/using-aletheia" class="btn btn-primary btn-sm">Use the Setting</a>
-          </div>
-        </div>
-      </article>
-
-      <article class="card bg-base-100 shadow-md border border-base-300">
-        <div class="card-body">
-          <h2 class="card-title font-lora">Campaigns</h2>
-          <p>
-            Follow active campaigns, session records, and evolving stories that reveal the world through play.
-          </p>
-          <div class="card-actions justify-end">
-            <a href="/campaigns" class="btn btn-primary btn-sm">Enter Campaigns</a>
-          </div>
-        </div>
-      </article>
+  <section class="mx-auto max-w-7xl px-4 py-14 lg:px-8 lg:py-18">
+    <div class="mb-8 max-w-3xl">
+      <p class="text-xs font-semibold uppercase tracking-[0.24em] text-ink-600">Guided exploration</p>
+      <h2 class="mt-3 text-3xl font-semibold text-ink-950 md:text-4xl">Choose a way into the archive.</h2>
+      <p class="mt-4 text-base leading-8 text-ink-700 md:text-lg">
+        Begin with the world itself, the tools for using it, the public campaign record, or the shared reference surfaces that hold its history together.
+      </p>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <article class="card bg-base-100 shadow-md border border-base-300">
-        <div class="card-body">
-          <div class="badge badge-outline">Latest Article</div>
-          {latestItem ? (
-            <>
-              <h3 class="card-title font-lora">{latestItem.title}</h3>
-              <p class="text-sm opacity-80">{latestItem.excerpt || 'Newly surfaced from the living record of Aletheia.'}</p>
-              <div class="text-xs opacity-70">{latestItem.domain} • {latestItem.created.toLocaleDateString('en-GB')}</div>
-              <div class="card-actions justify-end">
-                <a href={latestItem.url} class="btn btn-primary btn-sm" data-debug-button="latest">Read Latest</a>
-              </div>
-            </>
-          ) : (
-            <>
-              <h3 class="card-title font-lora">No published article yet</h3>
-              <p class="text-sm opacity-80">Add your first published entry to populate this section.</p>
-            </>
-          )}
-        </div>
-      </article>
-
-      <article class="card bg-base-100 shadow-md border border-base-300">
-        <div class="card-body">
-          <div class="badge badge-outline">From the Archives</div>
-          {randomItem ? (
-            <>
-              <h3 class="card-title font-lora">{randomItem.title}</h3>
-              <p class="text-sm opacity-80">{randomItem.excerpt || 'A rotating selection from the world records of Aletheia.'}</p>
-              <div class="text-xs opacity-70">{randomItem.domain} • UTC daily rotation</div>
-              <div class="card-actions justify-end">
-                <a href={randomItem.url} class="btn btn-primary btn-sm" data-debug-button="random">Explore Random</a>
-              </div>
-            </>
-          ) : (
-            <>
-              <h3 class="card-title font-lora">No archive entry yet</h3>
-              <p class="text-sm opacity-80">Publish content to enable daily rotating discovery.</p>
-            </>
-          )}
-        </div>
-      </article>
+    <div class="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+      {supportSections.map((section) => (
+        <a href={section.href} class="group flex h-full flex-col rounded-[1.75rem] border border-base-300/80 bg-base-100 p-6 shadow-sm transition duration-200 hover:border-primary/35 hover:shadow-lg">
+          <div class="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-base-200 text-ink-700 group-hover:text-primary transition-colors">
+            <SiteGlyph name={section.icon} class="h-6 w-6" />
+          </div>
+          <h3 class="text-2xl font-semibold text-ink-950 group-hover:text-primary transition-colors">{section.title}</h3>
+          <p class="mt-3 text-sm leading-7 text-ink-700">{section.description}</p>
+          <span class="mt-auto pt-6 text-sm font-semibold text-primary">Explore</span>
+        </a>
+      ))}
     </div>
   </section>
 </Layout>

@@ -1,0 +1,30 @@
+---
+interface Props {
+  name: string;
+  class?: string;
+  title?: string;
+}
+
+const { name, class: className = '', title } = Astro.props;
+
+const tokens = name
+  .replace(/([a-z])([A-Z])/g, '$1 $2')
+  .split(/[^A-Za-z0-9]+/)
+  .filter(Boolean);
+
+const glyphText = tokens
+  .slice(0, 2)
+  .map((token) => token.slice(0, 1).toUpperCase())
+  .join('') || name.slice(0, 2).toUpperCase();
+
+const accessibleTitle = title ?? `${name} glyph placeholder`;
+---
+
+<svg viewBox="0 0 24 24" aria-hidden="true" role="img" class:list={['h-5 w-5 shrink-0', className]}>
+  <title>{accessibleTitle}</title>
+  <rect x="1.5" y="1.5" width="21" height="21" rx="6" fill="currentColor" opacity="0.12"></rect>
+  <rect x="1.5" y="1.5" width="21" height="21" rx="6" fill="none" stroke="currentColor" stroke-width="1.5"></rect>
+  <text x="12" y="15.2" text-anchor="middle" font-size="7.2" font-family="Inter, system-ui, sans-serif" font-weight="700" fill="currentColor">
+    {glyphText}
+  </text>
+</svg>
