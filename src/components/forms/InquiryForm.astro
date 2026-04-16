@@ -1,0 +1,135 @@
+---
+import { actions, isInputError } from 'astro:actions';
+
+interface Props {
+  kind: 'contact' | 'contribute';
+  title: string;
+  heading: string;
+  description: string;
+  submitLabel: string;
+  helperText: string;
+  aboutHrefLabel: string;
+  alternateHref: string;
+  alternateLabel: string;
+  messagePlaceholder: string;
+  messageMinHeightClass?: string;
+  successMessage: string;
+  unavailableMessage: string;
+}
+
+const {
+  kind,
+  title,
+  heading,
+  description,
+  submitLabel,
+  helperText,
+  aboutHrefLabel,
+  alternateHref,
+  alternateLabel,
+  messagePlaceholder,
+  messageMinHeightClass = 'min-h-36',
+  successMessage,
+  unavailableMessage,
+} = Astro.props;
+
+const result = Astro.getActionResult(actions.contact.submit);
+const inputErrors = isInputError(result?.error) ? result.error.fields : {};
+const actionErrorCode = result?.error && !isInputError(result.error) ? result.error.code : undefined;
+const resultKind = result?.data && typeof result.data === 'object' && 'kind' in result.data ? result.data.kind : undefined;
+const isCurrentFormResult = resultKind === kind;
+
+const statusTone = isCurrentFormResult && result?.error
+  ? 'error'
+  : isCurrentFormResult && result?.data?.ok
+    ? 'success'
+    : 'default';
+
+const statusMessage = isCurrentFormResult && result?.data?.ok
+  ? successMessage
+  : isCurrentFormResult && actionErrorCode === 'TOO_MANY_REQUESTS'
+    ? 'Too many submissions were sent from this connection. Wait a minute and try again.'
+    : isCurrentFormResult && result?.error && !isInputError(result.error)
+      ? unavailableMessage
+      : helperText;
+
+const fieldValue = (name: 'name' | 'email' | 'message' | 'website') => {
+  if (!isCurrentFormResult) {
+    return '';
+  }
+
+  const value = result?.data && 'input' in result.data ? result.data.input?.[name] : undefined;
+  return typeof value === 'string' ? value : '';
+};
+
+const statusToneClass = statusTone === 'success'
+  ? 'border-success/35 bg-success-50/70 text-ink-800'
+  : statusTone === 'error'
+    ? 'border-error/35 bg-base-100 text-ink-700'
+    : 'border-base-300/80 bg-base-100/70 text-ink-700';
+---
+
+<div class="ui-surface p-6 md:p-8">
+  <p class="text-xs font-semibold uppercase tracking-[0.24em] text-ink-600">{title}</p>
+  <h1 class="mt-3 text-3xl font-bold text-ink-950 md:text-4xl">{heading}</h1>
+  <p class="mt-4 text-base leading-8 text-ink-700 md:text-lg">{description}</p>
+
+  <form method="POST" action={actions.contact.submit} class="mt-8 space-y-4">
+    <input type="hidden" name="kind" value={kind} />
+
+    <label class="ui-field">
+      <span class="ui-field-label">Name</span>
+      <input
+        type="text"
+        name="name"
+        class="ui-field-control"
+        autocomplete="name"
+        maxlength="120"
+        required
+        value={fieldValue('name')}
+      />
+      {inputErrors.name && <span class="mt-2 text-sm text-error">{inputErrors.name.join(' ')}</span>}
+    </label>
+
+    <label class="ui-field">
+      <span class="ui-field-label">Email</span>
+      <input
+        type="email"
+        name="email"
+        class="ui-field-control"
+        autocomplete="email"
+        maxlength="254"
+        required
+        value={fieldValue('email')}
+      />
+      {inputErrors.email && <span class="mt-2 text-sm text-error">{inputErrors.email.join(' ')}</span>}
+    </label>
+
+    <label class="ui-field hidden" aria-hidden="true">
+      <span class="ui-field-label">Website</span>
+      <input type="text" name="website" class="ui-field-control" tabindex="-1" autocomplete="off" value={fieldValue('website')} />
+    </label>
+
+    <label class="ui-field">
+      <span class="ui-field-label">Message</span>
+      <textarea
+        name="message"
+        class:list={['ui-field-control', messageMinHeightClass]}
+        maxlength="5000"
+        placeholder={messagePlaceholder}
+        required
+      >{fieldValue('message')}</textarea>
+      {inputErrors.message && <span class="mt-2 text-sm text-error">{inputErrors.message.join(' ')}</span>}
+    </label>
+
+    <div class="flex flex-wrap items-center gap-3 pt-2">
+      <button type="submit" class="ui-button ui-button--primary">{submitLabel}</button>
+      <a href="/about" class="ui-button ui-button--secondary">{aboutHrefLabel}</a>
+      <a href={alternateHref} class="ui-button ui-button--secondary">{alternateLabel}</a>
+    </div>
+
+    <div class:list={['rounded-2xl border p-4 text-sm leading-7', statusToneClass]} aria-live="polite">
+      {statusMessage}
+    </div>
+  </form>
+</div>

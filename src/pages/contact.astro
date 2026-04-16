@@ -1,13 +1,42 @@
 ---
+import InquiryForm from '@components/forms/InquiryForm.astro';
 import MainSiteLayout from '@layouts/MainSiteLayout.astro';
+
+export const prerender = false;
 ---
 
-<MainSiteLayout title="Contact - World of Aletheia" description="Contact details for the World of Aletheia project.">
-  <section class="mx-auto max-w-3xl space-y-6 rounded-[2rem] border border-base-300/80 bg-base-100 px-6 py-8 shadow-sm">
-    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-ink-600">Contact</p>
-    <h1 class="text-4xl font-bold text-ink-950">Contact</h1>
-    <p class="text-base leading-8 text-ink-700">
-      This placeholder page reserves the approved contact destination for the new UI shell. Final contact details can be added once the preferred public contact method is decided.
-    </p>
+<MainSiteLayout title="Contact - World of Aletheia" description="Send a simple contact message to the World of Aletheia project.">
+  <section class="mx-auto max-w-5xl px-4 py-8 md:py-12">
+    <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.8fr)]">
+      <InquiryForm
+        kind="contact"
+        title="Contact"
+        heading="Contact the project"
+        description="Use this form for general questions, clarifications, or a simple note. If you want to report errors, suggest edits, or discuss a contribution in more detail, use the Contribute page instead."
+        submitLabel="Send message"
+        helperText="This is the simplest way to reach the project. If mail delivery is configured, submissions are routed to the project inbox."
+        aboutHrefLabel="About the project"
+        alternateHref="/contribute"
+        alternateLabel="Contribute instead"
+        messagePlaceholder="Ask a question or leave a note."
+        successMessage="Message sent. If mail delivery is configured, it has been routed to the project inbox."
+        unavailableMessage="The contact relay is temporarily unavailable. Try again later or use the email listed on About."
+      />
+
+      <aside class="ui-surface ui-surface--muted p-6 md:p-8">
+        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-ink-600">Quick guidance</p>
+        <div class="mt-4 space-y-4 text-sm leading-7 text-ink-700">
+          <p>
+            For general questions, a short contact message is enough.
+          </p>
+          <p>
+            For corrections, continuity notes, typo reports, or collaboration ideas, the <a href="/contribute">Contribute page</a> is the better fit.
+          </p>
+          <p>
+            The plain-text contact address also remains listed on <a href="/about">About</a> for transparency.
+          </p>
+        </div>
+      </aside>
+    </div>
   </section>
 </MainSiteLayout>
