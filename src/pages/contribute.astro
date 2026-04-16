@@ -2,12 +2,172 @@
 import MainSiteLayout from '@layouts/MainSiteLayout.astro';
 ---
 
-<MainSiteLayout title="Contribute - World of Aletheia" description="Learn how to contribute to the living archive of Aletheia.">
-  <section class="mx-auto max-w-3xl space-y-6 rounded-[2rem] border border-base-300/80 bg-base-100 px-6 py-8 shadow-sm">
-    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-ink-600">Contribute</p>
-    <h1 class="text-4xl font-bold text-ink-950">Contribute to the archive</h1>
-    <p class="text-base leading-8 text-ink-700">
-      This page will grow into the public contribution guide for World of Aletheia. For now, it marks the approved destination for future collaboration, edits, and participation pathways.
-    </p>
+<MainSiteLayout title="Contribute - World of Aletheia" description="Share corrections, ideas, and collaboration interest with the World of Aletheia archive.">
+  <section class="mx-auto max-w-5xl px-4 py-8 md:py-12">
+    <div class="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.85fr)]">
+      <div class="ui-surface p-6 md:p-8">
+        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-ink-600">Contribute</p>
+        <h1 class="mt-3 text-3xl font-bold text-ink-950 md:text-4xl">Contribute to the archive</h1>
+        <p class="mt-4 text-base leading-8 text-ink-700 md:text-lg">
+          Corrections, continuity notes, typo reports, and thoughtful collaboration ideas are welcome. This form sends a contribution inquiry directly to the project mailbox.
+        </p>
+
+        <div class="mt-8 rounded-2xl border border-base-300/80 bg-base-100/80 p-5">
+          <p class="text-sm font-semibold uppercase tracking-[0.18em] text-ink-600">Good fit for this form</p>
+          <ul class="mt-3 space-y-2 text-sm leading-7 text-ink-700">
+            <li>• Canon corrections or continuity issues</li>
+            <li>• Typos, broken links, or unclear page wording</li>
+            <li>• Interest in contributing notes, ideas, or campaign-adjacent material</li>
+            <li>• Questions about how the archive is organized and maintained</li>
+          </ul>
+        </div>
+
+        <form class="mt-8 space-y-4 js-contribute-form" novalidate>
+          <input type="hidden" name="kind" value="contribute" />
+
+          <label class="ui-field">
+            <span class="ui-field-label">Name</span>
+            <input type="text" name="name" class="ui-field-control" autocomplete="name" maxlength="120" required />
+          </label>
+
+          <label class="ui-field">
+            <span class="ui-field-label">Email</span>
+            <input type="email" name="email" class="ui-field-control" autocomplete="email" maxlength="254" required />
+          </label>
+
+          <label class="ui-field hidden" aria-hidden="true">
+            <span class="ui-field-label">Website</span>
+            <input type="text" name="website" class="ui-field-control" tabindex="-1" autocomplete="off" />
+          </label>
+
+          <label class="ui-field">
+            <span class="ui-field-label">Message</span>
+            <textarea
+              name="message"
+              class="ui-field-control min-h-44"
+              maxlength="5000"
+              placeholder="Tell us what you want to contribute, correct, or discuss."
+              required></textarea>
+          </label>
+
+          <div class="flex flex-wrap items-center gap-3 pt-2">
+            <button type="submit" class="ui-button ui-button--primary js-contribute-submit">Send contribution inquiry</button>
+            <a href="/about" class="ui-button ui-button--secondary">About the project</a>
+            <a href="/contact" class="ui-button ui-button--secondary">General contact</a>
+          </div>
+
+          <div class="rounded-2xl border border-base-300/80 bg-base-100/70 p-4 text-sm leading-7 text-ink-700 js-contribute-status" aria-live="polite">
+            Use this form for archive collaboration and contribution requests. Replies come from the project email workflow when configured.
+          </div>
+        </form>
+      </div>
+
+      <aside class="ui-surface ui-surface--muted p-6 md:p-8">
+        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-ink-600">Before you send</p>
+        <div class="mt-4 space-y-4 text-sm leading-7 text-ink-700">
+          <p>
+            This archive is curated rather than open-edit. Submissions are reviewed for fit, continuity, and maintenance cost.
+          </p>
+          <p>
+            If you are reporting a site issue, include the page URL and what you expected to happen.
+          </p>
+          <p>
+            If you are proposing a content contribution, describe the scope, relevant part of the setting, and whether it comes from campaign play, canon notes, or interpretation.
+          </p>
+        </div>
+      </aside>
+    </div>
   </section>
+
+  <script>
+    (() => {
+      const path = window.location.pathname;
+      if (path !== '/contribute') {
+        return;
+      }
+
+      const form = document.querySelector('.js-contribute-form');
+      const status = document.querySelector('.js-contribute-status');
+      const submitButton = document.querySelector('.js-contribute-submit');
+
+      if (!(form instanceof HTMLFormElement) || !(status instanceof HTMLElement) || !(submitButton instanceof HTMLButtonElement)) {
+        return;
+      }
+
+      const setStatus = (message, tone = 'default') => {
+        const toneClasses = {
+          default: 'border-base-300/80 bg-base-100/70 text-ink-700',
+          success: 'border-success/35 bg-success-50/70 text-ink-800',
+          error: 'border-error/35 bg-base-100 text-ink-700',
+        };
+
+        status.className = `rounded-2xl border p-4 text-sm leading-7 js-contribute-status ${toneClasses[tone] || toneClasses.default}`;
+        status.textContent = message;
+      };
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const formData = new FormData(form);
+        const payload = Object.fromEntries(formData.entries());
+        const name = typeof payload.name === 'string' ? payload.name.trim() : '';
+        const email = typeof payload.email === 'string' ? payload.email.trim() : '';
+        const message = typeof payload.message === 'string' ? payload.message.trim() : '';
+
+        if (!name || !email || !message) {
+          setStatus('Name, email, and message are required before sending.', 'error');
+          return;
+        }
+
+        if (message.length < 10) {
+          setStatus('Add a bit more detail so the contribution request can be reviewed effectively.', 'error');
+          return;
+        }
+
+        submitButton.disabled = true;
+        setStatus('Sending contribution inquiry...', 'default');
+
+        try {
+          const response = await fetch('/api/contact', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              kind: 'contribute',
+              name,
+              email,
+              message,
+              website: typeof payload.website === 'string' ? payload.website : '',
+            }),
+          });
+
+          const responseData = await response.json().catch(() => null);
+
+          if (response.ok && responseData?.ok) {
+            form.reset();
+            setStatus('Contribution inquiry sent. If mail delivery is configured, it has been routed to the project inbox.', 'success');
+            return;
+          }
+
+          const errorCode = responseData?.error;
+          if (errorCode === 'rate_limited') {
+            setStatus('Too many submissions were sent from this connection. Wait a minute and try again.', 'error');
+            return;
+          }
+
+          if (errorCode === 'invalid_payload' || errorCode === 'invalid_json') {
+            setStatus('The submission could not be accepted. Review the form fields and try again.', 'error');
+            return;
+          }
+
+          setStatus('The contribution relay is temporarily unavailable. Try again later or use the email listed on About.', 'error');
+        } catch {
+          setStatus('The contribution relay is temporarily unavailable. Try again later or use the email listed on About.', 'error');
+        } finally {
+          submitButton.disabled = false;
+        }
+      });
+    })();
+  </script>
 </MainSiteLayout>

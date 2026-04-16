@@ -78,4 +78,36 @@ describe('email adapter', () => {
 
     fetchSpy.mockRestore();
   });
+
+  it('labels contribution relay subjects distinctly', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(null, {
+        status: 202,
+      }),
+    );
+
+    await sendContactEmail({
+      env: {
+        MAILJET_API_KEY: 'mailjet-api-key',
+        MAILJET_SECRET_KEY: 'mailjet-secret-key',
+        MAILJET_SANDBOX_MODE: 'on',
+        EMAIL_FROM: 'gm@worldofaletheia.com',
+        CONTACT_TO_EMAIL: 'brad@worldofaletheia.com',
+      },
+      kind: 'contribute',
+      name: 'Brad',
+      email: 'brad@example.com',
+      message: 'I want to help with proofreading.',
+      requestId: 'request-2',
+    });
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      'https://api.mailjet.com/v3.1/send',
+      expect.objectContaining({
+        body: expect.stringContaining('Aletheia contribution form: Brad'),
+      }),
+    );
+
+    fetchSpy.mockRestore();
+  });
 });

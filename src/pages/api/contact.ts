@@ -8,6 +8,7 @@ const RATE_LIMIT_MAX_REQUESTS = 5;
 const rateLimitByIp = new Map<string, { count: number; resetAt: number }>();
 
 interface ContactPayload {
+  kind?: 'contact' | 'contribute';
   name: string;
   email: string;
   message: string;
@@ -54,6 +55,7 @@ function normalizePayload(payload: unknown): ContactPayload | null {
   }
 
   const candidate = payload as Record<string, unknown>;
+  const kind = candidate.kind === 'contribute' ? 'contribute' : 'contact';
   const name = typeof candidate.name === 'string' ? candidate.name.trim() : '';
   const email = typeof candidate.email === 'string' ? candidate.email.trim() : '';
   const message = typeof candidate.message === 'string' ? candidate.message.trim() : '';
@@ -68,7 +70,7 @@ function normalizePayload(payload: unknown): ContactPayload | null {
     return null;
   }
 
-  return { name, email, message, website };
+  return { kind, name, email, message, website };
 }
 
 export const POST: APIRoute = async ({ request, locals }) => {
@@ -115,6 +117,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     await sendContactEmail({
       env: runtimeEnv,
+      kind: normalized.kind,
       name: normalized.name,
       email: normalized.email,
       message: normalized.message,

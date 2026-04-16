@@ -6,6 +6,7 @@ interface SendVerificationEmailInput {
 
 interface SendContactEmailInput {
   env?: Record<string, unknown>;
+  kind?: 'contact' | 'contribute';
   name: string;
   email: string;
   message: string;
@@ -129,6 +130,8 @@ class MailjetEmailProvider implements EmailProvider {
       throw new Error('CONTACT_TO_EMAIL must contain at least one valid recipient email');
     }
 
+    const formLabel = input.kind === 'contribute' ? 'contribution' : 'contact';
+
     const response = await fetch('https://api.mailjet.com/v3.1/send', {
       method: 'POST',
       headers: {
@@ -146,7 +149,7 @@ class MailjetEmailProvider implements EmailProvider {
             ReplyTo: {
               Email: input.email,
             },
-            Subject: `Aletheia contact form: ${input.name}`,
+            Subject: `Aletheia ${formLabel} form: ${input.name}`,
             TextPart: input.message,
             Headers: {
               'X-Aletheia-Request-Id': input.requestId,
