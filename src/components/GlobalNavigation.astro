@@ -91,10 +91,10 @@ function isGroupActive(matches: string[]) {
     </nav>
 
     <div class="ml-auto hidden items-center gap-2 lg:flex">
-      <button type="button" class="inline-flex h-8 items-center gap-2 rounded-md border border-base-300/70 bg-base-100 px-3 text-[0.82rem] font-medium text-default transition hover:border-base-300 hover:text-primary" aria-label="Global search coming soon">
+      <a href="/search" class="inline-flex h-8 items-center gap-2 rounded-md border border-base-300/70 bg-base-100 px-3 text-[0.82rem] font-medium text-default transition hover:border-base-300 hover:text-primary" aria-label="Open global search">
         <SiteGlyph name="Search" class="h-4 w-4" />
         <span>Search</span>
-      </button>
+      </a>
 
       <button type="button" class="ui-theme-toggle js-theme-toggle" data-theme-state="light" aria-label="Toggle light and dark theme" title="Toggle theme">
         <span class="ui-theme-toggle__option ui-theme-toggle__option--light">
@@ -129,6 +129,7 @@ function isGroupActive(matches: string[]) {
           ))}
 
           <div class="grid gap-2 sm:grid-cols-2">
+            <a href="/search" class="rounded-lg border border-base-300/70 px-4 py-3 text-sm font-medium text-default">Search</a>
             <a href={loginHref} class="rounded-lg border border-base-300/70 px-4 py-3 text-sm font-medium text-default">Login</a>
             <a href="/contribute" class="ui-button ui-button--primary ui-button--block">Contribute</a>
           </div>
