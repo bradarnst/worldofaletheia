@@ -4,11 +4,6 @@ import NavCardLink from '@components/site/NavCardLink.astro';
 import SiteGlyph from '@components/site/SiteGlyph.astro';
 import aletheiaLogo from '@images/aletheia-logo.png';
 
-const themes = [
-  { value: 'golden-savanna', label: 'Golden Savanna' },
-  { value: 'dark-jungle', label: 'Dark Jungle' },
-];
-
 const currentPath = Astro.url.pathname;
 const currentPathWithSearch = `${Astro.url.pathname}${Astro.url.search}`;
 const loginHref = `/login?next=${encodeURIComponent(currentPathWithSearch)}`;
@@ -64,10 +59,10 @@ function isGroupActive(matches: string[]) {
 
 <header class="sticky top-0 z-50 border-b border-base-300/70 bg-base-100/90 backdrop-blur-xl" style="font-family: var(--font-family-ui);">
   <div class="relative flex w-full items-center gap-3 px-4 py-2 lg:px-6 xl:px-8">
-    <a href="/" class="flex min-w-0 shrink-0 items-center gap-3 text-ink-950 transition hover:text-primary lg:min-w-[15rem] xl:min-w-[16rem]">
+    <a href="/" class="flex min-w-0 shrink-0 items-center gap-3 text-default transition hover:text-primary lg:min-w-[15rem] xl:min-w-[16rem]">
       <Image src={aletheiaLogo} alt="World of Aletheia logo" width={48} height={32} class="h-8 w-12 shrink-0" />
       <span class="min-w-0">
-        <span class="block truncate font-semibold tracking-[0.2em] text-[0.65rem] uppercase text-ink-600">World Archive</span>
+        <span class="text-muted-default block truncate font-semibold tracking-[0.2em] text-[0.65rem] uppercase">World Archive</span>
         <span class="block truncate text-lg font-semibold">World of Aletheia</span>
       </span>
     </a>
@@ -79,7 +74,7 @@ function isGroupActive(matches: string[]) {
             'flex h-8 cursor-pointer list-none items-center gap-2 rounded-md border px-3 text-[0.82rem] font-medium transition-colors',
             isGroupActive(group.matches)
               ? 'border-primary/45 bg-primary/12 text-ink-950'
-              : 'border-transparent text-ink-700 hover:border-base-300/70 hover:bg-base-100 hover:text-ink-950',
+              : 'border-transparent text-default hover:border-base-300/70 hover:bg-base-100 hover:text-primary',
           ]} aria-expanded="false">
             <SiteGlyph name={group.icon} class="h-4 w-4" />
             <span>{group.label}</span>
@@ -96,35 +91,34 @@ function isGroupActive(matches: string[]) {
     </nav>
 
     <div class="ml-auto hidden items-center gap-2 lg:flex">
-      <button type="button" class="inline-flex h-8 items-center gap-2 rounded-md border border-base-300/70 bg-base-100 px-3 text-[0.82rem] font-medium text-ink-600 transition hover:border-base-300 hover:text-ink-950" aria-label="Global search coming soon">
+      <button type="button" class="inline-flex h-8 items-center gap-2 rounded-md border border-base-300/70 bg-base-100 px-3 text-[0.82rem] font-medium text-default transition hover:border-base-300 hover:text-primary" aria-label="Global search coming soon">
         <SiteGlyph name="Search" class="h-4 w-4" />
         <span>Search</span>
       </button>
 
-      <label class="relative isolate flex h-8 w-8 overflow-hidden rounded-md border border-base-300/70 bg-base-100 text-ink-700 transition hover:border-base-300 hover:text-ink-950" aria-label="Theme selector" title="Theme">
-        <span class="sr-only">Theme</span>
-        <SiteGlyph name="Theme" class="h-4 w-4" />
-        <select class="absolute inset-0 cursor-pointer opacity-0 js-theme-picker" aria-label="Select theme">
-          {themes.map((theme) => (
-            <option value={theme.value}>{theme.label}</option>
-          ))}
-        </select>
-      </label>
-      <a href={loginHref} class="inline-flex h-8 items-center rounded-md border border-base-300/70 px-3.5 text-[0.82rem] font-medium text-ink-700 transition hover:border-primary/35 hover:text-ink-950">Login</a>
-      <a href="/contribute" class="inline-flex h-8 items-center rounded-md bg-primary px-3.5 text-[0.82rem] font-semibold text-primary-content transition hover:bg-primary/90">Contribute</a>
+      <button type="button" class="ui-theme-toggle js-theme-toggle" data-theme-state="light" aria-label="Toggle light and dark theme" title="Toggle theme">
+        <span class="ui-theme-toggle__option ui-theme-toggle__option--light">
+          <SiteGlyph name="Sun" class="h-3.5 w-3.5" />
+        </span>
+        <span class="ui-theme-toggle__option ui-theme-toggle__option--dark">
+          <SiteGlyph name="Moon" class="h-3.5 w-3.5" />
+        </span>
+      </button>
+      <a href={loginHref} class="inline-flex h-8 items-center rounded-md border border-base-300/70 px-3.5 text-[0.82rem] font-medium text-default transition hover:border-primary/35 hover:text-primary">Login</a>
+      <a href="/contribute" class="ui-button ui-button--primary h-8 px-3.5 text-[0.82rem] font-semibold">Contribute</a>
     </div>
 
     <details class="relative ml-auto lg:hidden" data-mobile-nav>
-      <summary class="flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-md border border-base-300/70 bg-base-100 text-ink-800">
+      <summary class="flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-md border border-base-300/70 bg-base-100 text-default">
         <SiteGlyph name="Menu" class="h-4 w-4" />
       </summary>
       <div class="absolute right-0 top-full z-40 mt-2.5 w-[min(92vw,24rem)] rounded-2xl border border-base-300/80 bg-base-100/98 p-4 shadow-2xl">
         <div class="space-y-3">
           {navGroups.map((group) => (
             <details class="rounded-xl border border-base-300/70 bg-base-100/88 p-3">
-              <summary class="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-ink-950">
+              <summary class="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-default">
                 <span class="flex items-center gap-2"><SiteGlyph name={group.icon} class="h-4 w-4" />{group.label}</span>
-                <span class="text-ink-500">+</span>
+                <span class="text-muted-default">+</span>
               </summary>
               <div class="mt-3 space-y-3">
                 {group.items.map((item) => (
@@ -135,19 +129,18 @@ function isGroupActive(matches: string[]) {
           ))}
 
           <div class="grid gap-2 sm:grid-cols-2">
-            <a href={loginHref} class="rounded-lg border border-base-300/70 px-4 py-3 text-sm font-medium text-ink-700">Login</a>
-            <a href="/contribute" class="rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-content">Contribute</a>
+            <a href={loginHref} class="rounded-lg border border-base-300/70 px-4 py-3 text-sm font-medium text-default">Login</a>
+            <a href="/contribute" class="ui-button ui-button--primary ui-button--block">Contribute</a>
           </div>
 
-          <label class="flex items-center gap-3 rounded-lg border border-base-300/70 px-4 py-3 text-sm font-medium text-ink-700">
-            <SiteGlyph name="Theme" class="h-4 w-4" />
-            <span class="min-w-0 flex-1">Theme</span>
-            <select class="min-w-0 bg-transparent js-theme-picker" aria-label="Select theme">
-              {themes.map((theme) => (
-                <option value={theme.value}>{theme.label}</option>
-              ))}
-            </select>
-          </label>
+          <button type="button" class="ui-theme-toggle js-theme-toggle mx-auto" data-theme-state="light" aria-label="Toggle light and dark theme">
+            <span class="ui-theme-toggle__option ui-theme-toggle__option--light">
+              <SiteGlyph name="Sun" class="h-3.5 w-3.5" />
+            </span>
+            <span class="ui-theme-toggle__option ui-theme-toggle__option--dark">
+              <SiteGlyph name="Moon" class="h-3.5 w-3.5" />
+            </span>
+          </button>
         </div>
       </div>
     </details>
@@ -182,21 +175,25 @@ function isGroupActive(matches: string[]) {
       } catch {
         // Ignore storage access errors
       }
-      document.querySelectorAll('.js-theme-picker').forEach((picker) => {
-        if (picker instanceof HTMLSelectElement) picker.value = theme;
+      document.querySelectorAll('.js-theme-toggle').forEach((toggle) => {
+        if (toggle instanceof HTMLElement) {
+          toggle.dataset.themeState = theme === 'dark-jungle' ? 'dark' : 'light';
+          toggle.setAttribute('aria-pressed', theme === 'dark-jungle' ? 'true' : 'false');
+        }
       });
     };
 
     const initialTheme = getActiveTheme();
-    document.querySelectorAll('.js-theme-picker').forEach((picker) => {
-      if (picker instanceof HTMLSelectElement) {
-        picker.value = initialTheme;
-        if (picker.dataset.themeBound === 'true') return;
-        picker.dataset.themeBound = 'true';
-        picker.addEventListener('change', (event) => {
-          const next = (event.currentTarget instanceof HTMLSelectElement)
-            ? event.currentTarget.value
-            : DEFAULT_THEME;
+    document.querySelectorAll('.js-theme-toggle').forEach((toggle) => {
+      if (toggle instanceof HTMLButtonElement) {
+        toggle.dataset.themeState = initialTheme === 'dark-jungle' ? 'dark' : 'light';
+        toggle.setAttribute('aria-pressed', initialTheme === 'dark-jungle' ? 'true' : 'false');
+        if (toggle.dataset.themeBound === 'true') return;
+        toggle.dataset.themeBound = 'true';
+        toggle.addEventListener('click', () => {
+          const next = document.documentElement.getAttribute('data-theme') === 'dark-jungle'
+            ? 'golden-savanna'
+            : 'dark-jungle';
           applyTheme(next);
         });
       }

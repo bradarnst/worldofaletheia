@@ -16,6 +16,7 @@ export interface HeroImageProps {
   contentClass?: string;
   titleClass?: string;
   textClass?: string;
+  bodyClass?: string;
 }
 
 const {
@@ -32,6 +33,7 @@ const {
   contentClass = 'site-hero-content text-neutral-content text-center px-6',
   titleClass = 'mb-4 text-4xl md:text-5xl font-bold font-lora',
   textClass = 'mb-6 text-base md:text-lg opacity-95',
+  bodyClass = 'max-w-3xl',
 } = Astro.props as HeroImageProps;
 
 const safeAlt = alt?.trim() || title;
@@ -50,7 +52,7 @@ const hasActionsSlot = Astro.slots.has('actions');
     />
     <div class={`site-hero-overlay ${overlayClass} absolute inset-0 pointer-events-none`} aria-hidden="true"></div>
     <div class={contentClass}>
-      <div class="max-w-3xl">
+      <div class={bodyClass}>
         <h1 class={`hero-image-title ${titleClass}`}>{title}</h1>
         {text && <p class={textClass}>{text}</p>}
         {hasActionsSlot ? (

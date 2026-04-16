@@ -30,6 +30,7 @@ export interface RandomHeroImageProps {
   contentClass?: string;
   titleClass?: string;
   textClass?: string;
+  bodyClass?: string;
   seed?: string | number;
 }
 
@@ -83,4 +84,5 @@ const mediaClass = darkerHeroImages.has(selected.image) ? 'site-hero-media--dark
   contentClass={props.contentClass}
   titleClass={props.titleClass}
   textClass={props.textClass}
+  bodyClass={props.bodyClass}
 />
