@@ -1,41 +1,22 @@
 ---
-import { getCollection } from 'astro:content';
+import DiscoveryCollectionView from '@components/DiscoveryCollectionView.astro';
 import UsingAletheiaLayout from '@layouts/UsingAletheiaLayout.astro';
-import ContentCard from '@components/ContentCard.astro';
-import TagCloud from '@components/TagCloud.astro';
 import fertileLandsToCity from '@images/fertile-lands-to-city.png';
-import { getFilteredCollection } from '@utils/content-filter';
+import { loadIndexBackedCollectionPage } from '~/lib/content-index-page';
 
-const meta = await getCollection('meta');
-const visibleMeta = getFilteredCollection(meta);
-
-const allTags = [...new Set(visibleMeta.flatMap(item => item.data.tags))];
+const discoveryPage = await loadIndexBackedCollectionPage({
+  collection: 'meta',
+  searchParams: Astro.url.searchParams,
+  locals: Astro.locals,
+});
 ---
 
 <UsingAletheiaLayout title="Meta - Using Aletheia" description="Behind-the-scenes writing, planning, and notes for the World of Aletheia project">
-  <div class="mb-8 rounded-xl border border-base-300 bg-base-200/60 p-4 text-sm text-ink-700">
-    <div class="font-semibold mb-1">Future-ready discovery</div>
-    <p class="meta-muted">Prepared for future filters by content type, subtype, and tags with alphabetical and grouped views in later phases.</p>
-  </div>
-
-  <div class="max-w-6xl mx-auto px-4 py-8">
-    <div class="mb-12">
-      <h2 class="text-2xl font-bold text-ink-950 mb-6">Recent Meta Posts</h2>
-
-      {visibleMeta.length === 0 ? (
-        <p class="meta-muted">No meta entries yet.</p>
-      ) : (
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {visibleMeta.map((item, index) => (
-            <ContentCard content={item} image={index % 2 === 0 ? fertileLandsToCity : undefined} />
-          ))}
-        </div>
-      )}
-    </div>
-
-    <div>
-      <h2 class="text-2xl font-bold text-ink-950 mb-6">Tags</h2>
-      <TagCloud tags={allTags} />
-    </div>
-  </div>
+  <DiscoveryCollectionView
+    basePath="/meta"
+    collectionLabel="Meta"
+    image={fertileLandsToCity}
+    emptyMessage="No meta entries found."
+    {...discoveryPage}
+  />
 </UsingAletheiaLayout>

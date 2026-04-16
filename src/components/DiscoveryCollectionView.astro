@@ -52,6 +52,7 @@ function buildHref(overrides: Partial<DiscoveryFilters> = {}) {
   const params = new URLSearchParams();
 
   if (next.view !== 'latest') params.set('view', next.view);
+  if (next.query) params.set('q', next.query);
   if (next.type) params.set('type', next.type);
   if (next.subtype) params.set('subtype', next.subtype);
   if (next.tag) params.set('tag', next.tag);
@@ -63,6 +64,7 @@ function buildHref(overrides: Partial<DiscoveryFilters> = {}) {
 
 const preservedParams = {
   ...(filters.view !== 'latest' ? { view: filters.view } : {}),
+  ...(filters.query ? { q: filters.query } : {}),
   ...(filters.type ? { type: filters.type } : {}),
   ...(filters.subtype ? { subtype: filters.subtype } : {}),
   ...(filters.tag ? { tag: filters.tag } : {}),
@@ -70,7 +72,7 @@ const preservedParams = {
 
 const heroDescription = mode === 'local'
   ? `Browse ${collectionLabel.toLowerCase()} in local fallback mode while the discovery index is unavailable.`
-  : `Browse ${collectionLabel.toLowerCase()} through a scan-friendly discovery surface with type and tag filtering.`;
+  : `Browse ${collectionLabel.toLowerCase()} through a scan-friendly discovery surface with search, type, and tag filtering.`;
 ---
 
 <CollectionHeroShell
@@ -81,7 +83,7 @@ const heroDescription = mode === 'local'
   eyebrow="Collection"
 />
 
-<CollectionFilterBar basePath={basePath} filters={filters} facets={facets} />
+<CollectionFilterBar basePath={basePath} filters={filters} facets={facets} resultCount={pagination.totalItems} />
 
 <section class="mx-auto max-w-7xl px-4 pb-14 pt-10 lg:px-8 lg:pb-20">
   <div class="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -101,11 +103,11 @@ const heroDescription = mode === 'local'
       )}
     </div>
 
-    <div class="inline-flex rounded-full border border-base-300/80 bg-base-100 p-1 text-sm">
-      <a href={buildHref({ view: 'latest', page: 1 })} class:list={['rounded-full px-4 py-2 transition-colors', filters.view === 'latest' ? 'bg-primary text-primary-content' : 'text-ink-700 hover:text-ink-950']}>
+    <div class="ui-segmented text-sm">
+      <a href={buildHref({ view: 'latest', page: 1 })} class:list={['ui-segmented__item', filters.view === 'latest' && 'ui-segmented__item--active']}>
         Latest
       </a>
-      <a href={buildHref({ view: 'grouped', page: 1 })} class:list={['rounded-full px-4 py-2 transition-colors', filters.view === 'grouped' ? 'bg-primary text-primary-content' : 'text-ink-700 hover:text-ink-950']}>
+      <a href={buildHref({ view: 'grouped', page: 1 })} class:list={['ui-segmented__item', filters.view === 'grouped' && 'ui-segmented__item--active']}>
         Grouped
       </a>
     </div>
@@ -127,6 +129,7 @@ const heroDescription = mode === 'local'
                 href={buildHref({
                   view: 'latest',
                   page: 1,
+                  query: filters.query,
                   type: group.field === 'type' ? group.value : filters.type,
                   subtype: group.field === 'subtype' ? group.value : filters.subtype,
                 })}

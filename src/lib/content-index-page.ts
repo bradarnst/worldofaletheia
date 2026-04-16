@@ -9,7 +9,7 @@ import { tryGetD1BindingFromLocals } from './d1';
 import { getFilteredCollection, type ContentEnvironment } from '~/utils/content-filter';
 import { normalizeFilterValue, normalizePage, normalizeView, type DiscoveryViewMode } from './normalizers';
 
-export type IndexBackedCollectionName = 'lore' | 'places' | 'sentients' | 'systems' | 'bestiary' | 'flora' | 'factions';
+export type IndexBackedCollectionName = 'lore' | 'places' | 'sentients' | 'systems' | 'bestiary' | 'flora' | 'factions' | 'meta';
 type DiscoveryGroupField = 'type' | 'subtype';
 
 interface LocalCollectionData {
@@ -66,6 +66,7 @@ export interface DiscoveryGroupPreview {
 export interface DiscoveryFilters {
   page: number;
   view: DiscoveryViewMode;
+  query: string;
   type: string | null;
   subtype: string | null;
   tag: string | null;
@@ -170,14 +171,49 @@ function parseFilters(searchParams: URLSearchParams): DiscoveryFilters {
   return {
     page: normalizePage(searchParams.get('page')),
     view: normalizeView(searchParams.get('view')),
+    query: searchParams.get('q')?.trim() ?? '',
     type: normalizeFilterValue(searchParams.get('type')),
     subtype: normalizeFilterValue(searchParams.get('subtype')),
     tag: normalizeFilterValue(searchParams.get('tag')),
   };
 }
 
+function matchesSearchQuery(entry: LocalCollectionEntry, query: string): boolean {
+  if (query.length === 0) {
+    return true;
+  }
+
+  const normalizedTerms = query
+    .toLowerCase()
+    .split(/\s+/)
+    .map((term) => term.trim())
+    .filter((term) => term.length > 0);
+
+  if (normalizedTerms.length === 0) {
+    return true;
+  }
+
+  const haystack = [
+    entry.id,
+    entry.data.title,
+    entry.data.excerpt,
+    entry.data.type,
+    entry.data.subtype,
+    ...(entry.data.tags ?? []),
+  ]
+    .filter((value): value is string => typeof value === 'string' && value.length > 0)
+    .join(' ')
+    .toLowerCase();
+
+  return normalizedTerms.every((term) => haystack.includes(term));
+}
+
 function applyLocalFilters(entries: LocalCollectionEntry[], filters: DiscoveryFilters): LocalCollectionEntry[] {
   return entries.filter((entry) => {
+    if (!matchesSearchQuery(entry, filters.query)) {
+      return false;
+    }
+
     if (filters.type && entry.data.type !== filters.type) {
       return false;
     }
@@ -299,6 +335,7 @@ export async function loadIndexBackedCollectionPage(options: {
     const baseFilters = {
       collection: options.collection,
       environment,
+      query: filters.query || undefined,
       type: filters.type ?? undefined,
       subtype: filters.subtype ?? undefined,
       tags: filters.tag ? [filters.tag] : undefined,

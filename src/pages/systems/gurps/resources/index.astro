@@ -3,81 +3,46 @@ import Layout from '@layouts/GurpsLayout.astro';
 
 const title = 'Resources - GURPS - World of Aletheia';
 const description = 'Helpful lists and references for GURPS gameplay in the World of Aletheia.';
+
+const categories = [
+  { href: '/systems/gurps/resources/sorcerer-spells', title: 'Sorcerer Spells', description: 'Comprehensive spell list for the World of Aletheia.', cta: 'Browse' },
+  { title: 'Skills', description: 'Recommended skills and skill combinations for character development.', cta: 'Coming soon' },
+  { title: 'Equipment', description: 'Campaign-appropriate gear and equipment guidance.', cta: 'Coming soon' },
+  { title: 'Reference Tables', description: 'Quick tables and charts for common game mechanics.', cta: 'Coming soon' },
+];
+
+const nextLinks = [
+  { href: '/systems/gurps/character-creation', title: 'Character Creation', description: 'Tips for creating characters with house rules.', cta: 'Learn more' },
+  { href: '/systems/gurps/external-links', title: 'External Links', description: 'Curated GURPS resources and references.', cta: 'Explore' },
+];
 ---
 
 <Layout title={title} description={description}>
-	<!-- Main content -->
-	<div class="max-w-6xl">
-		<h1 class="text-5xl lg:text-6xl font-bold font-lora text-ink-950 mb-6 drop-shadow-lg">
-			Resources
-		</h1>
-		<p class="text-lg text-ink-800 mb-8 drop-shadow-md">
-			Helpful lists and references for GURPS gameplay in the World of Aletheia.
-		</p>
-		<!-- Resource categories -->
-		<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-			<a href="/systems/gurps/resources/sorcerer-spells" class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
-				<div class="card-body">
-					<h2 class="card-title font-lora">Sorcerer Spells</h2>
-					<p>Comprehensive list of sorcerer spells for the World of Aletheia.</p>
-					<div class="card-actions justify-end">
-						<div class="btn btn-primary btn-sm">Browse</div>
-					</div>
-				</div>
-			</a>
-			
-			<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl">
-				<div class="card-body">
-					<h2 class="card-title font-lora">Skills</h2>
-					<p>Recommended skills and skill combinations for character development.</p>
-					<div class="card-actions justify-end">
-						<div class="btn btn-primary btn-sm">Coming Soon</div>
-					</div>
-				</div>
-			</div>
-			
-			<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl">
-				<div class="card-body">
-					<h2 class="card-title font-lora">Equipment</h2>
-					<p>Campaign-appropriate equipment and gear for various character types.</p>
-					<div class="card-actions justify-end">
-						<div class="btn btn-primary btn-sm">Coming Soon</div>
-					</div>
-				</div>
-			</div>
-			
-			<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl">
-				<div class="card-body">
-					<h2 class="card-title font-lora">Reference Tables</h2>
-					<p>Quick reference tables and charts for common game mechanics.</p>
-					<div class="card-actions justify-end">
-						<div class="btn btn-primary btn-sm">Coming Soon</div>
-					</div>
-				</div>
-			</div>
-		</div>
-		
-		<!-- Navigation cards -->
-		<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-			<a href="/gurps/character-creation" class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
-				<div class="card-body">
-					<h3 class="card-title font-lora">Character Creation</h3>
-					<p>Tips for creating characters with house rules.</p>
-					<div class="card-actions justify-end">
-						<div class="btn btn-primary btn-sm">Learn More</div>
-					</div>
-				</div>
-			</a>
-			
-			<a href="/gurps/external-links" class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
-				<div class="card-body">
-					<h3 class="card-title font-lora">External Links</h3>
-					<p>Curated GURPS resources and references.</p>
-					<div class="card-actions justify-end">
-						<div class="btn btn-primary btn-sm">Explore</div>
-					</div>
-				</div>
-			</a>
-		</div>
-	</div>
+  <div class="max-w-6xl">
+    <h1 class="mb-6 text-5xl font-bold text-ink-950 drop-shadow-lg lg:text-6xl">Resources</h1>
+    <p class="mb-8 text-lg text-ink-800 drop-shadow-md">Helpful lists and references for GURPS gameplay in the World of Aletheia.</p>
+
+    <div class="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
+      {categories.map((category) => {
+        const Wrapper = category.href ? 'a' : 'div';
+        return (
+          <Wrapper href={category.href} class="group flex h-full flex-col rounded-[1.5rem] border border-base-300/80 bg-base-100/92 p-5 shadow-sm backdrop-blur-sm transition duration-200 hover:border-primary/35 hover:shadow-lg">
+            <h2 class="text-xl font-semibold text-ink-950 transition-colors group-hover:text-primary">{category.title}</h2>
+            <p class="mt-3 text-sm leading-7 text-ink-700">{category.description}</p>
+            <span class="mt-auto pt-6 text-sm font-semibold text-primary">{category.cta}</span>
+          </Wrapper>
+        );
+      })}
+    </div>
+
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+      {nextLinks.map((link) => (
+        <a href={link.href} class="group flex h-full flex-col rounded-[1.5rem] border border-base-300/80 bg-base-100/92 p-5 shadow-sm backdrop-blur-sm transition duration-200 hover:border-primary/35 hover:shadow-lg">
+          <h3 class="text-xl font-semibold text-ink-950 transition-colors group-hover:text-primary">{link.title}</h3>
+          <p class="mt-3 text-sm leading-7 text-ink-700">{link.description}</p>
+          <span class="mt-auto pt-6 text-sm font-semibold text-primary">{link.cta}</span>
+        </a>
+      ))}
+    </div>
+  </div>
 </Layout>

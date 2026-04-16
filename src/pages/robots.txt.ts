@@ -20,8 +20,6 @@ export const GET: APIRoute = async ({ request }) => {
     'Disallow: /login',
     'Disallow: /account',
     'Disallow: /logout',
-    'Disallow: /index-compact',
-    'Disallow: /index-with-images',
     '',
     `Sitemap: ${PRODUCTION_SITE_ORIGIN}/sitemap.xml`,
   ].join('\n');

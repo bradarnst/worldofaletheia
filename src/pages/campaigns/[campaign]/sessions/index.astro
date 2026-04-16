@@ -111,27 +111,25 @@ const loginHref = `/login?next=${encodeURIComponent(Astro.url.pathname + Astro.u
 
 <CampaignsLayout title={title} description={`Session notes for ${campaignDetail?.title || campaign}`} robots={robots}>
   <div class="max-w-6xl mx-auto px-4 py-8">
-    <!-- Breadcrumb -->
-    <nav class="mb-6 text-sm text-gray-600">
-      <a href="/campaigns" class="hover:text-blue-600">Campaigns</a>
+    <nav class="mb-6 text-sm meta-muted">
+      <a href="/campaigns" class="hover:text-primary">Campaigns</a>
       <span class="mx-2">/</span>
       {campaignDetail ? (
-        <a href={`/campaigns/${campaign}`} class="hover:text-blue-600">{campaignDetail.title}</a>
+        <a href={`/campaigns/${campaign}`} class="hover:text-primary">{campaignDetail.title}</a>
       ) : (
         <span>{campaign}</span>
       )}
       <span class="mx-2">/</span>
-      <span class="text-gray-900 font-medium">Sessions</span>
+      <span class="font-medium text-ink-900">Sessions</span>
     </nav>
 
-    <!-- Header -->
     <div class="mb-12">
-      <h1 class="text-3xl font-bold text-gray-900 mb-2">
+      <h1 class="text-3xl font-bold text-ink-950 mb-2 md:text-4xl">
         {campaignDetail?.title || campaign}
       </h1>
-      <h2 class="text-xl text-gray-600">Session Notes</h2>
+      <h2 class="text-xl text-ink-700">Session Notes</h2>
       {campaignDetail?.excerpt && (
-        <p class="mt-4 text-gray-700 max-w-3xl">{campaignDetail.excerpt}</p>
+        <p class="mt-4 max-w-3xl text-ink-800">{campaignDetail.excerpt}</p>
       )}
       {contentUnavailable && (
         <div class="mt-4 rounded-xl border border-warning/40 bg-warning/10 p-4 text-sm text-ink-800">
@@ -141,28 +139,27 @@ const loginHref = `/login?next=${encodeURIComponent(Astro.url.pathname + Astro.u
       )}
 
       {restrictedSessionsCount > 0 && (
-        <div class="mt-4 rounded-xl border border-base-300 bg-base-200 p-4 text-sm text-ink-800">
+        <div class="mt-4 ui-surface ui-surface--muted p-4 text-sm text-ink-800">
           <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <p>
               {restrictedSessionsCount}
               {' '}
               protected {restrictedSessionsCount === 1 ? 'session is' : 'sessions are'} hidden in this list.
             </p>
-            <a href={loginHref} class="btn btn-primary btn-sm">Sign in to reveal</a>
+            <a href={loginHref} class="ui-button ui-button--primary ui-button--sm">Sign in to reveal</a>
           </div>
         </div>
       )}
     </div>
 
-    <!-- Sessions List -->
     <div class="mb-12">
-      <h3 class="text-2xl font-bold text-gray-900 mb-6">
+      <h3 class="text-2xl font-bold text-ink-950 mb-6">
         Sessions ({sortedSessions.length} / {totalSessionsCount} visible)
       </h3>
       
       {sortedSessions.length === 0 ? (
-        <div class="bg-gray-50 rounded-lg p-8 text-center">
-          <p class="text-gray-600">
+        <div class="rounded-[1.4rem] border border-base-300 bg-base-200/50 p-8 text-center">
+          <p class="text-ink-700">
             {restrictedSessionsCount > 0
               ? 'No visible sessions found. Sign in to reveal protected sessions.'
               : 'No sessions found for this campaign yet.'}
@@ -173,17 +170,17 @@ const loginHref = `/login?next=${encodeURIComponent(Astro.url.pathname + Astro.u
           {sortedSessions.map((session) => (
             <a 
               href={`/campaigns/${campaign}/sessions/${session.slug}`}
-              class="block bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md hover:border-blue-300 transition-all"
+              class="group block rounded-[1.45rem] border border-base-300/80 bg-base-100 p-6 shadow-sm transition duration-200 hover:border-primary/35 hover:shadow-lg"
             >
               <div class="flex items-start justify-between">
                 <div>
-                  <h4 class="text-lg font-semibold text-gray-900 mb-1">{session.title}</h4>
+                  <h4 class="mb-1 text-lg font-semibold text-ink-950 transition-colors group-hover:text-primary">{session.title}</h4>
                   {session.excerpt && (
-                    <p class="text-gray-600 text-sm mb-2">{session.excerpt}</p>
+                    <p class="mb-2 text-sm text-ink-700">{session.excerpt}</p>
                   )}
-                  <div class="flex items-center gap-4 text-sm text-gray-500">
+                  <div class="flex flex-wrap items-center gap-2 text-sm meta-muted">
                     {session.date && (
-                      <span>
+                      <span class="ui-pill ui-pill--ghost">
                         {session.date.toLocaleDateString('en-US', { 
                           weekday: 'long', 
                           year: 'numeric', 
@@ -193,15 +190,15 @@ const loginHref = `/login?next=${encodeURIComponent(Astro.url.pathname + Astro.u
                       </span>
                     )}
                     {session.duration && (
-                      <span>{Math.floor(session.duration / 60)}h {session.duration % 60}m</span>
+                      <span class="ui-pill ui-pill--ghost">{Math.floor(session.duration / 60)}h {session.duration % 60}m</span>
                     )}
-                    <span class="px-2 py-0.5 bg-gray-100 rounded text-xs uppercase">{session.type}</span>
+                    <span class="ui-pill ui-pill--outline uppercase">{session.type}</span>
                     {session.visibility && (
-                      <span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">{session.visibility}</span>
+                      <span class="ui-pill ui-pill--primary">{session.visibility}</span>
                     )}
                   </div>
                 </div>
-                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="mt-1 h-5 w-5 text-ink-500 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                 </svg>
               </div>
@@ -211,13 +208,12 @@ const loginHref = `/login?next=${encodeURIComponent(Astro.url.pathname + Astro.u
       )}
     </div>
 
-    <!-- Back to Campaign -->
-    <div class="border-t pt-6">
+    <div class="border-t border-base-300 pt-6">
       <a 
         href={`/campaigns/${campaign}`}
-        class="inline-flex items-center text-blue-600 hover:text-blue-800"
+        class="inline-flex items-center gap-2 text-primary transition-colors hover:text-secondary"
       >
-        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
         </svg>
         Back to Campaign

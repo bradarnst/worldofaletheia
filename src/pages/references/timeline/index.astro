@@ -48,8 +48,8 @@ const yearValue = Astro.url.searchParams.get('year') ?? '';
 <ReferenceLayout title="Aletheia Timeline - Reference" description="Read the chronological lore timeline of Aletheia.">
   <section class="space-y-6">
     <div class="grid gap-6 lg:grid-cols-[minmax(0,1.8fr)_minmax(320px,1fr)]">
-      <div class="card bg-base-100 shadow-sm border border-base-300">
-        <div class="card-body gap-4">
+      <div class="ui-surface p-5">
+        <div class="space-y-4">
           <div class="space-y-2">
             <p class="text-sm font-semibold uppercase tracking-[0.24em] text-ink-700">Reference Surface</p>
             <h2 class="text-2xl font-bold text-ink-950">Chronological Lore</h2>
@@ -58,28 +58,28 @@ const yearValue = Astro.url.searchParams.get('year') ?? '';
             </p>
           </div>
           <div class="flex flex-wrap gap-3">
-            <a href="/references/calendar" class="btn btn-outline btn-sm">Calendar</a>
-            <a href="/references/timeline" class="btn btn-outline btn-sm">Reset timeline</a>
+            <a href="/references/calendar" class="ui-button ui-button--secondary ui-button--sm">Calendar</a>
+            <a href="/references/timeline" class="ui-button ui-button--secondary ui-button--sm">Reset timeline</a>
           </div>
         </div>
       </div>
 
-      <div class="card bg-base-100 shadow-sm border border-base-300">
-        <div class="card-body gap-4">
+      <div class="ui-surface p-5">
+        <div class="space-y-4">
           <div>
-            <h2 class="card-title text-xl text-ink-950">Start From</h2>
+            <h2 class="text-xl font-semibold text-ink-950">Start From</h2>
             <p class="text-sm text-ink-700">Use numeric month filters or a direct <code>date</code> query string in the URL.</p>
           </div>
 
           <form method="get" class="grid gap-4 md:grid-cols-2 xl:grid-cols-4 xl:items-end">
-            <label class="form-control gap-2">
-              <span class="label-text font-semibold text-ink-800">Year</span>
-              <input name="year" type="number" min="0" value={yearValue} class="input input-bordered w-full" />
+            <label class="ui-field">
+              <span class="ui-field-label">Year</span>
+              <input name="year" type="number" min="0" value={yearValue} class="ui-field-control" />
             </label>
 
-            <label class="form-control gap-2">
-              <span class="label-text font-semibold text-ink-800">Month</span>
-              <select name="month" class="select select-bordered w-full">
+            <label class="ui-field">
+              <span class="ui-field-label">Month</span>
+              <select name="month" class="ui-field-control">
                 <option value="">Any month</option>
                 {MONTHS.map((monthName, index) => (
                   <option value={index + 1} selected={monthValue === String(index + 1)}>
@@ -89,12 +89,12 @@ const yearValue = Astro.url.searchParams.get('year') ?? '';
               </select>
             </label>
 
-            <label class="form-control gap-2">
-              <span class="label-text font-semibold text-ink-800">Day</span>
-              <input name="day" type="number" min="1" max="31" value={dayValue} class="input input-bordered w-full" />
+            <label class="ui-field">
+              <span class="ui-field-label">Day</span>
+              <input name="day" type="number" min="1" max="31" value={dayValue} class="ui-field-control" />
             </label>
 
-            <button type="submit" class="btn btn-primary">Apply</button>
+            <button type="submit" class="ui-button ui-button--primary">Apply</button>
           </form>
 
           {timelineStartDate ? (
@@ -106,8 +106,8 @@ const yearValue = Astro.url.searchParams.get('year') ?? '';
       </div>
     </div>
 
-    <div class="card bg-base-100 shadow-sm border border-base-300">
-      <div class="card-body gap-6">
+    <div class="ui-surface p-5">
+      <div class="space-y-6">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 class="text-2xl font-bold text-ink-950">Timeline Results</h2>
@@ -130,10 +130,10 @@ const yearValue = Astro.url.searchParams.get('year') ?? '';
                   <div class="flex flex-wrap items-start justify-between gap-4">
                     <div class="space-y-2">
                       <div class="flex flex-wrap gap-2 text-xs">
-                        <span class="badge badge-outline">{formatAletheiaDateRange(event.startDate, event.endDate)}</span>
-                        {!event.isSingleDay && <span class="badge badge-outline">{event.durationDays} days</span>}
+                        <span class="ui-pill ui-pill--outline">{formatAletheiaDateRange(event.startDate, event.endDate)}</span>
+                        {!event.isSingleDay && <span class="ui-pill ui-pill--outline">{event.durationDays} days</span>}
                         {event.startDate.kind === 'month' && event.startDate.isFestivalDay && (
-                          <span class="badge badge-warning">Festival Day {event.startDate.festivalDayNumber}</span>
+                          <span class="ui-pill ui-pill--warning">Festival Day {event.startDate.festivalDayNumber}</span>
                         )}
                       </div>
                       <h3 class="text-xl font-bold text-ink-950">
@@ -142,7 +142,7 @@ const yearValue = Astro.url.searchParams.get('year') ?? '';
                     </div>
                     <a
                       href={buildCalendarHref(formatAletheiaDate(event.startDate), event.startDate.year, event.startDate.kind === 'month' ? event.startDate.monthIndex : undefined, event.startDate.kind === 'month' ? event.startDate.day : undefined)}
-                      class="btn btn-sm btn-outline"
+                      class="ui-button ui-button--secondary ui-button--sm"
                     >
                       Open in calendar
                     </a>

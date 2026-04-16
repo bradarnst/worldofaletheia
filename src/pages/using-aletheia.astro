@@ -1,48 +1,48 @@
-
 ---
 import Layout from '@layouts/MainSiteLayout.astro';
+import SiteGlyph from '@components/site/SiteGlyph.astro';
+
+const sections = [
+  { href: '/systems', title: 'Systems', description: 'Rules support, mechanics context, and play-facing guidance for using the world at the table.', icon: 'Systems' },
+  { href: '/meta', title: 'Meta', description: 'Project notes, planning, implementation choices, and behind-the-scenes archive work.', icon: 'Meta' },
+  { href: '/about', title: 'About', description: 'Read how the setting and archive are built, maintained, and shared over time.', icon: 'About' },
+];
 ---
 
-<Layout title="World of Aletheia" description="An immersive tabletop RPG setting where magic, mystery, and adventure await in the Shattered Lands.">
-	<div class="max-w-7xl mx-auto px-4 lg:px-0">
-		<h1 class="text-6xl lg:text-7xl font-bold font-lora text-ink-950 mb-6 drop-shadow-lg">
-			World of Aletheia
-		</h1>
-		<p class="text-xl lg:text-2xl text-ink-800 mb-8 drop-shadow-md">
-			An immersive tabletop RPG setting where magic, mystery, and adventure await in the Shattered Lands.
-		</p>
-		<div class="flex flex-wrap gap-4">
-			<a href="#explore" class="btn btn-primary btn-lg">Explore the World</a>
-			<a href="#about" class="btn btn-outline btn-lg">Learn More</a>
-		</div>
-	</div>
-	
-	<!-- Quick links section -->
-		
-	<div class="py-16 space-y-12">
-		<section class="max-w-7xl mx-auto space-y-6 px-4 lg:px-0">
-			<h2 class="text-3xl font-semibold font-lora text-ink-900">Using Aletheia (Systems and Play)</h2>
-			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-				<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
-					<div class="card-body">
-						<h2 class="card-title font-lora">Systems</h2>
-						<p>Learn about the rules, mechanics, and systems in use.</p>
-						<div class="card-actions justify-end">
-							<a href="/systems" class="btn btn-primary btn-sm">Explore</a>
-						</div>
-					</div>
-				</div>
-				
-				<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
-					<div class="card-body">
-						<h2 class="card-title font-lora">Meta</h2>
-						<p>Find project notes, planning, and behind-the-scenes updates.</p>
-						<div class="card-actions justify-end">
-							<a href="/meta" class="btn btn-primary btn-sm">Explore</a>
-						</div>
-					</div>
-				</div>
-			</div>
-		</section>
-	</div>
+<Layout title="Using Aletheia" description="Systems support, project notes, and play guidance for using the World of Aletheia.">
+  <section class="mx-auto max-w-7xl px-4 py-14 lg:px-8 lg:py-18">
+    <div class="max-w-4xl space-y-6">
+      <p class="text-xs font-semibold uppercase tracking-[0.24em] text-ink-600">Using Aletheia</p>
+      <h1 class="text-5xl font-bold text-ink-950 md:text-6xl">Systems and play support</h1>
+      <p class="max-w-3xl text-lg leading-8 text-ink-800 md:text-xl">
+        Rules guidance, reference material, and project context for bringing Aletheia to the table without losing the archive's grounded tone.
+      </p>
+      <div class="flex flex-wrap gap-3">
+        <a href="#explore" class="ui-button ui-button--primary ui-button--lg">Explore support material</a>
+        <a href="/contribute" class="ui-button ui-button--secondary ui-button--lg">Contribute</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="explore" class="mx-auto max-w-7xl px-4 pb-16 lg:px-8 lg:pb-20">
+    <div class="mb-8 max-w-3xl">
+      <h2 class="text-3xl font-semibold text-ink-950 md:text-4xl">Use the world with confidence</h2>
+      <p class="mt-3 text-base leading-8 text-ink-700 md:text-lg">
+        These surfaces explain how the setting is played, how the archive is structured, and how evolving campaign material connects back to the canon.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+      {sections.map((section) => (
+        <a href={section.href} class="group flex h-full flex-col rounded-[1.75rem] border border-base-300/80 bg-base-100 p-6 shadow-sm transition duration-200 hover:border-primary/35 hover:shadow-lg">
+          <div class="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-base-200 text-ink-700 transition-colors group-hover:text-primary">
+            <SiteGlyph name={section.icon} class="h-6 w-6" />
+          </div>
+          <h2 class="text-2xl font-semibold text-ink-950 transition-colors group-hover:text-primary">{section.title}</h2>
+          <p class="mt-3 text-sm leading-7 text-ink-700">{section.description}</p>
+          <span class="mt-auto pt-6 text-sm font-semibold text-primary">Explore</span>
+        </a>
+      ))}
+    </div>
+  </section>
 </Layout>

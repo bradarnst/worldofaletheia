@@ -3,100 +3,74 @@ import Layout from '@layouts/GurpsLayout.astro';
 
 const title = 'External Links - GURPS - World of Aletheia';
 const description = 'Curated collection of external GURPS resources and references for World of Aletheia campaigns.';
+
+const resourceGroups = [
+  {
+    title: 'Official GURPS Resources',
+    links: [
+      { href: 'https://www.sjgames.com/gurps/', label: 'Steve Jackson Games - GURPS Official Site' },
+      { href: 'https://forums.sjgames.com/', label: 'GURPS Forums' },
+    ],
+  },
+  {
+    title: 'Community Tools and Calculators',
+    links: [
+      { href: '#', label: 'Character Sheet Tools (Coming Soon)' },
+      { href: '#', label: 'Campaign Management Tools (Coming Soon)' },
+    ],
+  },
+  {
+    title: 'World-Building Resources',
+    links: [
+      { href: '#', label: 'Fantasy World-Building Guides (Coming Soon)' },
+      { href: '#', label: 'Campaign Setting Resources (Coming Soon)' },
+    ],
+  },
+];
+
+const nextLinks = [
+  { href: '/systems/gurps/resources', title: 'Resources', description: 'Spells, skills, equipment, and more.', cta: 'Browse' },
+  { href: '/systems/gurps', title: 'GURPS Home', description: 'Back to the GURPS campaign guide.', cta: 'Home' },
+];
 ---
 
 <Layout title={title} description={description}>
-	<!-- Main content -->
-	<div class="max-w-4xl">
-		<h1 class="text-5xl lg:text-6xl font-bold font-lora text-ink-950 mb-6 drop-shadow-lg">
-			External Links
-		</h1>
-		<p class="text-lg text-ink-800 mb-8 drop-shadow-md">
-			Curated collection of external GURPS resources and references.
-		</p>
-		
-		<!-- Links section -->
-		<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl mb-8">
-			<div class="card-body">
-				<h2 class="card-title font-lora text-2xl mb-4">Recommended Resources</h2>
-				<p class="mb-6">
-					Below is a curated collection of external resources that are useful for GURPS gameplay 
-					and world-building in the World of Aletheia. These links are organized by category for easy reference.
-				</p>
-				
-				<div class="space-y-6">
-					<div>
-						<h3 class="text-lg font-semibold font-lora mb-3">Official GURPS Resources</h3>
-						<ul class="space-y-2">
-							<li>
-								<a href="https://www.sjgames.com/gurps/" target="_blank" class="link link-primary">
-									Steve Jackson Games - GURPS Official Site
-								</a>
-							</li>
-							<li>
-								<a href="https://forums.sjgames.com/" target="_blank" class="link link-primary">
-									GURPS Forums
-								</a>
-							</li>
-						</ul>
-					</div>
-					
-					<div>
-						<h3 class="text-lg font-semibold font-lora mb-3">Community Tools & Calculators</h3>
-						<ul class="space-y-2">
-							<li>
-								<a href="#" class="link link-primary">
-									Character Sheet Tools (Coming Soon)
-								</a>
-							</li>
-							<li>
-								<a href="#" class="link link-primary">
-									Campaign Management Tools (Coming Soon)
-								</a>
-							</li>
-						</ul>
-					</div>
-					
-					<div>
-						<h3 class="text-lg font-semibold font-lora mb-3">World-Building Resources</h3>
-						<ul class="space-y-2">
-							<li>
-								<a href="#" class="link link-primary">
-									Fantasy World-Building Guides (Coming Soon)
-								</a>
-							</li>
-							<li>
-								<a href="#" class="link link-primary">
-									Campaign Setting Resources (Coming Soon)
-								</a>
-							</li>
-						</ul>
-					</div>
-				</div>
-			</div>
-		</div>
-		
-		<!-- Navigation cards -->
-		<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-			<a href="/gurps/resources" class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
-				<div class="card-body">
-					<h3 class="card-title font-lora">Resources</h3>
-					<p>Spells, skills, equipment, and more.</p>
-					<div class="card-actions justify-end">
-						<div class="btn btn-primary btn-sm">Browse</div>
-					</div>
-				</div>
-			</a>
-			
-			<a href="/gurps" class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
-				<div class="card-body">
-					<h3 class="card-title font-lora">GURPS Home</h3>
-					<p>Back to the GURPS campaign guide.</p>
-					<div class="card-actions justify-end">
-						<div class="btn btn-primary btn-sm">Home</div>
-					</div>
-				</div>
-			</a>
-		</div>
-	</div>
+  <div class="max-w-4xl">
+    <h1 class="mb-6 text-5xl font-bold text-ink-950 drop-shadow-lg lg:text-6xl">External Links</h1>
+    <p class="mb-8 text-lg text-ink-800 drop-shadow-md">Curated collection of external GURPS resources and references.</p>
+
+    <section class="ui-surface ui-surface--glass mb-8 p-6">
+      <h2 class="mb-4 text-2xl font-semibold text-ink-950">Recommended Resources</h2>
+      <p class="mb-6 text-ink-800">
+        Below is a curated collection of external resources that support GURPS play and world-building in Aletheia.
+      </p>
+
+      <div class="space-y-6">
+        {resourceGroups.map((group) => (
+          <section>
+            <h3 class="mb-3 text-lg font-semibold text-ink-950">{group.title}</h3>
+            <ul class="space-y-2">
+              {group.links.map((link) => (
+                <li>
+                  <a href={link.href} target={link.href.startsWith('http') ? '_blank' : undefined} class="font-medium text-primary transition-colors hover:text-secondary">
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+      </div>
+    </section>
+
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+      {nextLinks.map((link) => (
+        <a href={link.href} class="group flex h-full flex-col rounded-[1.5rem] border border-base-300/80 bg-base-100/92 p-5 shadow-sm backdrop-blur-sm transition duration-200 hover:border-primary/35 hover:shadow-lg">
+          <h3 class="text-xl font-semibold text-ink-950 transition-colors group-hover:text-primary">{link.title}</h3>
+          <p class="mt-3 text-sm leading-7 text-ink-700">{link.description}</p>
+          <span class="mt-auto pt-6 text-sm font-semibold text-primary">{link.cta}</span>
+        </a>
+      ))}
+    </div>
+  </div>
 </Layout>

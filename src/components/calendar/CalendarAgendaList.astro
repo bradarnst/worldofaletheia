@@ -45,17 +45,17 @@ const {
 } = Astro.props;
 ---
 
-<section id="calendar-agenda" class="card border border-base-300 bg-base-100 shadow-sm">
-  <div class="card-body gap-5">
+<section id="calendar-agenda" class="ui-surface p-5">
+  <div class="space-y-5">
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div class="space-y-1">
         <h2 class="text-xl font-semibold text-ink-950">{title}</h2>
         {description && <p class="text-sm text-ink-700">{description}</p>}
       </div>
       <div class="flex flex-wrap items-center gap-2">
-        {previousHref && <a href={previousHref} class="btn btn-sm btn-outline">{previousLabel}</a>}
-        {nextHref && <a href={nextHref} class="btn btn-sm btn-outline">{nextLabel}</a>}
-        {closeHref && <a href={closeHref} class="btn btn-sm btn-outline">Hide agenda</a>}
+        {previousHref && <a href={previousHref} class="ui-button ui-button--secondary ui-button--sm">{previousLabel}</a>}
+        {nextHref && <a href={nextHref} class="ui-button ui-button--secondary ui-button--sm">{nextLabel}</a>}
+        {closeHref && <a href={closeHref} class="ui-button ui-button--secondary ui-button--sm">Hide agenda</a>}
       </div>
     </div>
 
@@ -71,7 +71,7 @@ const {
               {group.badges && group.badges.length > 0 && (
                 <div class="flex flex-wrap gap-2">
                   {group.badges.map((badge) => (
-                    <span class:list={['badge', badge.tone === 'warning' ? 'badge-warning' : 'badge-outline']}>
+                    <span class:list={['ui-pill', badge.tone === 'warning' ? 'ui-pill--warning' : 'ui-pill--outline']}>
                       {badge.label}
                     </span>
                   ))}
@@ -95,7 +95,7 @@ const {
                       {entry.badges && entry.badges.length > 0 && (
                         <div class="flex flex-wrap gap-2">
                           {entry.badges.map((badge) => (
-                            <span class:list={['badge', badge.tone === 'warning' ? 'badge-warning' : 'badge-outline']}>
+                            <span class:list={['ui-pill', badge.tone === 'warning' ? 'ui-pill--warning' : 'ui-pill--outline']}>
                               {badge.label}
                             </span>
                           ))}

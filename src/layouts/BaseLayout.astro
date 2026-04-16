@@ -20,12 +20,12 @@ const {
 } = Astro.props;
 ---
 
-<html lang="en" data-theme="savanna-days">
+<html lang="en" data-theme="golden-savanna">
   <script is:inline>
     (() => {
       const STORAGE_KEY = 'aletheia-theme';
-      const DEFAULT_THEME = 'savanna-days';
-      const ALLOWED_THEMES = ['savanna-days', 'lake-days', 'savanna-nights', 'jungle-nights'];
+      const DEFAULT_THEME = 'golden-savanna';
+      const ALLOWED_THEMES = ['golden-savanna', 'dark-jungle'];
 
       const getTheme = () => {
         try {

@@ -1,7 +1,9 @@
 ---
 import { getCollection } from 'astro:content';
 import CampaignsLayout from '@layouts/CampaignsLayout.astro';
+import CollectionHeroShell from '@components/site/CollectionHeroShell.astro';
 import TagCloud from '@components/TagCloud.astro';
+import rideOnTheBeach from '@images/ride-on-the-beach.png';
 import { getAllCampaignFamilyEntries } from '@utils/campaign-content';
 import { extractCampaignSlugFromEntryId } from '@utils/campaign-collections';
 import {
@@ -101,8 +103,16 @@ const loginHref = `/login?next=${next}`;
 ---
 
 <CampaignsLayout title="Campaigns - World of Aletheia" description="Explore public campaigns in Aletheia">
+  <CollectionHeroShell
+    title="Campaigns"
+    description="Public campaign records, session trails, and play-facing archives that reveal Aletheia through actual table history."
+    image={rideOnTheBeach}
+    icon="Campaigns"
+    eyebrow="Campaigns"
+  />
+
   <div class="max-w-6xl mx-auto px-4 py-8 space-y-12">
-    <section class="rounded-xl border border-base-300 bg-base-200 p-6">
+    <section class="ui-surface ui-surface--muted p-6">
       <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div class="space-y-2">
           <h2 class="text-2xl font-bold text-ink-950">Campaign Access</h2>
@@ -121,8 +131,8 @@ const loginHref = `/login?next=${next}`;
           )}
         </div>
         <div class="flex items-center gap-3">
-          <a href={loginHref} class="btn btn-primary">Sign in to reveal protected records</a>
-          <a href="/account" class="btn btn-outline">Account</a>
+          <a href={loginHref} class="ui-button ui-button--primary">Sign in to reveal protected records</a>
+          <a href="/account" class="ui-button ui-button--secondary">Account</a>
         </div>
       </div>
     </section>
@@ -135,15 +145,15 @@ const loginHref = `/login?next=${next}`;
       ) : (
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {publicCampaigns.map((item) => (
-            <a href={`/campaigns/${item.slug}`} class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
-              <div class="card-body gap-3">
-                <h3 class="card-title font-lora">{item.title}</h3>
+            <a href={`/campaigns/${item.slug}`} class="group flex h-full flex-col rounded-[1.5rem] border border-base-300/80 bg-base-100 p-5 shadow-sm transition duration-200 hover:border-primary/35 hover:shadow-lg">
+              <div class="flex-1 space-y-3">
+                <h3 class="text-xl font-semibold text-ink-950 transition-colors group-hover:text-primary">{item.title}</h3>
                 <p class="text-ink-800">{item.excerpt || 'No description available'}</p>
                 <div class="flex flex-wrap gap-2">
-                  <span class="badge badge-ghost">{item.sessionCount} sessions</span>
-                  <span class="badge badge-ghost">{item.publicRecordCount} public records</span>
+                  <span class="ui-pill ui-pill--ghost">{item.sessionCount} sessions</span>
+                  <span class="ui-pill ui-pill--ghost">{item.publicRecordCount} public records</span>
                   {item.protectedRecordCount > 0 && (
-                    <span class="badge badge-outline">+{item.protectedRecordCount} protected</span>
+                    <span class="ui-pill ui-pill--outline">+{item.protectedRecordCount} protected</span>
                   )}
                 </div>
                 {item.protectedRecordCount > 0 && (
@@ -159,12 +169,12 @@ const loginHref = `/login?next=${next}`;
     <section>
       <h2 class="text-2xl font-bold text-ink-950 mb-6">Campaign Tools</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <a href="/campaigns/sample-campaign/sessions" class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
-          <div class="card-body">
-            <h3 class="card-title font-lora">Sessions</h3>
+        <a href="/campaigns/sample-campaign/sessions" class="group flex h-full flex-col rounded-[1.5rem] border border-base-300/80 bg-base-100 p-5 shadow-sm transition duration-200 hover:border-primary/35 hover:shadow-lg">
+          <div class="flex-1 space-y-4">
+            <h3 class="text-xl font-semibold text-ink-950 transition-colors group-hover:text-primary">Sessions</h3>
             <p class="text-ink-800">Browse session logs and timeline entries by campaign.</p>
-            <div class="card-actions justify-end">
-              <span class="btn btn-primary btn-sm">Explore</span>
+            <div class="flex justify-end">
+              <span class="ui-button ui-button--primary ui-button--sm">Explore</span>
             </div>
           </div>
         </a>

@@ -1,33 +1,63 @@
-<div class="navbar nav-readable bg-base-100/80 backdrop-blur-sm">
-  <div class="navbar-start">
-    <div class="dropdown">
-      <div tabindex="0" role="button" class="btn btn-ghost lg:hidden">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" />
-        </svg>
-      </div>
-      <ul tabindex="0" class="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow">
-        <li><a href="/systems/gurps">GURPS Home</a></li>
-        <li><a href="/systems/gurps/character-creation">Character Creation</a></li>
-        <li><a href="/systems/gurps/house-rules">House Rules</a></li>
-        <li><a href="/systems/gurps/resources">Resources</a></li>
-        <li><a href="/systems/gurps/external-links">External Links</a></li>
-        <li><hr class="my-2" /></li>
-        <li><a href="/">← Back to Main Site</a></li>
-      </ul>
+---
+const currentPath = Astro.url.pathname;
+
+const links = [
+  { href: '/systems/gurps', label: 'GURPS Home' },
+  { href: '/systems/gurps/character-creation', label: 'Character Creation' },
+  { href: '/systems/gurps/house-rules', label: 'House Rules' },
+  { href: '/systems/gurps/resources', label: 'Resources' },
+  { href: '/systems/gurps/external-links', label: 'External Links' },
+];
+
+function isActive(href: string) {
+  return currentPath === href || currentPath.startsWith(`${href}/`);
+}
+---
+
+<nav class="border-b border-base-300/80 bg-base-100/90 backdrop-blur-sm" aria-label="GURPS navigation">
+  <div class="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 lg:px-8">
+    <a href="/systems/gurps" class="text-xl font-semibold text-ink-950 transition-colors hover:text-primary">GURPS Guide</a>
+
+    <div class="hidden flex-1 items-center justify-center gap-2 lg:flex">
+      {links.map((link) => (
+        <a
+          href={link.href}
+          class:list={[
+            'inline-flex items-center rounded-full border px-3 py-2 text-sm font-medium transition-colors',
+            isActive(link.href)
+              ? 'border-primary/45 bg-primary/12 text-ink-950'
+              : 'border-base-300/70 bg-base-100/80 text-ink-700 hover:border-primary/35 hover:text-ink-950',
+          ]}
+          aria-current={isActive(link.href) ? 'page' : undefined}
+        >
+          {link.label}
+        </a>
+      ))}
     </div>
-    <a href="/systems/gurps" class="btn btn-ghost text-xl font-lora">GURPS Guide</a>
+
+    <a href="/" class="hidden ui-button ui-button--secondary ui-button--sm lg:inline-flex">Main Site</a>
+
+    <details class="relative ml-auto lg:hidden">
+      <summary class="ui-button ui-button--ghost ui-button--sm px-3">Menu</summary>
+      <div class="absolute right-0 top-full z-30 mt-2 w-64 rounded-2xl border border-base-300/80 bg-base-100/96 p-3 shadow-xl">
+        <div class="space-y-2">
+          {links.map((link) => (
+            <a
+              href={link.href}
+              class:list={[
+                'block rounded-xl px-3 py-2 text-sm font-medium transition-colors',
+                isActive(link.href)
+                  ? 'bg-primary/12 text-ink-950'
+                  : 'text-ink-700 hover:bg-base-200/70 hover:text-ink-950',
+              ]}
+              aria-current={isActive(link.href) ? 'page' : undefined}
+            >
+              {link.label}
+            </a>
+          ))}
+          <a href="/" class="ui-button ui-button--secondary ui-button--sm ui-button--block">Main Site</a>
+        </div>
+      </div>
+    </details>
   </div>
-  <div class="navbar-center hidden lg:flex">
-    <ul class="menu menu-horizontal px-1">
-    <li><a href="/systems/gurps">GURPS Home</a></li>
-    <li><a href="/systems/gurps/character-creation">Character Creation</a></li>
-    <li><a href="/systems/gurps/house-rules">House Rules</a></li>
-    <li><a href="/systems/gurps/resources">Resources</a></li>
-    <li><a href="/systems/gurps/external-links">External Links</a></li>
-    </ul>
-  </div>
-  <div class="navbar-end gap-2">
-    <a href="/" class="btn btn-outline btn-sm">← Main Site</a>
-  </div>
-</div>
+</nav>

@@ -17,12 +17,12 @@ const backgroundStyle = image ? `--collection-bg-image: url('${image.src}')` : u
 <section class="collection-hero-shell relative overflow-hidden border-b border-base-300/70" style={backgroundStyle}>
   <div class="collection-hero-shell__backdrop absolute inset-0"></div>
   <div class="collection-hero-shell__tint absolute inset-0"></div>
-  <div class="relative mx-auto max-w-7xl px-4 pb-16 pt-20 lg:px-8 lg:pb-20 lg:pt-24">
+  <div class="collection-hero-shell__content mx-auto max-w-7xl px-4 pb-16 pt-20 lg:px-8 lg:pb-20 lg:pt-24">
     <div class="max-w-3xl space-y-5">
       <p class="text-xs font-semibold uppercase tracking-[0.28em] text-paper-100/90">{eyebrow}</p>
       <div class="flex items-start gap-4">
         {icon && (
-          <span class="mt-1 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/25 bg-black/20 text-paper-50 shadow-sm">
+          <span class="mt-1 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/22 bg-black/18 text-paper-50 shadow-sm backdrop-blur-sm">
             <SiteGlyph name={icon} class="h-6 w-6" />
           </span>
         )}

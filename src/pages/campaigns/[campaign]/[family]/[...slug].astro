@@ -174,9 +174,9 @@ const robots = effectiveVisibility === 'public' && canViewEntry && !contentUnava
 
     <header class="not-prose mb-8 space-y-4">
       <div class="flex flex-wrap items-center gap-2">
-        <span class="badge badge-outline">{familyConfig.label}</span>
-        <span class="badge badge-ghost uppercase">{familyEntry?.data.type ?? 'restricted'}</span>
-        <span class="badge badge-ghost">{familyEntry?.data.visibility ?? 'gm'}</span>
+        <span class="ui-pill ui-pill--outline">{familyConfig.label}</span>
+        <span class="ui-pill ui-pill--ghost uppercase">{familyEntry?.data.type ?? 'restricted'}</span>
+        <span class="ui-pill ui-pill--ghost">{familyEntry?.data.visibility ?? 'gm'}</span>
       </div>
 
       {familyEntry && (
@@ -195,7 +195,7 @@ const robots = effectiveVisibility === 'public' && canViewEntry && !contentUnava
           This {familyConfig.label.toLowerCase()} entry is restricted or temporarily unavailable. Sign in with your
           account and ensure you have the required campaign access level.
         </p>
-        <p><a href={loginHref} class="btn btn-primary btn-sm">Sign in to continue</a></p>
+        <p><a href={loginHref} class="ui-button ui-button--primary ui-button--sm">Sign in to continue</a></p>
       </section>
     )}
 

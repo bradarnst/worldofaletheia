@@ -7,18 +7,20 @@ const links = [
 ];
 ---
 
-<div class="tabs nav-readable tabs-border bg-base-200 justify-center gap-1 p-1 h-12">
+<div class="nav-readable flex justify-center bg-base-200/70 px-4 py-2">
+  <div class="ui-segmented">
   {links.map((link) => (
     <a
       href={link.href}
       class:list={[
-        'tab tab-sm',
+        'ui-segmented__item',
         currentPath === link.href || currentPath.startsWith(link.href + '/')
-          ? 'tab-active'
+          ? 'ui-segmented__item--active'
           : ''
       ]}
     >
       {link.label}
     </a>
   ))}
+  </div>
 </div>

@@ -3,65 +3,45 @@ import Layout from '@layouts/GurpsLayout.astro';
 
 const title = 'House Rules - GURPS - World of Aletheia';
 const description = 'Campaign-specific modifications and house rules for GURPS gameplay in the World of Aletheia.';
+
+const nextLinks = [
+  { href: '/systems/gurps/character-creation', title: 'Character Creation', description: 'Tips for creating characters with house rules.', cta: 'Learn more' },
+  { href: '/systems/gurps/resources', title: 'Resources', description: 'Spells, skills, equipment, and more.', cta: 'Browse' },
+];
 ---
 
 <Layout title={title} description={description}>
-	<!-- Main content -->
-	<div class="max-w-4xl">
-		<h1 class="text-5xl lg:text-6xl font-bold font-lora text-ink-950 mb-6 drop-shadow-lg">
-			House Rules
-		</h1>
-		<p class="text-lg text-ink-800 mb-8 drop-shadow-md">
-			Campaign-specific modifications and house rules for GURPS gameplay in the World of Aletheia.
-		</p>
-		
-		<!-- Content card -->
-		<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl mb-8">
-			<div class="card-body">
-				<h2 class="card-title font-lora text-2xl mb-4">Campaign Modifications</h2>
-				<p class="mb-4">
-					The following house rules have been established for campaigns in the World of Aletheia. 
-					These modifications are designed to enhance gameplay, balance mechanics for the setting, 
-					and create a more immersive experience.
-				</p>
-				<p class="mb-4">
-					Topics covered:
-				</p>
-				<ul class="list-disc list-inside space-y-2 mb-4">
-					<li>Combat modifications</li>
-					<li>Magic system adjustments</li>
-					<li>Skill and ability modifications</li>
-					<li>Campaign-specific mechanics</li>
-					<li>Experience and advancement rules</li>
-					<li>Equipment and technology guidelines</li>
-				</ul>
-				<p>
-					Detailed house rules documentation coming soon. Check back for comprehensive rule modifications!
-				</p>
-			</div>
-		</div>
-		
-		<!-- Navigation cards -->
-		<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-			<a href="/gurps/character-creation" class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
-				<div class="card-body">
-					<h3 class="card-title font-lora">Character Creation</h3>
-					<p>Tips for creating characters with house rules.</p>
-					<div class="card-actions justify-end">
-						<div class="btn btn-primary btn-sm">Learn More</div>
-					</div>
-				</div>
-			</a>
-			
-			<a href="/gurps/resources" class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
-				<div class="card-body">
-					<h3 class="card-title font-lora">Resources</h3>
-					<p>Spells, skills, equipment, and more.</p>
-					<div class="card-actions justify-end">
-						<div class="btn btn-primary btn-sm">Browse</div>
-					</div>
-				</div>
-			</a>
-		</div>
-	</div>
+  <div class="max-w-4xl">
+    <h1 class="mb-6 text-5xl font-bold text-ink-950 drop-shadow-lg lg:text-6xl">House Rules</h1>
+    <p class="mb-8 text-lg text-ink-800 drop-shadow-md">
+      Campaign-specific modifications and house rules for GURPS gameplay in the World of Aletheia.
+    </p>
+
+    <section class="ui-surface ui-surface--glass mb-8 p-6">
+      <h2 class="mb-4 text-2xl font-semibold text-ink-950">Campaign Modifications</h2>
+      <p class="mb-4">
+        These house rules are designed to support the tone of the setting, keep play moving at the table, and adjust core mechanics where campaign expectations differ from default GURPS assumptions.
+      </p>
+      <p class="mb-4">Topics covered:</p>
+      <ul class="mb-4 list-inside list-disc space-y-2">
+        <li>Combat modifications</li>
+        <li>Magic system adjustments</li>
+        <li>Skill and ability modifications</li>
+        <li>Campaign-specific mechanics</li>
+        <li>Experience and advancement rules</li>
+        <li>Equipment and technology guidance</li>
+      </ul>
+      <p>Detailed house rules documentation is coming soon.</p>
+    </section>
+
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+      {nextLinks.map((link) => (
+        <a href={link.href} class="group flex h-full flex-col rounded-[1.5rem] border border-base-300/80 bg-base-100/92 p-5 shadow-sm backdrop-blur-sm transition duration-200 hover:border-primary/35 hover:shadow-lg">
+          <h3 class="text-xl font-semibold text-ink-950 transition-colors group-hover:text-primary">{link.title}</h3>
+          <p class="mt-3 text-sm leading-7 text-ink-700">{link.description}</p>
+          <span class="mt-auto pt-6 text-sm font-semibold text-primary">{link.cta}</span>
+        </a>
+      ))}
+    </div>
+  </div>
 </Layout>

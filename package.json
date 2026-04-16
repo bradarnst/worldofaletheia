@@ -56,7 +56,6 @@
     "tailwindcss": "^4.2.0"
   },
   "devDependencies": {
-    "daisyui": "^5.5.19",
     "miniflare": "4.20260317.0",
     "sharp": "^0.34.5",
     "vitest": "^4.0.18",

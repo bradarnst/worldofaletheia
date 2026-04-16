@@ -130,9 +130,9 @@ const loginHref = `/login?next=${encodeURIComponent(Astro.url.pathname + Astro.u
           <p class="max-w-3xl text-ink-800">{familyConfig.description}</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
-          <span class="badge badge-outline badge-lg">{sortedEntries.length} / {totalEntriesCount} visible</span>
+          <span class="ui-pill ui-pill--outline">{sortedEntries.length} / {totalEntriesCount} visible</span>
           {restrictedEntriesCount > 0 && (
-            <span class="badge badge-ghost">{restrictedEntriesCount} protected</span>
+            <span class="ui-pill ui-pill--ghost">{restrictedEntriesCount} protected</span>
           )}
         </div>
       </div>
@@ -145,7 +145,7 @@ const loginHref = `/login?next=${encodeURIComponent(Astro.url.pathname + Astro.u
       )}
 
       {restrictedEntriesCount > 0 && (
-        <div class="rounded-xl border border-base-300 bg-base-200 p-4 text-sm text-ink-800">
+        <div class="ui-surface ui-surface--muted p-4 text-sm text-ink-800">
           <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <p>
               {restrictedEntriesCount}
@@ -154,7 +154,7 @@ const loginHref = `/login?next=${encodeURIComponent(Astro.url.pathname + Astro.u
               {' '}
               {restrictedEntriesCount === 1 ? 'entry is' : 'entries are'} currently hidden in this list.
             </p>
-            <a href={loginHref} class="btn btn-primary btn-sm">Sign in to reveal</a>
+            <a href={loginHref} class="ui-button ui-button--primary ui-button--sm">Sign in to reveal</a>
           </div>
         </div>
       )}
@@ -172,19 +172,19 @@ const loginHref = `/login?next=${encodeURIComponent(Astro.url.pathname + Astro.u
           {sortedEntries.map((entry) => (
             <a
               href={`/campaigns/${campaign}/${family}/${entry.slug}`}
-              class="card border border-base-300 bg-base-100 shadow-sm transition-shadow hover:shadow-md"
+              class="group flex h-full flex-col rounded-[1.45rem] border border-base-300/80 bg-base-100 p-5 shadow-sm transition duration-200 hover:border-primary/35 hover:shadow-lg"
             >
-              <div class="card-body gap-3">
+              <div class="flex-1 space-y-3">
                 <div class="flex items-start justify-between gap-3">
-                  <h2 class="card-title text-xl text-ink-950">{entry.title}</h2>
-                  <span class="badge badge-outline uppercase">{entry.type}</span>
+                  <h2 class="text-xl font-semibold text-ink-950 transition-colors group-hover:text-primary">{entry.title}</h2>
+                  <span class="ui-pill ui-pill--outline uppercase">{entry.type}</span>
                 </div>
 
                 {entry.excerpt && <p class="text-sm text-ink-800">{entry.excerpt}</p>}
 
                 <div class="flex flex-wrap gap-2">
-                  <span class="badge badge-ghost">{entry.visibility}</span>
-                  <span class="badge badge-ghost">{entry.updatedAt.toLocaleDateString('en-GB')}</span>
+                  <span class="ui-pill ui-pill--ghost">{entry.visibility}</span>
+                  <span class="ui-pill ui-pill--ghost">{entry.updatedAt.toLocaleDateString('en-GB')}</span>
                 </div>
 
                 {entry.tags.length > 0 && (

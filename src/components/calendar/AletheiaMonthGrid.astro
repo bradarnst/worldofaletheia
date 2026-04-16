@@ -75,7 +75,7 @@ for (let index = 0; index < visibleSlots.length; index += 6) {
                       <MoonPhaseIcon label={slot.date.moonPhaseLabel} size={compact ? 14 : 16} />
                       <span class="sr-only">{slot.date.moonPhaseLabel}</span>
                     </span>
-                    <span class="badge badge-warning badge-sm">FLD</span>
+                    <span class="ui-pill ui-pill--warning">FLD</span>
                     {!compact && slot.eclipses.length > 0 && (
                       <span class="inline-flex items-center gap-1 rounded-full border border-warning/40 bg-base-100 px-2 py-1 text-warning">
                         {slot.eclipses.map((eclipse) => (
@@ -140,7 +140,7 @@ for (let index = 0; index < visibleSlots.length; index += 6) {
                     <span class="sr-only">{slot.date.moonPhaseLabel}</span>
                   </span>
                   {slot.kind === 'day' && slot.date.isFestivalDay && (
-                    <span class="badge badge-warning badge-sm">F{slot.date.festivalDayNumber}</span>
+                    <span class="ui-pill ui-pill--warning">F{slot.date.festivalDayNumber}</span>
                   )}
                   {!compact && slot.eclipses.length > 0 && (
                     <span class="inline-flex items-center gap-1 rounded-full border border-warning/40 bg-base-100 px-2 py-1 text-warning">
@@ -153,7 +153,7 @@ for (let index = 0; index < visibleSlots.length; index += 6) {
                     </span>
                   )}
                   {compact && slot.events.length > 0 && (
-                    <span class="badge badge-primary badge-sm">{slot.events.length}</span>
+                    <span class="ui-pill ui-pill--primary ui-pill--count">{slot.events.length}</span>
                   )}
                 </div>
               </div>

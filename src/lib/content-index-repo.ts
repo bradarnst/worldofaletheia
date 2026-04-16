@@ -59,6 +59,7 @@ interface ContentIndexBaseFilters {
   type?: string;
   subtype?: string;
   tags?: string[];
+  query?: string;
   environment?: ContentEnvironment;
   visibilityScope?: 'public';
 }
@@ -219,6 +220,16 @@ function buildWhereClause(filters: ContentIndexBaseFilters): { sql: string; valu
   };
 }
 
+function buildFilterClause(filters: ContentIndexBaseFilters): { sql: string; values: unknown[] } {
+  const where = buildWhereClause(filters);
+  const search = buildSearchClause(filters.query ?? '');
+
+  return {
+    sql: [where.sql, search.sql].filter((clause) => clause.length > 0).join(' AND '),
+    values: [...where.values, ...search.values],
+  };
+}
+
 function buildSearchClause(query: string): { sql: string; values: unknown[] } {
   const searchTerms = normalizeSearchTerms(query);
   if (searchTerms.length === 0) {
@@ -273,7 +284,7 @@ export class ContentIndexRepo {
 
   async listPreviewContent(options: ContentIndexPreviewOptions): Promise<ContentIndexRow[]> {
     const limit = normalizePageSize(options.limit ?? 3);
-    const where = buildWhereClause(options);
+    const where = buildFilterClause(options);
     const query = `
       SELECT
         id,
@@ -306,7 +317,7 @@ export class ContentIndexRepo {
   async listContent(options: ContentIndexListOptions): Promise<ContentIndexListResult> {
     const requestedPage = normalizePage(options.page);
     const pageSize = normalizePageSize(options.pageSize);
-    const where = buildWhereClause(options);
+    const where = buildFilterClause(options);
 
     const countQuery = `
       SELECT COUNT(*) AS total_count
@@ -357,17 +368,14 @@ export class ContentIndexRepo {
   async searchContent(options: ContentIndexSearchOptions): Promise<ContentIndexListResult> {
     const requestedPage = normalizePage(options.page);
     const pageSize = normalizePageSize(options.pageSize);
-    const where = buildWhereClause(options);
-    const search = buildSearchClause(options.query);
-    const combinedSql = [where.sql, search.sql].filter((clause) => clause.length > 0).join(' AND ');
-    const combinedValues = [...where.values, ...search.values];
+    const filters = buildFilterClause(options);
 
     const countQuery = `
       SELECT COUNT(*) AS total_count
       FROM content_index
-      WHERE ${combinedSql}
+      WHERE ${filters.sql}
     `;
-    const countRow = await this.db.prepare(countQuery).bind(...combinedValues).first<CountRow>();
+    const countRow = await this.db.prepare(countQuery).bind(...filters.values).first<CountRow>();
     const totalItems = Number(countRow?.total_count ?? 0);
     const pagination = createPagination(totalItems, requestedPage, pageSize);
     const offset = (pagination.page - 1) * pageSize;
@@ -393,13 +401,13 @@ export class ContentIndexRepo {
         source_last_modified,
         indexed_at
       FROM content_index
-      WHERE ${combinedSql}
+      WHERE ${filters.sql}
       ORDER BY updated_at DESC, slug ASC
       LIMIT ? OFFSET ?
     `;
     const result = await this.db
       .prepare(listQuery)
-      .bind(...combinedValues, pageSize, offset)
+      .bind(...filters.values, pageSize, offset)
       .all<ContentIndexRowRecord>();
 
     return {
@@ -429,7 +437,7 @@ export class ContentIndexRepo {
     facet: 'type' | 'subtype' | 'tag',
     filters: ContentIndexFilters,
   ): Promise<ContentIndexFacetCount[]> {
-    const where = buildWhereClause(filters);
+    const where = buildFilterClause(filters);
     // Qualify column references to avoid ambiguity in JOINs
     const qualify = (col: string) => `content_index.${col}`;
     const query =

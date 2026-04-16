@@ -3,65 +3,45 @@ import Layout from '@layouts/GurpsLayout.astro';
 
 const title = 'Character Creation - GURPS - World of Aletheia';
 const description = 'Tips, tricks, and guidelines for creating characters in the World of Aletheia using GURPS.';
+
+const nextLinks = [
+  { href: '/systems/gurps/house-rules', title: 'House Rules', description: 'Campaign-specific modifications and rules.', cta: 'View rules' },
+  { href: '/systems/gurps/resources', title: 'Resources', description: 'Spells, skills, equipment, and more.', cta: 'Browse' },
+];
 ---
 
 <Layout title={title} description={description}>
-	<!-- Main content -->
-	<div class="max-w-4xl">
-		<h1 class="text-5xl lg:text-6xl font-bold font-lora text-ink-950 mb-6 drop-shadow-lg">
-			Character Creation
-		</h1>
-		<p class="text-lg text-ink-800 mb-8 drop-shadow-md">
-			Tips, tricks, and guidelines for creating characters in the World of Aletheia using GURPS.
-		</p>
-		
-		<!-- Content card -->
-		<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl mb-8">
-			<div class="card-body">
-				<h2 class="card-title font-lora text-2xl mb-4">Getting Started</h2>
-				<p class="mb-4">
-					This section provides guidance for creating characters for campaigns set in the World of Aletheia. 
-					Whether you're a new player or an experienced GURPS veteran, you'll find helpful tips and house rules 
-					specific to this campaign setting.
-				</p>
-				<p class="mb-4">
-					Key topics covered:
-				</p>
-				<ul class="list-disc list-inside space-y-2 mb-4">
-					<li>Character concept development</li>
-					<li>Point allocation strategies</li>
-					<li>Campaign-specific advantages and disadvantages</li>
-					<li>Skill recommendations for the setting</li>
-					<li>Equipment and starting resources</li>
-					<li>House rules and modifications</li>
-				</ul>
-				<p>
-					More detailed content coming soon. Check back for comprehensive character creation guides!
-				</p>
-			</div>
-		</div>
-		
-		<!-- Navigation cards -->
-		<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-			<a href="/gurps/house-rules" class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
-				<div class="card-body">
-					<h3 class="card-title font-lora">House Rules</h3>
-					<p>Campaign-specific modifications and rules.</p>
-					<div class="card-actions justify-end">
-						<div class="btn btn-primary btn-sm">View Rules</div>
-					</div>
-				</div>
-			</a>
-			
-			<a href="/gurps/resources" class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
-				<div class="card-body">
-					<h3 class="card-title font-lora">Resources</h3>
-					<p>Spells, skills, equipment, and more.</p>
-					<div class="card-actions justify-end">
-						<div class="btn btn-primary btn-sm">Browse</div>
-					</div>
-				</div>
-			</a>
-		</div>
-	</div>
+  <div class="max-w-4xl">
+    <h1 class="mb-6 text-5xl font-bold text-ink-950 drop-shadow-lg lg:text-6xl">Character Creation</h1>
+    <p class="mb-8 text-lg text-ink-800 drop-shadow-md">
+      Tips, tricks, and guidelines for creating characters in the World of Aletheia using GURPS.
+    </p>
+
+    <section class="ui-surface ui-surface--glass mb-8 p-6">
+      <h2 class="mb-4 text-2xl font-semibold text-ink-950">Getting Started</h2>
+      <p class="mb-4">
+        This section provides guidance for creating characters for campaigns set in the World of Aletheia. Whether you're a new player or an experienced GURPS veteran, you'll find helpful tips and house rules specific to this campaign setting.
+      </p>
+      <p class="mb-4">Key topics covered:</p>
+      <ul class="mb-4 list-inside list-disc space-y-2">
+        <li>Character concept development</li>
+        <li>Point allocation strategies</li>
+        <li>Campaign-specific advantages and disadvantages</li>
+        <li>Skill recommendations for the setting</li>
+        <li>Equipment and starting resources</li>
+        <li>House rules and modifications</li>
+      </ul>
+      <p>More detailed content is coming soon. Check back for comprehensive character creation guides.</p>
+    </section>
+
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+      {nextLinks.map((link) => (
+        <a href={link.href} class="group flex h-full flex-col rounded-[1.5rem] border border-base-300/80 bg-base-100/92 p-5 shadow-sm backdrop-blur-sm transition duration-200 hover:border-primary/35 hover:shadow-lg">
+          <h3 class="text-xl font-semibold text-ink-950 transition-colors group-hover:text-primary">{link.title}</h3>
+          <p class="mt-3 text-sm leading-7 text-ink-700">{link.description}</p>
+          <span class="mt-auto pt-6 text-sm font-semibold text-primary">{link.cta}</span>
+        </a>
+      ))}
+    </div>
+  </div>
 </Layout>

@@ -12,7 +12,7 @@ function buildPageHref(page: number) {
   const params = new URLSearchParams();
 
   // Explicit parameter ordering for predictable URLs
-  const orderedKeys = ['view', 'type', 'subtype', 'tag'];
+  const orderedKeys = ['view', 'q', 'type', 'subtype', 'tag'];
   for (const key of orderedKeys) {
     const value = preservedParams[key];
     if (value && value.trim().length > 0) {
@@ -36,19 +36,19 @@ const nextPage = currentPage < totalPages ? currentPage + 1 : null;
   <nav class="mt-10 flex flex-col gap-3 rounded-xl border border-base-300 bg-base-200/40 px-4 py-4 md:flex-row md:items-center md:justify-between" aria-label="Pagination">
     <div class="text-sm meta-muted">Page {currentPage} of {totalPages}</div>
 
-    <div class="join self-start md:self-auto">
+    <div class="ui-segmented self-start md:self-auto">
       {previousPage ? (
-        <a href={buildPageHref(previousPage)} class="btn btn-sm join-item">Previous</a>
+        <a href={buildPageHref(previousPage)} class="ui-segmented__item">Previous</a>
       ) : (
-        <span class="btn btn-sm btn-disabled join-item">Previous</span>
+        <span class="ui-segmented__item ui-segmented__item--disabled">Previous</span>
       )}
 
-      <span class="btn btn-sm btn-ghost join-item">{currentPage}</span>
+      <span class="ui-segmented__item ui-segmented__item--active">{currentPage}</span>
 
       {nextPage ? (
-        <a href={buildPageHref(nextPage)} class="btn btn-sm join-item">Next</a>
+        <a href={buildPageHref(nextPage)} class="ui-segmented__item">Next</a>
       ) : (
-        <span class="btn btn-sm btn-disabled join-item">Next</span>
+        <span class="ui-segmented__item ui-segmented__item--disabled">Next</span>
       )}
     </div>
   </nav>

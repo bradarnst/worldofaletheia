@@ -226,8 +226,8 @@ const yearAgendaGroups: AgendaGroup[] = yearData
 <ReferenceLayout title="Aletheia Calendar - Reference" description="View the civic calendar of Aletheia by month, week, or year.">
   <section class="space-y-6">
     <div class="grid gap-4 xl:grid-cols-[minmax(0,1.8fr)_minmax(320px,1fr)]">
-      <div class="card bg-base-100 shadow-sm border border-base-300">
-        <div class="card-body gap-3">
+      <div class="ui-surface p-5">
+        <div class="space-y-3">
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div class="space-y-1">
               <h2 class="text-xl font-semibold text-ink-950">Calendar</h2>
@@ -237,10 +237,10 @@ const yearAgendaGroups: AgendaGroup[] = yearData
             </div>
 
             <div class="flex items-center gap-2">
-              <div class="join" aria-label="Display mode">
+              <div class="ui-segmented" aria-label="Display mode">
                 <a
                   href={clearAgendaHref}
-                  class:list={['btn btn-xs join-item js-calendar-display-toggle', !isAgendaMode ? 'btn-primary' : 'btn-outline']}
+                  class:list={['ui-segmented__item js-calendar-display-toggle', !isAgendaMode && 'ui-segmented__item--active']}
                   title="Show calendar view"
                   aria-label="Show calendar view"
                   data-display-mode="calendar"
@@ -249,7 +249,7 @@ const yearAgendaGroups: AgendaGroup[] = yearData
                 </a>
                 <a
                   href={agendaToggleHref}
-                  class:list={['btn btn-xs join-item js-calendar-display-toggle', isAgendaMode ? 'btn-primary' : 'btn-outline']}
+                  class:list={['ui-segmented__item js-calendar-display-toggle', isAgendaMode && 'ui-segmented__item--active']}
                   title="Show agenda view"
                   aria-label="Show agenda view"
                   data-display-mode="agenda"
@@ -257,7 +257,7 @@ const yearAgendaGroups: AgendaGroup[] = yearData
                   Ag
                 </a>
               </div>
-              <a href={buildTimelineHref(selectedDate)} class="btn btn-sm btn-outline">Timeline</a>
+              <a href={buildTimelineHref(selectedDate)} class="ui-button ui-button--secondary ui-button--sm">Timeline</a>
             </div>
           </div>
 
@@ -265,11 +265,11 @@ const yearAgendaGroups: AgendaGroup[] = yearData
 
           <form method="get" class="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(7rem,9rem)_minmax(7rem,1fr)_minmax(10rem,1fr)_auto_auto] xl:items-end js-calendar-control-form" data-display-mode={isAgendaMode ? 'agenda' : 'calendar'} data-active-granularity={activeGranularity}>
             {isAgendaMode && <input type="hidden" name="view" value={agendaMode === 'day' ? 'month' : agendaMode} class="js-calendar-view-input" />}
-            <label class="form-control gap-2">
-              <span class="label-text font-semibold text-ink-800">{isAgendaMode ? 'Agenda' : 'View'}</span>
+            <label class="ui-field">
+              <span class="ui-field-label">{isAgendaMode ? 'Agenda' : 'View'}</span>
               <select
                 name={isAgendaMode ? 'agenda' : 'view'}
-                class="select select-bordered w-full js-calendar-granularity"
+                class="ui-field-control js-calendar-granularity"
                 data-display-mode={isAgendaMode ? 'agenda' : 'calendar'}
               >
                 {(isAgendaMode ? agendaModeOptions : calendarModeOptions).map((option) => (
@@ -278,14 +278,14 @@ const yearAgendaGroups: AgendaGroup[] = yearData
               </select>
             </label>
 
-            <label class="form-control gap-2">
-              <span class="label-text font-semibold text-ink-800">Year</span>
-              <input name="year" type="number" min="0" value={selectedDate.year} class="input input-bordered w-full" />
+            <label class="ui-field">
+              <span class="ui-field-label">Year</span>
+              <input name="year" type="number" min="0" value={selectedDate.year} class="ui-field-control" />
             </label>
 
-            <label class="form-control gap-2">
-              <span class="label-text font-semibold text-ink-800">Month</span>
-              <select name="month" class="select select-bordered w-full">
+            <label class="ui-field">
+              <span class="ui-field-label">Month</span>
+              <select name="month" class="ui-field-control">
                 {MONTHS.map((monthName, index) => (
                   <option value={index + 1} selected={monthSelectValue === String(index + 1)}>
                     {index + 1} - {monthName}
@@ -294,32 +294,32 @@ const yearAgendaGroups: AgendaGroup[] = yearData
               </select>
             </label>
 
-            <label class="form-control gap-2">
-              <span class="label-text font-semibold text-ink-800">Day</span>
-              <input name="day" type="number" min="1" max="31" value={dayInputValue} class="input input-bordered w-full" />
+            <label class="ui-field">
+              <span class="ui-field-label">Day</span>
+              <input name="day" type="number" min="1" max="31" value={dayInputValue} class="ui-field-control" />
             </label>
 
-            <button type="submit" class="btn btn-primary">Go</button>
+            <button type="submit" class="ui-button ui-button--primary">Go</button>
           </form>
         </div>
       </div>
 
-      <div class="card bg-base-100 shadow-sm border border-base-300">
-        <div class="card-body gap-3">
+      <div class="ui-surface p-5">
+        <div class="space-y-3">
           <h2 class="text-lg font-semibold text-ink-950">{formatAletheiaDateLabel(selectedEnrichedDate)}</h2>
 
           <div class="flex flex-wrap gap-2 text-sm">
-            <span class="badge badge-outline">{selectedEnrichedDate.weekday}</span>
-            <span class="badge badge-outline gap-2">
+            <span class="ui-pill ui-pill--outline">{selectedEnrichedDate.weekday}</span>
+            <span class="ui-pill ui-pill--outline">
               <MoonPhaseIcon label={selectedEnrichedDate.moonPhaseLabel} size={14} />
               {selectedEnrichedDate.moonPhaseLabel}
             </span>
             {selectedEnrichedDate.kind === 'month' && selectedEnrichedDate.isFestivalDay && (
-              <span class="badge badge-warning">Festival Day {selectedEnrichedDate.festivalDayNumber}</span>
+              <span class="ui-pill ui-pill--warning">Festival Day {selectedEnrichedDate.festivalDayNumber}</span>
             )}
-            {selectedEnrichedDate.kind === 'leapday' && <span class="badge badge-warning">FLD</span>}
-            {selectedDayData.eclipseSummary.solarCount > 0 && <span class="badge badge-warning gap-1"><EclipseMarkerIcon kind="solar" size={12} />Solar eclipse occurs</span>}
-            {selectedDayData.eclipseSummary.lunarCount > 0 && <span class="badge badge-warning gap-1"><EclipseMarkerIcon kind="lunar" size={12} />Lunar eclipse occurs</span>}
+            {selectedEnrichedDate.kind === 'leapday' && <span class="ui-pill ui-pill--warning">FLD</span>}
+            {selectedDayData.eclipseSummary.solarCount > 0 && <span class="ui-pill ui-pill--warning"><EclipseMarkerIcon kind="solar" size={12} />Solar eclipse occurs</span>}
+            {selectedDayData.eclipseSummary.lunarCount > 0 && <span class="ui-pill ui-pill--warning"><EclipseMarkerIcon kind="lunar" size={12} />Lunar eclipse occurs</span>}
           </div>
 
         </div>
@@ -327,25 +327,25 @@ const yearAgendaGroups: AgendaGroup[] = yearData
     </div>
 
     {!isAgendaMode && selection.view === 'month' && (
-      <div class="card bg-base-100 shadow-sm border border-base-300">
-        <div class="card-body gap-5">
+      <div class="ui-surface p-5">
+        <div class="space-y-5">
           <div class="flex flex-wrap items-center justify-between gap-3">
-            <a href={previousHref} class="btn btn-sm btn-outline">Previous month</a>
+            <a href={previousHref} class="ui-button ui-button--secondary ui-button--sm">Previous month</a>
             <div class="text-center">
               <h2 class="text-xl font-semibold text-ink-950">{monthData.monthName} {monthData.year}</h2>
             </div>
-            <a href={nextHref} class="btn btn-sm btn-outline">Next month</a>
+            <a href={nextHref} class="ui-button ui-button--secondary ui-button--sm">Next month</a>
           </div>
 
           <div class="flex justify-end">
             <div class="flex flex-wrap items-center justify-end gap-2">
               {monthData.eclipseSummary.eclipseCount > 0 && (
                 <>
-                  {monthData.eclipseSummary.solarCount > 0 && <span class="badge badge-outline gap-1"><EclipseMarkerIcon kind="solar" size={12} />{monthData.eclipseSummary.solarCount}</span>}
-                  {monthData.eclipseSummary.lunarCount > 0 && <span class="badge badge-outline gap-1"><EclipseMarkerIcon kind="lunar" size={12} />{monthData.eclipseSummary.lunarCount}</span>}
+                  {monthData.eclipseSummary.solarCount > 0 && <span class="ui-pill ui-pill--outline"><EclipseMarkerIcon kind="solar" size={12} />{monthData.eclipseSummary.solarCount}</span>}
+                  {monthData.eclipseSummary.lunarCount > 0 && <span class="ui-pill ui-pill--outline"><EclipseMarkerIcon kind="lunar" size={12} />{monthData.eclipseSummary.lunarCount}</span>}
                 </>
               )}
-              <span class="badge badge-outline">{monthData.eventCount} dated lore events</span>
+              <span class="ui-pill ui-pill--outline">{monthData.eventCount} dated lore events</span>
             </div>
           </div>
 
@@ -355,24 +355,24 @@ const yearAgendaGroups: AgendaGroup[] = yearData
     )}
 
     {!isAgendaMode && selection.view === 'week' && (
-      <div class="card bg-base-100 shadow-sm border border-base-300">
-        <div class="card-body gap-5">
+      <div class="ui-surface p-5">
+        <div class="space-y-5">
           <div class="flex flex-wrap items-center justify-between gap-3">
-            <a href={previousHref} class="btn btn-sm btn-outline">Previous week</a>
+            <a href={previousHref} class="ui-button ui-button--secondary ui-button--sm">Previous week</a>
             <div class="text-center">
               <h2 class="text-xl font-semibold text-ink-950">Around {formatAletheiaDateLabel(selectedEnrichedDate)}</h2>
             </div>
-            <a href={nextHref} class="btn btn-sm btn-outline">Next week</a>
+            <a href={nextHref} class="ui-button ui-button--secondary ui-button--sm">Next week</a>
           </div>
 
           <div class="grid gap-4 xl:grid-cols-6">
             {weekData.items.map((item) => (
               <article class:list={[
-                'card border shadow-sm',
+                'rounded-2xl border shadow-sm',
                 item.date.absDay === selectedEnrichedDate.absDay ? 'border-primary bg-base-100 ring-1 ring-primary/40' : 'border-base-300 bg-base-100',
                 item.date.kind === 'leapday' ? 'bg-warning/10' : '',
               ]}>
-                <div class="card-body gap-3 p-4">
+                <div class="space-y-3 p-4">
                   <a href={buildCalendarHref('week', item.date, { agenda: agendaMode })} class="block rounded-lg -m-2 p-2 transition-colors hover:bg-base-200/60">
                     <p class="text-xs font-semibold uppercase tracking-[0.2em] text-ink-700">{item.date.weekday}</p>
                     <h3 class="mt-1 text-lg font-bold text-ink-950">
@@ -382,12 +382,12 @@ const yearAgendaGroups: AgendaGroup[] = yearData
                     </h3>
                     <p class="text-sm text-ink-700">Year {item.date.year}</p>
                     <div class="mt-3 flex flex-wrap gap-2 text-xs">
-                      <span class="badge badge-outline gap-2">
+                      <span class="ui-pill ui-pill--outline">
                         <MoonPhaseIcon label={item.date.moonPhaseLabel} size={14} />
                         {item.date.moonPhaseLabel}
                       </span>
-                      {item.date.kind === 'month' && item.date.isFestivalDay && <span class="badge badge-warning">Festival {item.date.festivalDayNumber}</span>}
-                      {item.date.kind === 'leapday' && <span class="badge badge-warning">FLD</span>}
+                      {item.date.kind === 'month' && item.date.isFestivalDay && <span class="ui-pill ui-pill--warning">Festival {item.date.festivalDayNumber}</span>}
+                      {item.date.kind === 'leapday' && <span class="ui-pill ui-pill--warning">FLD</span>}
                       {item.eclipses.length > 0 && (
                         <span class="inline-flex items-center gap-1 rounded-full border border-warning/40 bg-base-100 px-2 py-1 text-warning">
                           {item.eclipses.map((eclipse) => (
@@ -414,8 +414,8 @@ const yearAgendaGroups: AgendaGroup[] = yearData
           {weekData.eclipseSummary.eclipseCount > 0 && (
             <div class="flex justify-end">
               <div class="flex flex-wrap items-center gap-2">
-                {weekData.eclipseSummary.solarCount > 0 && <span class="badge badge-outline gap-1"><EclipseMarkerIcon kind="solar" size={12} />{weekData.eclipseSummary.solarCount}</span>}
-                {weekData.eclipseSummary.lunarCount > 0 && <span class="badge badge-outline gap-1"><EclipseMarkerIcon kind="lunar" size={12} />{weekData.eclipseSummary.lunarCount}</span>}
+                {weekData.eclipseSummary.solarCount > 0 && <span class="ui-pill ui-pill--outline"><EclipseMarkerIcon kind="solar" size={12} />{weekData.eclipseSummary.solarCount}</span>}
+                {weekData.eclipseSummary.lunarCount > 0 && <span class="ui-pill ui-pill--outline"><EclipseMarkerIcon kind="lunar" size={12} />{weekData.eclipseSummary.lunarCount}</span>}
               </div>
             </div>
           )}
@@ -424,25 +424,25 @@ const yearAgendaGroups: AgendaGroup[] = yearData
     )}
 
     {!isAgendaMode && selection.view === 'year' && (
-      <div class="card bg-base-100 shadow-sm border border-base-300">
-        <div class="card-body gap-6">
+      <div class="ui-surface p-5">
+        <div class="space-y-6">
           <div class="flex flex-wrap items-center justify-between gap-3">
-            <a href={previousHref} class="btn btn-sm btn-outline">Previous year</a>
+            <a href={previousHref} class="ui-button ui-button--secondary ui-button--sm">Previous year</a>
             <div class="text-center">
               <h2 class="text-xl font-semibold text-ink-950">Year {getYearViewYear(selectedDate)}</h2>
             </div>
-            <a href={nextHref} class="btn btn-sm btn-outline">Next year</a>
+            <a href={nextHref} class="ui-button ui-button--secondary ui-button--sm">Next year</a>
           </div>
 
           <div class="flex justify-end">
             <div class="flex flex-wrap items-center justify-end gap-2">
               {yearEclipseCount > 0 && (
                 <>
-                  {yearSolarCount > 0 && <span class="badge badge-outline gap-1"><EclipseMarkerIcon kind="solar" size={12} />{yearSolarCount}</span>}
-                  {yearLunarCount > 0 && <span class="badge badge-outline gap-1"><EclipseMarkerIcon kind="lunar" size={12} />{yearLunarCount}</span>}
+                  {yearSolarCount > 0 && <span class="ui-pill ui-pill--outline"><EclipseMarkerIcon kind="solar" size={12} />{yearSolarCount}</span>}
+                  {yearLunarCount > 0 && <span class="ui-pill ui-pill--outline"><EclipseMarkerIcon kind="lunar" size={12} />{yearLunarCount}</span>}
                 </>
               )}
-              <a href={buildTimelineHref(selectedDate)} class="btn btn-sm btn-outline">View timeline from this year</a>
+              <a href={buildTimelineHref(selectedDate)} class="ui-button ui-button--secondary ui-button--sm">View timeline from this year</a>
             </div>
           </div>
 
@@ -457,12 +457,12 @@ const yearAgendaGroups: AgendaGroup[] = yearData
                     </a>
                     {yearMonth.eclipseSummary.eclipseCount > 0 && (
                       <div class="mt-2 flex flex-wrap gap-2">
-                        {yearMonth.eclipseSummary.solarCount > 0 && <span class="badge badge-outline gap-1"><EclipseMarkerIcon kind="solar" size={12} />{yearMonth.eclipseSummary.solarCount}</span>}
-                        {yearMonth.eclipseSummary.lunarCount > 0 && <span class="badge badge-outline gap-1"><EclipseMarkerIcon kind="lunar" size={12} />{yearMonth.eclipseSummary.lunarCount}</span>}
+                        {yearMonth.eclipseSummary.solarCount > 0 && <span class="ui-pill ui-pill--outline"><EclipseMarkerIcon kind="solar" size={12} />{yearMonth.eclipseSummary.solarCount}</span>}
+                        {yearMonth.eclipseSummary.lunarCount > 0 && <span class="ui-pill ui-pill--outline"><EclipseMarkerIcon kind="lunar" size={12} />{yearMonth.eclipseSummary.lunarCount}</span>}
                       </div>
                     )}
                   </div>
-                  <span class="badge badge-outline">{yearMonth.eventCount} events</span>
+                  <span class="ui-pill ui-pill--outline">{yearMonth.eventCount} events</span>
                 </div>
                 <AletheiaMonthGrid month={yearMonth} compact={true} selectedAbsDay={monthReferenceDate.year === yearMonth.year && monthReferenceDate.monthIndex === yearMonth.monthIndex ? selectedEnrichedDate.absDay : undefined} getDateHref={currentViewDateHref} />
               </section>

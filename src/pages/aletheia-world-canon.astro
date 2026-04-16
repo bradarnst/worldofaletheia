@@ -1,90 +1,51 @@
-
 ---
 import Layout from '@layouts/MainSiteLayout.astro';
+import SiteGlyph from '@components/site/SiteGlyph.astro';
+
+const canonSections = [
+  { href: '/lore', title: 'Lore', description: 'Discover the histories, myths, and enduring truths that shape Aletheia.', icon: 'Lore' },
+  { href: '/sentients', title: 'Sentients', description: 'Meet the peoples, cultures, and divine powers that inhabit the setting.', icon: 'Sentients' },
+  { href: '/places', title: 'Places', description: 'Travel through settlements, landmarks, regions, and haunted frontiers.', icon: 'Places' },
+  { href: '/factions', title: 'Factions', description: 'Survey the guilds, orders, powers, and rival institutions shaping events.', icon: 'Factions' },
+  { href: '/bestiary', title: 'Bestiary', description: 'Browse beasts, monsters, and stranger living threats from across the world.', icon: 'Bestiary' },
+  { href: '/flora', title: 'Flora', description: 'Catalog plants, fungi, herbs, and unusual growths tied to the land.', icon: 'Flora' },
+];
 ---
 
-<Layout title="World of Aletheia" description="An immersive tabletop RPG setting where magic, mystery, and adventure await in the Shattered Lands.">
-	<div class="max-w-7xl mx-auto px-4 lg:px-0">
-		<h1 class="text-6xl lg:text-7xl font-bold font-lora text-ink-950 mb-6 drop-shadow-lg">
-			World of Aletheia
-		</h1>
-		<p class="text-xl lg:text-2xl text-ink-300 mb-8 drop-shadow-md">
-			An immersive tabletop RPG setting where magic, mystery, and adventure await in the Shattered Lands.
-		</p>
-		<div class="flex flex-wrap gap-4">
-			<a href="#explore" class="btn btn-primary btn-lg">Explore the World</a>
-			<a href="#about" class="btn btn-outline btn-lg">Learn More</a>
-		</div>
-	</div>
-	
-	<!-- Quick links section -->
-	<div class="py-16 space-y-12">
-		<section class="max-w-7xl mx-auto space-y-6 px-4 lg:px-0">
-			<h2 class="text-3xl font-semibold font-lora text-ink-900">World of Aletheia (Canon)</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-				<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
-					<div class="card-body">
-						<h2 class="card-title font-lora">Lore</h2>
-						<p>Discover the rich history and legends of Aletheia.</p>
-						<div class="card-actions justify-end">
-							<a href="/lore" class="btn btn-primary btn-sm">Explore</a>
-						</div>
-					</div>
-				</div>
-				
-				<div class="card bg-base-100 shadow-xl hover:shadow-2xl ">
-					<div class="card-body">
-						<h2 class="card-title font-lora">Sentients</h2>
-						<p>Meet the heroes, villains, and legends of the realm.</p>
-						<div class="card-actions justify-end">
-							<a href="/sentients" class="btn btn-primary btn-sm">Explore</a>
-						</div>
-					</div>
-				</div>
-				
-				<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
-					<div class="card-body">
-						<h2 class="card-title font-lora">Places</h2>
-						<p>Journey through cities, dungeons, and mysterious lands.</p>
-						<div class="card-actions justify-end">
-							<a href="/places" class="btn btn-primary btn-sm">Explore</a>
-						</div>
-					</div>
-				</div>
-				
-				<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
-					<div class="card-body">
-						<h2 class="card-title font-lora">Factions</h2>
-						<p>Learn about the powers and organizations shaping Aletheia.</p>
-						<div class="card-actions justify-end">
-							<a href="/factions" class="btn btn-primary btn-sm">Explore</a>
-						</div>
-					</div>
-				</div>
-				
-				<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
-					<div class="card-body">
-						<h2 class="card-title font-lora">Bestiary</h2>
-						<p>Encounter beasts, monsters, and magical entities.</p>
-						<div class="card-actions justify-end">
-							<a href="/bestiary" class="btn btn-primary btn-sm">Explore</a>
-						</div>
-					</div>
-				</div>
+<Layout title="World of Aletheia" description="An immersive tabletop RPG setting where magic, mystery, and consequence shape the world.">
+  <section class="mx-auto max-w-7xl px-4 py-14 lg:px-8 lg:py-18">
+    <div class="max-w-4xl space-y-6">
+      <p class="text-xs font-semibold uppercase tracking-[0.24em] text-ink-600">Canon</p>
+      <h1 class="text-5xl font-bold text-ink-950 md:text-6xl">World of Aletheia</h1>
+      <p class="max-w-3xl text-lg leading-8 text-ink-800 md:text-xl">
+        The enduring truths of the setting: world history, living peoples, dangerous creatures, and the geography that holds the archive together.
+      </p>
+      <div class="flex flex-wrap gap-3">
+        <a href="#explore" class="ui-button ui-button--primary ui-button--lg">Explore the canon</a>
+        <a href="/about" class="ui-button ui-button--secondary ui-button--lg">About the archive</a>
+      </div>
+    </div>
+  </section>
 
-				<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
-					<div class="card-body">
-						<h2 class="card-title font-lora">Flora</h2>
-						<p>Discover plants, fungi, and botanical life across Aletheia.</p>
-						<div class="card-actions justify-end">
-							<a href="/flora" class="btn btn-primary btn-sm">Explore</a>
-						</div>
-					</div>
-				</div>
-				
-			</div>
-			</div>
-		</section>
-		
-	</div>
+  <section id="explore" class="mx-auto max-w-7xl px-4 pb-16 lg:px-8 lg:pb-20">
+    <div class="mb-8 max-w-3xl">
+      <h2 class="text-3xl font-semibold text-ink-950 md:text-4xl">Explore the canon</h2>
+      <p class="mt-3 text-base leading-8 text-ink-700 md:text-lg">
+        Start with the domain that best matches the question you are asking, then follow tags, relationships, and context into the rest of the archive.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+      {canonSections.map((section) => (
+        <a href={section.href} class="group flex h-full flex-col rounded-[1.75rem] border border-base-300/80 bg-base-100 p-6 shadow-sm transition duration-200 hover:border-primary/35 hover:shadow-lg">
+          <div class="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-base-200 text-ink-700 transition-colors group-hover:text-primary">
+            <SiteGlyph name={section.icon} class="h-6 w-6" />
+          </div>
+          <h2 class="text-2xl font-semibold text-ink-950 transition-colors group-hover:text-primary">{section.title}</h2>
+          <p class="mt-3 text-sm leading-7 text-ink-700">{section.description}</p>
+          <span class="mt-auto pt-6 text-sm font-semibold text-primary">Explore</span>
+        </a>
+      ))}
+    </div>
+  </section>
 </Layout>

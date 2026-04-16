@@ -60,12 +60,12 @@ const primaryDetails = details.slice(0, 4);
       </div>
 
       {(primaryDetails.length > 0 || partOf.length > 0 || connectedTo.length > 0 || tags.length > 0) && (
-        <section class="grid gap-5 rounded-3xl border border-base-300/80 bg-base-100 px-5 py-5 shadow-sm lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+        <section class="grid gap-5 border-t border-base-300/70 pt-5 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
           <div class="space-y-4">
             {primaryDetails.length > 0 && (
               <dl class="grid gap-3 sm:grid-cols-2">
                 {primaryDetails.map((detail) => (
-                  <div class="rounded-2xl bg-base-200/65 px-4 py-3">
+                  <div class="rounded-xl border border-base-300/70 bg-base-200/45 px-4 py-3">
                     <dt class="text-xs font-semibold uppercase tracking-[0.18em] text-ink-600">{detail.label}</dt>
                     <dd class="mt-1 text-sm text-ink-900">{detail.value}</dd>
                   </div>

@@ -4,6 +4,7 @@ import type { DiscoveryFacetOption, DiscoveryFilters } from '~/lib/content-index
 interface Props {
   basePath: string;
   filters: DiscoveryFilters;
+  resultCount?: number;
   facets: {
     types: DiscoveryFacetOption[];
     subtypes: DiscoveryFacetOption[];
@@ -11,13 +12,14 @@ interface Props {
   };
 }
 
-const { basePath, filters, facets } = Astro.props;
+const { basePath, filters, facets, resultCount = 0 } = Astro.props;
 
 const activeFilters = [
+  filters.query ? { label: 'Search', value: filters.query, key: 'query' } : null,
   filters.type ? { label: 'Type', value: filters.type, key: 'type' } : null,
   filters.subtype ? { label: 'Subtype', value: filters.subtype, key: 'subtype' } : null,
   filters.tag ? { label: 'Tag', value: filters.tag, key: 'tag' } : null,
-].filter((item): item is { label: string; value: string; key: 'type' | 'subtype' | 'tag' } => item !== null);
+].filter((item): item is { label: string; value: string; key: 'query' | 'type' | 'subtype' | 'tag' } => item !== null);
 
 function buildHref(overrides: Partial<DiscoveryFilters> = {}) {
   const next: DiscoveryFilters = {
@@ -28,6 +30,7 @@ function buildHref(overrides: Partial<DiscoveryFilters> = {}) {
   const params = new URLSearchParams();
 
   if (next.view !== 'latest') params.set('view', next.view);
+  if (next.query) params.set('q', next.query);
   if (next.type) params.set('type', next.type);
   if (next.subtype) params.set('subtype', next.subtype);
   if (next.tag) params.set('tag', next.tag);
@@ -40,13 +43,24 @@ function buildHref(overrides: Partial<DiscoveryFilters> = {}) {
 
 <section class="-mt-10 relative z-20 mx-auto max-w-6xl px-4 lg:px-0">
   <div class="rounded-2xl border border-base-300/80 bg-base-100/96 p-4 shadow-lg backdrop-blur-sm">
-    <form method="get" class="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(11rem,1fr)_minmax(11rem,1fr)_auto]">
+    <form method="get" class="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(15rem,1.3fr)_minmax(11rem,1fr)_minmax(11rem,1fr)_minmax(11rem,1fr)_auto] xl:items-end">
       <input type="hidden" name="view" value={filters.view} />
 
+      <label class="ui-field">
+        <span class="ui-field-label">Search</span>
+        <input
+          name="q"
+          value={filters.query}
+          type="search"
+          placeholder="Search title, summary, type, or tag"
+          class="ui-field-control"
+        />
+      </label>
+
       {facets.types.length > 0 && (
-        <label class="space-y-1">
-          <span class="text-xs font-semibold uppercase tracking-[0.18em] text-ink-700">Type</span>
-          <select name="type" class="w-full rounded-xl border border-base-300/80 bg-base-100 px-3 py-2.5 text-sm text-ink-900 focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/20">
+        <label class="ui-field">
+          <span class="ui-field-label">Type</span>
+          <select name="type" class="ui-field-control">
             <option value="">All types</option>
             {facets.types.map((facet) => (
               <option value={facet.value} selected={filters.type === facet.value}>{facet.label} ({facet.count})</option>
@@ -55,9 +69,21 @@ function buildHref(overrides: Partial<DiscoveryFilters> = {}) {
         </label>
       )}
 
-      <label class="space-y-1">
-        <span class="text-xs font-semibold uppercase tracking-[0.18em] text-ink-700">Tag</span>
-        <select name="tag" class="w-full rounded-xl border border-base-300/80 bg-base-100 px-3 py-2.5 text-sm text-ink-900 focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/20">
+      {filters.type && facets.subtypes.length > 0 && (
+        <label class="ui-field">
+          <span class="ui-field-label">Subtype</span>
+          <select name="subtype" class="ui-field-control">
+            <option value="">All subtypes</option>
+            {facets.subtypes.map((facet) => (
+              <option value={facet.value} selected={filters.subtype === facet.value}>{facet.label} ({facet.count})</option>
+            ))}
+          </select>
+        </label>
+      )}
+
+      <label class="ui-field">
+        <span class="ui-field-label">Tag</span>
+        <select name="tag" class="ui-field-control">
           <option value="">All tags</option>
           {facets.tags.map((facet) => (
             <option value={facet.value} selected={filters.tag === facet.value}>{facet.label} ({facet.count})</option>
@@ -65,24 +91,32 @@ function buildHref(overrides: Partial<DiscoveryFilters> = {}) {
         </select>
       </label>
 
-      <div class="flex items-end gap-2">
-        <button type="submit" class="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-content transition hover:bg-primary/90">
+      <div class="flex items-end gap-2 xl:justify-end">
+        <button type="submit" class="ui-button ui-button--primary">
           Apply
         </button>
-        <a href={basePath} class="inline-flex min-h-11 items-center justify-center rounded-xl border border-base-300/80 px-4 py-2 text-sm font-medium text-ink-700 transition hover:border-primary/35 hover:text-ink-950">
+        <a href={basePath} class="ui-button ui-button--secondary">
           Reset
         </a>
       </div>
     </form>
 
-    {activeFilters.length > 0 && (
-      <div class="mt-3 flex flex-wrap gap-2">
+    <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
+      <p class="text-sm text-ink-700">
+        <span class="font-semibold text-ink-950">{resultCount}</span>
+        {' '}
+        {resultCount === 1 ? 'entry' : 'entries'} match the current controls.
+      </p>
+
+      {activeFilters.length > 0 && (
+        <div class="flex flex-wrap gap-2">
         {activeFilters.map((filter) => (
-          <a href={buildHref({ [filter.key]: '', page: 1 } as Partial<DiscoveryFilters>)} class="inline-flex items-center rounded-full border border-base-300/70 bg-base-200/70 px-3 py-1 text-xs font-medium text-ink-700">
+          <a href={buildHref({ [filter.key]: '', page: 1 } as Partial<DiscoveryFilters>)} class="ui-pill ui-pill--ghost">
             {filter.label}: {filter.value}
           </a>
         ))}
-      </div>
-    )}
+        </div>
+      )}
+    </div>
   </div>
 </section>

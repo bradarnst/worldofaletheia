@@ -1,6 +1,6 @@
 export const PRODUCTION_SITE_ORIGIN = 'https://worldofaletheia.com';
 const PRODUCTION_HOSTNAMES = new Set(['worldofaletheia.com', 'www.worldofaletheia.com']);
-const AUTO_NOINDEX_PATHS = new Set(['/login', '/account', '/logout', '/index-compact', '/index-with-images']);
+const AUTO_NOINDEX_PATHS = new Set(['/login', '/account', '/logout']);
 
 export function isProductionHostname(hostname: string): boolean {
   return PRODUCTION_HOSTNAMES.has(hostname);

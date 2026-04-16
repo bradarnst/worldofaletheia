@@ -3,65 +3,36 @@ import Layout from '@layouts/GurpsLayout.astro';
 
 const title = 'GURPS Campaign Guide - World of Aletheia';
 const description = 'Tips, tricks, and resources for playing in the World of Aletheia using the GURPS system.';
+
+const sections = [
+  { href: '/systems/gurps/character-creation', title: 'Character Creation', description: 'Campaign-specific guidance for building characters that fit the world.', cta: 'Learn more' },
+  { href: '/systems/gurps/house-rules', title: 'House Rules', description: 'Mechanical adjustments and campaign expectations for play in Aletheia.', cta: 'View rules' },
+  { href: '/systems/gurps/resources', title: 'Resources', description: 'Spell lists, reference tables, and supporting play material.', cta: 'Browse' },
+  { href: '/systems/gurps/external-links', title: 'External Links', description: 'Curated outside references that complement the in-site campaign guide.', cta: 'Explore' },
+];
 ---
 
 <Layout title={title} description={description}>
-	<!-- Hero content -->
-	<div class="max-w-3xl">
-		<h1 class="text-6xl lg:text-7xl font-bold font-lora text-ink-950 mb-6 drop-shadow-lg">
-			GURPS Campaign Guide
-		</h1>
-		<p class="text-xl lg:text-2xl text-ink-800 mb-8 drop-shadow-md">
-			Tips, tricks, and resources for playing in the World of Aletheia using the GURPS system.
-		</p>
-		<div class="flex flex-wrap gap-4">
-			<a href="/gurps/character-creation" class="btn btn-primary btn-lg">Character Creation</a>
-			<a href="/systems/gurps/resources" class="btn btn-outline btn-lg">Resources</a>
-		</div>
-	</div>
-	
-	<!-- Quick links section -->
-	<div class="py-16">
-		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-			<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
-				<div class="card-body">
-					<h2 class="card-title font-lora">Character Creation</h2>
-					<p>Tips and tricks for creating characters with house rules and campaign-specific guidance.</p>
-					<div class="card-actions justify-end">
-						<a href="/gurps/character-creation" class="btn btn-primary btn-sm">Learn More</a>
-					</div>
-				</div>
-			</div>
-			
-			<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
-				<div class="card-body">
-					<h2 class="card-title font-lora">House Rules</h2>
-					<p>Campaign-specific modifications and house rules for GURPS gameplay.</p>
-					<div class="card-actions justify-end">
-						<a href="/gurps/house-rules" class="btn btn-primary btn-sm">View Rules</a>
-					</div>
-				</div>
-			</div>
-			
-			<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
-				<div class="card-body">
-					<h2 class="card-title font-lora">Resources</h2>
-					<p>Helpful lists of spells, skills, equipment, and other game resources.</p>
-					<div class="card-actions justify-end">
-						<a href="/systems/gurps/resources" class="btn btn-primary btn-sm">Browse</a>
-					</div>
-				</div>
-			</div>
-			
-			<div class="card bg-base-100/90 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow">
-				<div class="card-body">
-					<h2 class="card-title font-lora">External Links</h2>
-					<p>Curated collection of external GURPS resources and references.</p>
-					<div class="card-actions justify-end">
-						<a href="/gurps/external-links" class="btn btn-primary btn-sm">Explore</a>
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
+  <div class="max-w-4xl">
+    <h1 class="mb-6 text-6xl font-bold text-ink-950 drop-shadow-lg lg:text-7xl">GURPS Campaign Guide</h1>
+    <p class="mb-8 text-xl text-ink-800 drop-shadow-md lg:text-2xl">
+      Tips, tricks, and resources for playing in the World of Aletheia using the GURPS system.
+    </p>
+    <div class="flex flex-wrap gap-4">
+      <a href="/systems/gurps/character-creation" class="ui-button ui-button--primary ui-button--lg">Character Creation</a>
+      <a href="/systems/gurps/resources" class="ui-button ui-button--secondary ui-button--lg">Resources</a>
+    </div>
+  </div>
+
+  <div class="py-16">
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+      {sections.map((section) => (
+        <a href={section.href} class="group flex h-full flex-col rounded-[1.5rem] border border-base-300/80 bg-base-100/92 p-5 shadow-sm backdrop-blur-sm transition duration-200 hover:border-primary/35 hover:shadow-lg">
+          <h2 class="text-xl font-semibold text-ink-950 transition-colors group-hover:text-primary">{section.title}</h2>
+          <p class="mt-3 text-sm leading-7 text-ink-700">{section.description}</p>
+          <span class="mt-auto pt-6 text-sm font-semibold text-primary">{section.cta}</span>
+        </a>
+      ))}
+    </div>
+  </div>
 </Layout>
