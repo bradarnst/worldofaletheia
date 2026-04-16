@@ -1,7 +1,12 @@
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
 import { getAllCampaignFamilyEntries, type CampaignFamilyEntry } from '@utils/campaign-content';
-import { getCampaignFamilySegmentByCollection } from '@utils/campaign-collections';
+import {
+  extractCampaignFamilySlugFromEntryId,
+  extractCampaignSlugFromEntryId,
+  extractLeafSlugFromEntryId,
+  getCampaignFamilySegmentByCollection,
+} from '@utils/campaign-collections';
 import { getFilteredCollection } from '@utils/content-filter';
 import { buildCanonicalUrl, getNoIndexHeaders, isProductionHostname } from '@utils/seo';
 
@@ -141,10 +146,10 @@ export const GET: APIRoute = async ({ request }) => {
   appendCollectionEntries(entries, 'meta', meta);
 
   const publicCampaigns = campaigns.filter((entry) => entry.data.visibility === 'public');
-  const publicCampaignSlugs = new Set(publicCampaigns.map((entry) => entry.id.split('/')[0]));
+  const publicCampaignSlugs = new Set(publicCampaigns.map((entry) => extractCampaignSlugFromEntryId(entry.id)));
 
   for (const entry of publicCampaigns) {
-    const slug = entry.id.split('/')[0];
+    const slug = extractCampaignSlugFromEntryId(entry.id);
     entries.push(
       createUrlEntry(`/campaigns/${slug}`, pickCampaignDate(entry.data)),
     );
@@ -156,8 +161,7 @@ export const GET: APIRoute = async ({ request }) => {
     entries.push(createUrlEntry(`/campaigns/${campaignSlug}/sessions`));
   }
   for (const entry of publicSessions) {
-    const parts = entry.id.split('/');
-    const slug = parts[parts.length - 1] ?? entry.id;
+    const slug = extractLeafSlugFromEntryId(entry.id) || entry.id;
     entries.push(createUrlEntry(`/campaigns/${entry.data.campaign}/sessions/${slug}`, pickDatedEntryDate(entry.data)));
   }
 
@@ -173,7 +177,7 @@ export const GET: APIRoute = async ({ request }) => {
     }
 
     familyIndexPaths.add(`/campaigns/${entry.data.campaign}/${familySegment}`);
-    entries.push(createUrlEntry(`/campaigns/${entry.data.campaign}/${familySegment}/${entry.id.split('/').slice(2).join('/')}`, pickDatedEntryDate(entry.data)));
+    entries.push(createUrlEntry(`/campaigns/${entry.data.campaign}/${familySegment}/${extractCampaignFamilySlugFromEntryId(entry.id)}`, pickDatedEntryDate(entry.data)));
   }
 
   for (const pathname of familyIndexPaths) {

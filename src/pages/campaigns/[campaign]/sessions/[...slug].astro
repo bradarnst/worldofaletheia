@@ -6,7 +6,10 @@ import {
   canViewCampaignContentAsync,
   resolveCampaignContentVisibility,
 } from '@utils/campaign-access';
-import { extractCampaignSlugFromEntryId } from '@utils/campaign-collections';
+import {
+  extractCampaignSlugFromEntryId,
+  extractLeafSlugFromEntryId,
+} from '@utils/campaign-collections';
 import { createCampaignRequestAccessResolver } from '~/lib/campaign-request-access';
 
 export async function getStaticPaths() {
@@ -15,9 +18,8 @@ export async function getStaticPaths() {
   const paths: Array<{ params: { campaign: string; slug: string } }> = [];
 
   for (const item of sessionsCollection) {
-    const parts = item.id.split('/');
     const campaign = item.data.campaign;
-    const slug = parts[parts.length - 1];
+    const slug = extractLeafSlugFromEntryId(item.id);
     const key = `${campaign}:${slug}`;
 
     if (uniqueParams.has(key)) {
@@ -51,8 +53,7 @@ try {
   }) ?? null;
 
   sessionEntry = sessionsCollection.find((entry) => {
-    const parts = entry.id.split('/');
-    const sessionSlug = parts[parts.length - 1];
+    const sessionSlug = extractLeafSlugFromEntryId(entry.id);
     return entry.data.campaign === campaign && sessionSlug === slug;
   }) ?? null;
 
@@ -96,8 +97,7 @@ const campaignDetail = {
 
 const uniqueSessionsBySlug = new Map<string, (typeof allSessionEntries)[number]>();
 for (const entry of contentUnavailable ? [] : allSessionEntries) {
-  const parts = entry.id.split('/');
-  const sessionSlug = parts[parts.length - 1];
+  const sessionSlug = extractLeafSlugFromEntryId(entry.id);
   if (!uniqueSessionsBySlug.has(sessionSlug)) {
     uniqueSessionsBySlug.set(sessionSlug, entry);
   }
@@ -105,10 +105,9 @@ for (const entry of contentUnavailable ? [] : allSessionEntries) {
 
 const sortedSessions = Array.from(uniqueSessionsBySlug.values())
   .map((entry) => {
-    const parts = entry.id.split('/');
     return {
       id: entry.id,
-      slug: parts[parts.length - 1],
+      slug: extractLeafSlugFromEntryId(entry.id),
       title: entry.data.title,
       date: entry.data.date,
     };

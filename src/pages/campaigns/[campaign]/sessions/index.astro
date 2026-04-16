@@ -6,7 +6,10 @@ import {
   canViewCampaignContentAsync,
   resolveCampaignContentVisibility,
 } from '@utils/campaign-access';
-import { extractCampaignSlugFromEntryId } from '@utils/campaign-collections';
+import {
+  extractCampaignSlugFromEntryId,
+  extractLeafSlugFromEntryId,
+} from '@utils/campaign-collections';
 import { createCampaignRequestAccessResolver } from '~/lib/campaign-request-access';
 
 export async function getStaticPaths() {
@@ -76,10 +79,9 @@ const sessions = campaignEntry && !contentUnavailable
               return null;
             }
 
-            const parts = entry.id.split('/');
             return {
               id: entry.id,
-              slug: parts[parts.length - 1],
+              slug: extractLeafSlugFromEntryId(entry.id),
               title: entry.data.title,
               date: entry.data.date,
               duration: entry.data.duration,
