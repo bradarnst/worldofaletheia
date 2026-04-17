@@ -5,6 +5,11 @@ interface MembershipRow {
   campaign_slug: string;
 }
 
+interface MembershipAccessRow {
+  campaign_slug: string;
+  role: 'member' | 'gm';
+}
+
 interface CampaignUserRow {
   user_id: string;
 }
@@ -12,6 +17,11 @@ interface CampaignUserRow {
 export interface CampaignMembership {
   userId: string;
   campaignSlug: string;
+}
+
+export interface CampaignMembershipAccess {
+  campaignSlug: string;
+  role: 'member' | 'gm';
 }
 
 function toIsoNow(): string {
@@ -55,6 +65,24 @@ export class CampaignMembershipRepo {
     return result.results.map((row) => ({
       userId: row.user_id,
       campaignSlug: row.campaign_slug,
+    }));
+  }
+
+  async listUserCampaignAccess(userId: string): Promise<CampaignMembershipAccess[]> {
+    const result = await this.db
+      .prepare(
+        `SELECT campaign_slug, role
+         FROM campaign_memberships
+         WHERE user_id = ?1
+           AND role IN ('member', 'gm')
+         ORDER BY campaign_slug ASC`,
+      )
+      .bind(userId)
+      .all<MembershipAccessRow>();
+
+    return result.results.map((row) => ({
+      campaignSlug: row.campaign_slug,
+      role: row.role,
     }));
   }
 

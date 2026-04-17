@@ -78,6 +78,30 @@ describe('CampaignMembershipRepo', () => {
     ]);
   });
 
+  it('lists per-campaign access roles for a user', async () => {
+    const repo = new CampaignMembershipRepo(
+      createDbMock({
+        all: async (query, values) => {
+          expect(query).toContain('SELECT campaign_slug, role');
+          expect(query).toContain("role IN ('member', 'gm')");
+          expect(values).toEqual(['user-1']);
+
+          return {
+            results: [
+              { campaign_slug: 'barry', role: 'gm' },
+              { campaign_slug: 'brad', role: 'member' },
+            ],
+          };
+        },
+      }),
+    );
+
+    await expect(repo.listUserCampaignAccess('user-1')).resolves.toEqual([
+      { campaignSlug: 'barry', role: 'gm' },
+      { campaignSlug: 'brad', role: 'member' },
+    ]);
+  });
+
   it('propagates database errors to caller', async () => {
     const repo = new CampaignMembershipRepo(
       createDbMock({

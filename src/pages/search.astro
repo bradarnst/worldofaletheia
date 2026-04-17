@@ -25,11 +25,29 @@ interface SearchPagination {
   hasNextPage: boolean;
 }
 
+type SearchScopeReason =
+  | 'guest'
+  | 'authenticated_no_memberships'
+  | 'authenticated_member_access'
+  | 'authenticated_gm_access'
+  | 'authorization_unavailable';
+
+interface SearchScope {
+  isAuthenticated: boolean;
+  visibility: 'public' | 'campaignMembers' | 'gm';
+  reason: SearchScopeReason;
+  campaignAccess: {
+    membershipCount: number;
+    gmCount: number;
+  };
+}
+
 type SearchErrorCode = 'invalid_query' | 'unavailable';
 
 interface SearchSuccessResponse {
   ok: true;
   query: string;
+  scope: SearchScope;
   pagination: SearchPagination;
   items: SearchItem[];
 }
@@ -48,7 +66,10 @@ let loadError: SearchErrorCode | null = null;
 
 if (query.length >= 2) {
   try {
-    const response = await fetch(new URL(`/api/search?q=${encodeURIComponent(query)}&page=${page}`, Astro.url));
+    const cookie = Astro.request.headers.get('cookie');
+    const response = await fetch(new URL(`/api/search?q=${encodeURIComponent(query)}&page=${page}`, Astro.url), {
+      headers: cookie ? { cookie } : undefined,
+    });
     const payload = await response.json() as SearchSuccessResponse | SearchErrorResponse;
 
     if (response.ok && payload.ok) {
@@ -92,6 +113,39 @@ function buildResultMeta(item: SearchItem): string[] {
   if (item.subtype) parts.push(item.subtype);
   return parts;
 }
+
+function getScopeNotice(scope: SearchScope): { title: string; body: string } {
+  switch (scope.reason) {
+    case 'authenticated_gm_access':
+      return {
+        title: 'Signed-in GM scope active',
+        body: 'Results include public content plus campaign material your account can access, including GM-only entries where permitted.',
+      };
+    case 'authenticated_member_access':
+      return {
+        title: 'Signed-in member scope active',
+        body: 'Results include public content plus campaign material available to your current memberships.',
+      };
+    case 'authorization_unavailable':
+      return {
+        title: 'Protected scope unavailable',
+        body: 'Campaign access could not be confirmed for this request, so results currently fall back to public content only.',
+      };
+    case 'authenticated_no_memberships':
+      return {
+        title: 'Signed-in public scope',
+        body: 'Your account is signed in, but no campaign memberships expanded this result set, so only public content is shown.',
+      };
+    case 'guest':
+    default:
+      return {
+        title: 'Public scope active',
+        body: 'Results currently include public canon, reference, and public campaign content only.',
+      };
+  }
+}
+
+const scopeNotice = searchResponse?.ok ? getScopeNotice(searchResponse.scope) : null;
 ---
 
 <MainSiteLayout title={title} description={description} robots="noindex, nofollow">
@@ -101,7 +155,7 @@ function buildResultMeta(item: SearchItem): string[] {
         <p class="text-xs font-semibold uppercase tracking-[0.22em] text-ink-600">Global search</p>
         <h1 class="mt-3 text-3xl font-semibold text-ink-950 md:text-4xl">Search the archive</h1>
         <p class="mt-4 text-base leading-8 text-ink-700 md:text-lg">
-          Search currently returns public content only. Campaign and other restricted entries appear only when exposed by the backend.
+          Search always includes public content. When signed in, results can also include campaign material your account is allowed to access.
         </p>
       </div>
 
@@ -172,6 +226,13 @@ function buildResultMeta(item: SearchItem): string[] {
                 </p>
               )}
             </div>
+
+            {scopeNotice && (
+              <div class="rounded-2xl border border-base-300/80 bg-base-100/80 p-5">
+                <p class="text-sm font-semibold uppercase tracking-[0.18em] text-ink-600">{scopeNotice.title}</p>
+                <p class="mt-2 text-base leading-7 text-ink-700">{scopeNotice.body}</p>
+              </div>
+            )}
 
             {noResults ? (
               <div class="rounded-2xl border border-base-300/80 bg-base-100/80 p-5">

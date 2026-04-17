@@ -3,6 +3,11 @@ import { type D1DatabaseLike, getD1BindingFromLocals } from './d1';
 
 type ContentIndexVisibility = 'public' | 'campaignMembers' | 'gm';
 
+export interface ContentIndexCampaignVisibilityAccess {
+  memberCampaignSlugs?: string[];
+  gmCampaignSlugs?: string[];
+}
+
 interface CountRow {
   total_count: number | string;
 }
@@ -62,6 +67,7 @@ interface ContentIndexBaseFilters {
   query?: string;
   environment?: ContentEnvironment;
   visibilityScope?: 'public';
+  visibilityAccess?: ContentIndexCampaignVisibilityAccess;
 }
 
 export interface ContentIndexFilters extends ContentIndexBaseFilters {
@@ -128,6 +134,16 @@ function normalizeTags(tags: string[] | undefined): string[] {
   );
 }
 
+function normalizeCampaignSlugs(slugs: string[] | undefined): string[] {
+  if (!slugs) {
+    return [];
+  }
+
+  return [...new Set(slugs.map((slug) => slug.trim()).filter((slug) => slug.length > 0))].sort((left, right) =>
+    left.localeCompare(right),
+  );
+}
+
 function normalizeSearchTerms(query: string): string[] {
   return [...new Set(query.toLowerCase().split(/\s+/).map((term) => term.trim()).filter((term) => term.length > 0))];
 }
@@ -176,6 +192,43 @@ function toContentIndexRow(record: ContentIndexRowRecord): ContentIndexRow {
   };
 }
 
+function buildVisibilityClause(filters: ContentIndexBaseFilters): { sql: string; values: unknown[] } {
+  const gmCampaignSlugs = normalizeCampaignSlugs(filters.visibilityAccess?.gmCampaignSlugs);
+  const memberCampaignSlugs = normalizeCampaignSlugs([
+    ...(filters.visibilityAccess?.memberCampaignSlugs ?? []),
+    ...gmCampaignSlugs,
+  ]);
+
+  if (memberCampaignSlugs.length === 0 && gmCampaignSlugs.length === 0) {
+    return {
+      sql: "((collection != 'sessions' AND collection NOT LIKE 'campaign%') OR COALESCE(visibility, 'gm') = 'public')",
+      values: [],
+    };
+  }
+
+  const campaignClauses = ["COALESCE(visibility, 'gm') = 'public'"];
+  const values: unknown[] = [];
+
+  if (memberCampaignSlugs.length > 0) {
+    campaignClauses.push(
+      `(COALESCE(visibility, 'gm') = 'campaignMembers' AND campaign_slug IN (${memberCampaignSlugs.map(() => '?').join(', ')}))`,
+    );
+    values.push(...memberCampaignSlugs);
+  }
+
+  if (gmCampaignSlugs.length > 0) {
+    campaignClauses.push(
+      `(COALESCE(visibility, 'gm') = 'gm' AND campaign_slug IN (${gmCampaignSlugs.map(() => '?').join(', ')}))`,
+    );
+    values.push(...gmCampaignSlugs);
+  }
+
+  return {
+    sql: `((collection != 'sessions' AND collection NOT LIKE 'campaign%') OR (${campaignClauses.join(' OR ')}))`,
+    values,
+  };
+}
+
 function buildWhereClause(filters: ContentIndexBaseFilters): { sql: string; values: unknown[] } {
   const clauses: string[] = [];
   const values: unknown[] = [];
@@ -210,9 +263,9 @@ function buildWhereClause(filters: ContentIndexBaseFilters): { sql: string; valu
     values.push(...tags);
   }
 
-  if ((filters.visibilityScope ?? 'public') === 'public') {
-    clauses.push(`((collection != 'sessions' AND collection NOT LIKE 'campaign%') OR COALESCE(visibility, 'gm') = 'public')`);
-  }
+  const visibility = buildVisibilityClause(filters);
+  clauses.push(visibility.sql);
+  values.push(...visibility.values);
 
   return {
     sql: clauses.join(' AND '),

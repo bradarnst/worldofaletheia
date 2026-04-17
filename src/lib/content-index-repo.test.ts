@@ -235,4 +235,49 @@ describe('ContentIndexRepo', () => {
     ]);
     expect(seenQueries[1]?.values.slice(-2)).toEqual([5, 0]);
   });
+
+  it('extends campaign search visibility for authenticated member and gm access', async () => {
+    const seenQueries: Array<{ query: string; values: unknown[]; method: 'first' | 'all' }> = [];
+    const repo = new ContentIndexRepo(
+      createDbMock((query, values, method) => {
+        seenQueries.push({ query, values, method });
+
+        if (method === 'first') {
+          return { total_count: 2 };
+        }
+
+        return [];
+      }),
+    );
+
+    await repo.searchContent({
+      query: 'journal',
+      collection: 'campaigns',
+      visibilityAccess: {
+        memberCampaignSlugs: ['barry'],
+        gmCampaignSlugs: ['brad'],
+      },
+    });
+
+    expect(seenQueries[0]?.query).toContain("COALESCE(visibility, 'gm') = 'campaignMembers'");
+    expect(seenQueries[0]?.query).toContain("COALESCE(visibility, 'gm') = 'gm'");
+    expect(seenQueries[0]?.values.slice(0, 8)).toEqual([
+      'campaigns',
+      'publish',
+      'published',
+      'review',
+      'draft',
+      'barry',
+      'brad',
+      'brad',
+    ]);
+    expect(seenQueries[0]?.values.slice(8)).toEqual([
+      '%journal%',
+      '%journal%',
+      '%journal%',
+      '%journal%',
+      '%journal%',
+      '%journal%',
+    ]);
+  });
 });

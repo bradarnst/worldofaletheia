@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { createContentIndexRepoFromLocals, type ContentIndexRow } from '~/lib/content-index-repo';
 import { normalizeFilterValueOptional, normalizePage } from '~/lib/normalizers';
+import { resolveSearchAccess } from '~/lib/search-access';
 import { buildCampaignContentHref } from '@utils/campaign-collections';
 import { getNoIndexHeaders } from '@utils/seo';
 
@@ -39,6 +40,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
 
   try {
     const repo = await createContentIndexRepoFromLocals(locals);
+    const access = await resolveSearchAccess(request, locals);
     const result = await repo.searchContent({
       query,
       collection: normalizeFilterValueOptional(url.searchParams.get('collection')),
@@ -47,12 +49,14 @@ export const GET: APIRoute = async ({ request, locals }) => {
       tags: normalizeTags(url.searchParams),
       page: normalizePage(url.searchParams.get('page')),
       pageSize: normalizePageSize(url.searchParams.get('pageSize')),
+      visibilityAccess: access.visibilityAccess,
     });
 
     return new Response(
       JSON.stringify({
         ok: true,
         query,
+        scope: access.responseScope,
         pagination: result.pagination,
         items: result.items.map((item) => ({
           id: item.id,
