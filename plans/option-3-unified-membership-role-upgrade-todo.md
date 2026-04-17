@@ -2,10 +2,12 @@
 
 ## Status
 
-- Status: ADR accepted and code handoff drafted on 2026-04-09
+- Status: implemented, rolled out, and documented as complete on 2026-04-17
 - ADR: `plans/adrs/0019-campaign-membership-role-unification.md`
 - Migration strategy: `plans/campaign-membership-role-unification-migration-strategy-2026-04-09.md`
 - Code handoff: `plans/campaign-membership-role-unification-lld-handoff-2026-04-09.md`
+- Canonical runtime/runbook authority is now `campaign_memberships.role`, with localhost-only fallback retained for local compatibility.
+- Historical planning/design documents may still describe the superseded dual-table model as part of the implementation record, but active runtime, operator workflow, and runbook guidance are unified-role based.
 
 ## Context
 
@@ -29,17 +31,17 @@ This is a post-stabilization simplification, not a launch blocker.
 ## Upgrade TODO
 
 - [x] Draft ADR and migration strategy for unified role model (Option 3), including migration and rollback policy.
-- [ ] Add or confirm role constraints in schema (`role IN ('member','gm')`) and future extension policy.
-- [ ] Backfill existing GM assignments into `campaign_memberships` as `role='gm'`.
+- [x] Add or confirm role constraints in schema (`role IN ('member','gm')`) and future extension policy.
+- [x] Backfill existing GM assignments into `campaign_memberships` as `role='gm'`.
 - [x] Define conflict policy when `member` and `gm` rows overlap (`gm` wins for the unified row).
-- [ ] Update runtime authorization to query only `campaign_memberships`.
-- [ ] Remove runtime reads of `campaign_gm_assignments` and GM config/env in staging/prod.
-- [ ] Deprecate GM operator templates; replace with membership role upsert/revoke templates.
-- [ ] Update runbook SOP and verification queries for role-based checks.
-- [ ] Add tests for role precedence (`gm` implies campaignMembers access).
-- [ ] Execute staged rollout: staging migration + verification, then production rollout.
-- [ ] After burn-in, drop `campaign_gm_assignments` with a one-way migration.
-- [ ] Clean docs/plans references to dual-table model.
+- [x] Update runtime authorization to query only `campaign_memberships`.
+- [x] Remove runtime reads of `campaign_gm_assignments` and GM config/env in staging/prod.
+- [x] Deprecate GM operator templates; replace with membership role upsert/revoke templates.
+- [x] Update runbook SOP and verification queries for role-based checks.
+- [x] Add tests for role precedence (`gm` implies campaignMembers access).
+- [x] Execute staged rollout: staging migration + verification, then production rollout.
+- [x] After burn-in, drop `campaign_gm_assignments` with a one-way migration.
+- [x] Clean docs/plans references to dual-table model.
 
 ## Rollout Strategy
 
@@ -62,7 +64,7 @@ This is a post-stabilization simplification, not a launch blocker.
 
 ## Done Criteria
 
-- [ ] Production authorization decisions rely on one table only.
-- [ ] Operator workflow uses one assignment model only.
-- [ ] Runbook and templates are consistent with runtime behavior.
-- [ ] No non-local GM authority path remains outside membership roles.
+- [x] Production authorization decisions rely on one table only.
+- [x] Operator workflow uses one assignment model only.
+- [x] Runbook and templates are consistent with runtime behavior.
+- [x] No non-local GM authority path remains outside membership roles.
