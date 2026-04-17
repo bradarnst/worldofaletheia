@@ -87,6 +87,7 @@ export interface ContentIndexSearchOptions extends ContentIndexBaseFilters {
   query: string;
   page?: number;
   pageSize?: number;
+  searchMode?: 'fts' | 'metadata';
 }
 
 export interface ContentIndexPagination {
@@ -201,30 +202,30 @@ function buildVisibilityClause(filters: ContentIndexBaseFilters): { sql: string;
 
   if (memberCampaignSlugs.length === 0 && gmCampaignSlugs.length === 0) {
     return {
-      sql: "((collection != 'sessions' AND collection NOT LIKE 'campaign%') OR COALESCE(visibility, 'gm') = 'public')",
+      sql: "((content_index.collection != 'sessions' AND content_index.collection NOT LIKE 'campaign%') OR COALESCE(content_index.visibility, 'gm') = 'public')",
       values: [],
     };
   }
 
-  const campaignClauses = ["COALESCE(visibility, 'gm') = 'public'"];
+  const campaignClauses = ["COALESCE(content_index.visibility, 'gm') = 'public'"];
   const values: unknown[] = [];
 
   if (memberCampaignSlugs.length > 0) {
     campaignClauses.push(
-      `(COALESCE(visibility, 'gm') = 'campaignMembers' AND campaign_slug IN (${memberCampaignSlugs.map(() => '?').join(', ')}))`,
+      `(COALESCE(content_index.visibility, 'gm') = 'campaignMembers' AND content_index.campaign_slug IN (${memberCampaignSlugs.map(() => '?').join(', ')}))`,
     );
     values.push(...memberCampaignSlugs);
   }
 
   if (gmCampaignSlugs.length > 0) {
     campaignClauses.push(
-      `(COALESCE(visibility, 'gm') = 'gm' AND campaign_slug IN (${gmCampaignSlugs.map(() => '?').join(', ')}))`,
+      `(COALESCE(content_index.visibility, 'gm') = 'gm' AND content_index.campaign_slug IN (${gmCampaignSlugs.map(() => '?').join(', ')}))`,
     );
     values.push(...gmCampaignSlugs);
   }
 
   return {
-    sql: `((collection != 'sessions' AND collection NOT LIKE 'campaign%') OR (${campaignClauses.join(' OR ')}))`,
+    sql: `((content_index.collection != 'sessions' AND content_index.collection NOT LIKE 'campaign%') OR (${campaignClauses.join(' OR ')}))`,
     values,
   };
 }
@@ -234,22 +235,22 @@ function buildWhereClause(filters: ContentIndexBaseFilters): { sql: string; valu
   const values: unknown[] = [];
 
   if (filters.collection) {
-    clauses.push('collection = ?');
+    clauses.push('content_index.collection = ?');
     values.push(filters.collection);
   }
 
   const statuses = getIncludedStatuses(filters.environment ?? 'production');
 
-  clauses.push(`status IN (${statuses.map(() => '?').join(', ')})`);
+  clauses.push(`content_index.status IN (${statuses.map(() => '?').join(', ')})`);
   values.push(...statuses);
 
   if (filters.type) {
-    clauses.push('type = ?');
+    clauses.push('content_index.type = ?');
     values.push(filters.type);
   }
 
   if (filters.subtype) {
-    clauses.push('subtype = ?');
+    clauses.push('content_index.subtype = ?');
     values.push(filters.subtype);
   }
 
@@ -273,9 +274,9 @@ function buildWhereClause(filters: ContentIndexBaseFilters): { sql: string; valu
   };
 }
 
-function buildFilterClause(filters: ContentIndexBaseFilters): { sql: string; values: unknown[] } {
+function buildMetadataFilterClause(filters: ContentIndexBaseFilters): { sql: string; values: unknown[] } {
   const where = buildWhereClause(filters);
-  const search = buildSearchClause(filters.query ?? '');
+  const search = buildMetadataSearchClause(filters.query ?? '');
 
   return {
     sql: [where.sql, search.sql].filter((clause) => clause.length > 0).join(' AND '),
@@ -283,7 +284,7 @@ function buildFilterClause(filters: ContentIndexBaseFilters): { sql: string; val
   };
 }
 
-function buildSearchClause(query: string): { sql: string; values: unknown[] } {
+function buildMetadataSearchClause(query: string): { sql: string; values: unknown[] } {
   const searchTerms = normalizeSearchTerms(query);
   if (searchTerms.length === 0) {
     return {
@@ -298,11 +299,11 @@ function buildSearchClause(query: string): { sql: string; values: unknown[] } {
   for (const term of searchTerms) {
     const likeValue = `%${escapeLikePattern(term)}%`;
     clauses.push(`(
-      LOWER(title) LIKE ? ESCAPE '\\'
-      OR LOWER(COALESCE(summary, '')) LIKE ? ESCAPE '\\'
-      OR LOWER(slug) LIKE ? ESCAPE '\\'
-      OR LOWER(COALESCE(type, '')) LIKE ? ESCAPE '\\'
-      OR LOWER(COALESCE(subtype, '')) LIKE ? ESCAPE '\\'
+      LOWER(content_index.title) LIKE ? ESCAPE '\\'
+      OR LOWER(COALESCE(content_index.summary, '')) LIKE ? ESCAPE '\\'
+      OR LOWER(content_index.slug) LIKE ? ESCAPE '\\'
+      OR LOWER(COALESCE(content_index.type, '')) LIKE ? ESCAPE '\\'
+      OR LOWER(COALESCE(content_index.subtype, '')) LIKE ? ESCAPE '\\'
       OR EXISTS (
         SELECT 1
         FROM json_each(content_index.tags_json) AS search_tag
@@ -316,6 +317,38 @@ function buildSearchClause(query: string): { sql: string; values: unknown[] } {
     sql: clauses.join(' AND '),
     values,
   };
+}
+
+function buildFtsMatchQuery(query: string): string {
+  const terms = normalizeSearchTerms(query);
+  return terms.map((term) => `"${term.replace(/"/g, '""')}"`).join(' AND ');
+}
+
+function buildFtsFilterClause(filters: ContentIndexBaseFilters): { sql: string; values: unknown[] } {
+  const where = buildWhereClause(filters);
+  const ftsQuery = buildFtsMatchQuery(filters.query ?? '');
+
+  if (!ftsQuery) {
+    return {
+      sql: where.sql,
+      values: where.values,
+    };
+  }
+
+  return {
+    sql: [where.sql, 'content_search_fts MATCH ?'].join(' AND '),
+    values: [...where.values, ftsQuery],
+  };
+}
+
+function isFtsUnavailableError(error: unknown): boolean {
+  const message = String(error instanceof Error ? error.message : error).toLowerCase();
+
+  return (
+    message.includes('no such module: fts5') ||
+    (message.includes('no such table') && message.includes('content_search')) ||
+    (message.includes('no such table') && message.includes('content_search_fts'))
+  );
 }
 
 function createPagination(totalItems: number, requestedPage: number, pageSize: number): ContentIndexPagination {
@@ -337,7 +370,7 @@ export class ContentIndexRepo {
 
   async listPreviewContent(options: ContentIndexPreviewOptions): Promise<ContentIndexRow[]> {
     const limit = normalizePageSize(options.limit ?? 3);
-    const where = buildFilterClause(options);
+    const where = buildMetadataFilterClause(options);
     const query = `
       SELECT
         id,
@@ -370,7 +403,7 @@ export class ContentIndexRepo {
   async listContent(options: ContentIndexListOptions): Promise<ContentIndexListResult> {
     const requestedPage = normalizePage(options.page);
     const pageSize = normalizePageSize(options.pageSize);
-    const where = buildFilterClause(options);
+    const where = buildMetadataFilterClause(options);
 
     const countQuery = `
       SELECT COUNT(*) AS total_count
@@ -421,7 +454,93 @@ export class ContentIndexRepo {
   async searchContent(options: ContentIndexSearchOptions): Promise<ContentIndexListResult> {
     const requestedPage = normalizePage(options.page);
     const pageSize = normalizePageSize(options.pageSize);
-    const filters = buildFilterClause(options);
+    const searchMode = options.searchMode ?? 'fts';
+
+    if (searchMode === 'metadata') {
+      return this.searchMetadataContent(options, requestedPage, pageSize);
+    }
+
+    try {
+      return await this.searchFtsContent(options, requestedPage, pageSize);
+    } catch (error) {
+      if (isFtsUnavailableError(error)) {
+        return this.searchMetadataContent(options, requestedPage, pageSize);
+      }
+
+      throw error;
+    }
+  }
+
+  private async searchFtsContent(
+    options: ContentIndexSearchOptions,
+    requestedPage: number,
+    pageSize: number,
+  ): Promise<ContentIndexListResult> {
+
+    const filters = buildFtsFilterClause(options);
+
+    const countQuery = `
+      SELECT COUNT(*) AS total_count
+      FROM content_index
+      INNER JOIN content_search
+        ON content_search.collection = content_index.collection
+       AND content_search.id = content_index.id
+      INNER JOIN content_search_fts
+        ON content_search_fts.rowid = content_search.rowid
+      WHERE ${filters.sql}
+    `;
+    const countRow = await this.db.prepare(countQuery).bind(...filters.values).first<CountRow>();
+    const totalItems = Number(countRow?.total_count ?? 0);
+    const pagination = createPagination(totalItems, requestedPage, pageSize);
+    const offset = (pagination.page - 1) * pageSize;
+
+    const listQuery = `
+      SELECT
+        content_index.id,
+        content_index.collection,
+        content_index.slug,
+        content_index.title,
+        content_index.type,
+        content_index.subtype,
+        content_index.tags_json,
+        content_index.visibility,
+        content_index.campaign_slug,
+        content_index.summary,
+        content_index.status,
+        content_index.author,
+        content_index.created_at,
+        content_index.updated_at,
+        content_index.r2_key,
+        content_index.source_etag,
+        content_index.source_last_modified,
+        content_index.indexed_at
+      FROM content_index
+      INNER JOIN content_search
+        ON content_search.collection = content_index.collection
+       AND content_search.id = content_index.id
+      INNER JOIN content_search_fts
+        ON content_search_fts.rowid = content_search.rowid
+      WHERE ${filters.sql}
+      ORDER BY content_index.updated_at DESC, content_index.slug ASC
+      LIMIT ? OFFSET ?
+    `;
+    const result = await this.db
+      .prepare(listQuery)
+      .bind(...filters.values, pageSize, offset)
+      .all<ContentIndexRowRecord>();
+
+    return {
+      items: result.results.map(toContentIndexRow),
+      pagination,
+    };
+  }
+
+  private async searchMetadataContent(
+    options: ContentIndexSearchOptions,
+    requestedPage: number,
+    pageSize: number,
+  ): Promise<ContentIndexListResult> {
+    const filters = buildMetadataFilterClause(options);
 
     const countQuery = `
       SELECT COUNT(*) AS total_count
@@ -455,7 +574,7 @@ export class ContentIndexRepo {
         indexed_at
       FROM content_index
       WHERE ${filters.sql}
-      ORDER BY updated_at DESC, slug ASC
+      ORDER BY content_index.updated_at DESC, content_index.slug ASC
       LIMIT ? OFFSET ?
     `;
     const result = await this.db
@@ -490,7 +609,7 @@ export class ContentIndexRepo {
     facet: 'type' | 'subtype' | 'tag',
     filters: ContentIndexFilters,
   ): Promise<ContentIndexFacetCount[]> {
-    const where = buildFilterClause(filters);
+    const where = buildMetadataFilterClause(filters);
     // Qualify column references to avoid ambiguity in JOINs
     const qualify = (col: string) => `content_index.${col}`;
     const query =

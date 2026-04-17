@@ -7,12 +7,12 @@ const {
   buildWikiLinkIndexMock,
   transformObsidianLinksMock,
   collectCloudContentMetadataMock,
-  syncContentIndexMock,
+  syncContentDiscoveryMock,
 } = vi.hoisted(() => ({
   buildWikiLinkIndexMock: vi.fn(),
   transformObsidianLinksMock: vi.fn(),
   collectCloudContentMetadataMock: vi.fn(),
-  syncContentIndexMock: vi.fn(),
+  syncContentDiscoveryMock: vi.fn(),
 }));
 
 vi.mock('./obsidian-links.mjs', () => ({
@@ -24,8 +24,8 @@ vi.mock('./cloud-content-metadata.mjs', () => ({
   collectCloudContentMetadata: collectCloudContentMetadataMock,
 }));
 
-vi.mock('./content-index-writer.mjs', () => ({
-  syncContentIndex: syncContentIndexMock,
+vi.mock('./content-discovery-writer.mjs', () => ({
+  syncContentDiscovery: syncContentDiscoveryMock,
 }));
 
 import { applySync } from './apply-sync.mjs';
@@ -81,7 +81,7 @@ describe('applySync failure semantics', () => {
     transformObsidianLinksMock.mockReset();
     transformObsidianLinksMock.mockImplementation((sourceText) => sourceText);
     collectCloudContentMetadataMock.mockReset();
-    syncContentIndexMock.mockReset();
+    syncContentDiscoveryMock.mockReset();
   });
 
   afterEach(async () => {
@@ -117,19 +117,20 @@ describe('applySync failure semantics', () => {
     await expect(applySync(createCloudDiff(config.sourceAbs), config, null, services)).rejects.toMatchObject({
       supportCode: 'SYNC-CONTENT-INDEX-FAILED',
     });
-    expect(syncContentIndexMock).not.toHaveBeenCalled();
+    expect(syncContentDiscoveryMock).not.toHaveBeenCalled();
   });
 
-  it('fails with a dedicated support code when D1 index sync fails', async () => {
+  it('fails with a dedicated support code when atomic D1 discovery sync fails', async () => {
     const config = await createWorkspace();
     repoRoots.push(config.repoRoot);
     const services = createCloudServices();
     services.cloud.uploadText.mockResolvedValue(undefined);
     collectCloudContentMetadataMock.mockResolvedValue({
       contentIndexRows: [],
+      contentSearchRows: [],
       managedCollections: ['lore'],
     });
-    syncContentIndexMock.mockRejectedValue(new Error('d1 unavailable'));
+    syncContentDiscoveryMock.mockRejectedValue(new Error('d1 unavailable'));
 
     await expect(applySync(createCloudDiff(config.sourceAbs), config, null, services)).rejects.toMatchObject({
       supportCode: 'SYNC-CONTENT-INDEX-FAILED',

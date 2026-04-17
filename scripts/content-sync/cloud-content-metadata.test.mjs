@@ -42,6 +42,13 @@ Legacy campaign overview body.
       visibility: 'public',
       r2Key: 'campaigns/brad/Campaign - Brad.md',
     });
+    expect(entries[0].contentSearchRow).toMatchObject({
+      collection: 'campaigns',
+      id: 'brad/Campaign - Brad',
+      slug: 'brad',
+      title: 'Campaign - Brad',
+      bodyText: 'Legacy campaign overview body.',
+    });
   });
 
   it('continues to prefer index.md campaign overviews', async () => {
@@ -67,6 +74,12 @@ Preferred campaign overview body.
       slug: 'barry',
       campaignSlug: 'barry',
       r2Key: 'campaigns/barry/index.md',
+    });
+    expect(entries[0].contentSearchRow).toMatchObject({
+      collection: 'campaigns',
+      id: 'barry/index',
+      slug: 'barry',
+      bodyText: 'Preferred campaign overview body.',
     });
   });
 });

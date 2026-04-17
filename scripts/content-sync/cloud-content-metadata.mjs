@@ -83,6 +83,26 @@ function normalizeTags(frontmatterTags) {
   return normalized.tags;
 }
 
+function normalizeSearchText(value) {
+  if (typeof value !== 'string') {
+    return '';
+  }
+
+  return value
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/`([^`]+)`/g, ' $1 ')
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, ' $1 ')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, ' $1 ')
+    .replace(/!\[\[([^\]]+)\]\]/g, ' $1 ')
+    .replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, ' $2 ')
+    .replace(/\[\[([^\]]+)\]\]/g, ' $1 ')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/[>*_~#-]+/g, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function buildSourceEtag(text) {
   return createHash('md5').update(text).digest('hex');
 }
@@ -141,6 +161,24 @@ function createContentIndexRow({
   };
 }
 
+function createContentSearchRow({
+  contentEntry,
+  frontmatterRecord,
+  bodyText,
+}) {
+  return {
+    collection: contentEntry.collection,
+    id: contentEntry.id,
+    slug: contentEntry.slug,
+    title: normalizeNullableString(frontmatterRecord.title) ?? contentEntry.slug,
+    summary: normalizeNullableString(frontmatterRecord.excerpt),
+    type: normalizeNullableString(frontmatterRecord.type),
+    subtype: normalizeNullableString(frontmatterRecord.subtype),
+    tagsText: normalizeTags(frontmatterRecord.tags).join(' '),
+    bodyText: normalizeSearchText(bodyText),
+  };
+}
+
 export async function deriveCollectionEntries(mapping, relativePath, transformedMarkdown, sourceStats, cloud, generatedAt) {
   const parseFrontmatter = await getParseFrontmatter();
   const normalizedRelative = normalizeDisplayPath(relativePath);
@@ -150,6 +188,7 @@ export async function deriveCollectionEntries(mapping, relativePath, transformed
 
   const { frontmatter } = parseFrontmatter(transformedMarkdown);
   const frontmatterRecord = frontmatter && typeof frontmatter === 'object' ? frontmatter : {};
+  const bodyText = transformedMarkdown.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, '');
   const sourceEtag = buildSourceEtag(transformedMarkdown);
   const lastModified = sourceStats.mtime.toISOString();
   const r2Key = cloud.buildKey(mapping.to, normalizedRelative);
@@ -174,6 +213,11 @@ export async function deriveCollectionEntries(mapping, relativePath, transformed
         contentEntry,
         frontmatterRecord,
         generatedAt,
+      }),
+      contentSearchRow: createContentSearchRow({
+        contentEntry,
+        frontmatterRecord,
+        bodyText,
       }),
     };
   };
@@ -308,11 +352,13 @@ export async function collectCloudContentMetadata(config, services, wikiIndex) {
       generatedAt: new Date().toISOString(),
       managedCollections: [],
       contentIndexRows: [],
+      contentSearchRows: [],
     };
   }
 
   const managedCollections = new Set();
   const contentIndexRows = [];
+  const contentSearchRows = [];
   const generatedAt = new Date().toISOString();
 
   for (const mapping of config.mappings.filter((candidate) => candidate.target === 'cloud')) {
@@ -342,6 +388,7 @@ export async function collectCloudContentMetadata(config, services, wikiIndex) {
       )) {
         managedCollections.add(derivedEntry.contentEntry.collection);
         contentIndexRows.push(derivedEntry.contentIndexRow);
+        contentSearchRows.push(derivedEntry.contentSearchRow);
       }
     }
   }
@@ -350,5 +397,6 @@ export async function collectCloudContentMetadata(config, services, wikiIndex) {
     generatedAt,
     managedCollections: Array.from(managedCollections).sort((a, b) => a.localeCompare(b)),
     contentIndexRows,
+    contentSearchRows,
   };
 }

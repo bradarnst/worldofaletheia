@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { buildCampaignImageVariantUploads, getCampaignImageVariantPlan } from './campaign-media-variants.mjs';
 import { buildWikiLinkIndex, transformObsidianLinks } from './obsidian-links.mjs';
-import { syncContentIndex } from './content-index-writer.mjs';
+import { syncContentDiscovery } from './content-discovery-writer.mjs';
 import { collectCloudContentMetadata } from './cloud-content-metadata.mjs';
 import { SupportCodeError } from './utils.mjs';
 
@@ -207,12 +207,14 @@ export async function applySync(diff, config, staleAction, services = {}) {
   if (cloud) {
     try {
       const contentMetadata = await collectCloudContentMetadata(config, services, wikiIndex);
-      const contentIndexSync = await syncContentIndex({
-        rows: contentMetadata.contentIndexRows,
+      const contentDiscoverySync = await syncContentDiscovery({
+        contentIndexRows: contentMetadata.contentIndexRows,
+        contentSearchRows: contentMetadata.contentSearchRows ?? [],
         managedCollections: contentMetadata.managedCollections,
       });
-      if (contentIndexSync.applied) {
+      if (contentDiscoverySync.applied) {
         changedFiles.push('d1:content_index');
+        changedFiles.push('d1:content_search');
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
