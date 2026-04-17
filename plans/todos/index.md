@@ -15,6 +15,10 @@ This folder is the canonical place for deferred implementation todos that need e
 
 ## Open Todos
 
+No currently open deferred implementation todos are tracked in this folder.
+
+## Completed Todos
+
 | Title | Date Added | Status | Notes |
 | --- | --- | --- | --- |
-| [Campaign ID Parsing Hardening](./campaign-id-parsing-hardening-2026-04-10.md) | 2026-04-10 | Open | Follow-up to the production campaign slug parsing fix for cloud-backed content ids. |
+| [Campaign ID Parsing Hardening](./campaign-id-parsing-hardening-2026-04-10.md) | 2026-04-10 | Complete | Helper-based parsing rollout and regression coverage completed; retained as historical follow-up to the production campaign slug parsing fix for cloud-backed content ids. |

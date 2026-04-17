@@ -4,6 +4,8 @@
 - **Generated at:** 2026-04-02T23:22:40+02:00
 - **Repository branch:** `main`
 
+> Historical status note (added 2026-04-17): This report preserves the repository snapshot as of 2026-04-02. Option 3 authz simplification (`campaign_memberships.role` as canonical GM/member authority) was later implemented, rolled out, and documented complete on 2026-04-17, so any pending references below should be read as historical state rather than current status.
+
 ## Executive Status
 
 Project is in a stronger post-foundation state: CI covers the core local quality lane, repo-wide TypeScript remains healthy, cloud content no longer depends on R2 manifests, campaign media variants are generated at sync time, the first `/api/calendar/*` contracts are live, and the remaining operator dry-run/parser fragility is now bounded. The highest-value remaining work is remote parity automation decisions and follow-on calendar consumers.
@@ -75,7 +77,8 @@ Project is in a stronger post-foundation state: CI covers the core local quality
 ## Longer-Term Workstreams
 
 1. **Option 3 authz simplification (unified membership roles)**
-   - Fully planned but not yet executed.
+   - At report time this was fully planned but not yet executed.
+   - Later status: completed on 2026-04-17.
    - Reference: `plans/option-3-unified-membership-role-upgrade-todo.md`.
 
 2. **Producer repository extraction (staged cutover)**
@@ -110,4 +113,4 @@ Project is in a stronger post-foundation state: CI covers the core local quality
 - `plans/discovery-navigation-and-search-index-lld-handoff-2026-03-20.md`: 9 open items
 - `plans/campaign-content-separation-plan-and-todos-2026-03-16.md`: 4 open items
 - `plans/campaign-content-source-separation-handoff-to-code-2026-03-16.md`: 3 open items
-- `plans/option-3-unified-membership-role-upgrade-todo.md`: 16 open items
+- `plans/option-3-unified-membership-role-upgrade-todo.md`: 16 open items at report time; later completed on 2026-04-17

@@ -6,6 +6,8 @@ Implement the approved architecture direction to keep campaign private content o
 
 This handoff is for implementation planning and coding in small, testable phases.
 
+> Historical note (2026-04-17): the separate Option 3 unified-membership-role follow-on referenced in this handoff was later completed and rolled out. Mentions below are retained as delivery-history context.
+
 ## In Scope
 
 - Campaign private content storage separation from repository source.
@@ -222,4 +224,4 @@ flowchart LR
 
 ## Follow-on (optional separate workstreams)
 
-- Revisit Option 3 unified membership roles once storage separation is stable and verified.
+- Historical follow-up status: Option 3 unified membership roles was later completed on 2026-04-17; this item remains only to preserve the original sequencing record.

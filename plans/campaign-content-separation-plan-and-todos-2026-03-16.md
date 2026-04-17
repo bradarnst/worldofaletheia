@@ -5,6 +5,7 @@
 - Date: 2026-03-16
 - Scope: planning and sequencing only (no code changes in this step)
 - Priority: immediate release blocker for making repository public
+- Historical note (2026-04-17): the queued Option 3 unified-role follow-up referenced below was later completed and rolled out.
 
 ## Problem Statement
 
@@ -122,7 +123,7 @@ Current route-level authorization is necessary but not sufficient for this requi
 
 - Add operational verification scripts/checklists for storage + authz behavior.
 - Reconcile docs that still assume campaign markdown in repo.
-- Reevaluate Option 3 unified-role migration after storage separation stabilizes.
+- Historical follow-up note: Option 3 unified-role migration was later completed on 2026-04-17; keep this planning line only as sequencing history.
 
 ## Priority TODO List
 
@@ -152,7 +153,7 @@ Current route-level authorization is necessary but not sufficient for this requi
 
 - [ ] Evaluate moving all content sources to cloud storage (public + protected) if benefits justify migration.
 - [ ] Evaluate full campaigns app/service extraction when split triggers are met.
-- [ ] Execute Option 3 unified membership role model after storage separation hardens.
+- [x] Execute Option 3 unified membership role model after storage separation hardens. Completed 2026-04-17.
 - [x] Assess Git history sanitization requirement for campaign-content exposure risk. Not required per operator decision (2026-03-23).
 
 ## Risks and Mitigations

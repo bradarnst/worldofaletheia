@@ -1,5 +1,7 @@
 # Potential Todos 2026-03-12 
 
+> Historical note (2026-04-17): Option 3 unified membership roles has since been implemented, rolled out, and closed. References below are preserved as planning context from before that completion.
+
 ## Pressing (worth deciding now)
 - Settle the authz data-model direction before more campaign features: either keep the current dual-table model (campaign_memberships + campaign_gm_assignments) or move to Option 3 unified roles. Option 3 is already queued as the next structural refactor in plans/option-3-unified-membership-role-upgrade-todo.md:1.
 - Status-doc consistency cleanup: plans/auth-mvp-production-readiness-plan-2026-03.md:38 still has “Outstanding/active implementation focus” items that appear already completed in practice, so this is now drift risk between reality and docs.
