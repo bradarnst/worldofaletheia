@@ -42,10 +42,12 @@ export function buildContentIndexSyncPlan({ rows, managedCollections }) {
   };
 }
 
-export function buildContentIndexSql(plan) {
+export function buildContentIndexSql(plan, options = {}) {
   if (plan.managedCollections.length === 0) {
     return '';
   }
+
+  const replaceCollections = options.replaceCollections ?? true;
 
   // Build a map of collection -> rows for efficient lookup
   const rowsByCollection = new Map();
@@ -62,7 +64,9 @@ export function buildContentIndexSql(plan) {
   // D1 local does not support CREATE TEMP TABLE via --file execution (SQLITE_AUTH).
   // Using DELETE + INSERT per collection as a "replace all" sync strategy.
   for (const collection of plan.managedCollections) {
-    statements.push(`DELETE FROM content_index WHERE collection = ${quoteSqlLiteral(collection)};`);
+    if (replaceCollections) {
+      statements.push(`DELETE FROM content_index WHERE collection = ${quoteSqlLiteral(collection)};`);
+    }
 
     const collectionRows = rowsByCollection.get(collection) || [];
     for (const row of collectionRows) {

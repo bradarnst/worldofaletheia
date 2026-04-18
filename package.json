@@ -35,6 +35,7 @@
     "ops:a2:apply:staging": "test -n \"$OP_FILE\" && wrangler d1 execute DB --remote --env staging --file \"$OP_FILE\" || (echo 'Set OP_FILE=./path/to/operator.sql' && exit 1)",
     "ops:a2:apply:prod": "test -n \"$OP_FILE\" && wrangler d1 execute DB --remote --file \"$OP_FILE\" || (echo 'Set OP_FILE=./path/to/operator.sql' && exit 1)",
     "content:sync": "node ./scripts/content-sync/index.mjs",
+    "content:sync:local": "pnpm db:migrate:plan:local && pnpm content:sync",
     "content:sync:staging": "CONTENT_INDEX_SYNC_MODE=remote CONTENT_INDEX_SYNC_ENV=staging node ./scripts/content-sync/index.mjs",
     "content:sync:prod": "CONTENT_INDEX_SYNC_MODE=remote CONTENT_INDEX_SYNC_ENV= node ./scripts/content-sync/index.mjs",
     "deploy:prod": "pnpm content:sync:prod && CONTENT_SOURCE_MODE=cloud CONTENT_LOADER_D1_MODE=remote pnpm build && pnpm wrangler deploy",

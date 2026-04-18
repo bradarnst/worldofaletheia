@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildContentDiscoverySyncPlan, buildContentDiscoverySyncSql } from './content-discovery-writer.mjs';
+import { buildContentDiscoverySyncPlan, buildContentDiscoverySyncSql, buildContentDiscoverySyncSqlChunks } from './content-discovery-writer.mjs';
 
 function createIndexRow(overrides = {}) {
   return {
@@ -41,7 +41,24 @@ function createSearchRow(overrides = {}) {
 }
 
 describe('content discovery writer', () => {
-  it('builds a single transactional SQL plan for search and index sync', () => {
+  it('can still build a transactional SQL plan when explicitly requested', () => {
+    const plan = buildContentDiscoverySyncPlan({
+      contentIndexRows: [createIndexRow()],
+      contentSearchRows: [createSearchRow()],
+      managedCollections: ['lore'],
+    });
+
+    const sql = buildContentDiscoverySyncSql(plan, { transactional: true });
+
+    expect(sql).toContain('BEGIN IMMEDIATE;');
+    expect(sql).toContain('COMMIT;');
+    expect(sql).toContain("DELETE FROM content_search WHERE collection = 'lore'");
+    expect(sql).toContain("DELETE FROM content_index WHERE collection = 'lore'");
+    expect(sql.indexOf('DELETE FROM content_search')).toBeLessThan(sql.indexOf('DELETE FROM content_index'));
+    expect(sql.indexOf('INSERT INTO content_search')).toBeLessThan(sql.indexOf('INSERT INTO content_index'));
+  });
+
+  it('can build a non-transactional SQL plan for local D1 execution', () => {
     const plan = buildContentDiscoverySyncPlan({
       contentIndexRows: [createIndexRow()],
       contentSearchRows: [createSearchRow()],
@@ -50,12 +67,10 @@ describe('content discovery writer', () => {
 
     const sql = buildContentDiscoverySyncSql(plan);
 
-    expect(sql).toContain('BEGIN IMMEDIATE;');
-    expect(sql).toContain('COMMIT;');
+    expect(sql).not.toContain('BEGIN IMMEDIATE;');
+    expect(sql).not.toContain('COMMIT;');
     expect(sql).toContain("DELETE FROM content_search WHERE collection = 'lore'");
     expect(sql).toContain("DELETE FROM content_index WHERE collection = 'lore'");
-    expect(sql.indexOf('DELETE FROM content_search')).toBeLessThan(sql.indexOf('DELETE FROM content_index'));
-    expect(sql.indexOf('INSERT INTO content_search')).toBeLessThan(sql.indexOf('INSERT INTO content_index'));
   });
 
   it('returns empty SQL when no managed collections are present', () => {
@@ -66,5 +81,45 @@ describe('content discovery writer', () => {
     });
 
     expect(buildContentDiscoverySyncSql(plan)).toBe('');
+  });
+
+  it('emits a delete-only collection chunk when a managed collection has no rows', () => {
+    const plan = buildContentDiscoverySyncPlan({
+      contentIndexRows: [],
+      contentSearchRows: [],
+      managedCollections: ['lore'],
+    });
+
+    const chunks = buildContentDiscoverySyncSqlChunks(plan);
+
+    expect(chunks).toHaveLength(1);
+    expect(chunks[0]).toContain("DELETE FROM content_search WHERE collection = 'lore'");
+    expect(chunks[0]).toContain("DELETE FROM content_index WHERE collection = 'lore'");
+    expect(chunks[0]).toContain('BEGIN IMMEDIATE;');
+    expect(chunks[0]).toContain('COMMIT;');
+  });
+
+  it('builds one transactional file per managed collection', () => {
+    const plan = buildContentDiscoverySyncPlan({
+      contentIndexRows: [
+        createIndexRow(),
+        createIndexRow({ collection: 'systems', id: 'systems/example', slug: 'systems-example', title: 'Systems Example' }),
+      ],
+      contentSearchRows: [
+        createSearchRow(),
+        createSearchRow({ collection: 'systems', id: 'systems/example', slug: 'systems-example', title: 'Systems Example' }),
+      ],
+      managedCollections: ['systems', 'lore'],
+    });
+
+    const chunks = buildContentDiscoverySyncSqlChunks(plan);
+
+    expect(chunks).toHaveLength(2);
+    expect(chunks[0]).toContain('BEGIN IMMEDIATE;');
+    expect(chunks[0]).toContain('COMMIT;');
+    expect(chunks[0]).toContain("DELETE FROM content_search WHERE collection = 'lore'");
+    expect(chunks[0]).not.toContain("DELETE FROM content_search WHERE collection = 'systems'");
+    expect(chunks[1]).toContain("DELETE FROM content_search WHERE collection = 'systems'");
+    expect(chunks[1]).not.toContain("DELETE FROM content_search WHERE collection = 'lore'");
   });
 });

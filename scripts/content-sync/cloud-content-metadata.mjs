@@ -7,6 +7,7 @@ import { transformObsidianLinks } from './obsidian-links.mjs';
 import { normalizeObsidianTags } from './validate.mjs';
 
 let cachedParseFrontmatter = null;
+const MAX_CONTENT_SEARCH_BODY_LENGTH = 32000;
 
 async function getParseFrontmatter() {
   if (cachedParseFrontmatter) {
@@ -103,6 +104,14 @@ function normalizeSearchText(value) {
     .trim();
 }
 
+function truncateSearchText(value, maxLength = MAX_CONTENT_SEARCH_BODY_LENGTH) {
+  if (value.length <= maxLength) {
+    return value;
+  }
+
+  return value.slice(0, maxLength).trimEnd();
+}
+
 function buildSourceEtag(text) {
   return createHash('md5').update(text).digest('hex');
 }
@@ -175,7 +184,7 @@ function createContentSearchRow({
     type: normalizeNullableString(frontmatterRecord.type),
     subtype: normalizeNullableString(frontmatterRecord.subtype),
     tagsText: normalizeTags(frontmatterRecord.tags).join(' '),
-    bodyText: normalizeSearchText(bodyText),
+    bodyText: truncateSearchText(normalizeSearchText(bodyText)),
   };
 }
 

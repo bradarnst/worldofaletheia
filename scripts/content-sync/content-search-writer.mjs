@@ -41,10 +41,12 @@ export function buildContentSearchSyncPlan({ rows, managedCollections }) {
   };
 }
 
-export function buildContentSearchSql(plan) {
+export function buildContentSearchSql(plan, options = {}) {
   if (plan.managedCollections.length === 0) {
     return '';
   }
+
+  const replaceCollections = options.replaceCollections ?? true;
 
   const rowsByCollection = new Map();
   for (const row of plan.rows) {
@@ -58,7 +60,9 @@ export function buildContentSearchSql(plan) {
   const statements = [];
 
   for (const collection of plan.managedCollections) {
-    statements.push(`DELETE FROM content_search WHERE collection = ${quoteSqlLiteral(collection)};`);
+    if (replaceCollections) {
+      statements.push(`DELETE FROM content_search WHERE collection = ${quoteSqlLiteral(collection)};`);
+    }
 
     const collectionRows = rowsByCollection.get(collection) || [];
     for (const row of collectionRows) {
