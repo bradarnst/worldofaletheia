@@ -1,10 +1,37 @@
 ---
 import SectionSubnav from '@components/site/SectionSubnav.astro';
+import { GAME_SYSTEMS } from '@data/game-systems';
+
+const currentPath = Astro.url.pathname;
 
 const links = [
   { href: '/systems', label: 'Systems', icon: 'Systems' },
   { href: '/meta', label: 'Meta', icon: 'Meta' },
 ];
+
+function isActive(href: string) {
+  return currentPath === href || currentPath.startsWith(`${href}/`);
+}
 ---
 
 <SectionSubnav links={links} />
+
+<div class="border-b border-base-300/70 bg-base-100/82 backdrop-blur-sm">
+  <div class="mx-auto flex max-w-7xl flex-wrap items-center gap-2 px-4 py-3 lg:px-8">
+    <span class="mr-2 text-xs font-semibold uppercase tracking-[0.22em] text-ink-600">Game systems</span>
+    {GAME_SYSTEMS.map((system) => (
+      <a
+        href={system.href}
+        class:list={[
+          'inline-flex items-center rounded-full border px-3 py-2 text-sm font-medium transition-colors',
+          isActive(system.href)
+            ? 'border-primary/45 bg-primary/12 text-ink-950'
+            : 'border-base-300/70 bg-base-100/80 text-ink-700 hover:border-primary/35 hover:text-ink-950',
+        ]}
+        aria-current={isActive(system.href) ? 'page' : undefined}
+      >
+        {system.label}
+      </a>
+    ))}
+  </div>
+</div>

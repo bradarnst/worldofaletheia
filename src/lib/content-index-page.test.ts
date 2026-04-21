@@ -37,7 +37,7 @@ describe('loadIndexBackedCollectionPage', () => {
         collection: 'bestiary',
         data: {
           title: 'Storm Stag',
-          type: 'beast',
+          type: 'undead',
           tags: ['storm'],
           status: 'publish',
           created: new Date('2026-03-12T00:00:00.000Z'),
@@ -65,10 +65,10 @@ describe('loadIndexBackedCollectionPage', () => {
 
     expect(result.mode).toBe('local');
     expect(result.groups.map((group) => ({ value: group.value, count: group.count, field: group.field }))).toEqual([
-      { value: 'beast', count: 1, field: 'type' },
       { value: 'monster', count: 2, field: 'type' },
+      { value: 'undead', count: 1, field: 'type' },
     ]);
-    expect(result.groups[1]?.items.map((item) => item.id)).toEqual(['bog-wisp', 'ash-drake']);
+    expect(result.groups[0]?.items.map((item) => item.id)).toEqual(['bog-wisp', 'ash-drake']);
   });
 
   it('groups local discovery by subtype when a type filter narrows systems entries', async () => {

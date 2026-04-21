@@ -14,7 +14,7 @@ export const LORE_TYPES = [
   'economy',
   'history',
   'geography',
-  'food_and_drink',
+  'food-drink',
   'culture',
   'language',
   'warfare',
@@ -33,8 +33,8 @@ export const PLACES_TYPES = [
   'dungeon',
   'settlement',
   'region',
-  'polity',
-  'adminDivision',
+  'country',
+  'territory',
   'water',
   'biome',
 ] as const;
@@ -52,7 +52,7 @@ export const SENTIENTS_TYPES = [
 export const BESTIARY_TYPES = [
   'monster',
   'animal',
-  'beast',
+  'undead',
   'spirit',
   'construct',
   'elemental',
