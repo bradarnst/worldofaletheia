@@ -4,17 +4,12 @@ import SiteGlyph from '@components/site/SiteGlyph.astro';
 const currentPath = Astro.url.pathname;
 
 const links = [
-  { href: '/references', label: 'Overview', icon: 'Reference' },
   { href: '/references/calendar', label: 'Calendar', icon: 'Calendar' },
   { href: '/references/timeline', label: 'Timeline', icon: 'Timeline' },
   { href: '/references/maps', label: 'Maps', icon: 'Maps' },
 ];
 
 function isActive(href: string) {
-  if (href === '/references') {
-    return currentPath === href;
-  }
-
   return currentPath === href || currentPath.startsWith(`${href}/`);
 }
 ---

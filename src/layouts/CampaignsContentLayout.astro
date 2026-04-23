@@ -1,7 +1,6 @@
 ---
 import BaseLayout from './BaseLayout.astro';
 import GlobalNavigation from '@components/GlobalNavigation.astro';
-import CampaignsNav from '@components/CampaignsNav.astro';
 import CampaignsContentHeader from '@components/CampaignsContentHeader.astro';
 
 interface Props {
@@ -21,7 +20,6 @@ const contentExcerpt = data.summary || data.excerpt || content.excerpt;
 
 <BaseLayout title={contentTitle} description={description} robots={robots}>
   <GlobalNavigation />
-  <CampaignsNav />
   <CampaignsContentHeader
     title={contentTitle}
     author={data.author || content.author}

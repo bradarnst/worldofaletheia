@@ -1,7 +1,6 @@
 ---
 import BaseLayout from './BaseLayout.astro';
 import GlobalNavigation from '@components/GlobalNavigation.astro';
-import UsingAletheiaNav from '@components/UsingAletheiaNav.astro';
 import UsingAletheiaContentHeader from '@components/UsingAletheiaContentHeader.astro';
 
 interface Props {
@@ -20,7 +19,6 @@ const contentExcerpt = data.summary || data.excerpt || content.excerpt;
 
 <BaseLayout title={contentTitle} description={description}>
   <GlobalNavigation />
-  <UsingAletheiaNav />
   <UsingAletheiaContentHeader
     title={contentTitle}
     author={data.author || content.author}

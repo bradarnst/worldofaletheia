@@ -1,7 +1,6 @@
 ---
 import BaseLayout from './BaseLayout.astro';
 import GlobalNavigation from '@components/GlobalNavigation.astro';
-import WorldAletheiaNav from '@components/WorldAletheiaNav.astro';
 import WorldAletheiaContentHeader from '@components/WorldAletheiaContentHeader.astro';
 
 interface Props {
@@ -22,7 +21,6 @@ const relationships = Array.isArray(data.relationships) ? data.relationships : [
 
 <BaseLayout title={contentTitle} description={description}>
   <GlobalNavigation />
-  <WorldAletheiaNav />
   <WorldAletheiaContentHeader
     title={contentTitle}
     author={data.author || content.author}
