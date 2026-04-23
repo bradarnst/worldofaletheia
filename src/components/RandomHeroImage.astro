@@ -68,6 +68,8 @@ const darkerHeroImages = new Set<ImageMetadata>([
   lakePort,
 ]);
 const mediaClass = darkerHeroImages.has(selected.image) ? 'site-hero-media--dark' : '';
+const hasActionsSlot = Astro.slots.has('actions');
+const hasHintSlot = Astro.slots.has('hint');
 ---
 
 <HeroImage
@@ -85,4 +87,15 @@ const mediaClass = darkerHeroImages.has(selected.image) ? 'site-hero-media--dark
   titleClass={props.titleClass}
   textClass={props.textClass}
   bodyClass={props.bodyClass}
-/>
+>
+  {hasActionsSlot && (
+    <Fragment slot="actions">
+      <slot name="actions" />
+    </Fragment>
+  )}
+  {hasHintSlot && (
+    <Fragment slot="hint">
+      <slot name="hint" />
+    </Fragment>
+  )}
+</HeroImage>

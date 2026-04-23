@@ -729,6 +729,57 @@ details > summary::-webkit-details-marker {
   padding: 3rem 1.5rem;
 }
 
+.site-hero-hint {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 1.5rem;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.site-hero-scroll-cue {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 9999px;
+  color: color-mix(in oklab, var(--color-paper-50), transparent 8%);
+  background: color-mix(in oklab, var(--hero-overlay-bottom), transparent 66%);
+  border: 1px solid color-mix(in oklab, var(--color-paper-100), transparent 48%);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.16);
+  opacity: 0.9;
+  backdrop-filter: blur(6px);
+  pointer-events: auto;
+  animation: site-hero-scroll-cue-drift 2.8s ease-in-out infinite;
+}
+
+.site-hero-scroll-cue:hover,
+.site-hero-scroll-cue:focus-visible {
+  color: var(--color-paper-50);
+  opacity: 1;
+  border-color: color-mix(in oklab, var(--color-paper-50), transparent 40%);
+}
+
+@keyframes site-hero-scroll-cue-drift {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(0.3rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-hero-scroll-cue {
+    animation: none;
+  }
+}
+
 [data-theme="golden-savanna"] .hero-image-title {
   color: #fff9ef;
   text-shadow:

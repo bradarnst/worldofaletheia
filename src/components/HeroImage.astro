@@ -39,6 +39,7 @@ const {
 const safeAlt = alt?.trim() || title;
 const hasCta = Boolean(ctaLabel && ctaHref);
 const hasActionsSlot = Astro.slots.has('actions');
+const hasHintSlot = Astro.slots.has('hint');
 ---
 
 <section class={sectionClass} data-hero-title={title} data-hero-overlay={overlayClass} data-hero-media-class={mediaClass}>
@@ -66,5 +67,10 @@ const hasActionsSlot = Astro.slots.has('actions');
         )}
       </div>
     </div>
+    {hasHintSlot && (
+      <div class="site-hero-hint">
+        <slot name="hint" />
+      </div>
+    )}
   </div>
 </section>
