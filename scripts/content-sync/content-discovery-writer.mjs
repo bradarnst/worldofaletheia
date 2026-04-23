@@ -155,7 +155,8 @@ export async function syncContentDiscovery({ contentIndexRows, contentSearchRows
   // Temporary Wrangler-safe compromise until the private CI/Worker D1 path lands:
   // execute one transaction per collection so content_search and content_index stay
   // aligned within that collection, even though the full site sync is not yet atomic.
-  const sqlChunks = buildContentDiscoverySyncSqlChunks(plan, { transactional: true });
+  // NOTE: remote D1 (Workers) does not support SQL BEGIN/COMMIT — only local D1 can use transactions.
+  const sqlChunks = buildContentDiscoverySyncSqlChunks(plan, { transactional: target.mode === 'local' });
   if (sqlChunks.length === 0) {
     return {
       applied: false,
