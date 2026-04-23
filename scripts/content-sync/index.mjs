@@ -8,6 +8,7 @@ import { askStaleFileAction } from './prompt.mjs';
 import { applySync } from './apply-sync.mjs';
 import { validateContentTree } from './validate.mjs';
 import { createContentCloudAdapter } from './cloud-storage.mjs';
+import { buildWikiLinkIndex } from './obsidian-links.mjs';
 import {
   fail,
   getSupportCode,
@@ -91,7 +92,8 @@ async function runFullSync(config, { dryRun, services }) {
   // Fetch previous source_etags from D1 to compare vault files against known state,
   // avoiding false positives from R2 storing transformed content.
   const previousEtags = await readSourceEtagsMap(process.env);
-  const diff = await buildSyncDiff(config, services, { previousEtags });
+  const wikiIndex = await buildWikiLinkIndex(config.repoRoot);
+  const diff = await buildSyncDiff(config, services, { previousEtags, wikiIndex });
   printDiffReport(diff, config.repoRoot);
 
   if (dryRun) {

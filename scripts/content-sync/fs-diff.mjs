@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { normalizePathForDisplay } from './utils.mjs';
+import { transformObsidianLinks } from './obsidian-links.mjs';
 
 async function pathExists(target) {
   try {
@@ -68,7 +69,29 @@ function buildRemoteKey(prefix, relativePath) {
   return trimmedRelative ? `${trimmedPrefix}/${trimmedRelative}` : trimmedPrefix;
 }
 
-export async function buildSyncDiff(config, services = {}, { previousEtags = null } = {}) {
+function resolveVirtualDestForMapping(config, mapping, relativePath) {
+  const cleanupRoot = mapping.localCleanupPath
+    ? path.resolve(config.repoRoot, mapping.localCleanupPath)
+    : path.resolve(config.repoRoot, 'src/content', mapping.to);
+  return path.resolve(cleanupRoot, relativePath);
+}
+
+/**
+ * Compute the source_etag for a vault file — MD5 of the Obsidian-link-transformed content,
+ * matching how cloud-content-metadata.mjs derives it during sync.
+ */
+async function computeSourceEtag(sourceAbs, mapping, relativePath, config, wikiIndex) {
+  const sourceText = await fs.readFile(sourceAbs, 'utf8');
+  const destAbs = resolveVirtualDestForMapping(config, mapping, relativePath);
+  const transformed = transformObsidianLinks(sourceText, {
+    destAbs,
+    repoRoot: config.repoRoot,
+    wikiIndex,
+  });
+  return createHash('md5').update(transformed).digest('hex');
+}
+
+export async function buildSyncDiff(config, services = {}, { previousEtags = null, wikiIndex = null } = {}) {
   const records = [];
 
   for (const mapping of config.mappings) {
@@ -158,14 +181,16 @@ export async function buildSyncDiff(config, services = {}, { previousEtags = nul
         const remoteHash = remoteMeta.etag;
         let equal = false;
 
-        // Primary check: compare vault file MD5 against the previously stored D1 source_etag.
-        // This avoids false positives from R2 storing transformed content with a different MD5.
+        // Primary check: compare transformed vault content MD5 against the previously
+        // stored D1 source_etag. Using transformed content (with Obsidian links rewritten)
+        // matches how cloud-content-metadata.mjs computes the etag, so the comparison
+        // is stable and avoids false positives from comparing raw vs transformed content.
         if (previousEtags) {
           const contentIdKey = buildContentIdKey(mapping.collection || mapping.to, rel);
           const previousEtag = previousEtags.get(contentIdKey);
           if (previousEtag) {
-            const localHash = await fileMd5Hex(sourceAbs);
-            equal = localHash === previousEtag;
+            const transformedMd5 = await computeSourceEtag(sourceAbs, mapping, rel, config, wikiIndex);
+            equal = transformedMd5 === previousEtag;
           }
         }
 

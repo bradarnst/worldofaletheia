@@ -188,52 +188,50 @@ export async function readSourceEtagsMap(env = process.env) {
     return new Map();
   }
 
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'woa-source-etags-'));
-  const sqlPath = path.join(tempDir, 'source-etags-select.sql');
-  const outputPath = path.join(tempDir, 'source-etags-output.json');
-
-  try {
-    await fs.writeFile(sqlPath, `SELECT collection, id, source_etag FROM content_index;\n`, 'utf8');
-    const args = ['d1', 'execute', 'DB'];
-    if (target.mode === 'remote') {
-      args.push('--remote');
-      if (target.envName) {
-        args.push('--env', target.envName);
-      }
-    } else {
-      args.push('--local');
+  const wranglerBin = resolveWranglerCommand();
+  const args = ['d1', 'execute', 'DB'];
+  if (target.mode === 'remote') {
+    args.push('--remote');
+    if (target.envName) {
+      args.push('--env', target.envName);
     }
-    args.push('--file', sqlPath);
-    args.push('--output-json', outputPath);
-
-    const wranglerBin = resolveWranglerCommand();
-    const result = spawnSync(process.execPath, [wranglerBin, ...args], {
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-
-    if (result.status !== 0) {
-      // If the table doesn't exist yet (first run), return an empty map silently
-      return new Map();
-    }
-
-    const content = await fs.readFile(outputPath, 'utf8');
-    let parsed;
-    try {
-      parsed = JSON.parse(content);
-    } catch {
-      return new Map();
-    }
-
-    const rows = parsed.results ?? [];
-    const map = new Map();
-    for (const row of rows) {
-      map.set(`${row.collection}:${row.id}`, row.source_etag);
-    }
-    return map;
-  } finally {
-    await fs.rm(tempDir, { recursive: true, force: true });
+  } else {
+    args.push('--local');
   }
+  args.push('--json');
+  args.push('--command', 'SELECT collection, id, source_etag FROM content_index');
+
+  const result = spawnSync(process.execPath, [wranglerBin, ...args], {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+
+  if (result.status !== 0) {
+    // If the table doesn't exist yet (first run) or query fails, return an empty map silently
+    return new Map();
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(result.stdout);
+  } catch {
+    return new Map();
+  }
+
+  // --json with --command returns [ { results: [...rows], success: true, ... } ]
+  const resultsArray = Array.isArray(parsed) ? parsed : [parsed];
+  const rows = [];
+  for (const resultObj of resultsArray) {
+    if (resultObj.results && Array.isArray(resultObj.results)) {
+      rows.push(...resultObj.results);
+    }
+  }
+
+  const map = new Map();
+  for (const row of rows) {
+    map.set(`${row.collection}:${row.id}`, row.source_etag);
+  }
+  return map;
 }
 
 export async function syncContentIndex({ rows, managedCollections, env = process.env }) {
