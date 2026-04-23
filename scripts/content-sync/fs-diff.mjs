@@ -51,6 +51,14 @@ function isPlainMd5Hash(value) {
   return typeof value === 'string' && /^[a-f0-9]{32}$/i.test(value);
 }
 
+/**
+ * Build a lookup key for the previous etag map, matching the content_index id format.
+ * The id is the normalized relative path without its .md extension.
+ */
+function buildContentIdKey(collection, relativePath) {
+  return `${collection}:${relativePath.replace(/\.md$/i, '')}`;
+}
+
 function buildRemoteKey(prefix, relativePath) {
   const trimmedPrefix = prefix ? prefix.replace(/^\/+|\/+$/g, '') : '';
   const trimmedRelative = relativePath.replace(/^\/+/, '');
@@ -60,7 +68,7 @@ function buildRemoteKey(prefix, relativePath) {
   return trimmedRelative ? `${trimmedPrefix}/${trimmedRelative}` : trimmedPrefix;
 }
 
-export async function buildSyncDiff(config, services = {}) {
+export async function buildSyncDiff(config, services = {}, { previousEtags = null } = {}) {
   const records = [];
 
   for (const mapping of config.mappings) {
@@ -150,12 +158,26 @@ export async function buildSyncDiff(config, services = {}) {
         const remoteHash = remoteMeta.etag;
         let equal = false;
 
-        if (isPlainMd5Hash(remoteHash)) {
-          const localHash = await fileMd5Hex(sourceAbs);
-          equal = localHash === remoteHash;
-        } else if (typeof remoteMeta.size === 'number') {
-          const sourceStat = await fs.stat(sourceAbs);
-          equal = sourceStat.size === remoteMeta.size;
+        // Primary check: compare vault file MD5 against the previously stored D1 source_etag.
+        // This avoids false positives from R2 storing transformed content with a different MD5.
+        if (previousEtags) {
+          const contentIdKey = buildContentIdKey(mapping.collection || mapping.to, rel);
+          const previousEtag = previousEtags.get(contentIdKey);
+          if (previousEtag) {
+            const localHash = await fileMd5Hex(sourceAbs);
+            equal = localHash === previousEtag;
+          }
+        }
+
+        // Fallback to R2 ETag comparison only when no D1 record exists (new content).
+        if (!equal && !previousEtags?.has(buildContentIdKey(mapping.collection || mapping.to, rel))) {
+          if (isPlainMd5Hash(remoteHash)) {
+            const localHash = await fileMd5Hex(sourceAbs);
+            equal = localHash === remoteHash;
+          } else if (typeof remoteMeta.size === 'number') {
+            const sourceStat = await fs.stat(sourceAbs);
+            equal = sourceStat.size === remoteMeta.size;
+          }
         }
 
         records.push({

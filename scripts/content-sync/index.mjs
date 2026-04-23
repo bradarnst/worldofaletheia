@@ -3,6 +3,7 @@
 import path from 'node:path';
 import { loadConfig } from './config.mjs';
 import { buildSyncDiff } from './fs-diff.mjs';
+import { readSourceEtagsMap } from './content-index-writer.mjs';
 import { askStaleFileAction } from './prompt.mjs';
 import { applySync } from './apply-sync.mjs';
 import { validateContentTree } from './validate.mjs';
@@ -86,7 +87,11 @@ async function runValidateOnly(config) {
 
 async function runFullSync(config, { dryRun, services }) {
   step('Scan and diff');
-  const diff = await buildSyncDiff(config, services);
+
+  // Fetch previous source_etags from D1 to compare vault files against known state,
+  // avoiding false positives from R2 storing transformed content.
+  const previousEtags = await readSourceEtagsMap(process.env);
+  const diff = await buildSyncDiff(config, services, { previousEtags });
   printDiffReport(diff, config.repoRoot);
 
   if (dryRun) {

@@ -588,6 +588,19 @@ export class ContentIndexRepo {
     };
   }
 
+  async listSourceEtagsByCollection(): Promise<Map<string, string>> {
+    const query = `
+      SELECT collection, id, source_etag
+      FROM content_index
+    `;
+    const result = await this.db.prepare(query).all<{ collection: string; id: string; source_etag: string }>();
+    const map = new Map<string, string>();
+    for (const row of result.results) {
+      map.set(`${row.collection}:${row.id}`, row.source_etag);
+    }
+    return map;
+  }
+
   async listTypeCounts(filters: ContentIndexFilters): Promise<ContentIndexFacetCount[]> {
     return this.listFacetCounts('type', filters);
   }
