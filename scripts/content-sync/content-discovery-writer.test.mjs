@@ -95,11 +95,11 @@ describe('content discovery writer', () => {
     expect(chunks).toHaveLength(1);
     expect(chunks[0]).toContain("DELETE FROM content_search WHERE collection = 'lore'");
     expect(chunks[0]).toContain("DELETE FROM content_index WHERE collection = 'lore'");
-    expect(chunks[0]).toContain('BEGIN IMMEDIATE;');
-    expect(chunks[0]).toContain('COMMIT;');
+    expect(chunks[0]).not.toContain('BEGIN IMMEDIATE;');
+    expect(chunks[0]).not.toContain('COMMIT;');
   });
 
-  it('builds one transactional file per managed collection', () => {
+  it('builds one non-transactional file per managed collection by default', () => {
     const plan = buildContentDiscoverySyncPlan({
       contentIndexRows: [
         createIndexRow(),
@@ -115,11 +115,25 @@ describe('content discovery writer', () => {
     const chunks = buildContentDiscoverySyncSqlChunks(plan);
 
     expect(chunks).toHaveLength(2);
-    expect(chunks[0]).toContain('BEGIN IMMEDIATE;');
-    expect(chunks[0]).toContain('COMMIT;');
+    expect(chunks[0]).not.toContain('BEGIN IMMEDIATE;');
+    expect(chunks[0]).not.toContain('COMMIT;');
     expect(chunks[0]).toContain("DELETE FROM content_search WHERE collection = 'lore'");
     expect(chunks[0]).not.toContain("DELETE FROM content_search WHERE collection = 'systems'");
     expect(chunks[1]).toContain("DELETE FROM content_search WHERE collection = 'systems'");
     expect(chunks[1]).not.toContain("DELETE FROM content_search WHERE collection = 'lore'");
+  });
+
+  it('can still build transactional collection chunks when explicitly requested', () => {
+    const plan = buildContentDiscoverySyncPlan({
+      contentIndexRows: [createIndexRow()],
+      contentSearchRows: [createSearchRow()],
+      managedCollections: ['lore'],
+    });
+
+    const chunks = buildContentDiscoverySyncSqlChunks(plan, { transactional: true });
+
+    expect(chunks).toHaveLength(1);
+    expect(chunks[0]).toContain('BEGIN IMMEDIATE;');
+    expect(chunks[0]).toContain('COMMIT;');
   });
 });

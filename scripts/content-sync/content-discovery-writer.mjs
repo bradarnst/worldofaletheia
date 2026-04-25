@@ -78,7 +78,7 @@ function buildCollectionChunkSql({
 }
 
 export function buildContentDiscoverySyncSqlChunks(plan, options = {}) {
-  const transactional = options.transactional ?? true;
+  const transactional = options.transactional ?? false;
   const chunks = [];
 
   for (const collection of plan.contentIndex.managedCollections) {
@@ -153,10 +153,11 @@ export async function syncContentDiscovery({ contentIndexRows, contentSearchRows
   }
 
   // Temporary Wrangler-safe compromise until the private CI/Worker D1 path lands:
-  // execute one transaction per collection so content_search and content_index stay
-  // aligned within that collection, even though the full site sync is not yet atomic.
-  // NOTE: remote D1 (Workers) does not support SQL BEGIN/COMMIT — only local D1 can use transactions.
-  const sqlChunks = buildContentDiscoverySyncSqlChunks(plan, { transactional: target.mode === 'local' });
+  // execute one file per collection so content_search and content_index stay grouped,
+  // even though the full site sync is not yet atomic.
+  // NOTE: current Wrangler D1 file execution rejects SQL BEGIN/COMMIT for both local
+  // and remote execution paths, so emitted SQL must stay non-transactional.
+  const sqlChunks = buildContentDiscoverySyncSqlChunks(plan, { transactional: false });
   if (sqlChunks.length === 0) {
     return {
       applied: false,
