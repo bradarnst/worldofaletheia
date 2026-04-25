@@ -37,6 +37,8 @@ export const PLACES_TYPES = [
   'territory',
   'water',
   'biome',
+  'dimension',
+  'world'
 ] as const;
 
 // Sentient types (shared between sentients and campaignSentients)
