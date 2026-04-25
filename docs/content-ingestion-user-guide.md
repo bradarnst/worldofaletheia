@@ -197,6 +197,42 @@ If you build with `CONTENT_SOURCE_MODE=cloud`, the loader also needs to know whi
 - Remote staging build: `CONTENT_LOADER_D1_MODE=remote CONTENT_LOADER_D1_ENV=staging`
 - Remote production build: `CONTENT_LOADER_D1_MODE=remote`
 
+## Changing allowed content types
+
+Treat changes to [`src/lib/content-types.ts`](../src/lib/content-types.ts) as an **elevated-privilege change**. Adding, modifying, or deleting type values changes repository-wide schema behavior, can affect sync/build outcomes, and should only be done by someone who is authorized to change the site taxonomy.
+
+What changes automatically when you edit `src/lib/content-types.ts`:
+
+- `src/content.config.ts` picks up the new enum values for Astro/Zod validation
+- `src/lib/r2-content-loader.mjs` picks up the same values for cloud-loader type sanitization
+
+### Safe workflow for adding new type values
+
+Use this sequence when you are **adding** new allowed types and want to ingest matching Obsidian content right away:
+
+```bash
+pnpm build
+pnpm content:sync:dry-run
+pnpm content:sync
+pnpm build
+```
+
+Notes:
+
+- `pnpm build` before sync confirms the code change itself is valid.
+- `pnpm content:sync:dry-run` previews what will be pulled from Obsidian.
+- `pnpm content:sync` ingests the new Obsidian content.
+- `pnpm build` after sync is the real end-to-end check that the synced content passes Astro/Zod validation.
+- If the new type should have a custom icon, also update `src/components/site/SiteGlyph.astro`.
+
+### Important validation limitation
+
+`pnpm content:sync:validate` is helpful for frontmatter shape checks, but it is **not** the final authority for enum changes. It does not enforce the `z.enum(...)` membership from `src/content.config.ts`. For type changes, `pnpm build` is still the authoritative validation step.
+
+### If you rename or remove types
+
+Renames/removals are higher risk than additions. Before syncing, update any affected Obsidian frontmatter to the new values. Otherwise the next sync + build can fail because the content no longer matches the allowed enum set.
+
 ## Day-to-day commands
 
 ### Main command
@@ -220,7 +256,7 @@ pnpm content:sync:dry-run
 ### Validation only
 
 ```bash
-pnpm content:validate
+pnpm content:sync:validate
 ```
 
 ### Campaign slug rename helper

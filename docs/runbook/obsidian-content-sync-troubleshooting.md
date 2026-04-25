@@ -9,8 +9,9 @@ This runbook is an operator-facing troubleshooting guide for ingestion failures 
 - `malformed frontmatter delimiters`
 - `no such table: content_index`
 - `wrangler d1 execute DB ...` fails during sync
-- validation fails during [`pnpm content:validate`](../../package.json:13)
+- validation fails during [`pnpm content:sync:validate`](../../package.json)
 - regressions after parser/normalization changes
+- build fails after changing `src/lib/content-types.ts`
 
 ## Deterministic diagnosis flow
 
@@ -19,13 +20,40 @@ This runbook is an operator-facing troubleshooting guide for ingestion failures 
 Run:
 
 ```bash
-pnpm content:validate
+pnpm content:sync:validate
 ```
 
 Interpretation:
 
 - **Pass**: validator accepts current content set.
 - **Fail with file path(s)**: inspect listed markdown files first.
+
+### 1b) Content type enum change workflow
+
+If you changed [`src/lib/content-types.ts`](../../src/lib/content-types.ts), treat that as a **privileged taxonomy change**, not just a content edit. It changes repository-wide allowed values and can block sync/build until code and Obsidian content agree.
+
+Use this sequence:
+
+```bash
+pnpm build
+pnpm content:sync:dry-run
+pnpm content:sync
+pnpm build
+```
+
+Interpretation:
+
+- First `pnpm build` checks that the code-level enum change is valid.
+- `pnpm content:sync:dry-run` previews the Obsidian ingest set before writes.
+- `pnpm content:sync` brings the new/updated content into the repo or cloud target.
+- Final `pnpm build` is the authoritative check that synced content passes Astro/Zod enum validation.
+
+Important:
+
+- `pnpm content:sync:validate` checks frontmatter shape, but it does **not** enforce `z.enum(...)` membership from `src/content.config.ts`.
+- If you are only **adding** new type values, there is usually no migration work beyond the code change and sync/build sequence.
+- If you are **renaming or removing** values, update the affected Obsidian frontmatter before sync or the next build can fail.
+- If the new type should render with a custom glyph, update `src/components/site/SiteGlyph.astro` too.
 
 ### 2) Verify parser/normalization behavior via tests
 

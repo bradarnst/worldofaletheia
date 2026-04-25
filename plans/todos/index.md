@@ -15,7 +15,9 @@ This folder is the canonical place for deferred implementation todos that need e
 
 ## Open Todos
 
-No currently open deferred implementation todos are tracked in this folder.
+| Title | Date Added | Status | Notes |
+| --- | --- | --- | --- |
+| [Future Admin Console and Taxonomy Management](./admin-console-and-taxonomy-management-2026-04-25.md) | 2026-04-25 | Open | Tracks a future privileged admin-console requirement to manage content type taxonomy changes with workflow guidance and safeguards. |
 
 ## Completed Todos
 
