@@ -19,7 +19,7 @@ const supportSections = [
   {
     title: 'Campaigns',
     href: '/campaigns',
-    description: 'Public campaign records, session material, and stories that reveal the world through play.',
+    description: 'Public campaign records, session material, and selectively protected play history that reveal the world through lived campaigns.',
     icon: 'Campaigns',
   },
   {
@@ -31,22 +31,46 @@ const supportSections = [
   {
     title: 'Contribute',
     href: '/contribute',
-    description: 'A place for collaboration, contributions, and future participation in the living archive of Aletheia.',
+    description: 'A place for corrections, continuity notes, and curated collaboration around the living archive of Aletheia.',
     icon: 'Contribute',
   },
   {
     title: 'About',
     href: '/about',
-    description: 'Context for the project, the setting, and how this archive is built and maintained over time.',
+    description: 'Context for the project, its open-source and open-access direction, and how the archive is built and maintained over time.',
     icon: 'About',
+  },
+];
+
+const projectPrinciples = [
+  {
+    title: 'Public archive stays open',
+    description:
+      'Canon, Using Aletheia, Reference, and the public-facing archive are meant to remain open and readable without paid access.',
+    href: '/about',
+    cta: 'Why it stays open',
+  },
+  {
+    title: 'Campaign services stay additive',
+    description:
+      'If separate or hosted campaign services appear, the value is in seamless connectivity to the Canon and Reference layers, plus storage, authentication, access control, backups, and operational support for private groups.',
+    href: '/campaigns',
+    cta: 'Explore campaigns',
+  },
+  {
+    title: 'Open project, private operations when needed',
+    description:
+      'The public project is built in the open, while future campaign or site administration dashboards may remain private if they become part of hosted or managed operations.',
+    href: '/about',
+    cta: 'Project context',
   },
 ];
 ---
 
-<Layout title="World of Aletheia" description="A grounded fantasy world shaped by history, consequence, and fragile renewal." fullBleed>
+<Layout title="World of Aletheia" description="An open fantasy worldbuilding and campaign archive shaped by history, consequence, and fragile renewal." fullBleed>
   <RandomHeroImage
     title="World of Aletheia"
-    text="A grounded fantasy setting where power has consequences, histories are contested, and life endures in the wake of catastrophe."
+    text="An open fantasy worldbuilding and campaign archive where power has consequences, histories are contested, and life endures in the wake of catastrophe."
     heightClass="min-h-[calc(100svh-3.6rem)]"
     sectionClass="w-full"
     contentClass="site-hero-content site-hero-content--home text-neutral-content text-center px-6 mx-auto"
@@ -81,7 +105,7 @@ const supportSections = [
       <p class="text-xs font-semibold uppercase tracking-[0.24em] text-ink-600">Guided exploration</p>
       <h2 class="mt-3 text-3xl font-semibold text-ink-950 md:text-4xl">Choose a way into the archive.</h2>
       <p class="mt-4 text-base leading-8 text-ink-700 md:text-lg">
-        Begin with the world itself, the tools for using it, the public campaign record, or the shared reference surfaces that hold its history together.
+        Begin with the open Canon, the tools for using it, the public campaign record, or the shared reference surfaces that hold its history together.
       </p>
     </div>
 
@@ -96,6 +120,37 @@ const supportSections = [
           <span class="mt-auto pt-6 text-sm font-semibold text-primary">Explore</span>
         </a>
       ))}
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-4 pb-16 lg:px-8 lg:pb-20">
+    <div class="ui-surface ui-surface--muted rounded-[2rem] p-6 md:p-8 lg:p-10">
+      <div class="max-w-3xl">
+        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-ink-600">Open archive, supported future</p>
+        <h2 class="mt-3 text-3xl font-semibold text-ink-950 md:text-4xl">The public archive stays open while campaign services may grow around it.</h2>
+        <p class="mt-4 text-base leading-8 text-ink-700 md:text-lg">
+          World of Aletheia is maintained as an open-source and open-access project, dedicated to ensuring its public code and archive remain open source. Future campaign-specific services may add hosting, storage, authentication, backups, and operational support for private groups without closing the shared public archive.
+        </p>
+      </div>
+
+      <div class="ui-panel-grid mt-8 lg:grid-cols-3">
+        {projectPrinciples.map((principle) => (
+          <div class="ui-surface flex h-full flex-col gap-4 p-6">
+              <h3 class="text-xl font-semibold text-ink-950">{principle.title}</h3>
+              <p class="text-sm leading-7 text-ink-700">{principle.description}</p>
+              <div class="mt-auto pt-2">
+                <a href={principle.href} class="ui-button ui-button--secondary ui-button--sm">
+                  {principle.cta}
+                </a>
+              </div>
+          </div>
+        ))}
+      </div>
+
+      <div class="mt-8 flex flex-wrap gap-3">
+        <a href="https://github.com/bradarnst/worldofaletheia" class="ui-button ui-button--primary" target="_blank" rel="noopener noreferrer">View the GitHub project</a>
+        <a href="/about" class="ui-button ui-button--secondary">Project context</a>
+      </div>
     </div>
   </section>
 </Layout>

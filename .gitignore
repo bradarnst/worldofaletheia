@@ -37,3 +37,6 @@ config/content-sync.config.json
 
 # private operator SQL artifacts (may contain real identity/assignment data)
 .wrangler/operators/
+
+# private monetization planning
+plans/monetize/

@@ -3,7 +3,7 @@ import SimpleContentLayout from '@layouts/SimpleContentLayout.astro';
 
 const content = {
   title: 'About Aletheia',
-  description: 'What Aletheia is, how this world is used, and who is behind it.',
+  description: 'What Aletheia is, why the public archive stays open, and how it is built and maintained.',
 };
 ---
 
@@ -12,13 +12,41 @@ const content = {
 
   <p>
     <strong>Aletheia</strong> is an original fantasy world developed for tabletop role-playing games. This site serves
-    as the canonical reference for the setting: its history, cultures, locations, assumptions, and internal logic.
+    as an open fantasy worldbuilding and campaign archive: the canonical reference for the setting's history,
+    cultures, locations, assumptions, and internal logic.
   </p>
 
   <p>
     The material here has grown out of decades of play and world-building. It is intended to support long-term
     campaigns and thoughtful exploration of the setting, rather than provide a fixed narrative or single "official"
     story.
+  </p>
+
+  <p>
+    The public direction of the project is archive-first rather than business-first. The goal is to make the world
+    readable, useful, and trustworthy while leaving room for the campaign platform to mature over time.
+  </p>
+
+  <hr />
+
+  <h2>Open Source and Service Boundary</h2>
+
+  <p>
+    <strong>World of Aletheia</strong> is maintained as an open-source and open-access project, dedicated to ensuring
+    its public code and archive remain open source. That includes Canon, Using Aletheia, Reference, and the
+    public-facing archive material that ties them together.
+  </p>
+
+  <p>
+    If optional paid work appears in the future, it is more likely to be campaign-specific and additive: private
+    campaign hosting, seamless connectivity to the Canon and Reference layers, storage, availability,
+    authentication/access control, backups, and operational support for individual groups. Those services would add to
+    the project rather than close the shared public archive.
+  </p>
+
+  <p>
+    Administrative dashboards for campaign operations or site management may also remain private if they become part of
+    hosted or managed services.
   </p>
 
   <hr />
@@ -33,8 +61,10 @@ const content = {
   <p>Over time, the site will also include:</p>
 
   <ul>
-    <li>Campaign notes from games set in Aletheia</li>
-    <li>Observations and lessons learned through play</li>
+    <li>Public campaign notes from games set in Aletheia</li>
+    <li>Protected or private campaign material where access is part of a real campaign space</li>
+    <li>Shared reference surfaces such as maps, calendars, and timelines</li>
+    <li>Observations, build notes, and lessons learned through play and maintenance</li>
     <li>Practical tips, tools, and links related to running and playing games in the setting</li>
   </ul>
 
@@ -68,8 +98,8 @@ const content = {
   </p>
 
   <p>
-    The site itself is self-built. Coded by me (Brad) and AI. By profession, I am a senior IT professional, which
-    influences how the site is structured and maintained.
+    The site itself is self-built by Brad with AI assistance. It reflects an interest in durable publishing systems,
+    maintainable content workflows, and keeping a long-running campaign archive readable over time.
   </p>
 
   <p>
@@ -87,8 +117,32 @@ const content = {
   </p>
 
   <p>
-    Technical details and architecture notes:
+    It functions both as a public archive and as a reference implementation for the publishing and campaign tooling
+    growing around it.
+  </p>
+
+  <p>
+    The public project also serves as a reference implementation for an Astro/Cloudflare publishing model that may
+    later support separate hosted or managed campaign services.
+  </p>
+
+  <p>
+    Technical details and source:
     <a href="https://github.com/bradarnst/worldofaletheia">github.com/bradarnst/worldofaletheia</a>
+  </p>
+
+  <hr />
+
+  <h2>Current Direction</h2>
+
+  <p>
+    The current focus is to keep the public archive useful, open, and discoverable while learning whether optional
+    campaign services could help other groups manage private campaign material.
+  </p>
+
+  <p>
+    Support links, if present, are intended to help offset storage, compute, and maintenance rather than create paid
+    access to the public archive.
   </p>
 
   <hr />
@@ -108,10 +162,23 @@ const content = {
 
   <p>
     This is a personal project, but thoughtful questions, corrections, and discussion are welcome - particularly
-    regarding the setting, its assumptions, or how the site is built.
+    regarding the setting, its assumptions, how the archive is built, or how the campaign platform ideas are taking
+    shape.
   </p>
 
   <p>You can reach me at: brad [at] worldofaletheia.com</p>
+
+  <div class="ui-surface ui-surface--muted not-prose my-8 p-6">
+    <p class="text-xs font-semibold uppercase tracking-[0.22em] text-ink-600">Support the project</p>
+    <p class="mt-3 text-sm leading-7 text-ink-700">
+      World of Aletheia is maintained as an open project. If you want to help offset storage, compute, and maintenance
+      costs as the archive grows, voluntary support is welcome.
+    </p>
+    <div class="mt-5 flex flex-wrap gap-3">
+      <a href="https://buymeacoffee.com/bradarnst" class="ui-button ui-button--primary" target="_blank" rel="noopener noreferrer">Buy Me a Coffee</a>
+      <a href="https://github.com/bradarnst/worldofaletheia" class="ui-button ui-button--secondary" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </div>
+  </div>
 
   <div class="ui-surface ui-surface--muted not-prose my-8 p-6">
     <p class="text-xs font-semibold uppercase tracking-[0.22em] text-ink-600">Ways to reach the project</p>
