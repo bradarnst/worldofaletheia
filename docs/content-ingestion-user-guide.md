@@ -2,6 +2,10 @@
 
 This guide explains how to run the Obsidian-to-repo ingestion scripts in a simple, repeatable way.
 
+Related targeted refresh workflow:
+
+- [`docs/runbook/sorcerer-spell-data-refresh.md`](docs/runbook/sorcerer-spell-data-refresh.md) for replacing the checked-in GURPS sorcerer spell dataset from a better source JSON file.
+
 ## What this workflow does
 
 The command in [`scripts/content-sync/index.mjs`](scripts/content-sync/index.mjs) does this sequence:

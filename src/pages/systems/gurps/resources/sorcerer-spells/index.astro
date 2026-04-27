@@ -1,9 +1,14 @@
 ---
+export const prerender = true;
+
 import Layout from '@layouts/GurpsLayout.astro';
+import spellsData from '@data/spells/spells-raw.json';
 import spellTypes from '@data/spells/spell-types.json';
+import { slugifySpellType } from '@utils/spell-browser';
 
 const title = 'Sorcerer Spells - GURPS - World of Aletheia';
 const description = 'Comprehensive reference for sorcerer spells in the World of Aletheia.';
+const totalSpells = spellsData.spells.length;
 ---
 
 <Layout title={title} description={description}>
@@ -14,7 +19,7 @@ const description = 'Comprehensive reference for sorcerer spells in the World of
     <section class="ui-surface mb-8 border-2 border-primary/35 p-6">
       <h2 class="mb-3 text-lg font-semibold text-ink-950">Spell Source Attribution</h2>
       <p class="mb-3 text-ink-800">
-        These 676 sorcerer spells are sourced from the <strong>Generic Universal Eggplant</strong> blog, an excellent resource for GURPS spell variants and homebrew content.
+        These {totalSpells} sorcerer spells are sourced from the <strong>Generic Universal Eggplant</strong> blog, an excellent resource for GURPS spell variants and homebrew content.
       </p>
       <p class="mb-4 text-ink-800">
         <strong>Source:</strong>
@@ -41,7 +46,7 @@ const description = 'Comprehensive reference for sorcerer spells in the World of
 
       <div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
         {spellTypes.map((spellType) => {
-          const slug = spellType.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+          const slug = slugifySpellType(spellType);
           return (
             <a href={`/systems/gurps/resources/sorcerer-spells/${slug}`} class="ui-button ui-button--secondary justify-start">
               {spellType}

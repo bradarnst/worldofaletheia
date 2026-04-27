@@ -1,0 +1,25 @@
+---
+export const prerender = true;
+
+import Layout from '@layouts/GurpsLayout.astro';
+import SpellAlphabeticalIndex from '@components/spells/SpellAlphabeticalIndex.astro';
+import spellsData from '@data/spells/spells-raw.json';
+import { SPELLS_PAGE_SIZE, paginateSpells, sortSpellsByName } from '@utils/spell-browser';
+
+const sortedSpells = sortSpellsByName(spellsData.spells);
+const paginatedSpells = paginateSpells(sortedSpells, 1, SPELLS_PAGE_SIZE);
+
+const title = 'All Spells (Alphabetical) - Sorcerer Spells - GURPS - World of Aletheia';
+const description = `Alphabetical index page ${paginatedSpells.currentPage} of ${paginatedSpells.totalPages} for ${paginatedSpells.totalSpells} sorcerer spells.`;
+---
+
+<Layout title={title} description={description}>
+  <h1 class="mb-6 text-5xl font-bold text-ink-950 drop-shadow-lg lg:text-6xl">All Spells (Alphabetical)</h1>
+  <SpellAlphabeticalIndex
+    spells={paginatedSpells.spells}
+    currentPage={paginatedSpells.currentPage}
+    pageSize={paginatedSpells.pageSize}
+    totalPages={paginatedSpells.totalPages}
+    totalSpells={paginatedSpells.totalSpells}
+  />
+</Layout>

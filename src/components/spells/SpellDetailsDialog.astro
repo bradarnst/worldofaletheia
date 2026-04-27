@@ -1,0 +1,60 @@
+---
+import { formatSpellField, hasSpellKeywords, type SpellRecord } from '@utils/spell-browser';
+
+interface Props {
+  spell: SpellRecord;
+  modalId: string;
+}
+
+const { spell, modalId } = Astro.props;
+---
+
+<dialog id={modalId} class="m-auto w-[min(94vw,52rem)] rounded-[1.5rem] border border-base-300 bg-base-100 p-0 text-left shadow-2xl backdrop:bg-ink-950/70">
+  <article class="max-h-[90vh] overflow-y-auto p-6 md:p-8">
+    <div class="mb-6 flex items-start justify-between gap-4 border-b border-base-300 pb-4">
+      <div>
+        <h2 class="pr-8 text-2xl font-bold text-ink-950">{spell.spell_name}</h2>
+        <p class="mt-2 text-lg font-semibold text-primary">{spell.full_cost}</p>
+      </div>
+      <button class="ui-button ui-button--ghost ui-button--sm" onclick={`document.getElementById('${modalId}')?.close()`}>Close</button>
+    </div>
+
+    {hasSpellKeywords(spell.keywords) && (
+      <section class="mb-4">
+        <p class="mb-2 text-sm font-semibold uppercase tracking-[0.16em] text-ink-700">Keywords</p>
+        <p class="text-base text-ink-800">{spell.keywords?.trim()}</p>
+      </section>
+    )}
+
+    <section class="mb-4 grid gap-4 md:grid-cols-3">
+      <div>
+        <p class="mb-1 text-sm font-semibold uppercase tracking-[0.16em] text-ink-700">Casting Roll</p>
+        <p class="text-base text-ink-800">{formatSpellField(spell.casting_roll)}</p>
+      </div>
+      <div>
+        <p class="mb-1 text-sm font-semibold uppercase tracking-[0.16em] text-ink-700">Range</p>
+        <p class="text-base text-ink-800">{formatSpellField(spell.range)}</p>
+      </div>
+      <div>
+        <p class="mb-1 text-sm font-semibold uppercase tracking-[0.16em] text-ink-700">Duration</p>
+        <p class="text-base text-ink-800">{formatSpellField(spell.duration)}</p>
+      </div>
+    </section>
+
+    <section class="mb-4">
+      <p class="mb-2 text-sm font-semibold uppercase tracking-[0.16em] text-ink-700">Description</p>
+      <p class="text-base leading-relaxed text-ink-800">{formatSpellField(spell.description)}</p>
+    </section>
+
+    <section class="mb-6">
+      <p class="mb-2 text-sm font-semibold uppercase tracking-[0.16em] text-ink-700">Statistics</p>
+      <p class="whitespace-pre-wrap font-mono text-sm leading-relaxed text-ink-700">{formatSpellField(spell.statistics)}</p>
+    </section>
+
+    <div class="flex justify-end">
+      <form method="dialog">
+        <button class="ui-button ui-button--primary">Close</button>
+      </form>
+    </div>
+  </article>
+</dialog>

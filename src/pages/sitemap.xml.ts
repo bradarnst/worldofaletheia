@@ -1,5 +1,8 @@
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
+import spellsData from '@data/spells/spells-raw.json';
+import spellTypes from '@data/spells/spell-types.json';
+import { SPELLS_PAGE_SIZE, getSpellListPageHref, slugifySpellType } from '@utils/spell-browser';
 import { getAllCampaignFamilyEntries, type CampaignFamilyEntry } from '@utils/campaign-content';
 import {
   extractCampaignFamilySlugFromEntryId,
@@ -109,6 +112,14 @@ export const GET: APIRoute = async ({ request }) => {
     getAllCampaignFamilyEntries(),
   ]);
 
+  const spellListPageCount = Math.max(1, Math.ceil(spellsData.spells.length / SPELLS_PAGE_SIZE));
+  const sorcererSpellPaths = [
+    '/systems/gurps/resources/sorcerer-spells',
+    '/systems/gurps/resources/sorcerer-spells/all',
+    ...Array.from({ length: Math.max(0, spellListPageCount - 1) }, (_, index) => getSpellListPageHref(index + 2)),
+    ...spellTypes.map((spellType) => `/systems/gurps/resources/sorcerer-spells/${slugifySpellType(spellType)}`),
+  ];
+
   const staticPaths = [
     '/',
     '/about',
@@ -129,8 +140,7 @@ export const GET: APIRoute = async ({ request }) => {
     '/systems/gurps/house-rules',
     '/systems/gurps/external-links',
     '/systems/gurps/resources',
-    '/systems/gurps/resources/sorcerer-spells',
-    '/systems/gurps/resources/sorcerer-spells/all',
+    ...sorcererSpellPaths,
   ];
 
   const entries: SitemapUrlEntry[] = staticPaths.map((pathname) => createUrlEntry(pathname));
