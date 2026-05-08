@@ -40,3 +40,6 @@ config/content-sync.config.json
 
 # private monetization planning
 plans/monetize/
+
+# do not sync
+do_not_sync/
