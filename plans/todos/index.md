@@ -17,6 +17,7 @@ This folder is the canonical place for deferred implementation todos that need e
 
 | Title | Date Added | Status | Notes |
 | --- | --- | --- | --- |
+| [Breadcrumb Restoration as Deferred Navigation UX Work](./breadcrumb-restoration-navigation-ux-2026-05-08.md) | 2026-05-08 | Open | Tracks restoring expected breadcrumb navigation as a separate shared UX/navigation task rather than bundling it into sorcerer spells or admin-dashboard work. |
 | [Future Admin Console and Taxonomy Management](./admin-console-and-taxonomy-management-2026-04-25.md) | 2026-04-25 | Open | Tracks a future privileged admin-console requirement to manage content type taxonomy changes with workflow guidance and safeguards. |
 | [Future Related Resource Enrichment and Spell Discovery](./related-resource-enrichment-and-spell-discovery-2026-04-27.md) | 2026-04-27 | Open | Tracks a low-priority path from manual promoted-resource UX experiments toward incremental related-resource enrichment and eventual D1-backed spell/search integration. |
 
