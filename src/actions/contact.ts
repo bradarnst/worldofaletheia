@@ -1,6 +1,7 @@
 import type { ActionAPIContext } from 'astro:actions';
 import { ActionError, defineAction } from 'astro:actions';
 import { z } from 'astro/zod';
+import { getCloudflareRuntimeEnv } from '~/utils/cloudflare-env';
 import { sendContactEmail } from '~/lib/email';
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
@@ -91,8 +92,7 @@ async function submitInquiry(input: ContactInquiryInput, context: ActionAPIConte
     };
   }
 
-  const typedLocals = context.locals as { cfContext?: { env?: Record<string, unknown> } } | undefined;
-  const runtimeEnv = typedLocals?.cfContext?.env ?? undefined;
+  const runtimeEnv = await getCloudflareRuntimeEnv();
 
   try {
     await sendContactEmail({
