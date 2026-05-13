@@ -14,7 +14,7 @@
   ],
   "vars": {
     "BETTER_AUTH_URL": "https://worldofaletheia.com",
-    "MAILJET_SANDBOX_MODE": "on",
+    "MAILJET_SANDBOX_MODE": "off",
     "EMAIL_FROM": "gm@worldofaletheia.com",
     "EMAIL_REPLY_TO": "gm@worldofaletheia.com",
     "CONTACT_TO_EMAIL": "brad@worldofaletheia.com,barry@worldofaletheia.com"

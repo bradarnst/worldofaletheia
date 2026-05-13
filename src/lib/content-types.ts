@@ -117,6 +117,7 @@ export const CAMPAIGN_CHARACTERS_TYPES = [
   'creature',
   'group',
   'other',
+  'relationship'
 ] as const;
 
 // Campaign scene types

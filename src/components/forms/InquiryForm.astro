@@ -53,13 +53,9 @@ const statusMessage = isCurrentFormResult && result?.data?.ok
       ? unavailableMessage
       : helperText;
 
-const fieldValue = (name: 'name' | 'email' | 'message' | 'website') => {
-  if (!isCurrentFormResult) {
-    return '';
-  }
-
-  const value = result?.data && 'input' in result.data ? result.data.input?.[name] : undefined;
-  return typeof value === 'string' ? value : '';
+const fieldValue = (_name: 'name' | 'email' | 'message' | 'website') => {
+  // Form values are not preserved across submissions in the simplified action
+  return '';
 };
 
 const statusToneClass = statusTone === 'success'
