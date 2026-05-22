@@ -1,42 +1,55 @@
 ---
-export const prerender = true;
-
+import { isPublicSpellApiError, listSpells } from '@adapters/public-spell-api';
 import Layout from '@layouts/GurpsLayout.astro';
 import SpellAlphabeticalIndex from '@components/spells/SpellAlphabeticalIndex.astro';
-import spellsData from '@data/spells/spells-raw.json';
-import { SPELLS_PAGE_SIZE, getSpellListPageHref, paginateSpells, sortSpellsByName } from '@utils/spell-browser';
+import { SPELLS_PAGE_SIZE, createEmptySpellPage, getSpellListPageHref } from '@utils/spell-browser';
 
-const sortedSpells = sortSpellsByName(spellsData.spells);
-const totalPages = Math.max(1, Math.ceil(sortedSpells.length / SPELLS_PAGE_SIZE));
+const requestedPage = Number(Astro.params.page);
 
-export async function getStaticPaths() {
-  const pathTotalPages = Math.max(1, Math.ceil(spellsData.spells.length / SPELLS_PAGE_SIZE));
-
-  return Array.from({ length: Math.max(0, pathTotalPages - 1) }, (_, index) => ({
-    params: {
-      page: String(index + 2),
-    },
-  }));
-}
-
-const currentPage = Number(Astro.params.page);
-const paginatedSpells = paginateSpells(sortedSpells, currentPage, SPELLS_PAGE_SIZE);
-
-if (!Number.isInteger(currentPage) || currentPage < 2 || currentPage > totalPages) {
+if (!Number.isInteger(requestedPage) || requestedPage < 2) {
   return Astro.redirect(getSpellListPageHref(1), 302);
 }
 
-const title = `All Spells (Alphabetical) - Page ${paginatedSpells.currentPage} - Sorcerer Spells - GURPS - World of Aletheia`;
-const description = `Alphabetical index page ${paginatedSpells.currentPage} of ${paginatedSpells.totalPages} for ${paginatedSpells.totalSpells} sorcerer spells.`;
+let paginatedSpells = createEmptySpellPage(requestedPage, SPELLS_PAGE_SIZE);
+let unavailableMessage: string | null = null;
+
+try {
+  paginatedSpells = await listSpells({ page: requestedPage, pageSize: SPELLS_PAGE_SIZE });
+} catch (error) {
+  if (!isPublicSpellApiError(error)) {
+    throw error;
+  }
+
+  Astro.response.status = error.status;
+  if (error.retryAfter) {
+    Astro.response.headers.set('Retry-After', error.retryAfter);
+  }
+
+  unavailableMessage = error.message;
+}
+
+if (!unavailableMessage && paginatedSpells.page !== requestedPage) {
+  return Astro.redirect(getSpellListPageHref(paginatedSpells.page), 302);
+}
+
+const title = `All Spells (Alphabetical) - Page ${paginatedSpells.page} - Sorcerer Spells - GURPS - World of Aletheia`;
+const description = `Alphabetical index page ${paginatedSpells.page} of ${paginatedSpells.totalPages} for ${paginatedSpells.total} sorcerer spells.`;
 ---
 
 <Layout title={title} description={description}>
   <h1 class="mb-6 text-5xl font-bold text-ink-950 drop-shadow-lg lg:text-6xl">All Spells (Alphabetical)</h1>
-  <SpellAlphabeticalIndex
-    spells={paginatedSpells.spells}
-    currentPage={paginatedSpells.currentPage}
-    pageSize={paginatedSpells.pageSize}
-    totalPages={paginatedSpells.totalPages}
-    totalSpells={paginatedSpells.totalSpells}
-  />
+  {unavailableMessage ? (
+    <section class="ui-surface ui-surface--glass p-6">
+      <h2 class="mb-3 text-2xl font-semibold text-ink-950">Spell Catalog Unavailable</h2>
+      <p class="text-ink-800">{unavailableMessage}</p>
+    </section>
+  ) : (
+    <SpellAlphabeticalIndex
+      spells={paginatedSpells.items}
+      currentPage={paginatedSpells.page}
+      pageSize={paginatedSpells.pageSize}
+      totalPages={paginatedSpells.totalPages}
+      totalSpells={paginatedSpells.total}
+    />
+  )}
 </Layout>

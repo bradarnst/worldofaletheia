@@ -1,12 +1,14 @@
 ---
-import { formatSpellField, hasSpellKeywords, type SpellRecord } from '@utils/spell-browser';
+import type { PublicSpell } from '@adapters/public-spell-api';
+import { formatSpellField, getVisibleSpellKeywords, hasSpellKeywords } from '@utils/spell-browser';
 
 interface Props {
-  spell: SpellRecord;
+  spell: PublicSpell;
   modalId: string;
 }
 
 const { spell, modalId } = Astro.props;
+const visibleKeywords = getVisibleSpellKeywords(spell.keywords);
 ---
 
 <dialog id={modalId} class="m-auto w-[min(94vw,52rem)] rounded-[1.5rem] border border-base-300 bg-base-100 p-0 text-left shadow-2xl backdrop:bg-ink-950/70">
@@ -15,6 +17,7 @@ const { spell, modalId } = Astro.props;
       <div>
         <h2 class="pr-8 text-2xl font-bold text-ink-950">{spell.spell_name}</h2>
         <p class="mt-2 text-lg font-semibold text-primary">{spell.full_cost}</p>
+        <p class="mt-2 text-sm text-ink-700">{spell.spell_types.join(', ')}</p>
       </div>
       <button class="ui-button ui-button--ghost ui-button--sm" onclick={`document.getElementById('${modalId}')?.close()`}>Close</button>
     </div>
@@ -22,7 +25,7 @@ const { spell, modalId } = Astro.props;
     {hasSpellKeywords(spell.keywords) && (
       <section class="mb-4">
         <p class="mb-2 text-sm font-semibold uppercase tracking-[0.16em] text-ink-700">Keywords</p>
-        <p class="text-base text-ink-800">{spell.keywords?.trim()}</p>
+        <p class="text-base text-ink-800">{visibleKeywords.join(', ')}</p>
       </section>
     )}
 
@@ -49,6 +52,22 @@ const { spell, modalId } = Astro.props;
     <section class="mb-6">
       <p class="mb-2 text-sm font-semibold uppercase tracking-[0.16em] text-ink-700">Statistics</p>
       <p class="whitespace-pre-wrap font-mono text-sm leading-relaxed text-ink-700">{formatSpellField(spell.statistics)}</p>
+    </section>
+
+    <section class="mb-4">
+      <p class="mb-2 text-sm font-semibold uppercase tracking-[0.16em] text-ink-700">Archmagister's Counsel</p>
+      <p class="text-base leading-relaxed text-ink-800">{formatSpellField(spell.archmagisters_counsel)}</p>
+    </section>
+
+    <section class="mb-6 grid gap-4 md:grid-cols-2">
+      <div>
+        <p class="mb-2 text-sm font-semibold uppercase tracking-[0.16em] text-ink-700">Source Spell</p>
+        <p class="text-base text-ink-800">{formatSpellField(spell.source_lineage.source_spell_name)}</p>
+      </div>
+      <div>
+        <p class="mb-2 text-sm font-semibold uppercase tracking-[0.16em] text-ink-700">Source Spell Types</p>
+        <p class="text-base text-ink-800">{spell.source_lineage.source_spell_types.join(', ')}</p>
+      </div>
     </section>
 
     <div class="flex justify-end">

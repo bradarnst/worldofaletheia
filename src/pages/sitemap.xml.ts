@@ -1,7 +1,6 @@
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
-import spellsData from '@data/spells/spells-raw.json';
-import spellTypes from '@data/spells/spell-types.json';
+import { isPublicSpellApiError, listSpellTypes, listSpells } from '@adapters/public-spell-api';
 import { SPELLS_PAGE_SIZE, getSpellListPageHref, slugifySpellType } from '@utils/spell-browser';
 import { getAllCampaignFamilyEntries, type CampaignFamilyEntry } from '@utils/campaign-content';
 import {
@@ -112,7 +111,29 @@ export const GET: APIRoute = async ({ request }) => {
     getAllCampaignFamilyEntries(),
   ]);
 
-  const spellListPageCount = Math.max(1, Math.ceil(spellsData.spells.length / SPELLS_PAGE_SIZE));
+  // Spell paths come from a runtime API that can be transiently unavailable
+  // (429, 503, network errors). A flaky spell API must NOT take the entire
+  // sitemap offline — that would degrade SEO for all the lore/places/sessions/
+  // campaign content too. On failure we log and emit the sitemap without
+  // spell paths; the next regeneration will pick them back up.
+  let spellTypes: string[] = [];
+  let spellListPageCount = 1;
+  try {
+    const [resolvedSpellTypes, spellFirstPage] = await Promise.all([
+      listSpellTypes(),
+      listSpells({ page: 1, pageSize: SPELLS_PAGE_SIZE }),
+    ]);
+    spellTypes = resolvedSpellTypes;
+    spellListPageCount = Math.max(1, spellFirstPage.totalPages);
+  } catch (error) {
+    if (!isPublicSpellApiError(error)) {
+      throw error;
+    }
+    console.warn(
+      `[sitemap] Public spell API unavailable (status ${error.status}, error ${error.error}); emitting sitemap without spell paths.`,
+    );
+  }
+
   const sorcererSpellPaths = [
     '/systems/gurps/resources/sorcerer-spells',
     '/systems/gurps/resources/sorcerer-spells/all',

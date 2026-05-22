@@ -1,22 +1,4 @@
-export interface SpellRecord {
-  spell_name: string;
-  spell_type: string;
-  keywords?: string;
-  full_cost: string;
-  casting_roll: string;
-  range: string;
-  duration: string;
-  description: string;
-  statistics: string;
-}
-
-export interface PaginatedSpellResult {
-  currentPage: number;
-  pageSize: number;
-  totalPages: number;
-  totalSpells: number;
-  spells: SpellRecord[];
-}
+import type { PublicSpell, PublicSpellPage } from '@adapters/public-spell-api';
 
 export const SPELLS_PAGE_SIZE = 100;
 
@@ -33,8 +15,28 @@ export function slugifySpellName(value: string): string {
     .replace(/-+/g, '-');
 }
 
-export function hasSpellKeywords(value: string | undefined): boolean {
-  return Boolean(value?.trim() && !/^none\.?$/i.test(value.trim()));
+export function getVisibleSpellKeywords(values: readonly string[] | undefined): string[] {
+  if (!values) {
+    return [];
+  }
+
+  const visible: string[] = [];
+  for (const raw of values) {
+    const trimmed = raw.trim();
+    if (!trimmed) {
+      continue;
+    }
+    if (/^none\.?$/i.test(trimmed)) {
+      continue;
+    }
+    visible.push(trimmed);
+  }
+
+  return visible;
+}
+
+export function hasSpellKeywords(values: readonly string[] | undefined): boolean {
+  return getVisibleSpellKeywords(values).length > 0;
 }
 
 export function formatSpellField(value: string | undefined): string {
@@ -42,30 +44,25 @@ export function formatSpellField(value: string | undefined): string {
   return normalizedValue ? normalizedValue : '—';
 }
 
-export function sortSpellsByName(spells: readonly SpellRecord[]): SpellRecord[] {
-  return [...spells].sort((left, right) => left.spell_name.localeCompare(right.spell_name));
-}
-
-export function paginateSpells(spells: readonly SpellRecord[], page: number, pageSize = SPELLS_PAGE_SIZE): PaginatedSpellResult {
-  const totalSpells = spells.length;
-  const totalPages = Math.max(1, Math.ceil(totalSpells / pageSize));
-  const currentPage = Math.min(Math.max(Math.floor(page), 1), totalPages);
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-
-  return {
-    currentPage,
-    pageSize,
-    totalPages,
-    totalSpells,
-    spells: spells.slice(startIndex, endIndex),
-  };
-}
-
 export function getSpellListPageHref(page: number): string {
   return page <= 1 ? '/systems/gurps/resources/sorcerer-spells/all' : `/systems/gurps/resources/sorcerer-spells/all/${page}`;
 }
 
-export function getSpellModalId(spell: SpellRecord, pageScopedIndex: number): string {
-  return `spell-modal-${pageScopedIndex + 1}-${slugifySpellName(spell.spell_name)}`;
+export function getSpellModalId(spell: Pick<PublicSpell, 'spell_id' | 'spell_name'>, pageScopedIndex = 0): string {
+  const stableId = spell.spell_id.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
+  return stableId ? `spell-modal-${stableId}` : `spell-modal-${pageScopedIndex + 1}-${slugifySpellName(spell.spell_name)}`;
+}
+
+export function createEmptySpellPage(page: number, pageSize: number = SPELLS_PAGE_SIZE): PublicSpellPage {
+  return {
+    items: [],
+    total: 0,
+    page,
+    pageSize,
+    totalPages: 0,
+    q: '',
+    type: '',
+    sourceName: '',
+    sourceType: '',
+  };
 }

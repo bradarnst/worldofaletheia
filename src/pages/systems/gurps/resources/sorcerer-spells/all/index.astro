@@ -1,25 +1,45 @@
 ---
-export const prerender = true;
-
+import { isPublicSpellApiError, listSpells } from '@adapters/public-spell-api';
 import Layout from '@layouts/GurpsLayout.astro';
 import SpellAlphabeticalIndex from '@components/spells/SpellAlphabeticalIndex.astro';
-import spellsData from '@data/spells/spells-raw.json';
-import { SPELLS_PAGE_SIZE, paginateSpells, sortSpellsByName } from '@utils/spell-browser';
+import { SPELLS_PAGE_SIZE, createEmptySpellPage } from '@utils/spell-browser';
 
-const sortedSpells = sortSpellsByName(spellsData.spells);
-const paginatedSpells = paginateSpells(sortedSpells, 1, SPELLS_PAGE_SIZE);
+let paginatedSpells = createEmptySpellPage(1, SPELLS_PAGE_SIZE);
+let unavailableMessage: string | null = null;
+
+try {
+  paginatedSpells = await listSpells({ page: 1, pageSize: SPELLS_PAGE_SIZE });
+} catch (error) {
+  if (!isPublicSpellApiError(error)) {
+    throw error;
+  }
+
+  Astro.response.status = error.status;
+  if (error.retryAfter) {
+    Astro.response.headers.set('Retry-After', error.retryAfter);
+  }
+
+  unavailableMessage = error.message;
+}
 
 const title = 'All Spells (Alphabetical) - Sorcerer Spells - GURPS - World of Aletheia';
-const description = `Alphabetical index page ${paginatedSpells.currentPage} of ${paginatedSpells.totalPages} for ${paginatedSpells.totalSpells} sorcerer spells.`;
+const description = `Alphabetical index page ${paginatedSpells.page} of ${paginatedSpells.totalPages} for ${paginatedSpells.total} sorcerer spells.`;
 ---
 
 <Layout title={title} description={description}>
   <h1 class="mb-6 text-5xl font-bold text-ink-950 drop-shadow-lg lg:text-6xl">All Spells (Alphabetical)</h1>
-  <SpellAlphabeticalIndex
-    spells={paginatedSpells.spells}
-    currentPage={paginatedSpells.currentPage}
-    pageSize={paginatedSpells.pageSize}
-    totalPages={paginatedSpells.totalPages}
-    totalSpells={paginatedSpells.totalSpells}
-  />
+  {unavailableMessage ? (
+    <section class="ui-surface ui-surface--glass p-6">
+      <h2 class="mb-3 text-2xl font-semibold text-ink-950">Spell Catalog Unavailable</h2>
+      <p class="text-ink-800">{unavailableMessage}</p>
+    </section>
+  ) : (
+    <SpellAlphabeticalIndex
+      spells={paginatedSpells.items}
+      currentPage={paginatedSpells.page}
+      pageSize={paginatedSpells.pageSize}
+      totalPages={paginatedSpells.totalPages}
+      totalSpells={paginatedSpells.total}
+    />
+  )}
 </Layout>

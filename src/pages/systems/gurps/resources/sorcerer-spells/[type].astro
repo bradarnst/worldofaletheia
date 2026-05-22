@@ -1,36 +1,86 @@
 ---
-export const prerender = true;
-
+import type { PublicSpell } from '@adapters/public-spell-api';
+import { isPublicSpellApiError, listSpellTypes, listSpells } from '@adapters/public-spell-api';
 import Layout from '@layouts/GurpsLayout.astro';
 import SpellDetailsDialog from '@components/spells/SpellDetailsDialog.astro';
-import spellsData from '@data/spells/spells-raw.json';
-import spellTypes from '@data/spells/spell-types.json';
-import { formatSpellField, getSpellModalId, hasSpellKeywords, slugifySpellType, sortSpellsByName } from '@utils/spell-browser';
+import {
+  SPELLS_PAGE_SIZE,
+  formatSpellField,
+  getSpellModalId,
+  getVisibleSpellKeywords,
+  hasSpellKeywords,
+  slugifySpellType,
+} from '@utils/spell-browser';
 
 const { type } = Astro.params;
 
-const spellTypeName = spellTypes.find((spellType) => slugifySpellType(spellType) === type);
+let resolvedTypeName: string | null = null;
+let spells: PublicSpell[] = [];
+let unavailableMessage: string | null = null;
 
-const spells = sortSpellsByName(spellsData.spells.filter((spell) => spell.spell_type === spellTypeName));
+try {
+  const spellTypes = await listSpellTypes();
+  const matchedTypeName = spellTypes.find((spellType) => slugifySpellType(spellType) === type);
 
-const title = `${spellTypeName} - Sorcerer Spells - GURPS - World of Aletheia`;
-const description = `${spells.length} ${spellTypeName} spells for World of Aletheia GURPS campaigns.`;
+  if (!matchedTypeName) {
+    return Astro.redirect('/systems/gurps/resources/sorcerer-spells', 302);
+  }
 
-export async function getStaticPaths() {
-  return spellTypes.map((spellType) => ({
-    params: {
-      type: slugifySpellType(spellType),
-    },
-  }));
+  // Capture into a const so the value passed to async callbacks below is
+  // unambiguously a string regardless of TS narrowing through closures.
+  const targetType = matchedTypeName;
+
+  const firstSpellPage = await listSpells({ type: targetType, page: 1, pageSize: SPELLS_PAGE_SIZE });
+  const remainingSpellPages = firstSpellPage.totalPages > 1
+    ? await Promise.all(
+        Array.from({ length: firstSpellPage.totalPages - 1 }, (_, index) => listSpells({
+          type: targetType,
+          page: index + 2,
+          pageSize: SPELLS_PAGE_SIZE,
+        })),
+      )
+    : [];
+
+  spells = [
+    ...firstSpellPage.items,
+    ...remainingSpellPages.flatMap((page) => page.items),
+  ];
+  resolvedTypeName = targetType;
+
+  // Allow Cloudflare to edge-cache the rendered type page since spell data
+  // changes infrequently; mirrors the cache policy used by sitemap.xml.
+  Astro.response.headers.set('cache-control', 'public, max-age=3600');
+} catch (error) {
+  if (!isPublicSpellApiError(error)) {
+    throw error;
+  }
+
+  Astro.response.status = error.status;
+  if (error.retryAfter) {
+    Astro.response.headers.set('Retry-After', error.retryAfter);
+  }
+
+  unavailableMessage = error.message;
 }
+
+// When the catalog is unavailable we fall back to a generic heading; otherwise
+// resolvedTypeName is guaranteed to be set by the success path above.
+const headingTypeName = resolvedTypeName ?? 'Sorcerer Spells';
+const title = `${headingTypeName} - Sorcerer Spells - GURPS - World of Aletheia`;
+const description = `${spells.length} ${headingTypeName} spells for World of Aletheia GURPS campaigns.`;
 ---
 
 <Layout title={title} description={description}>
   <div class="max-w-6xl">
-    <h1 class="mb-6 text-5xl font-bold text-ink-950 drop-shadow-lg lg:text-6xl">{spellTypeName}</h1>
+    <h1 class="mb-6 text-5xl font-bold text-ink-950 drop-shadow-lg lg:text-6xl">{headingTypeName}</h1>
     <p class="mb-8 text-lg text-ink-800 drop-shadow-md">{spells.length} spell{spells.length !== 1 ? 's' : ''} in this category.</p>
 
-    {spells.length > 0 ? (
+    {unavailableMessage ? (
+      <div class="ui-surface ui-surface--glass mb-8 p-6">
+        <h2 class="mb-3 text-2xl font-semibold text-ink-950">Spell Catalog Unavailable</h2>
+        <p class="text-ink-800">{unavailableMessage}</p>
+      </div>
+    ) : spells.length > 0 ? (
       <div class="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         {spells.map((spell, index) => {
           const descriptionText = spell.description?.trim() ?? '';
@@ -49,7 +99,7 @@ export async function getStaticPaths() {
               {hasSpellKeywords(spell.keywords) && (
                 <div class="mb-2">
                   <p class="text-xs font-semibold uppercase tracking-[0.16em] text-ink-700">Keywords</p>
-                  <p class="text-xs text-ink-800">{spell.keywords?.trim()}</p>
+                  <p class="text-xs text-ink-800">{getVisibleSpellKeywords(spell.keywords).join(', ')}</p>
                 </div>
               )}
 
@@ -109,7 +159,7 @@ export async function getStaticPaths() {
     </div>
   </div>
 
-  {spells.map((spell, index) => <SpellDetailsDialog spell={spell} modalId={getSpellModalId(spell, index)} />)}
+  {!unavailableMessage && spells.map((spell, index) => <SpellDetailsDialog spell={spell} modalId={getSpellModalId(spell, index)} />)}
 
   <script>
     document.addEventListener('keydown', (e) => {
