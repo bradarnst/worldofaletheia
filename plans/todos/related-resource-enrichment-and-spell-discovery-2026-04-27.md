@@ -59,9 +59,9 @@ The preferred long-term model is:
    - Astro pages render promoted/related resources by reading the derived mapping
    - page rendering stays cheap and deterministic
 
-4. **Later D1 integration for highest-value resources**
-   - for maximum flexibility, move spells into a dedicated D1 table and include them in the search/discovery model
-   - this is the best long-term path if Sorcerer Spells should participate in full-text search, richer filtering, ranking, or analytics-driven promotion
+4. **Later search/discovery integration for highest-value resources**
+   - for maximum flexibility, Sorcerer Spells may eventually participate in richer search/discovery infrastructure through an approved API or data artifact boundary
+   - richer spell FTS, spell CRUD, and spell-admin ownership are expected to live outside this repo per ADR-0021, while this site remains responsible for consuming and rendering the resulting public discovery surfaces
 
 ## Why not solve this with manual frontmatter alone
 
@@ -113,16 +113,16 @@ Possible trigger models:
 - source etag / last-modified tracking
 - sync-time changed-file list
 
-### Phase 3 — D1-backed spell discovery/search integration
+### Phase 3 — External spell search/discovery integration
 
-For best long-term value and flexibility, include spells in D1-backed discovery/search infrastructure.
+For best long-term value and flexibility, include spells in richer discovery/search infrastructure through an external spell authority and a public consumption boundary.
 
 That should enable:
 
-- title/metadata search over spell rows
-- later FTS participation for spell descriptions/statistics
+- title/metadata search over spell rows or API-backed equivalents
+- later FTS participation for spell descriptions/statistics through an external search-capable source
 - tighter integration with promoted-resource logic and future analytics
-- stronger parity with ADR-0011's D1-first discovery/search direction
+- stronger parity with ADR-0011's discovery/search direction without moving spell admin authority into this repo
 
 ## Constraints
 
@@ -130,12 +130,17 @@ That should enable:
 - Keep homepage story-first constraints from ADR-0002 intact.
 - Prefer static/build-friendly rendering even if enrichment happens in a new pre-build or between-build-and-deploy phase.
 - Avoid speculative service/adapter abstractions unless concrete duplication or external-boundary triggers emerge.
-- Treat D1 as the preferred long-term home for search/discovery participation, especially once spells should join FTS.
+- Keep related-resource enrichment owned in this repo even if spell CRUD/search authority lives elsewhere.
+- Treat spell admin, CRUD, and richer spell FTS as external-project concerns unless a later ADR changes that boundary.
 
 ## Success criteria
 
 - High-utility resources can be surfaced without manually editing large numbers of articles.
 - The system can avoid whole-site re-analysis on every routine build.
 - Resource route changes are centralized in a registry or equivalent single source of truth.
-- The Sorcerer Spells resource can eventually participate in D1-backed search/discovery with a clean migration path.
+- The Sorcerer Spells resource can eventually participate in richer search/discovery with a clean public-site consumption path.
 - Early UI/UX can still be tested cheaply with manual linking before the larger enrichment pipeline is built.
+
+## Links
+
+- `plans/adrs/0021-external-admin-capability-boundary.md`

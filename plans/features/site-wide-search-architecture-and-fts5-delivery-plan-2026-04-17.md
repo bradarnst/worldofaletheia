@@ -6,6 +6,16 @@
 - Status: Active implementation plan
 - Required phase order: `S1 -> S3 -> S2`
 
+## Current status note
+
+This plan remains the architecture reference, but its execution status has drifted.
+
+- S1 appears implemented or very close to implemented: auth-aware scope handling and scope metadata are present in current search code.
+- S3 appears implemented or very close to implemented: FTS migration and FTS-backed query path exist in the repo.
+- S2 remains the clearest pending slice: relevance, snippets/highlighting, empty-state refinement, and result-presentation tuning.
+
+Until a fresh verification pass says otherwise, treat this plan as effectively in the `S2 pending` state rather than as a fully untouched `S1 -> S3 -> S2` roadmap.
+
 ## Goal
 
 Deliver site-wide search on the canonical D1 content index, ending in mandatory D1 FTS5 body-text search while preserving fail-closed campaign visibility rules.

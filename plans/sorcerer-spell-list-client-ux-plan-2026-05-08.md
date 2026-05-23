@@ -7,6 +7,12 @@
 - Scope: public-repo implementation plan for client-side Sorcerer spell-list UX in this repository only
 - Audience: implementation agent and future maintainers
 
+## Current state note
+
+The API-backed spell read/query foundation has already started in this repo through the public spell adapter and current spell pages.
+
+This plan therefore remains focused on the still-pending visitor-side spell-list UX layer on top of that read path, not on canonical spell-data ownership, privileged spell CRUD, or richer spell-search administration.
+
 ## Purpose
 
 This plan covers the Sorcerer Spells client-side spell-list feature work that will happen in this repository.
@@ -18,13 +24,14 @@ The feature is intentionally bounded to public-site consumption and visitor-side
 - support add/remove actions from spell views
 - provide a print-friendly spell-list page
 
-This plan does not cover private admin authoring or canonical spell-data management. That work belongs in the separate private admin repository.
+This plan does not cover private admin authoring or canonical spell-data management. That work belongs in the separate private admin repository and related external spell-authority surfaces, consistent with ADR-0021.
 
 ## Scope
 
 In scope:
 
 - consuming exported spell data records that include stable `spell_id`
+- consuming the existing public spell read/query path already present in this repo
 - localStorage-backed temporary spell-list state in the browser
 - add/remove actions from spell detail or spell-listing views
 - a print-friendly spell-list route/page
@@ -35,7 +42,7 @@ Out of scope:
 
 - breadcrumbs
 - D1-backed persistence
-- search implementation work beyond any minimal existing spell browsing surface needs
+- richer spell FTS or external spell-search implementation work
 - cross-device sync
 - account-linked saved spell lists
 - multiple named spell lists
@@ -55,7 +62,7 @@ D1/search/persistent saved spell lists are explicitly deferred and should not be
 
 This feature should align with the repo’s existing direction:
 
-- build-time data consumption for spell content where possible
+- public-site consumption of approved spell APIs or exports
 - bounded client-side enhancement only where local visitor state is required
 - no new generalized service/adapter layer for a single feature slice
 
@@ -99,7 +106,7 @@ Do not overexplain. This is a convenience feature, not an account-backed library
 
 Recommended implementation elements in this repo:
 
-- exported spell dataset consumption in the relevant spell pages/routes
+- the existing public spell read/query path in the relevant spell pages/routes
 - a small vanilla TypeScript client module responsible for:
   - reading/writing the localStorage key
   - toggling `spell_id` membership
@@ -224,7 +231,7 @@ Minimum verification:
 
 - no breadcrumb restoration work in this slice
 - no D1-backed server persistence
-- no search/discovery overhaul as part of this feature
+- no richer spell-search/FTS delivery as part of this feature
 - no account-backed saved spell libraries
 - no named list management
 - no admin editing capability in this repo
