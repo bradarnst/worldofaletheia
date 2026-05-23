@@ -1,7 +1,9 @@
 ---
 import { isPublicSpellApiError, listSpells, listSpellTypes } from '@adapters/public-spell-api';
+import SpellSearchForm from '@components/spells/SpellSearchForm.astro';
+import { SOURCE_SPELL_TYPE_FILTER_OPTIONS } from '@data/spells/source-spell-type-filter-options';
 import Layout from '@layouts/GurpsLayout.astro';
-import { slugifySpellType } from '@utils/spell-browser';
+import { getSpellListPageHref } from '@utils/spell-browser';
 
 const title = 'Sorcerer Spells - GURPS - World of Aletheia';
 const description = 'Comprehensive reference for sorcerer spells in the World of Aletheia.';
@@ -9,6 +11,14 @@ const description = 'Comprehensive reference for sorcerer spells in the World of
 let spellTypes: string[] = [];
 let totalSpells = 0;
 let unavailableMessage: string | null = null;
+
+const emptyFilters = {
+  q: '',
+  name: '',
+  type: '',
+  sourceName: '',
+  sourceType: '',
+};
 
 try {
   // TODO: We only need the total spell count here, but the contract has no
@@ -66,26 +76,32 @@ try {
     ) : (
       <>
         <section class="ui-surface ui-surface--glass mb-8 p-6">
-          <h2 class="mb-4 text-2xl font-semibold text-ink-950">Browse Spells</h2>
-          <div class="flex flex-wrap gap-3">
-            <a href="/systems/gurps/resources/sorcerer-spells/all" class="ui-button ui-button--primary">All Spells (Alphabetical)</a>
-          </div>
+          <h2 class="mb-4 text-2xl font-semibold text-ink-950">Find Spells</h2>
+          <p class="mb-5 text-ink-800">Search by text, spell name prefix, spell type, or source lineage without leaving the server-rendered spell browser.</p>
+          <SpellSearchForm filters={emptyFilters} spellTypes={spellTypes} sourceSpellTypes={SOURCE_SPELL_TYPE_FILTER_OPTIONS} clearHref={getSpellListPageHref(1)} />
         </section>
 
         <section class="ui-surface ui-surface--glass mb-8 p-6">
-          <h2 class="mb-4 text-2xl font-semibold text-ink-950">Spell Types</h2>
-          <p class="mb-6 text-ink-800">Browse spells organized by type. There are {spellTypes.length} spell types available.</p>
-
-          <div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-            {spellTypes.map((spellType) => {
-              const slug = slugifySpellType(spellType);
-              return (
-                <a href={`/systems/gurps/resources/sorcerer-spells/${slug}`} class="ui-button ui-button--secondary justify-start">
-                  {spellType}
-                </a>
-              );
-            })}
+          <div class="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h2 class="mb-2 text-2xl font-semibold text-ink-950">Browse by type</h2>
+              <p class="text-ink-800">There are {spellTypes.length} spell types available. Type chips now open the unified filtered results view.</p>
+            </div>
+            <a href={getSpellListPageHref(1)} class="ui-button ui-button--primary">All Spells (Alphabetical)</a>
           </div>
+
+          <details class="mt-6 rounded-[1.25rem] border border-base-300 bg-base-100/70 p-4">
+            <summary class="cursor-pointer text-sm font-semibold uppercase tracking-[0.16em] text-ink-700">Open spell type list</summary>
+            <div class="mt-4 flex flex-wrap gap-2">
+              {spellTypes.map((spellType) => {
+                return (
+                  <a href={getSpellListPageHref(1, { type: spellType })} class="ui-button ui-button--secondary ui-button--sm">
+                    {spellType}
+                  </a>
+                );
+              })}
+            </div>
+          </details>
         </section>
       </>
     )}

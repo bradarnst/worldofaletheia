@@ -46,6 +46,7 @@ export interface PublicSpellPage {
   pageSize: number;
   totalPages: number;
   q: string;
+  name: string;
   type: string;
   sourceName: string;
   sourceType: string;
@@ -60,6 +61,7 @@ export interface ListSpellsParams {
   page?: number;
   pageSize?: number;
   q?: string;
+  name?: string;
   type?: string;
   sourceName?: string;
   sourceType?: string;
@@ -229,6 +231,7 @@ export async function listSpells(params: ListSpellsParams = {}): Promise<PublicS
       page: params.page,
       pageSize: params.pageSize,
       q: params.q,
+      name: params.name,
       type: params.type,
       sourceName: params.sourceName,
       sourceType: params.sourceType,

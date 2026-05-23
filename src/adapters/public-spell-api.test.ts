@@ -41,6 +41,7 @@ describe('public-spell-api adapter', () => {
       pageSize: 100,
       totalPages: 0,
       q: 'Abs',
+      name: 'Abs',
       type: 'Air Spells',
       sourceName: 'Absorb',
       sourceType: 'Air Spells',
@@ -51,6 +52,7 @@ describe('public-spell-api adapter', () => {
       page: 2,
       pageSize: 100,
       q: 'Abs',
+      name: 'Abs',
       type: 'Air Spells',
       sourceName: 'Absorb',
       sourceType: 'Air Spells',
@@ -58,7 +60,7 @@ describe('public-spell-api adapter', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0][0]).toEqual(
-      new URL('https://worldofaletheia.com/api/v1/spells?page=2&pageSize=100&q=Abs&type=Air+Spells&sourceName=Absorb&sourceType=Air+Spells'),
+      new URL('https://worldofaletheia.com/api/v1/spells?page=2&pageSize=100&q=Abs&name=Abs&type=Air+Spells&sourceName=Absorb&sourceType=Air+Spells'),
     );
   });
 

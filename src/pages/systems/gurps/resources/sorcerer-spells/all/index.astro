@@ -1,14 +1,23 @@
 ---
-import { isPublicSpellApiError, listSpells } from '@adapters/public-spell-api';
+import { isPublicSpellApiError, listSpells, listSpellTypes } from '@adapters/public-spell-api';
 import Layout from '@layouts/GurpsLayout.astro';
 import SpellAlphabeticalIndex from '@components/spells/SpellAlphabeticalIndex.astro';
-import { SPELLS_PAGE_SIZE, createEmptySpellPage } from '@utils/spell-browser';
+import SpellSearchForm from '@components/spells/SpellSearchForm.astro';
+import { SOURCE_SPELL_TYPE_FILTER_OPTIONS } from '@data/spells/source-spell-type-filter-options';
+import {
+  SPELLS_PAGE_SIZE,
+  createEmptySpellPage,
+  getSpellSearchFilters,
+  hasSpellSearchFilters,
+} from '@utils/spell-browser';
 
+const filters = getSpellSearchFilters(Astro.url.searchParams);
 let paginatedSpells = createEmptySpellPage(1, SPELLS_PAGE_SIZE);
+let spellTypes: string[] = [];
 let unavailableMessage: string | null = null;
 
 try {
-  paginatedSpells = await listSpells({ page: 1, pageSize: SPELLS_PAGE_SIZE });
+  paginatedSpells = await listSpells({ page: 1, pageSize: SPELLS_PAGE_SIZE, ...filters });
 } catch (error) {
   if (!isPublicSpellApiError(error)) {
     throw error;
@@ -22,24 +31,49 @@ try {
   unavailableMessage = error.message;
 }
 
-const title = 'All Spells (Alphabetical) - Sorcerer Spells - GURPS - World of Aletheia';
-const description = `Alphabetical index page ${paginatedSpells.page} of ${paginatedSpells.totalPages} for ${paginatedSpells.total} sorcerer spells.`;
+if (!unavailableMessage) {
+  try {
+    spellTypes = await listSpellTypes();
+  } catch (error) {
+    if (!isPublicSpellApiError(error)) {
+      throw error;
+    }
+  }
+}
+
+const hasFilters = hasSpellSearchFilters(filters);
+const hasFullTextSearch = filters.q !== '';
+const pageLabel = paginatedSpells.page > 1 ? ` - Page ${paginatedSpells.page}` : '';
+const titlePrefix = hasFilters ? 'Search Spells' : 'All Spells (Alphabetical)';
+const title = `${titlePrefix}${pageLabel} - Sorcerer Spells - GURPS - World of Aletheia`;
+const description = hasFullTextSearch
+  ? `Full-text spell search page ${paginatedSpells.page} of ${paginatedSpells.totalPages} for ${paginatedSpells.total} matching sorcerer spells.`
+  : hasFilters
+    ? `Filtered spell browser page ${paginatedSpells.page} of ${paginatedSpells.totalPages} for ${paginatedSpells.total} sorcerer spells.`
+    : `Alphabetical index page ${paginatedSpells.page} of ${paginatedSpells.totalPages} for ${paginatedSpells.total} sorcerer spells.`;
 ---
 
 <Layout title={title} description={description}>
-  <h1 class="mb-6 text-5xl font-bold text-ink-950 drop-shadow-lg lg:text-6xl">All Spells (Alphabetical)</h1>
+  <h1 class="mb-6 text-5xl font-bold text-ink-950 drop-shadow-lg lg:text-6xl">{titlePrefix}</h1>
   {unavailableMessage ? (
     <section class="ui-surface ui-surface--glass p-6">
       <h2 class="mb-3 text-2xl font-semibold text-ink-950">Spell Catalog Unavailable</h2>
       <p class="text-ink-800">{unavailableMessage}</p>
     </section>
   ) : (
-    <SpellAlphabeticalIndex
-      spells={paginatedSpells.items}
-      currentPage={paginatedSpells.page}
-      pageSize={paginatedSpells.pageSize}
-      totalPages={paginatedSpells.totalPages}
-      totalSpells={paginatedSpells.total}
-    />
+    <>
+      <section class="ui-surface ui-surface--glass mb-8 p-6">
+        <SpellSearchForm filters={filters} spellTypes={spellTypes} sourceSpellTypes={SOURCE_SPELL_TYPE_FILTER_OPTIONS} />
+      </section>
+
+      <SpellAlphabeticalIndex
+        spells={paginatedSpells.items}
+        currentPage={paginatedSpells.page}
+        pageSize={paginatedSpells.pageSize}
+        totalPages={paginatedSpells.totalPages}
+        totalSpells={paginatedSpells.total}
+        filters={filters}
+      />
+    </>
   )}
 </Layout>

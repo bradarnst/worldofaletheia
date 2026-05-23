@@ -1,0 +1,97 @@
+---
+import type { SpellSearchFilters } from '@utils/spell-browser';
+
+interface Props {
+  filters: SpellSearchFilters;
+  spellTypes: string[];
+  sourceSpellTypes: string[];
+  compact?: boolean;
+  clearHref?: string;
+}
+
+const {
+  filters,
+  spellTypes,
+  sourceSpellTypes,
+  compact = false,
+  clearHref = '/systems/gurps/resources/sorcerer-spells/all',
+} = Astro.props;
+
+const hasSourceFilters = filters.sourceName !== '' || filters.sourceType !== '';
+---
+
+<form method="get" action="/systems/gurps/resources/sorcerer-spells/all" class:list={[
+  'grid gap-4',
+  compact ? 'xl:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)_minmax(0,1fr)_auto]' : 'xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_auto]',
+  'xl:items-end',
+]}>
+  <label class="ui-field">
+    <span class="ui-field-label">Search spell text</span>
+    <input
+      name="q"
+      type="search"
+      value={filters.q}
+      placeholder="Name, description, or counsel"
+      class="ui-field-control"
+    />
+    <span class="mt-2 text-xs text-ink-700">Searches spell name, description, and Archmagister&apos;s Counsel.</span>
+  </label>
+
+  <label class="ui-field">
+    <span class="ui-field-label">Spell name starts with</span>
+    <input
+      name="name"
+      type="search"
+      value={filters.name}
+      placeholder="Abs"
+      class="ui-field-control"
+    />
+  </label>
+
+  <label class="ui-field">
+    <span class="ui-field-label">Spell type</span>
+    <select name="type" class="ui-field-control">
+      <option value="">Any spell type</option>
+      {spellTypes.map((spellType) => (
+        <option value={spellType} selected={filters.type === spellType}>{spellType}</option>
+      ))}
+    </select>
+  </label>
+
+  <div class="flex flex-wrap items-end gap-2 xl:justify-end">
+    <button type="submit" class="ui-button ui-button--primary">Search Spells</button>
+    <a href={clearHref} class="ui-button ui-button--secondary">Clear Filters</a>
+  </div>
+
+  <details class="ui-surface bg-base-100/65 text-sm text-ink-700 xl:col-span-full" open={hasSourceFilters}>
+    <summary class="cursor-pointer list-none font-semibold text-ink-950 marker:hidden">
+      <span class="inline-flex items-center gap-2">
+        <span>Source filters</span>
+        <span class="text-xs font-normal text-ink-700">Source lineage uses its own source spell type facet.</span>
+      </span>
+    </summary>
+
+    <div class="mt-4 grid gap-4 md:grid-cols-2">
+      <label class="ui-field">
+        <span class="ui-field-label">Source spell starts with</span>
+        <input
+          name="sourceName"
+          type="search"
+          value={filters.sourceName}
+          placeholder="Absorb"
+          class="ui-field-control"
+        />
+      </label>
+
+      <label class="ui-field">
+        <span class="ui-field-label">Source spell type</span>
+        <select name="sourceType" class="ui-field-control">
+          <option value="">Any source type</option>
+          {sourceSpellTypes.map((sourceSpellType) => (
+            <option value={sourceSpellType} selected={filters.sourceType === sourceSpellType}>{sourceSpellType}</option>
+          ))}
+        </select>
+      </label>
+    </div>
+  </details>
+</form>

@@ -2,7 +2,12 @@
 import type { PublicSpell } from '@adapters/public-spell-api';
 import SpellDetailsDialog from '@components/spells/SpellDetailsDialog.astro';
 import SpellPaginationNav from '@components/spells/SpellPaginationNav.astro';
-import { getSpellModalId } from '@utils/spell-browser';
+import {
+  getSpellListPageHref,
+  getSpellModalId,
+  hasSpellSearchFilters,
+  type SpellSearchFilters,
+} from '@utils/spell-browser';
 
 interface Props {
   spells: PublicSpell[];
@@ -10,53 +15,75 @@ interface Props {
   pageSize: number;
   totalPages: number;
   totalSpells: number;
+  filters: SpellSearchFilters;
 }
 
-const { spells, currentPage, pageSize, totalPages, totalSpells } = Astro.props;
+const { spells, currentPage, pageSize, totalPages, totalSpells, filters } = Astro.props;
 
 const startSpellNumber = totalSpells === 0 ? 0 : (currentPage - 1) * pageSize + 1;
 const endSpellNumber = totalSpells === 0 ? 0 : startSpellNumber + spells.length - 1;
+const hasFilters = hasSpellSearchFilters(filters);
+const hasFullTextSearch = filters.q !== '';
+
+let resultSummary = `Showing ${startSpellNumber}-${endSpellNumber} of ${totalSpells} sorcerer spells in alphabetical order.`;
+
+if (hasFullTextSearch) {
+  resultSummary = `Showing ${startSpellNumber}-${endSpellNumber} of ${totalSpells} matching sorcerer spells.`;
+} else if (hasFilters) {
+  resultSummary = `Showing ${startSpellNumber}-${endSpellNumber} of ${totalSpells} filtered sorcerer spells.`;
+}
 ---
 
-<p class="mb-6 text-lg text-ink-800 drop-shadow-md">
-  Showing {startSpellNumber}-{endSpellNumber} of {totalSpells} sorcerer spells in alphabetical order.
-</p>
-
-<SpellPaginationNav currentPage={currentPage} totalPages={totalPages} />
-
-<div class="ui-surface ui-surface--glass mb-8 overflow-hidden">
-  <div class="overflow-x-auto p-5">
-    <table class="min-w-full border-separate border-spacing-y-2 text-left">
-      <thead>
-        <tr class="text-sm uppercase tracking-[0.16em] text-ink-700">
-          <th class="px-3 py-2">Spell Name</th>
-          <th class="px-3 py-2">Type</th>
-          <th class="px-3 py-2">Cost</th>
-          <th class="px-3 py-2">Details</th>
-        </tr>
-      </thead>
-      <tbody>
-        {spells.map((spell, index) => {
-          const modalId = getSpellModalId(spell, index);
-          return (
-            <tr class="rounded-xl bg-base-100 shadow-sm">
-              <td class="rounded-l-xl px-3 py-3 font-semibold text-ink-950">{spell.spell_name}</td>
-              <td class="px-3 py-3 text-sm text-ink-700">{spell.spell_types.join(', ')}</td>
-              <td class="px-3 py-3 text-sm text-ink-700">{spell.full_cost}</td>
-              <td class="rounded-r-xl px-3 py-3 text-sm">
-                <button class="ui-button ui-button--primary ui-button--sm" onclick={`document.getElementById('${modalId}')?.showModal()`}>
-                  Details
-                </button>
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
-  </div>
+<div class="mb-6 space-y-2 text-ink-800 drop-shadow-md">
+  <p class="text-lg">{resultSummary}</p>
+  {hasFullTextSearch && <p class="text-sm text-ink-700">Full-text matches are ordered by API relevance.</p>}
 </div>
 
-<SpellPaginationNav currentPage={currentPage} totalPages={totalPages} />
+<SpellPaginationNav currentPage={currentPage} totalPages={totalPages} filters={filters} />
+
+{spells.length > 0 ? (
+  <div class="ui-surface ui-surface--glass mb-8 overflow-hidden">
+    <div class="overflow-x-auto p-5">
+      <table class="min-w-full border-separate border-spacing-y-2 text-left">
+        <thead>
+          <tr class="text-sm uppercase tracking-[0.16em] text-ink-700">
+            <th class="px-3 py-2">Spell Name</th>
+            <th class="px-3 py-2">Type</th>
+            <th class="px-3 py-2">Cost</th>
+            <th class="px-3 py-2">Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          {spells.map((spell, index) => {
+            const modalId = getSpellModalId(spell, index);
+            return (
+              <tr class="rounded-xl bg-base-100 shadow-sm">
+                <td class="rounded-l-xl px-3 py-3 font-semibold text-ink-950">{spell.spell_name}</td>
+                <td class="px-3 py-3 text-sm text-ink-700">{spell.spell_types.join(', ')}</td>
+                <td class="px-3 py-3 text-sm text-ink-700">{spell.full_cost}</td>
+                <td class="rounded-r-xl px-3 py-3 text-sm">
+                  <button class="ui-button ui-button--primary ui-button--sm" onclick={`document.getElementById('${modalId}')?.showModal()`}>
+                    Details
+                  </button>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  </div>
+) : (
+  <div class="ui-surface ui-surface--glass mb-8 rounded-[1.5rem] border border-dashed border-base-300 p-8 text-center">
+    <p class="text-lg font-semibold text-ink-950">No sorcerer spells matched the current filters.</p>
+    <p class="mt-2 text-ink-700">Try a broader search or clear the current filters.</p>
+    <div class="mt-4 flex justify-center">
+      <a href={getSpellListPageHref(1)} class="ui-button ui-button--secondary">Clear Filters</a>
+    </div>
+  </div>
+)}
+
+<SpellPaginationNav currentPage={currentPage} totalPages={totalPages} filters={filters} />
 
 <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
   <a href="/systems/gurps/resources/sorcerer-spells" class="group flex h-full flex-col rounded-[1.5rem] border border-base-300/80 bg-base-100/92 p-5 shadow-sm backdrop-blur-sm transition duration-200 hover:border-primary/35 hover:shadow-lg">

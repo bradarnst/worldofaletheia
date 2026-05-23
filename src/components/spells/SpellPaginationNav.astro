@@ -1,12 +1,14 @@
 ---
+import type { SpellSearchFilters } from '@utils/spell-browser';
 import { getSpellListPageHref } from '@utils/spell-browser';
 
 interface Props {
   currentPage: number;
   totalPages: number;
+  filters: SpellSearchFilters;
 }
 
-const { currentPage, totalPages } = Astro.props;
+const { currentPage, totalPages, filters } = Astro.props;
 
 const pageLinks = [] as number[];
 const windowStart = Math.max(1, currentPage - 2);
@@ -23,14 +25,14 @@ const showTrailingEllipsis = pageLinks.length > 0 && pageLinks[pageLinks.length 
 {totalPages > 1 && (
   <nav class="mb-6 flex flex-wrap items-center gap-2" aria-label="Spell list pagination">
     <a
-      href={getSpellListPageHref(Math.max(1, currentPage - 1))}
+      href={getSpellListPageHref(Math.max(1, currentPage - 1), filters)}
       class:list={['ui-button ui-button--secondary ui-button--sm', currentPage <= 1 && 'pointer-events-none opacity-50']}
       aria-disabled={currentPage <= 1}
     >
       Previous
     </a>
 
-    <a href={getSpellListPageHref(1)} class:list={['ui-button ui-button--sm', currentPage === 1 ? 'ui-button--primary' : 'ui-button--secondary']}>
+    <a href={getSpellListPageHref(1, filters)} class:list={['ui-button ui-button--sm', currentPage === 1 ? 'ui-button--primary' : 'ui-button--secondary']}>
       1
     </a>
 
@@ -39,7 +41,7 @@ const showTrailingEllipsis = pageLinks.length > 0 && pageLinks[pageLinks.length 
     {pageLinks
       .filter((page) => page !== 1 && page !== totalPages)
       .map((page) => (
-        <a href={getSpellListPageHref(page)} class:list={['ui-button ui-button--sm', page === currentPage ? 'ui-button--primary' : 'ui-button--secondary']}>
+        <a href={getSpellListPageHref(page, filters)} class:list={['ui-button ui-button--sm', page === currentPage ? 'ui-button--primary' : 'ui-button--secondary']}>
           {page}
         </a>
       ))}
@@ -47,13 +49,13 @@ const showTrailingEllipsis = pageLinks.length > 0 && pageLinks[pageLinks.length 
     {showTrailingEllipsis && <span class="px-1 text-sm text-ink-700">…</span>}
 
     {totalPages > 1 && (
-      <a href={getSpellListPageHref(totalPages)} class:list={['ui-button ui-button--sm', currentPage === totalPages ? 'ui-button--primary' : 'ui-button--secondary']}>
+      <a href={getSpellListPageHref(totalPages, filters)} class:list={['ui-button ui-button--sm', currentPage === totalPages ? 'ui-button--primary' : 'ui-button--secondary']}>
         {totalPages}
       </a>
     )}
 
     <a
-      href={getSpellListPageHref(Math.min(totalPages, currentPage + 1))}
+      href={getSpellListPageHref(Math.min(totalPages, currentPage + 1), filters)}
       class:list={['ui-button ui-button--secondary ui-button--sm', currentPage >= totalPages && 'pointer-events-none opacity-50']}
       aria-disabled={currentPage >= totalPages}
     >
