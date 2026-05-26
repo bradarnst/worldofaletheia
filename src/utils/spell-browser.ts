@@ -48,6 +48,10 @@ export function formatSpellField(value: string | undefined): string {
   return normalizedValue ? normalizedValue : '—';
 }
 
+export function sortSpellTypeLabels(labels: readonly string[]): string[] {
+  return [...labels].sort((first, second) => first.localeCompare(second, undefined, { sensitivity: 'base' }));
+}
+
 export function getSpellSearchFilters(searchParams: URLSearchParams): SpellSearchFilters {
   return {
     q: searchParams.get('q')?.trim() ?? '',

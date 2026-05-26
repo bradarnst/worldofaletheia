@@ -20,21 +20,28 @@ const {
 const hasSourceFilters = filters.sourceName !== '' || filters.sourceType !== '';
 ---
 
-<form method="get" action="/systems/gurps/resources/sorcerer-spells/all" class:list={[
+<form method="get" action="/systems/gurps/resources/sorcerer-spells/all" autocomplete="off" class:list={[
   'grid gap-4',
   compact ? 'xl:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)_minmax(0,1fr)_auto]' : 'xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_auto]',
   'xl:items-end',
 ]}>
   <label class="ui-field">
-    <span class="ui-field-label">Search spell text</span>
+    <span class="ui-field-label inline-flex items-center gap-2">
+      <span>Search spell text</span>
+      <span
+        class="cursor-help rounded-full border border-base-300 px-1.5 text-[0.65rem] font-bold normal-case tracking-normal text-ink-700"
+        title="Searches spell name, description, and Archmagister&apos;s Counsel."
+        aria-label="Searches spell name, description, and Archmagister&apos;s Counsel."
+      >?</span>
+    </span>
     <input
       name="q"
       type="search"
       value={filters.q}
       placeholder="Name, description, or counsel"
       class="ui-field-control"
+      autocomplete="off"
     />
-    <span class="mt-2 text-xs text-ink-700">Searches spell name, description, and Archmagister&apos;s Counsel.</span>
   </label>
 
   <label class="ui-field">
@@ -45,6 +52,7 @@ const hasSourceFilters = filters.sourceName !== '' || filters.sourceType !== '';
       value={filters.name}
       placeholder="Abs"
       class="ui-field-control"
+      autocomplete="off"
     />
   </label>
 
@@ -80,6 +88,7 @@ const hasSourceFilters = filters.sourceName !== '' || filters.sourceType !== '';
           value={filters.sourceName}
           placeholder="Absorb"
           class="ui-field-control"
+          autocomplete="off"
         />
       </label>
 

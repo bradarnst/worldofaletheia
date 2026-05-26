@@ -2,7 +2,7 @@
 import { isPublicSpellApiError, listSourceSpellTypes, listSpells, listSpellTypes } from '@adapters/public-spell-api';
 import SpellSearchForm from '@components/spells/SpellSearchForm.astro';
 import Layout from '@layouts/GurpsLayout.astro';
-import { getSpellListPageHref } from '@utils/spell-browser';
+import { getSpellListPageHref, sortSpellTypeLabels } from '@utils/spell-browser';
 
 const title = 'Sorcerer Spells - GURPS - World of Aletheia';
 const description = 'Comprehensive reference for sorcerer spells in the World of Aletheia.';
@@ -30,7 +30,7 @@ try {
     listSpells({ page: 1, pageSize: 1 }),
   ]);
 
-  spellTypes = resolvedSpellTypes;
+  spellTypes = sortSpellTypeLabels(resolvedSpellTypes);
   totalSpells = firstSpellPage.total;
 } catch (error) {
   if (!isPublicSpellApiError(error)) {
@@ -47,7 +47,7 @@ try {
 
 if (!unavailableMessage) {
   try {
-    sourceSpellTypes = await listSourceSpellTypes();
+    sourceSpellTypes = sortSpellTypeLabels(await listSourceSpellTypes());
   } catch (error) {
     if (!isPublicSpellApiError(error)) {
       throw error;

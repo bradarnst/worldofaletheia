@@ -8,6 +8,7 @@ import {
   createEmptySpellPage,
   getSpellSearchFilters,
   hasSpellSearchFilters,
+  sortSpellTypeLabels,
 } from '@utils/spell-browser';
 
 const filters = getSpellSearchFilters(Astro.url.searchParams);
@@ -33,7 +34,9 @@ try {
 
 if (!unavailableMessage) {
   try {
-    [spellTypes, sourceSpellTypes] = await Promise.all([listSpellTypes(), listSourceSpellTypes()]);
+    const [resolvedSpellTypes, resolvedSourceSpellTypes] = await Promise.all([listSpellTypes(), listSourceSpellTypes()]);
+    spellTypes = sortSpellTypeLabels(resolvedSpellTypes);
+    sourceSpellTypes = sortSpellTypeLabels(resolvedSourceSpellTypes);
   } catch (error) {
     if (!isPublicSpellApiError(error)) {
       throw error;
