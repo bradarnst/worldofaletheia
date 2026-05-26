@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
-import { isPublicSpellApiError, listSpellTypes, listSpells } from '@adapters/public-spell-api';
-import { SPELLS_PAGE_SIZE, getSpellListPageHref, slugifySpellType } from '@utils/spell-browser';
+import { isPublicSpellApiError, listSpells } from '@adapters/public-spell-api';
+import { SPELLS_PAGE_SIZE, getSpellListPageHref } from '@utils/spell-browser';
 import { getAllCampaignFamilyEntries, type CampaignFamilyEntry } from '@utils/campaign-content';
 import {
   extractCampaignFamilySlugFromEntryId,
@@ -116,14 +116,9 @@ export const GET: APIRoute = async ({ request }) => {
   // sitemap offline — that would degrade SEO for all the lore/places/sessions/
   // campaign content too. On failure we log and emit the sitemap without
   // spell paths; the next regeneration will pick them back up.
-  let spellTypes: string[] = [];
   let spellListPageCount = 1;
   try {
-    const [resolvedSpellTypes, spellFirstPage] = await Promise.all([
-      listSpellTypes(),
-      listSpells({ page: 1, pageSize: SPELLS_PAGE_SIZE }),
-    ]);
-    spellTypes = resolvedSpellTypes;
+    const spellFirstPage = await listSpells({ page: 1, pageSize: SPELLS_PAGE_SIZE });
     spellListPageCount = Math.max(1, spellFirstPage.totalPages);
   } catch (error) {
     if (!isPublicSpellApiError(error)) {
@@ -138,7 +133,6 @@ export const GET: APIRoute = async ({ request }) => {
     '/systems/gurps/resources/sorcerer-spells',
     '/systems/gurps/resources/sorcerer-spells/all',
     ...Array.from({ length: Math.max(0, spellListPageCount - 1) }, (_, index) => getSpellListPageHref(index + 2)),
-    ...spellTypes.map((spellType) => `/systems/gurps/resources/sorcerer-spells/${slugifySpellType(spellType)}`),
   ];
 
   const staticPaths = [

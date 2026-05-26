@@ -57,6 +57,8 @@ export interface PublicSpellErrorResponse {
   message: string;
 }
 
+type PayloadGuard<T> = (value: unknown) => value is T;
+
 export interface ListSpellsParams {
   page?: number;
   pageSize?: number;
@@ -78,6 +80,7 @@ export interface SuggestSpellsParams {
 interface FetchPublicSpellApiOptions {
   path: string;
   query?: Record<string, string | number | undefined>;
+  validate?: PayloadGuard<unknown>;
 }
 
 export class PublicSpellApiError extends Error {
@@ -133,6 +136,85 @@ function isErrorResponse(value: unknown): value is PublicSpellErrorResponse {
   return typeof candidate.error === 'string' && typeof candidate.message === 'string';
 }
 
+function isString(value: unknown): value is string {
+  return typeof value === 'string';
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every(isString);
+}
+
+function isPublicSpellSourceLineage(value: unknown): value is PublicSpellSourceLineage {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const candidate = value as Record<string, unknown>;
+  return isString(candidate.source_spell_name) && isStringArray(candidate.source_spell_types);
+}
+
+function isPublicSpell(value: unknown): value is PublicSpell {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const candidate = value as Record<string, unknown>;
+  return isString(candidate.spell_id)
+    && isString(candidate.spell_name)
+    && isStringArray(candidate.spell_types)
+    && isStringArray(candidate.keywords)
+    && isString(candidate.archmagisters_counsel)
+    && isPublicSpellSourceLineage(candidate.source_lineage)
+    && isString(candidate.full_cost)
+    && isString(candidate.casting_roll)
+    && isString(candidate.range)
+    && isString(candidate.duration)
+    && isString(candidate.description)
+    && isString(candidate.statistics);
+}
+
+function isPublicSpellSuggestion(value: unknown): value is PublicSpellSuggestion {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const candidate = value as Record<string, unknown>;
+  return isString(candidate.spell_id)
+    && isString(candidate.spell_name)
+    && isStringArray(candidate.spell_types);
+}
+
+function isPublicSpellPage(value: unknown): value is PublicSpellPage {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const candidate = value as Record<string, unknown>;
+  return Array.isArray(candidate.items)
+    && candidate.items.every(isPublicSpell)
+    && isFiniteNumber(candidate.total)
+    && isFiniteNumber(candidate.page)
+    && isFiniteNumber(candidate.pageSize)
+    && isFiniteNumber(candidate.totalPages)
+    && isString(candidate.q)
+    && isString(candidate.name)
+    && isString(candidate.type)
+    && isString(candidate.sourceName)
+    && isString(candidate.sourceType);
+}
+
+function isPublicSpellTypeList(value: unknown): value is string[] {
+  return isStringArray(value);
+}
+
+function isPublicSpellSuggestionList(value: unknown): value is PublicSpellSuggestion[] {
+  return Array.isArray(value) && value.every(isPublicSpellSuggestion);
+}
+
 function isJsonContentType(contentType: string | null): boolean {
   if (!contentType) {
     return false;
@@ -177,7 +259,7 @@ async function parseResponseJson(response: Response): Promise<unknown> {
   }
 }
 
-async function fetchPublicSpellApi<T>({ path, query }: FetchPublicSpellApiOptions): Promise<T> {
+async function fetchPublicSpellApi<T>({ path, query, validate }: FetchPublicSpellApiOptions): Promise<T> {
   const url = buildPublicSpellApiUrl({ path, query });
 
   let response: Response;
@@ -213,6 +295,15 @@ async function fetchPublicSpellApi<T>({ path, query }: FetchPublicSpellApiOption
     });
   }
 
+  if (validate && !validate(payload)) {
+    throw new PublicSpellApiError({
+      status: 503,
+      error: 'service_unavailable',
+      message: 'Public spell data is temporarily unavailable.',
+      retryAfter,
+    });
+  }
+
   return payload as T;
 }
 
@@ -221,7 +312,11 @@ export function isPublicSpellApiError(error: unknown): error is PublicSpellApiEr
 }
 
 export async function listSpellTypes(): Promise<string[]> {
-  return fetchPublicSpellApi<string[]>({ path: '/spell-types' });
+  return fetchPublicSpellApi<string[]>({ path: '/spell-types', validate: isPublicSpellTypeList });
+}
+
+export async function listSourceSpellTypes(): Promise<string[]> {
+  return fetchPublicSpellApi<string[]>({ path: '/source-spell-types', validate: isPublicSpellTypeList });
 }
 
 export async function listSpells(params: ListSpellsParams = {}): Promise<PublicSpellPage> {
@@ -236,12 +331,14 @@ export async function listSpells(params: ListSpellsParams = {}): Promise<PublicS
       sourceName: params.sourceName,
       sourceType: params.sourceType,
     },
+    validate: isPublicSpellPage,
   });
 }
 
 export async function getSpellById(spellId: string): Promise<PublicSpell> {
   return fetchPublicSpellApi<PublicSpell>({
     path: `/spells/${encodeURIComponent(spellId)}`,
+    validate: isPublicSpell,
   });
 }
 
@@ -255,5 +352,6 @@ export async function suggestSpells(params: SuggestSpellsParams = {}): Promise<P
       sourceType: params.sourceType,
       limit: params.limit,
     },
+    validate: isPublicSpellSuggestionList,
   });
 }

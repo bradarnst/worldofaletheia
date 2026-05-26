@@ -1,7 +1,6 @@
 ---
-import { isPublicSpellApiError, listSpells, listSpellTypes } from '@adapters/public-spell-api';
+import { isPublicSpellApiError, listSourceSpellTypes, listSpells, listSpellTypes } from '@adapters/public-spell-api';
 import SpellSearchForm from '@components/spells/SpellSearchForm.astro';
-import { SOURCE_SPELL_TYPE_FILTER_OPTIONS } from '@data/spells/source-spell-type-filter-options';
 import Layout from '@layouts/GurpsLayout.astro';
 import { getSpellListPageHref } from '@utils/spell-browser';
 
@@ -9,6 +8,7 @@ const title = 'Sorcerer Spells - GURPS - World of Aletheia';
 const description = 'Comprehensive reference for sorcerer spells in the World of Aletheia.';
 
 let spellTypes: string[] = [];
+let sourceSpellTypes: string[] = [];
 let totalSpells = 0;
 let unavailableMessage: string | null = null;
 
@@ -44,6 +44,16 @@ try {
 
   unavailableMessage = error.message;
 }
+
+if (!unavailableMessage) {
+  try {
+    sourceSpellTypes = await listSourceSpellTypes();
+  } catch (error) {
+    if (!isPublicSpellApiError(error)) {
+      throw error;
+    }
+  }
+}
 ---
 
 <Layout title={title} description={description}>
@@ -78,7 +88,7 @@ try {
         <section class="ui-surface ui-surface--glass mb-8 p-6">
           <h2 class="mb-4 text-2xl font-semibold text-ink-950">Find Spells</h2>
           <p class="mb-5 text-ink-800">Search by text, spell name prefix, spell type, or source lineage without leaving the server-rendered spell browser.</p>
-          <SpellSearchForm filters={emptyFilters} spellTypes={spellTypes} sourceSpellTypes={SOURCE_SPELL_TYPE_FILTER_OPTIONS} clearHref={getSpellListPageHref(1)} />
+          <SpellSearchForm filters={emptyFilters} spellTypes={spellTypes} sourceSpellTypes={sourceSpellTypes} clearHref={getSpellListPageHref(1)} />
         </section>
 
         <section class="ui-surface ui-surface--glass mb-8 p-6">

@@ -1,9 +1,8 @@
 ---
-import { isPublicSpellApiError, listSpells, listSpellTypes } from '@adapters/public-spell-api';
+import { isPublicSpellApiError, listSourceSpellTypes, listSpells, listSpellTypes } from '@adapters/public-spell-api';
 import Layout from '@layouts/GurpsLayout.astro';
 import SpellAlphabeticalIndex from '@components/spells/SpellAlphabeticalIndex.astro';
 import SpellSearchForm from '@components/spells/SpellSearchForm.astro';
-import { SOURCE_SPELL_TYPE_FILTER_OPTIONS } from '@data/spells/source-spell-type-filter-options';
 import {
   SPELLS_PAGE_SIZE,
   createEmptySpellPage,
@@ -14,6 +13,7 @@ import {
 const filters = getSpellSearchFilters(Astro.url.searchParams);
 let paginatedSpells = createEmptySpellPage(1, SPELLS_PAGE_SIZE);
 let spellTypes: string[] = [];
+let sourceSpellTypes: string[] = [];
 let unavailableMessage: string | null = null;
 
 try {
@@ -33,7 +33,7 @@ try {
 
 if (!unavailableMessage) {
   try {
-    spellTypes = await listSpellTypes();
+    [spellTypes, sourceSpellTypes] = await Promise.all([listSpellTypes(), listSourceSpellTypes()]);
   } catch (error) {
     if (!isPublicSpellApiError(error)) {
       throw error;
@@ -63,7 +63,7 @@ const description = hasFullTextSearch
   ) : (
     <>
       <section class="ui-surface ui-surface--glass mb-8 p-6">
-        <SpellSearchForm filters={filters} spellTypes={spellTypes} sourceSpellTypes={SOURCE_SPELL_TYPE_FILTER_OPTIONS} />
+        <SpellSearchForm filters={filters} spellTypes={spellTypes} sourceSpellTypes={sourceSpellTypes} />
       </section>
 
       <SpellAlphabeticalIndex

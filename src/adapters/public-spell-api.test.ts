@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   getSpellById,
+  listSourceSpellTypes,
   listSpells,
   listSpellTypes,
   suggestSpells,
@@ -62,6 +63,16 @@ describe('public-spell-api adapter', () => {
     expect(fetchMock.mock.calls[0][0]).toEqual(
       new URL('https://worldofaletheia.com/api/v1/spells?page=2&pageSize=100&q=Abs&name=Abs&type=Air+Spells&sourceName=Absorb&sourceType=Air+Spells'),
     );
+  });
+
+  it('lists source spell types from the canonical public API', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(createJsonResponse(['Guild Spells', 'Air Spells']));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await listSourceSpellTypes();
+
+    expect(result).toEqual(['Guild Spells', 'Air Spells']);
+    expect(fetchMock).toHaveBeenCalledWith(new URL('https://worldofaletheia.com/api/v1/source-spell-types'));
   });
 
   it('looks up a spell by stable spell_id', async () => {
@@ -209,6 +220,40 @@ describe('public-spell-api adapter', () => {
     })));
 
     await expect(listSpellTypes()).resolves.toEqual(['Air Spells']);
+  });
+
+  it('treats malformed successful spell-type payloads as temporarily unavailable', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(createJsonResponse([{ label: 'Air Spells' }])));
+
+    await expect(listSpellTypes()).rejects.toMatchObject({
+      status: 503,
+      error: 'service_unavailable',
+      message: 'Public spell data is temporarily unavailable.',
+    });
+  });
+
+  it('treats malformed successful spell detail payloads as temporarily unavailable', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(createJsonResponse({
+      spell_id: '019e07b7-7aa5-7bd9-b4b4-b1bfd2c74e46',
+      spell_name: 'Absorb Weapon',
+      spell_types: ['Adventurer Spells'],
+    })));
+
+    await expect(getSpellById('019e07b7-7aa5-7bd9-b4b4-b1bfd2c74e46')).rejects.toMatchObject({
+      status: 503,
+      error: 'service_unavailable',
+      message: 'Public spell data is temporarily unavailable.',
+    });
+  });
+
+  it('treats malformed successful spell suggestion payloads as temporarily unavailable', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(createJsonResponse([{ spell_name: 'Absorb Weapon' }])));
+
+    await expect(suggestSpells({ q: 'Abs' })).rejects.toMatchObject({
+      status: 503,
+      error: 'service_unavailable',
+      message: 'Public spell data is temporarily unavailable.',
+    });
   });
 
   it('honors PUBLIC_SPELL_API_BASE override from import.meta.env', async () => {
