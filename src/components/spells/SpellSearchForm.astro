@@ -1,5 +1,5 @@
 ---
-import type { SpellSearchFilters } from '@utils/spell-browser';
+import { getSpellListPageHref, type SpellSearchFilters } from '@utils/spell-browser';
 
 interface Props {
   filters: SpellSearchFilters;
@@ -18,6 +18,7 @@ const {
 } = Astro.props;
 
 const hasSourceFilters = filters.sourceName !== '' || filters.sourceType !== '';
+const clearNameHref = getSpellListPageHref(1, { ...filters, name: '' });
 ---
 
 <form method="get" action="/systems/gurps/resources/sorcerer-spells/all" autocomplete="off" class:list={[
@@ -45,10 +46,17 @@ const hasSourceFilters = filters.sourceName !== '' || filters.sourceType !== '';
   </label>
 
   <label class="ui-field">
-    <span class="ui-field-label">Spell name starts with</span>
+    <span class="flex items-center justify-between gap-3">
+      <span class="ui-field-label">Spell name starts with</span>
+      {filters.name !== '' && (
+        <a href={clearNameHref} class="text-xs font-semibold text-primary underline-offset-4 hover:underline">
+          Clear name
+        </a>
+      )}
+    </span>
     <input
       name="name"
-      type="search"
+      type="text"
       value={filters.name}
       placeholder="Abs"
       class="ui-field-control"
