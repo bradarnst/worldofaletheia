@@ -20,6 +20,7 @@ const SPELL_COUNT_SELECTOR = '[data-spell-list-count]';
 const SPELL_LIST_ROOT_SELECTOR = '[data-saved-spell-list-root]';
 const SPELL_PRINT_SELECTOR = '[data-spell-list-print]';
 const SPELL_LIST_LINK_SELECTOR = '[data-spell-list-link]';
+const SPELL_LIST_CLEAR_SELECTOR = '[data-spell-list-clear]';
 
 let isInitialized = false;
 let currentMode: 'browse' | 'list' = 'browse';
@@ -58,6 +59,18 @@ function updateSavedCount(savedIds: readonly string[]): void {
 function syncSavedState(savedIds: readonly string[]): void {
   updateToggleButtons(savedIds);
   updateSavedCount(savedIds);
+}
+
+function clearSpellList(): void {
+  savedSpellListRenderSequence += 1;
+  resolvedSpellCache.clear();
+
+  const clearedIds = writeSpellListIds([]);
+  syncSavedState(clearedIds);
+
+  if (currentMode === 'list') {
+    void renderSavedSpellList(clearedIds);
+  }
 }
 
 function createTextElement<K extends keyof HTMLElementTagNameMap>(tagName: K, className: string, text: string): HTMLElementTagNameMap[K] {
@@ -282,6 +295,17 @@ function handleDocumentClick(event: Event): void {
   const printButton = target.closest<HTMLButtonElement>(SPELL_PRINT_SELECTOR);
   if (printButton) {
     window.print();
+    return;
+  }
+
+  const clearButton = target.closest<HTMLButtonElement>(SPELL_LIST_CLEAR_SELECTOR);
+  if (clearButton) {
+    const title = clearButton.dataset.confirmTitle?.trim() || 'Clear Spell List?';
+    const message = clearButton.dataset.confirmMessage?.trim() || 'This removes all saved spells from this browser on this device.';
+    const confirmed = window.confirm(`${title}\n\n${message}`);
+    if (confirmed) {
+      clearSpellList();
+    }
   }
 }
 
