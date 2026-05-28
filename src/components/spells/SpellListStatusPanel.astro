@@ -1,0 +1,33 @@
+---
+interface Props {
+  className?: string;
+  title?: string;
+  description?: string;
+}
+
+const {
+  className = '',
+  title = 'Temporary Spell List',
+  description = 'Your spell list is stored only in this browser on this device.',
+} = Astro.props;
+---
+
+<section class:list={['ui-surface ui-surface--glass p-6', className]}>
+  <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+    <div>
+      <h2 class="mb-2 text-2xl font-semibold text-ink-950">{title}</h2>
+      <p class="text-ink-800">{description}</p>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-3">
+      <div class="rounded-[1rem] border border-base-300 bg-base-100/80 px-4 py-3 text-sm text-ink-800">
+        <span class="font-semibold text-ink-950" data-spell-list-count>0</span>
+        {' '}
+        saved
+      </div>
+      <a href="/systems/gurps/resources/sorcerer-spells/list" class="ui-button ui-button--primary" data-spell-list-link>
+        View Spell List
+      </a>
+    </div>
+  </div>
+</section>

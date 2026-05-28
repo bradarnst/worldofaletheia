@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  getSpellByIdForBrowser,
   getSpellById,
   listSourceSpellTypes,
   listSpells,
@@ -99,6 +100,41 @@ describe('public-spell-api adapter', () => {
 
     expect(result.spell_name).toBe('Absorb Weapon');
     expect(fetchMock).toHaveBeenCalledWith(new URL('https://worldofaletheia.com/api/v1/spells/019e07b7-7aa5-7bd9-b4b4-b1bfd2c74e46'));
+  });
+
+  it('uses the documented public browser spell detail contract for hydration', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(createJsonResponse({
+      spell_id: '019e07b7-7aa5-7bd9-b4b4-b1bfd2c74e46',
+      spell_name: 'Absorb Weapon',
+      spell_types: ['Adventurer Spells'],
+      keywords: ['Damage'],
+      archmagisters_counsel: 'Use when hidden steel matters.',
+      source_lineage: {
+        source_spell_name: 'Absorb Weapon',
+        source_spell_types: ['Adventurer Spells'],
+      },
+      full_cost: '1 point/level.',
+      casting_roll: 'None.',
+      range: 'Touch.',
+      duration: 'Indefinite.',
+      description: 'You can harmlessly absorb a weapon you are touching.',
+      statistics: 'Payload 1.',
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await getSpellByIdForBrowser('019e07b7-7aa5-7bd9-b4b4-b1bfd2c74e46');
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      new URL('https://worldofaletheia.com/api/v1/spells/019e07b7-7aa5-7bd9-b4b4-b1bfd2c74e46'),
+      {
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'omit',
+        headers: {
+          Accept: 'application/json',
+        },
+      },
+    );
   });
 
   it('builds suggestion queries with optional filters', async () => {

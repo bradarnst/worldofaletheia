@@ -70,7 +70,19 @@ const visibleKeywords = getVisibleSpellKeywords(spell.keywords);
       </div>
     </section>
 
-    <div class="flex justify-end">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <button
+        type="button"
+        class="ui-button ui-button--secondary"
+        data-spell-list-toggle
+        data-spell-id={spell.spell_id}
+        data-add-label="Add to Spell List"
+        data-remove-label="Remove from Spell List"
+        aria-pressed="false"
+      >
+        Add to Spell List
+      </button>
+
       <form method="dialog">
         <button class="ui-button ui-button--primary">Close</button>
       </form>

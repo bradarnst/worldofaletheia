@@ -2,6 +2,8 @@
 import { isPublicSpellApiError, listSourceSpellTypes, listSpells, listSpellTypes } from '@adapters/public-spell-api';
 import Layout from '@layouts/GurpsLayout.astro';
 import SpellAlphabeticalIndex from '@components/spells/SpellAlphabeticalIndex.astro';
+import SpellListClientScript from '@components/spells/SpellListClientScript.astro';
+import SpellListStatusPanel from '@components/spells/SpellListStatusPanel.astro';
 import SpellSearchForm from '@components/spells/SpellSearchForm.astro';
 import {
   SPELLS_PAGE_SIZE,
@@ -79,6 +81,8 @@ const description = hasFullTextSearch
         <SpellSearchForm filters={filters} spellTypes={spellTypes} sourceSpellTypes={sourceSpellTypes} />
       </section>
 
+      <SpellListStatusPanel className="mb-8" />
+
       <SpellAlphabeticalIndex
         spells={paginatedSpells.items}
         currentPage={paginatedSpells.page}
@@ -89,4 +93,6 @@ const description = hasFullTextSearch
       />
     </>
   )}
+
+  <SpellListClientScript />
 </Layout>

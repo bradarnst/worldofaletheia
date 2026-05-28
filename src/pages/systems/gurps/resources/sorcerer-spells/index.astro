@@ -1,5 +1,7 @@
 ---
 import { isPublicSpellApiError, listSourceSpellTypes, listSpells, listSpellTypes } from '@adapters/public-spell-api';
+import SpellListClientScript from '@components/spells/SpellListClientScript.astro';
+import SpellListStatusPanel from '@components/spells/SpellListStatusPanel.astro';
 import SpellSearchForm from '@components/spells/SpellSearchForm.astro';
 import Layout from '@layouts/GurpsLayout.astro';
 import { getSpellListPageHref, sortSpellTypeLabels } from '@utils/spell-browser';
@@ -91,6 +93,8 @@ if (!unavailableMessage) {
           <SpellSearchForm filters={emptyFilters} spellTypes={spellTypes} sourceSpellTypes={sourceSpellTypes} clearHref={getSpellListPageHref(1)} />
         </section>
 
+        <SpellListStatusPanel className="mb-8" />
+
         <section class="ui-surface ui-surface--glass mb-8 p-6">
           <div class="flex flex-wrap items-start justify-between gap-4">
             <div>
@@ -130,4 +134,6 @@ if (!unavailableMessage) {
       </a>
     </div>
   </div>
+
+  <SpellListClientScript />
 </Layout>

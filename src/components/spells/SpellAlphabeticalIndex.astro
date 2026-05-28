@@ -50,6 +50,7 @@ if (hasFullTextSearch) {
             <th class="px-3 py-2">Spell Name</th>
             <th class="px-3 py-2">Type</th>
             <th class="px-3 py-2">Cost</th>
+            <th class="px-3 py-2">List</th>
             <th class="px-3 py-2">Details</th>
           </tr>
         </thead>
@@ -61,6 +62,19 @@ if (hasFullTextSearch) {
                 <td class="rounded-l-xl px-3 py-3 font-semibold text-ink-950">{spell.spell_name}</td>
                 <td class="px-3 py-3 text-sm text-ink-700">{spell.spell_types.join(', ')}</td>
                 <td class="px-3 py-3 text-sm text-ink-700">{spell.full_cost}</td>
+                <td class="px-3 py-3 text-sm">
+                  <button
+                    type="button"
+                    class="ui-button ui-button--secondary ui-button--sm"
+                    data-spell-list-toggle
+                    data-spell-id={spell.spell_id}
+                    data-add-label="Add to Spell List"
+                    data-remove-label="Remove from Spell List"
+                    aria-pressed="false"
+                  >
+                    Add to Spell List
+                  </button>
+                </td>
                 <td class="rounded-r-xl px-3 py-3 text-sm">
                   <button class="ui-button ui-button--primary ui-button--sm" onclick={`document.getElementById('${modalId}')?.showModal()`}>
                     Details

@@ -19,6 +19,8 @@ Use the OpenAPI file for route shapes, schemas, parameters, response codes, oper
 
 Use [`public-spell-read-handoff.md`](./public-spell-read-handoff.md) for concise consumer-facing query examples that mirror the admin dashboard filter model.
 
+For the current browser-hydration addition, the OpenAPI file is also the source of truth for spell-detail CORS headers and the `OPTIONS /api/v1/spells/{spell_id}` preflight operation. Consumers should treat those headers and preflight semantics as part of the public contract for cross-origin detail reads.
+
 ## Why OpenAPI 3.1.2
 
 - OpenAPI is the source of truth for this public HTTP contract.
@@ -52,6 +54,13 @@ The OpenAPI contract also documents standard public error behavior for current r
 - `429` for rate limiting
 - `503` for temporary service unavailability
 
+The `GET /api/v1/spells/{spell_id}` contract now also documents browser-facing CORS behavior for approved World of Aletheia origins:
+
+- successful `200` detail responses include the documented CORS headers
+- `400`, `404`, and `503` responses from the application include the same CORS policy
+- `429` remains part of the public contract, but if rate limiting is enforced at the Cloudflare edge then edge configuration must preserve the same CORS headers for browser clients to read the response normally
+- `OPTIONS /api/v1/spells/{spell_id}` is now part of the documented public contract for preflight handling
+
 ## B2 implementation status
 
 Workstream B2 is implemented in this repo, and the canonical public deployment boundary has now been exposed under the main site URL space and approved outside this repo.
@@ -71,6 +80,8 @@ Validated behavior includes:
 
 - full public field shape for list/detail responses
 - stable `spell_id` lookup and UUIDv7 validation/normalization
+- spell detail CORS headers for approved origins on `200`, `400`, `404`, and `503`
+- spell detail `OPTIONS` preflight handling
 - canonical spell type ordering
 - canonical source spell type metadata availability
 - full-text list search across `spell_name`, `description`, and `archmagisters_counsel`
@@ -127,8 +138,33 @@ The first main-site adapter should assume:
 - **Authentication:** none for the current public spell routes
 - **Caching:** none initially; add cache only after real usage or latency shows a need
 - **Failure behavior:** surface standard HTTP contract errors directly in the client boundary, especially `429` and `503`, rather than switching to a second data source
+- **Cross-origin spell detail:** approved browser origins may call `GET /api/v1/spells/{spell_id}` directly using the documented CORS headers; if a browser client sends preflight, `OPTIONS /api/v1/spells/{spell_id}` is part of the supported contract
 - **Rollback shape:** normal deployment rollback or a fix-forward release is sufficient
 - **Migration scope:** migrate spell list, filters, and detail first; leave type-ahead and suggestions for a later slice
+
+## Spell detail CORS addition
+
+This contract addition is intentionally narrow. The public API was already in use; this update documents and exposes the extra browser-consumption behavior needed for saved spell-list hydration on the main site.
+
+What changed in the contract:
+
+- the OpenAPI spec now documents CORS response headers on `GET /api/v1/spells/{spell_id}` for `200`, `400`, `404`, `429`, and `503`
+- the OpenAPI spec now includes `OPTIONS /api/v1/spells/{spell_id}`
+- the allowlist is documented in the OpenAPI header definitions rather than duplicated as a separate source of truth here
+
+How consumers should read the OpenAPI update:
+
+- `Access-Control-Allow-Origin` is returned only for approved origins
+- `Vary: Origin` is part of the contract and matters for caches
+- `Access-Control-Allow-Methods` is `GET, OPTIONS`
+- `Access-Control-Allow-Headers` is `Accept, Content-Type`
+- no credentials are part of this contract; this remains public read-only access
+
+Why the OpenAPI file matters here:
+
+- it defines which spell-detail responses are expected to be browser-readable cross-origin
+- it defines `OPTIONS` as a supported operation rather than an implementation accident
+- it keeps main-site adapter behavior anchored to the same source of truth as server-side consumers
 
 These are rollout defaults, not long-term guarantees of the contract itself.
 

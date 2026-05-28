@@ -1,0 +1,21 @@
+---
+interface Props {
+  mode?: 'browse' | 'list';
+}
+
+const { mode = 'browse' } = Astro.props;
+---
+
+{mode === 'list' ? (
+  <script>
+    import { initializeSpellListClient } from '@utils/spell-list-client';
+
+    initializeSpellListClient({ mode: 'list' });
+  </script>
+) : (
+  <script>
+    import { initializeSpellListClient } from '@utils/spell-list-client';
+
+    initializeSpellListClient({ mode: 'browse' });
+  </script>
+)}

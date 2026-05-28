@@ -47,6 +47,35 @@ paths:
           $ref: '#/components/responses/TooManyRequests'
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
+  /api/v1/source-spell-types:
+    get:
+      operationId: listSourceSpellTypes
+      tags:
+        - Public Spells
+      summary: List source spell types
+      description: >-
+        Returns canonical source spell type labels. These labels represent
+        source-lineage metadata rather than active classification facets. If no
+        active dataset is initialized, the response is an empty array. No
+        authentication is required for this route in the current public rollout.
+      responses:
+        '200':
+          description: Canonical source spell type labels.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PublicSpellType'
+              examples:
+                default:
+                  value:
+                    - Adventurer Spells
+                    - Guild Spells
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
   /api/v1/spells:
     get:
       operationId: listSpells
@@ -54,14 +83,12 @@ paths:
         - Public Spells
       summary: List active spells
       description: >-
-        Returns a paginated list of active public spells. Results are ordered by
-        spell_name case-insensitively ascending, then spell_id ascending. Only
-        active spells are returned. No authentication is required for this route in
-        the current public rollout.
+        Returns a paginated list of active public spells. When q is present, results are filtered by full-text search over spell_name, description, and archmagisters_counsel, then ordered by relevance, spell_name case-insensitively ascending, and spell_id ascending. When q is empty, results use alphabetical ordering only. Only active spells are returned. No authentication is required for this route in the current public rollout.
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PageSize'
         - $ref: '#/components/parameters/SpellQuery'
+        - $ref: '#/components/parameters/SpellNameFilter'
         - $ref: '#/components/parameters/SpellTypeFilter'
         - $ref: '#/components/parameters/SourceNameFilter'
         - $ref: '#/components/parameters/SourceSpellTypeFilter'
@@ -100,7 +127,8 @@ paths:
                     page: 1
                     pageSize: 50
                     totalPages: 45
-                    q: Abs
+                    q: hidden steel
+                    name: Abs
                     type: Adventurer Spells
                     sourceName: Absorb
                     sourceType: Adventurer Spells
@@ -118,12 +146,23 @@ paths:
         Returns one active public spell by stable spell_id. spell_id is the stable
         identifier; spell_name is display text and may change. Only active spells
         are returned. No authentication is required for this route in the
-        current public rollout.
+        current public rollout. Browser clients from approved World of Aletheia
+        origins may read this endpoint cross-origin for saved spell-list
+        hydration via the documented CORS response headers.
       parameters:
         - $ref: '#/components/parameters/SpellId'
       responses:
         '200':
           description: Public spell record.
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Vary:
+              $ref: '#/components/headers/VaryOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
           content:
             application/json:
               schema:
@@ -153,6 +192,15 @@ paths:
                         - Adventurer Spells
         '400':
           description: The supplied spell_id is not a valid UUIDv7 string.
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Vary:
+              $ref: '#/components/headers/VaryOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
           content:
             application/json:
               schema:
@@ -164,6 +212,15 @@ paths:
                     message: spell_id must be a valid UUIDv7.
         '404':
           description: No active public spell exists for the supplied spell_id.
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Vary:
+              $ref: '#/components/headers/VaryOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
           content:
             application/json:
               schema:
@@ -174,9 +231,78 @@ paths:
                     error: not_found
                     message: Spell not found.
         '429':
-          $ref: '#/components/responses/TooManyRequests'
+          description: >-
+            Request rate limit exceeded. The public spell routes are currently
+            intended to be rate limited at the Cloudflare edge. Compatible edge
+            configuration must preserve this route's CORS policy for browser
+            consumers.
+          headers:
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Vary:
+              $ref: '#/components/headers/VaryOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                rateLimited:
+                  value:
+                    error: rate_limited
+                    message: Too many requests. Please retry later.
         '503':
-          $ref: '#/components/responses/ServiceUnavailable'
+          description: >-
+            The public spell read service is temporarily unavailable. Clients
+            should treat this as retryable rather than a permanent contract
+            failure.
+          headers:
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Vary:
+              $ref: '#/components/headers/VaryOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                serviceUnavailable:
+                  value:
+                    error: service_unavailable
+                    message: Public spell data is temporarily unavailable.
+    options:
+      operationId: preflightSpellById
+      tags:
+        - Public Spells
+      summary: CORS preflight for spell detail
+      description: >-
+        Returns the spell detail CORS policy for approved browser origins. No
+        authentication is required.
+      parameters:
+        - $ref: '#/components/parameters/SpellId'
+      responses:
+        '204':
+          description: CORS policy for approved browser origins.
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Vary:
+              $ref: '#/components/headers/VaryOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
   /api/v1/spell-suggestions:
     get:
       operationId: suggestSpells
@@ -254,9 +380,22 @@ components:
       in: query
       required: false
       description: >-
+        Trimmed full-text search text for list responses only. The implementation
+        searches spell_name, description, and archmagisters_counsel. Empty string
+        means no full-text filter. User input is normalized into a conservative FTS
+        query rather than being treated as raw SQLite MATCH syntax.
+      schema:
+        type: string
+        default: ''
+    SpellNameFilter:
+      name: name
+      in: query
+      required: false
+      description: >-
         Trimmed literal case-insensitive prefix search on spell_name. Empty string
-        means no search filter. SQL wildcard characters in user input are escaped and
-        must not act as wildcard syntax.
+        means no spell-name prefix filter. SQL wildcard characters in user input are
+        escaped and must not act as wildcard syntax. This filter may be combined with
+        q.
       schema:
         type: string
         default: ''
@@ -344,6 +483,29 @@ components:
                 error: service_unavailable
                 message: Public spell data is temporarily unavailable.
   headers:
+    AccessControlAllowOrigin:
+      description: >-
+        Reflected allowed browser origin for cross-origin spell detail reads.
+        Current allowlist includes `https://worldofaletheia.com`,
+        `http://localhost:4321`, `http://127.0.0.1:4321`,
+        `http://localhost:8788`, and `http://127.0.0.1:8788`.
+      schema:
+        type: string
+    VaryOrigin:
+      description: Indicates that caches must vary this response by `Origin`.
+      schema:
+        type: string
+        const: Origin
+    AccessControlAllowMethods:
+      description: Allowed CORS methods for spell detail reads.
+      schema:
+        type: string
+        const: GET, OPTIONS
+    AccessControlAllowHeaders:
+      description: Allowed request headers for spell detail reads.
+      schema:
+        type: string
+        const: Accept, Content-Type
     RetryAfter:
       description: Optional hint for when the client may retry the request.
       schema:
@@ -465,6 +627,7 @@ components:
         - pageSize
         - totalPages
         - q
+        - name
         - type
         - sourceName
         - sourceType
@@ -491,7 +654,10 @@ components:
           description: Total page count for the filtered result set, or 0 when total is 0.
         q:
           type: string
-          description: Normalized search text used by the API.
+          description: Normalized full-text search text used by the API.
+        name:
+          type: string
+          description: Normalized spell-name prefix filter used by the API. Empty string means no filter.
         type:
           type: string
           description: Normalized spell type filter used by the API. Empty string means no filter.

@@ -81,7 +81,17 @@ interface FetchPublicSpellApiOptions {
   path: string;
   query?: Record<string, string | number | undefined>;
   validate?: PayloadGuard<unknown>;
+  request?: RequestInit;
 }
+
+const BROWSER_SPELL_DETAIL_REQUEST: RequestInit = {
+  method: 'GET',
+  mode: 'cors',
+  credentials: 'omit',
+  headers: {
+    Accept: 'application/json',
+  },
+};
 
 export class PublicSpellApiError extends Error {
   status: number;
@@ -259,12 +269,12 @@ async function parseResponseJson(response: Response): Promise<unknown> {
   }
 }
 
-async function fetchPublicSpellApi<T>({ path, query, validate }: FetchPublicSpellApiOptions): Promise<T> {
+async function fetchPublicSpellApi<T>({ path, query, validate, request }: FetchPublicSpellApiOptions): Promise<T> {
   const url = buildPublicSpellApiUrl({ path, query });
 
   let response: Response;
   try {
-    response = await fetch(url);
+    response = request ? await fetch(url, request) : await fetch(url);
   } catch (cause) {
     throw new PublicSpellApiError({
       status: 503,
@@ -339,6 +349,14 @@ export async function getSpellById(spellId: string): Promise<PublicSpell> {
   return fetchPublicSpellApi<PublicSpell>({
     path: `/spells/${encodeURIComponent(spellId)}`,
     validate: isPublicSpell,
+  });
+}
+
+export async function getSpellByIdForBrowser(spellId: string): Promise<PublicSpell> {
+  return fetchPublicSpellApi<PublicSpell>({
+    path: `/spells/${encodeURIComponent(spellId)}`,
+    validate: isPublicSpell,
+    request: BROWSER_SPELL_DETAIL_REQUEST,
   });
 }
 
