@@ -86,7 +86,7 @@ const session = {
   visibility: sessionEntry?.data.visibility ?? 'gm',
   excerpt: sessionEntry?.data.excerpt ?? 'Campaign session content is temporarily unavailable or restricted.',
   tags: sessionEntry?.data.tags ?? [],
-  author: sessionEntry?.data.author ?? 'World of Aletheia',
+  authors: sessionEntry?.data.authors ?? ['World of Aletheia'],
   createdAt: sessionEntry?.data.created,
 };
 
@@ -164,7 +164,7 @@ const layoutContent =
   {
     title: session.title,
     excerpt: session.excerpt,
-    author: session.author,
+    authors: session.authors,
     visibility: session.visibility,
     tags: session.tags,
     campaign: campaign ?? '',

@@ -8,6 +8,7 @@ import {
 import { tryGetD1BindingFromLocals } from './d1';
 import { getFilteredCollection, type ContentEnvironment } from '~/utils/content-filter';
 import { normalizeFilterValue, normalizePage, normalizeView, type DiscoveryViewMode } from './normalizers';
+import { formatAuthors } from '@utils/contributors';
 
 export type IndexBackedCollectionName = 'lore' | 'places' | 'sentients' | 'systems' | 'bestiary' | 'flora' | 'factions' | 'meta';
 type DiscoveryGroupField = 'type' | 'subtype';
@@ -19,7 +20,9 @@ interface LocalCollectionData {
   excerpt?: string;
   tags?: string[];
   status?: string;
+  authors?: string[];
   author?: string;
+  contributors?: Array<{ id: string; roles?: string[] }>;
   campaign?: string;
   created?: Date;
   'created-date'?: Date;
@@ -40,12 +43,13 @@ export interface ContentCardEntry {
     title: string;
     type?: string;
     subtype?: string;
-    excerpt?: string;
-    tags: string[];
-    status?: string;
-    author?: string;
-    campaign?: string;
-    created: Date;
+      excerpt?: string;
+      tags: string[];
+      status?: string;
+      authors?: string[];
+      author?: string;
+      campaign?: string;
+      created: Date;
   };
 }
 
@@ -142,7 +146,8 @@ function mapLocalEntryToCard(entry: LocalCollectionEntry): ContentCardEntry {
       excerpt: entry.data.excerpt,
       tags: entry.data.tags ?? [],
       status: entry.data.status,
-      author: entry.data.author,
+      authors: entry.data.authors,
+      author: formatAuthors(entry.data.authors, entry.data.author),
       campaign: entry.data.campaign,
       created: pickDisplayDate(entry.data),
     },

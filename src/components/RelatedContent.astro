@@ -1,4 +1,6 @@
 ---
+import { formatAuthors } from '@utils/contributors';
+
 interface Props {
   content: any;
   relatedContent: any[];
@@ -10,6 +12,10 @@ const grouped = {
   partOf: relatedContent.filter((item) => item.relationKind === 'partOf'),
   connectedTo: relatedContent.filter((item) => item.relationKind !== 'partOf'),
 };
+
+function getAuthorsLabel(item: { authors?: string[]; author?: string }) {
+  return formatAuthors(item.authors, item.author);
+}
 ---
 
 <div class="mt-12">
@@ -40,7 +46,7 @@ const grouped = {
                   </div>
 
                   <div class="text-xs meta-muted">
-                    <span>{item.author}</span>
+                    {getAuthorsLabel(item) && <span>{getAuthorsLabel(item)}</span>}
                   </div>
                 </div>
               </a>
@@ -70,7 +76,7 @@ const grouped = {
                   </div>
 
                   <div class="text-xs meta-muted">
-                    <span>{item.author}</span>
+                    {getAuthorsLabel(item) && <span>{getAuthorsLabel(item)}</span>}
                   </div>
                 </div>
               </a>

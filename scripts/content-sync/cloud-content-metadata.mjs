@@ -84,6 +84,28 @@ function normalizeTags(frontmatterTags) {
   return normalized.tags;
 }
 
+function normalizeAuthors(frontmatterAuthors) {
+  if (Array.isArray(frontmatterAuthors)) {
+    return frontmatterAuthors
+      .map((value) => (typeof value === 'string' ? value.trim() : ''))
+      .filter((value) => value.length > 0);
+  }
+
+  if (typeof frontmatterAuthors === 'string') {
+    const trimmed = frontmatterAuthors.trim();
+    if (!trimmed) {
+      return [];
+    }
+
+    return trimmed
+      .split(',')
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0);
+  }
+
+  return [];
+}
+
 function normalizeSearchText(value) {
   if (typeof value !== 'string') {
     return '';
@@ -142,6 +164,7 @@ function createContentIndexRow({
   frontmatterRecord,
   generatedAt,
 }) {
+  const authors = normalizeAuthors(frontmatterRecord.authors ?? frontmatterRecord.author);
   const createdAt = normalizeDateValue(frontmatterRecord.created ?? frontmatterRecord['created-date']);
   const updatedAt =
     normalizeDateValue(frontmatterRecord.modified ?? frontmatterRecord['modified-date']) ??
@@ -160,7 +183,7 @@ function createContentIndexRow({
     campaignSlug: contentEntry.campaignSlug,
     summary: normalizeNullableString(frontmatterRecord.excerpt),
     status: normalizeNullableString(frontmatterRecord.status),
-    author: normalizeNullableString(frontmatterRecord.author),
+    author: authors.length > 0 ? authors.join(', ') : null,
     createdAt,
     updatedAt,
     r2Key: contentEntry.r2Key,

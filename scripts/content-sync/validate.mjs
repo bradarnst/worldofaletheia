@@ -1,7 +1,10 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-const REQUIRED_KEYS = ['title', 'type', 'status', 'author'];
+const DEFAULT_REQUIRED_KEYS = ['title', 'type', 'status', 'authors'];
+const COLLECTION_REQUIRED_KEYS = {
+  contributors: ['title', 'status'],
+};
 const ALLOWED_STATUS = [
   'draft',
   'publish',
@@ -51,6 +54,37 @@ function parseBracketTagArray(raw) {
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function normalizeStringListValue(value) {
+  if (value == null || value === '') {
+    return [];
+  }
+
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => (typeof item === 'string' ? item.trim().replace(/^['"]|['"]$/g, '') : ''))
+      .filter((item) => item.length > 0);
+  }
+
+  if (typeof value !== 'string') {
+    return [];
+  }
+
+  const raw = value.trim();
+  if (!raw) {
+    return [];
+  }
+
+  const parsedValues = raw.startsWith('[') && raw.endsWith(']')
+    ? parseBracketTagArray(raw)
+    : raw.includes(',')
+      ? raw.split(',')
+      : [raw];
+
+  return parsedValues
+    .map((item) => item.trim().replace(/^['"]|['"]$/g, ''))
+    .filter((item) => item.length > 0);
 }
 
 export function normalizeObsidianTags({ frontmatterTags, inlineTags = [] }) {
@@ -119,7 +153,7 @@ function parseFrontmatter(text) {
     const key = line.slice(0, idx).trim();
     const raw = line.slice(idx + 1).trim();
 
-    if (key === 'tags' && raw === '') {
+    if ((key === 'tags' || key === 'authors') && raw === '') {
       const listItems = [];
       let cursor = i + 1;
       while (cursor < frontmatterLines.length) {
@@ -149,6 +183,10 @@ function parseFrontmatter(text) {
   }
 
   return { hasFrontmatter: true, malformed: false, data, body };
+}
+
+function getRequiredKeysForCollection(collection) {
+  return COLLECTION_REQUIRED_KEYS[collection] ?? DEFAULT_REQUIRED_KEYS;
 }
 
 function checkHeadings(content) {
@@ -203,6 +241,7 @@ function determineValidationRoots(config) {
         root: path.resolve(config.repoRoot, mapping.to),
         labelRoot: config.repoRoot,
         labelPrefix: '',
+        collection: mapping.collection || mapping.to,
       };
     }
 
@@ -210,6 +249,7 @@ function determineValidationRoots(config) {
       root: path.resolve(config.vaultRoot, mapping.from),
       labelRoot: config.vaultRoot,
       labelPrefix: 'vault/',
+      collection: mapping.collection || mapping.to,
     };
   });
 }
@@ -232,6 +272,7 @@ export async function validateContentTree(config) {
     const relPath = `${fileEntry.labelPrefix}${path.relative(fileEntry.labelRoot, fileEntry.file).split(path.sep).join('/')}`;
     const text = await fs.readFile(fileEntry.file, 'utf8');
     const parsed = parseFrontmatter(text);
+    const requiredKeys = getRequiredKeysForCollection(fileEntry.collection);
 
     if (!parsed.hasFrontmatter) {
       failures.push(`${relPath} missing frontmatter block`);
@@ -243,9 +284,16 @@ export async function validateContentTree(config) {
       continue;
     }
 
-    for (const key of REQUIRED_KEYS) {
+    for (const key of requiredKeys) {
       if (!Object.hasOwn(parsed.data, key)) {
         failures.push(`${relPath} missing required key ${key}`);
+      }
+    }
+
+    if (requiredKeys.includes('authors')) {
+      const authors = normalizeStringListValue(parsed.data.authors);
+      if (authors.length === 0) {
+        failures.push(`${relPath} authors must contain at least one contributor id`);
       }
     }
 

@@ -155,6 +155,16 @@ export const CAMPAIGN_HOOKS_TYPES = [
   'other',
 ] as const;
 
+export const CONTRIBUTOR_ROLE_TYPES = [
+  'artist',
+  'editor',
+  'researcher',
+  'consultant',
+  'cartographer',
+  'photographer',
+  'other',
+] as const;
+
 /**
  * All collection type enums mapped by collection name.
  * Used by r2-content-loader.mjs for VALID_TYPES.

@@ -1,0 +1,191 @@
+---
+import { getCollection, render } from 'astro:content';
+import type { CollectionEntry } from 'astro:content';
+import BaseLayout from '@layouts/BaseLayout.astro';
+import GlobalNavigation from '@components/GlobalNavigation.astro';
+import ContentCard from '@components/ContentCard.astro';
+import { contentIncludesContributor, getContributorDisplayName } from '@utils/contributors';
+import { getFilteredCollection } from '@utils/content-filter';
+
+type PublicContributorCollectionName =
+  | 'lore'
+  | 'places'
+  | 'sentients'
+  | 'bestiary'
+  | 'flora'
+  | 'factions'
+  | 'systems'
+  | 'meta';
+
+type PublicCollectionEntry = {
+  id: string;
+  collection: PublicContributorCollectionName;
+  data: {
+    title?: string;
+    type?: string;
+    subtype?: string;
+    excerpt?: string;
+    tags?: string[];
+    status?: string;
+    authors?: string[];
+    contributors?: Array<{ id: string; roles?: string[] }>;
+    created?: Date;
+    'created-date'?: Date;
+    modified?: Date;
+    'modified-date'?: Date;
+  };
+};
+
+const PUBLIC_COLLECTIONS: PublicContributorCollectionName[] = [
+  'lore',
+  'places',
+  'sentients',
+  'bestiary',
+  'flora',
+  'factions',
+  'systems',
+  'meta',
+];
+
+function pickDisplayDate(entry: PublicCollectionEntry): Date {
+  return entry.data.created ?? entry.data['created-date'] ?? entry.data.modified ?? entry.data['modified-date'] ?? new Date(0);
+}
+
+function sortContributions(entries: PublicCollectionEntry[]): PublicCollectionEntry[] {
+  return [...entries].sort((left, right) => {
+    const dateDifference = pickDisplayDate(right).getTime() - pickDisplayDate(left).getTime();
+    if (dateDifference !== 0) {
+      return dateDifference;
+    }
+
+    return (left.data.title ?? left.id).localeCompare(right.data.title ?? right.id);
+  });
+}
+
+function isPublicContributorCollection(value: string): value is PublicContributorCollectionName {
+  return PUBLIC_COLLECTIONS.includes(value as PublicContributorCollectionName);
+}
+
+function toPublicCollectionEntry<TCollection extends PublicContributorCollectionName>(
+  collection: TCollection,
+  entry: CollectionEntry<TCollection>,
+): PublicCollectionEntry {
+  return {
+    id: entry.id,
+    collection,
+    data: entry.data,
+  };
+}
+
+export async function getStaticPaths() {
+  const contributors = getFilteredCollection(await getCollection('contributors'));
+  return contributors.map((entry) => ({
+    params: { slug: entry.id },
+  }));
+}
+
+const { slug } = Astro.params;
+const contributorEntry = (await getCollection('contributors')).find(
+  (entry) => entry.id === slug && ['publish', 'published'].includes(entry.data.status),
+);
+
+if (!contributorEntry) {
+  throw new Error(`Contributor entry with slug '${slug}' not found`);
+}
+
+const { Content } = await render(contributorEntry);
+const displayName = getContributorDisplayName(contributorEntry.data, contributorEntry.id);
+const searchHref = `/search?q=${encodeURIComponent(displayName)}`;
+
+const collectionResults = await Promise.all(
+  PUBLIC_COLLECTIONS.map(async (collection) => {
+    const entries = getFilteredCollection(await getCollection(collection));
+    return entries.map((entry) => toPublicCollectionEntry(collection, entry));
+  }),
+);
+
+const publicEntries = collectionResults.flat();
+const matchingEntries = sortContributions(
+  publicEntries.filter((entry) => contentIncludesContributor(entry.data, contributorEntry.id)),
+);
+
+const featuredEntries = sortContributions(
+  (contributorEntry.data.featuredContributions ?? [])
+    .filter((reference) => isPublicContributorCollection(reference.collection))
+    .map((reference) => publicEntries.find((entry) => entry.collection === reference.collection && entry.id === reference.slug) ?? null)
+    .filter((entry): entry is PublicCollectionEntry => entry !== null),
+);
+
+const contributionEntries = contributorEntry.data.profileMode === 'featured' ? featuredEntries : matchingEntries;
+const contributionHeading = contributorEntry.data.profileMode === 'featured' ? 'Featured contributions' : 'Public contributions';
+const pageDescription = contributorEntry.data.bioExcerpt ?? `Contributor profile for ${displayName} on World of Aletheia.`;
+---
+
+<BaseLayout title={`${displayName} - Contributors`} description={pageDescription}>
+  <GlobalNavigation />
+  <header class="border-b border-base-300/70 bg-base-100/94">
+    <div class="mx-auto max-w-5xl px-4 py-10 lg:px-8 lg:py-12">
+      <div class="grid gap-6 lg:grid-cols-[auto_minmax(0,1fr)] lg:items-start">
+        {contributorEntry.data.avatar ? (
+          <img
+            src={contributorEntry.data.avatar}
+            alt={`${displayName} avatar`}
+            class="h-28 w-28 rounded-3xl border border-base-300/70 object-cover"
+          />
+        ) : (
+          <div class="flex h-28 w-28 items-center justify-center rounded-3xl border border-base-300/70 bg-base-200 text-3xl font-semibold text-ink-700">
+            {displayName.slice(0, 1).toUpperCase()}
+          </div>
+        )}
+
+        <div class="space-y-5">
+          <div class="space-y-3">
+            <p class="text-xs font-semibold uppercase tracking-[0.22em] text-ink-600">Contributor profile</p>
+            <h1 class="text-4xl font-bold text-ink-950 md:text-5xl">{displayName}</h1>
+            {contributorEntry.data.bioExcerpt && (
+              <p class="max-w-3xl text-lg leading-8 text-ink-700">{contributorEntry.data.bioExcerpt}</p>
+            )}
+          </div>
+
+          <div class="flex flex-wrap gap-3">
+            <a href={searchHref} class="ui-button ui-button--secondary">Search for more by or with this contributor</a>
+            {(contributorEntry.data.socials ?? []).map((social) => (
+              <a href={social.url} class="ui-button ui-button--ghost" target="_blank" rel="noopener noreferrer">
+                {social.label}
+              </a>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="min-h-screen bg-base-100">
+    <div class="mx-auto grid max-w-5xl gap-10 px-4 py-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.85fr)] lg:px-8 lg:py-12">
+      <article class="reading-prose">
+        <Content />
+      </article>
+
+      <aside class="space-y-8">
+        <section class="rounded-[1.6rem] border border-base-300/80 bg-base-100 p-5 shadow-sm">
+          <div class="mb-4 flex items-center justify-between gap-3">
+            <h2 class="text-xl font-semibold text-ink-950">{contributionHeading}</h2>
+            <span class="rounded-full border border-base-300/80 bg-base-200/70 px-3 py-1 text-xs font-medium text-ink-700">
+              {contributionEntries.length}
+            </span>
+          </div>
+
+          {contributionEntries.length > 0 ? (
+            <div class="grid gap-4">
+              {contributionEntries.map((entry) => (
+                <ContentCard content={entry} showCampaign={false} />
+              ))}
+            </div>
+          ) : (
+            <p class="text-sm leading-7 text-ink-700">No public contributions are linked yet for this profile.</p>
+          )}
+        </section>
+      </aside>
+    </div>
+  </main>
+</BaseLayout>

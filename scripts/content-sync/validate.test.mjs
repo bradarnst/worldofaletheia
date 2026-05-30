@@ -42,7 +42,8 @@ describe('validateContentTree tags compatibility', () => {
 title: Copper Bit
 type: economy
 status: draft
-author: Brad
+authors:
+  - brad
 tags:
   - money
   - copper
@@ -70,7 +71,8 @@ Body text.`;
 title: Copper Bit
 type: economy
 status: draft
-author: Brad
+authors:
+  - brad
 ---
 
 Currency #money and #copper are discussed here.`;
@@ -80,6 +82,31 @@ Currency #money and #copper are discussed here.`;
     const result = await validateContentTree({
       repoRoot: tempRoot,
       mappings: [{ to: 'src/content/lore' }],
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.failures).toEqual([]);
+  });
+
+  it('accepts contributor entries without type or authors requirements', async () => {
+    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'content-sync-validate-'));
+    const contentRoot = path.join(tempRoot, 'src/content/contributors');
+    await fs.mkdir(contentRoot, { recursive: true });
+
+    const markdown = `---
+title: Brad
+status: publish
+displayName: Brad
+profileMode: featured
+---
+
+Contributor profile body.`;
+
+    await fs.writeFile(path.join(contentRoot, 'brad.md'), markdown, 'utf8');
+
+    const result = await validateContentTree({
+      repoRoot: tempRoot,
+      mappings: [{ to: 'contributors' }],
     });
 
     expect(result.ok).toBe(true);

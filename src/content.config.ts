@@ -18,6 +18,7 @@ import {
   CAMPAIGN_SCENES_TYPES,
   CAMPAIGN_ADVENTURES_TYPES,
   CAMPAIGN_HOOKS_TYPES,
+  CONTRIBUTOR_ROLE_TYPES,
 } from './lib/content-types';
 
 function createMarkdownLoader(collection: string, pattern: string, base: string) {
@@ -31,7 +32,11 @@ function createMarkdownLoader(collection: string, pattern: string, base: string)
 // Base frontmatter schema for all collections
 const baseSchema = z.object({
   status: z.enum(['draft', 'publish', 'published', 'archive', 'archived']),
-  author: z.string(),
+  authors: z.array(z.string()).min(1),
+  contributors: z.array(z.object({
+    id: z.string(),
+    roles: z.array(z.enum(CONTRIBUTOR_ROLE_TYPES)).min(1),
+  })).optional().default([]),
   created: z.coerce.date().optional(),
   'created-date': z.coerce.date().optional(),
   modified: z.coerce.date().optional(),
@@ -61,6 +66,23 @@ const baseSchema = z.object({
     kind: z.enum(['partOf', 'connectedTo']).optional(),
     reason: z.string().optional(),
   })).optional(),
+});
+
+const contributorsSchema = z.object({
+  title: z.string(),
+  displayName: z.string().optional(),
+  status: z.enum(['draft', 'publish', 'published', 'archive', 'archived']),
+  avatar: z.string().optional(),
+  bioExcerpt: z.string().optional(),
+  socials: z.array(z.object({
+    label: z.string(),
+    url: z.string().url(),
+  })).optional().default([]),
+  profileMode: z.enum(['standard', 'featured']).default('standard'),
+  featuredContributions: z.array(z.object({
+    collection: z.string(),
+    slug: z.string(),
+  })).optional().default([]),
 });
 
 const loreSchema = baseSchema.extend({
@@ -385,6 +407,11 @@ const meta = defineCollection({
   schema: metaSchema,
 });
 
+const contributors = defineCollection({
+  loader: createMarkdownLoader('contributors', '**/*.md', 'src/content/contributors'),
+  schema: contributorsSchema,
+});
+
 
 export const collections = {
   lore,
@@ -409,4 +436,5 @@ export const collections = {
   campaignAdventures,
   campaignHooks,
   meta,
+  contributors,
 };

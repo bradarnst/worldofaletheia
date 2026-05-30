@@ -1,9 +1,10 @@
 ---
 import ArticleContextHeader from '@components/site/ArticleContextHeader.astro';
+import { formatAuthors } from '@utils/contributors';
 
 interface Props {
   title: string;
-  author?: string;
+  authors?: string[];
   created?: Date;
   campaign?: string;
   excerpt?: string;
@@ -12,13 +13,14 @@ interface Props {
   subtype?: string;
 }
 
-const { title, author, created, campaign, excerpt, tags = [], type, subtype } = Astro.props;
+const { title, authors = [], created, campaign, excerpt, tags = [], type, subtype } = Astro.props;
+const authorsLabel = formatAuthors(authors);
 
 const details = [
   type ? { label: 'Type', value: type.replace(/[_-]/g, ' ') } : null,
   subtype ? { label: 'Subtype', value: subtype.replace(/[_-]/g, ' ') } : null,
   campaign ? { label: 'Campaign', value: campaign } : null,
-  author ? { label: 'Author', value: author } : null,
+  authorsLabel ? { label: 'Authors', value: authorsLabel } : null,
   created ? { label: 'Created', value: created.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) } : null,
 ].filter((item): item is { label: string; value: string } => item !== null);
 ---

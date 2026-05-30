@@ -1,0 +1,37 @@
+---
+import { getCollection } from 'astro:content';
+import ContributorCard from '@components/ContributorCard.astro';
+import SimpleContentLayout from '@layouts/SimpleContentLayout.astro';
+import { getContributorDisplayName } from '@utils/contributors';
+import { getFilteredCollection } from '@utils/content-filter';
+
+const contributors = getFilteredCollection(await getCollection('contributors')).sort((left, right) =>
+  getContributorDisplayName(left.data, left.id).localeCompare(getContributorDisplayName(right.data, right.id)),
+);
+
+const content = {
+  title: 'Contributors',
+  description: 'Public profiles for the people who write, illustrate, edit, and help shape World of Aletheia.',
+};
+---
+
+<SimpleContentLayout content={content}>
+  <div class="not-prose space-y-6">
+    <p class="max-w-3xl text-base leading-8 text-ink-700">
+      Public contributor profiles collect author attribution, supporting credits, and highlighted work across the open
+      archive.
+    </p>
+
+    {contributors.length > 0 ? (
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {contributors.map((contributor) => (
+          <ContributorCard contributor={contributor} />
+        ))}
+      </div>
+    ) : (
+      <div class="rounded-2xl border border-base-300/80 bg-base-200/55 p-6 text-sm text-ink-700">
+        Contributor profiles will appear here after the next content sync.
+      </div>
+    )}
+  </div>
+</SimpleContentLayout>

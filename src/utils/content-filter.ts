@@ -2,7 +2,9 @@ export type ContentEnvironment = 'production' | 'preview' | 'development';
 
 interface ContentDataLike {
   status?: string;
+  authors?: string[];
   author?: string;
+  contributors?: Array<{ id: string; roles?: string[] }>;
   campaign?: string;
 }
 
@@ -60,12 +62,12 @@ export function getFilteredCollection<TData extends ContentDataLike, T extends C
 }
 
 /**
- * Gets content entries for a specific author.
+ * Gets content entries for a specific author/contributor id.
  */
 export function getAuthorEntries<TData extends ContentDataLike, T extends ContentLike<TData>>(collection: T[], author: string): T[] {
   return collection.filter((item) => {
     const data = unwrapContentData(item);
-    return data?.author === author;
+    return (data?.authors ?? []).includes(author) || (data?.contributors ?? []).some((credit) => credit.id === author);
   });
 }
 

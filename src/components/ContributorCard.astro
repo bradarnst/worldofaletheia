@@ -1,0 +1,51 @@
+---
+import { getContributorDisplayName } from '@utils/contributors';
+
+interface Props {
+  contributor: {
+    id: string;
+    data?: {
+      title?: string;
+      displayName?: string;
+      avatar?: string;
+      bioExcerpt?: string;
+      profileMode?: 'standard' | 'featured';
+    };
+  };
+}
+
+const { contributor } = Astro.props;
+const data = contributor.data ?? {};
+const displayName = getContributorDisplayName(data, contributor.id);
+const href = `/contributors/${contributor.id}`;
+---
+
+<a href={href} class="group flex h-full flex-col rounded-[1.6rem] border border-base-300/80 bg-base-100 p-5 shadow-sm transition duration-200 hover:border-primary/35 hover:shadow-lg">
+  <div class="flex items-start gap-4">
+    {data.avatar ? (
+      <img
+        src={data.avatar}
+        alt={`${displayName} avatar`}
+        class="h-18 w-18 rounded-2xl border border-base-300/70 object-cover"
+        loading="lazy"
+      />
+    ) : (
+      <div class="flex h-18 w-18 items-center justify-center rounded-2xl border border-base-300/70 bg-base-200 text-lg font-semibold text-ink-700">
+        {displayName.slice(0, 1).toUpperCase()}
+      </div>
+    )}
+
+    <div class="min-w-0 flex-1 space-y-2">
+      <div class="flex flex-wrap items-center gap-2">
+        <h2 class="text-xl font-semibold text-ink-950 transition-colors group-hover:text-primary">{displayName}</h2>
+        {data.profileMode === 'featured' && (
+          <span class="rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+            Featured
+          </span>
+        )}
+      </div>
+
+      {data.bioExcerpt && <p class="text-sm leading-7 text-ink-800">{data.bioExcerpt}</p>}
+    </div>
+  </div>
+</a>

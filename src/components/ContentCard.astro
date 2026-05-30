@@ -20,6 +20,11 @@ const id = content.id || '';
 const shouldShowStatusBadge = showStatus || (data.status && data.status !== 'publish' && data.status !== 'published');
 const iconName = data.type || collection || 'Entry';
 const href = collection && id ? `/${collection}/${id}` : '#';
+const authorsLabel = Array.isArray(data.authors) && data.authors.length > 0
+  ? data.authors.join(', ')
+  : typeof data.author === 'string' && data.author.trim().length > 0
+    ? data.author
+    : null;
 const createdDate = data.created instanceof Date
   ? data.created
   : data['created-date'] instanceof Date
@@ -46,7 +51,7 @@ const createdDate = data.created instanceof Date
   {showCampaign && data.campaign && (
     <div class="mt-4 flex flex-wrap gap-2 text-xs text-ink-700">
       <span class="rounded-full border border-base-300/80 bg-base-200/70 px-3 py-1">{data.campaign}</span>
-      {data.author && <span class="rounded-full border border-base-300/80 bg-base-200/70 px-3 py-1">{data.author}</span>}
+      {authorsLabel && <span class="rounded-full border border-base-300/80 bg-base-200/70 px-3 py-1">{authorsLabel}</span>}
     </div>
   )}
 

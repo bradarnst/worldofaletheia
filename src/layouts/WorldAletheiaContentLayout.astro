@@ -23,7 +23,7 @@ const relationships = Array.isArray(data.relationships) ? data.relationships : [
   <GlobalNavigation />
   <WorldAletheiaContentHeader
     title={contentTitle}
-    author={data.author || content.author}
+    authors={data.authors || content.authors}
     created={data.created || content.created}
     excerpt={contentExcerpt}
     tags={data.tags || content.tags}

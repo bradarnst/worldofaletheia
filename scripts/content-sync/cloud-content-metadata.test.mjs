@@ -86,6 +86,8 @@ Preferred campaign overview body.
   it('truncates oversized body text for stable FTS sync statements', async () => {
     const oversizedBody = `---
 title: Long Entry
+authors:
+  - brad
 ---
 
 ${'lorem ipsum '.repeat(5000)}
@@ -101,5 +103,28 @@ ${'lorem ipsum '.repeat(5000)}
     );
 
     expect(entries[0].contentSearchRow.bodyText.length).toBeLessThanOrEqual(32000);
+  });
+
+  it('derives legacy content_index author display text from authors arrays', async () => {
+    const entries = await deriveCollectionEntries(
+      { to: 'lore' },
+      'contributors-test.md',
+      `---
+title: Contributors Test
+type: history
+status: publish
+authors:
+  - brad
+  - barry
+---
+
+Joined author body.
+`,
+      { mtime: new Date('2026-04-06T12:00:00.000Z') },
+      createCloudMock(),
+      '2026-04-06T12:30:00.000Z',
+    );
+
+    expect(entries[0].contentIndexRow.author).toBe('brad, barry');
   });
 });

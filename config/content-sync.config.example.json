@@ -56,6 +56,12 @@
       "localCleanupPath": "src/content/meta"
     },
     {
+      "from": "World/Contributors",
+      "to": "contributors",
+      "target": "cloud",
+      "localCleanupPath": "src/content/contributors"
+    },
+    {
       "from": "World/Assets/Images",
       "to": "src/assets/images"
     },
