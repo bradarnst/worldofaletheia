@@ -7,6 +7,11 @@
 - Status: Draft plan for review
 - Related HLD: `plans/features/contributors-and-attribution-hld-2026-05-29.md`
 
+
+## Relational Attribution Follow-Up
+
+This plan is extended by `plans/features/contributor-relational-attribution-implementation-plan-2026-05-30.md` and ADR `plans/adrs/0022-relational-contributor-attribution-index.md`. That follow-up plan covers the required D1 migration, sync writer changes, exact `/search?contributor={id}` semantics, and staging/production migration-before-sync deployment sequence.
+
 ## Delivery Strategy
 
 Deliver the feature in small, independently useful phases:

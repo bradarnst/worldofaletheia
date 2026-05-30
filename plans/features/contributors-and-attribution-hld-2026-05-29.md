@@ -8,6 +8,11 @@
 - Owner: Brad
 - Scope: Contributors IA, contributor metadata, contribution attribution, and image attribution/viewing direction
 
+
+## Relational Attribution Addendum
+
+This HLD is amended by `plans/features/contributor-relational-attribution-hld-2026-05-30.md` and ADR `plans/adrs/0022-relational-contributor-attribution-index.md`. The addendum keeps this document's IA/profile/source-frontmatter direction, but replaces broad contributor-search semantics with a relational D1 model using `contributors` and `attributions` tables.
+
 ## Problem Statement
 
 World of Aletheia now has its first external contributor. The site needs a way to recognize contributors publicly, support contributor bios and links, and connect contributors back to the public work they helped create.
