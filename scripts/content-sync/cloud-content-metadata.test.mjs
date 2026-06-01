@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { deriveCollectionEntries } from './cloud-content-metadata.mjs';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { collectCloudContentMetadata, deriveCollectionEntries } from './cloud-content-metadata.mjs';
 
 function createCloudMock() {
   return {
@@ -222,6 +225,7 @@ Profile body.
 
     expect(entries[0].contributorRegistryRow).toEqual({
       id: 'alex',
+      aliases: ['Alex'],
       displayName: 'Alex E.',
       title: 'Alex Example',
       status: 'publish',
@@ -278,5 +282,128 @@ Body.
         '2026-04-06T12:30:00.000Z',
       ),
     ).rejects.toThrow('wrong-collection.md frontmatter collection "places" does not match sync mapping/folder collection "lore".');
+  });
+
+  it('canonicalizes attribution contributor ids through contributor profile aliases', async () => {
+    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'content-sync-metadata-'));
+    const vaultRoot = path.join(tempRoot, 'vault');
+    await fs.mkdir(path.join(vaultRoot, 'lore'), { recursive: true });
+    await fs.mkdir(path.join(vaultRoot, 'contributors'), { recursive: true });
+
+    await fs.writeFile(
+      path.join(vaultRoot, 'contributors', 'Brad Arnst.md'),
+      `---
+title: Brad Arnst
+collection: contributors
+status: publish
+profileMode: featured
+aliases:
+  - Brad
+---
+
+Contributor profile.
+`,
+      'utf8',
+    );
+    await fs.writeFile(
+      path.join(vaultRoot, 'lore', 'Example.md'),
+      `---
+title: Example
+collection: lore
+type: history
+status: publish
+authors:
+  - Brad
+---
+
+Example body.
+`,
+      'utf8',
+    );
+
+    const metadata = await collectCloudContentMetadata(
+      {
+        repoRoot: tempRoot,
+        vaultRoot,
+        includeExtensions: ['.md'],
+        mappings: [
+          { from: 'lore', to: 'lore', target: 'cloud', localCleanupPath: 'src/content/lore' },
+          { from: 'contributors', to: 'contributors', target: 'cloud', localCleanupPath: 'src/content/contributors' },
+        ],
+      },
+      { cloud: createCloudMock() },
+      new Map(),
+    );
+
+    expect(metadata.contributorRows[0]).toMatchObject({
+      id: 'Brad Arnst',
+      aliases: ['Brad'],
+    });
+    expect(metadata.attributionRows).toContainEqual(expect.objectContaining({
+      contributorId: 'Brad Arnst',
+      role: 'author',
+      targetCollection: 'lore',
+      targetId: 'Example',
+    }));
+  });
+
+  it('canonicalizes attribution contributor ids through contributor display-name first tokens', async () => {
+    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'content-sync-metadata-'));
+    const vaultRoot = path.join(tempRoot, 'vault');
+    await fs.mkdir(path.join(vaultRoot, 'lore'), { recursive: true });
+    await fs.mkdir(path.join(vaultRoot, 'contributors'), { recursive: true });
+
+    await fs.writeFile(
+      path.join(vaultRoot, 'contributors', 'Brad Arnst.md'),
+      `---
+title: Brad Arnst
+displayName: Brad Arnst
+collection: contributors
+status: publish
+profileMode: featured
+---
+
+Contributor profile.
+`,
+      'utf8',
+    );
+    await fs.writeFile(
+      path.join(vaultRoot, 'lore', 'Example.md'),
+      `---
+title: Example
+collection: lore
+type: history
+status: publish
+authors:
+  - Brad
+---
+
+Example body.
+`,
+      'utf8',
+    );
+
+    const metadata = await collectCloudContentMetadata(
+      {
+        repoRoot: tempRoot,
+        vaultRoot,
+        includeExtensions: ['.md'],
+        mappings: [
+          { from: 'lore', to: 'lore', target: 'cloud', localCleanupPath: 'src/content/lore' },
+          { from: 'contributors', to: 'contributors', target: 'cloud', localCleanupPath: 'src/content/contributors' },
+        ],
+      },
+      { cloud: createCloudMock() },
+      new Map(),
+    );
+
+    expect(metadata.contributorRows[0]).toMatchObject({
+      id: 'Brad Arnst',
+      aliases: ['Brad'],
+    });
+    expect(metadata.attributionRows).toContainEqual(expect.objectContaining({
+      contributorId: 'Brad Arnst',
+      role: 'author',
+    }));
   });
 });

@@ -73,6 +73,7 @@ const contributorsSchema = z.object({
   collection: z.literal('contributors'),
   title: z.string(),
   displayName: z.string().optional(),
+  aliases: z.array(z.string()).optional().default([]),
   status: z.enum(['draft', 'publish', 'published', 'archive', 'archived']),
   avatar: z.string().optional(),
   bioExcerpt: z.string().optional(),

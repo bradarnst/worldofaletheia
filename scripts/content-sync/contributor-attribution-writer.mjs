@@ -14,8 +14,15 @@ function dedupeRows(rows, keyBuilder) {
   return [...rowMap.values()];
 }
 
-function assertKnownAttributionContributors({ contributorRows, attributionRows, managedCollections }) {
+function assertKnownAttributionContributors({ contributorRows, attributionRows, managedCollections, requireContributorRegistry }) {
   if (!managedCollections.includes('contributors')) {
+    if (requireContributorRegistry && attributionRows.length > 0) {
+      throw new Error(
+        'Attribution sync derived contributor attribution rows, but the contributors collection is not managed by this sync plan. ' +
+          'Add a contributors content-sync mapping so contributor profile rows are written before attributions.',
+      );
+    }
+
     return;
   }
 
@@ -34,7 +41,12 @@ function assertKnownAttributionContributors({ contributorRows, attributionRows, 
   );
 }
 
-export function buildContributorAttributionSyncPlan({ contributorRows = [], attributionRows = [], managedCollections = [] }) {
+export function buildContributorAttributionSyncPlan({
+  contributorRows = [],
+  attributionRows = [],
+  managedCollections = [],
+  requireContributorRegistry = false,
+}) {
   const dedupedContributorRows = dedupeRows(contributorRows, (row) => row.id).sort((left, right) => left.id.localeCompare(right.id));
   const dedupedAttributionRows = dedupeRows(
     attributionRows,
@@ -52,6 +64,7 @@ export function buildContributorAttributionSyncPlan({ contributorRows = [], attr
     contributorRows: dedupedContributorRows,
     attributionRows: dedupedAttributionRows,
     managedCollections: normalizedManagedCollections,
+    requireContributorRegistry,
   });
 
   return {

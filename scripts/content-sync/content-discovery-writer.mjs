@@ -38,6 +38,7 @@ export function buildContentDiscoverySyncPlan({
       contributorRows,
       attributionRows,
       managedCollections,
+      requireContributorRegistry: true,
     }),
   };
 }

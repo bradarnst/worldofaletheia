@@ -173,6 +173,147 @@ Currency text.`,
     );
   });
 
+  it('accepts author ids that match contributor profile aliases', async () => {
+    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'content-sync-validate-'));
+    const loreRoot = path.join(tempRoot, 'src/content/lore');
+    const contributorRoot = path.join(tempRoot, 'src/content/contributors');
+    await fs.mkdir(loreRoot, { recursive: true });
+    await fs.mkdir(contributorRoot, { recursive: true });
+
+    await fs.writeFile(
+      path.join(contributorRoot, 'Brad Arnst.md'),
+      `---
+title: Brad Arnst
+collection: contributors
+status: publish
+profileMode: featured
+aliases:
+  - Brad
+---
+
+Contributor profile body.`,
+      'utf8',
+    );
+
+    await fs.writeFile(
+      path.join(loreRoot, 'Copper Bit.md'),
+      `---
+title: Copper Bit
+collection: lore
+type: economy
+status: draft
+authors:
+  - Brad
+---
+
+Currency text.`,
+      'utf8',
+    );
+
+    const result = await validateContentTree({
+      repoRoot: tempRoot,
+      mappings: [
+        { to: 'src/content/lore', collection: 'lore' },
+        { to: 'src/content/contributors', collection: 'contributors' },
+      ],
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.failures).toEqual([]);
+  });
+
+  it('accepts author ids that match unique contributor display-name first tokens', async () => {
+    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'content-sync-validate-'));
+    const loreRoot = path.join(tempRoot, 'src/content/lore');
+    const contributorRoot = path.join(tempRoot, 'src/content/contributors');
+    await fs.mkdir(loreRoot, { recursive: true });
+    await fs.mkdir(contributorRoot, { recursive: true });
+
+    await fs.writeFile(
+      path.join(contributorRoot, 'Brad Arnst.md'),
+      `---
+title: Brad Arnst
+collection: contributors
+displayName: Brad Arnst
+status: publish
+profileMode: featured
+---
+
+Contributor profile body.`,
+      'utf8',
+    );
+
+    await fs.writeFile(
+      path.join(loreRoot, 'Copper Bit.md'),
+      `---
+title: Copper Bit
+collection: lore
+type: economy
+status: draft
+authors:
+  - Brad
+---
+
+Currency text.`,
+      'utf8',
+    );
+
+    const result = await validateContentTree({
+      repoRoot: tempRoot,
+      mappings: [
+        { to: 'src/content/lore', collection: 'lore' },
+        { to: 'src/content/contributors', collection: 'contributors' },
+      ],
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.failures).toEqual([]);
+  });
+
+  it('rejects contributor aliases claimed by multiple profiles', async () => {
+    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'content-sync-validate-'));
+    const contributorRoot = path.join(tempRoot, 'src/content/contributors');
+    await fs.mkdir(contributorRoot, { recursive: true });
+
+    await fs.writeFile(
+      path.join(contributorRoot, 'Brad Arnst.md'),
+      `---
+title: Brad Arnst
+collection: contributors
+status: publish
+profileMode: featured
+aliases:
+  - Brad
+---
+
+Contributor profile body.`,
+      'utf8',
+    );
+
+    await fs.writeFile(
+      path.join(contributorRoot, 'Brad Example.md'),
+      `---
+title: Brad Example
+collection: contributors
+status: publish
+profileMode: featured
+---
+
+Contributor profile body.`,
+      'utf8',
+    );
+
+    const result = await validateContentTree({
+      repoRoot: tempRoot,
+      mappings: [{ to: 'src/content/contributors', collection: 'contributors' }],
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.failures).toContain(
+      'src/content/contributors/Brad Example.md contributor alias "Brad" is claimed by both "Brad Arnst" and "Brad Example"',
+    );
+  });
+
   it('rejects contributor entries without explicit collection or profileMode', async () => {
     const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'content-sync-validate-'));
     const contentRoot = path.join(tempRoot, 'src/content/contributors');

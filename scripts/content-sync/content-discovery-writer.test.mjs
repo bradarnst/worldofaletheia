@@ -248,6 +248,26 @@ describe('content discovery writer', () => {
     ).toThrow(/unknown contributor id\(s\): alex/);
   });
 
+  it('fails full discovery sync plans when attribution rows exist without a contributors mapping', () => {
+    expect(() =>
+      buildContentDiscoverySyncPlan({
+        contentIndexRows: [createIndexRow()],
+        contentSearchRows: [createSearchRow()],
+        attributionRows: [
+          {
+            contributorId: 'brad',
+            targetType: 'content',
+            targetCollection: 'lore',
+            targetId: 'lore/example',
+            role: 'author',
+            indexedAt: '2026-03-03T00:00:00.000Z',
+          },
+        ],
+        managedCollections: ['lore'],
+      }),
+    ).toThrow(/contributors collection is not managed/);
+  });
+
   it('can still build transactional collection chunks when explicitly requested', () => {
     const plan = buildContentDiscoverySyncPlan({
       contentIndexRows: [createIndexRow()],

@@ -97,6 +97,7 @@ export const META_TYPES = [
   'content',
   'reference',
   'governance',
+  'characterCreation',
 ] as const;
 
 // Session types

@@ -132,6 +132,24 @@ function normalizeRelativeMarkdownId(root, file) {
   return path.relative(root, file).split(path.sep).join('/').replace(/\.md$/i, '');
 }
 
+function getFirstNameAlias(value) {
+  const normalized = normalizeFrontmatterScalar(value);
+  if (!normalized) {
+    return null;
+  }
+
+  const firstToken = normalized.split(/\s+/)[0]?.trim();
+  return firstToken && firstToken !== normalized ? firstToken : null;
+}
+
+function collectContributorIdentityAliases(parsed, canonicalId) {
+  return [...new Set([
+    ...normalizeStringListValue(parsed.data.aliases),
+    getFirstNameAlias(parsed.data.displayName),
+    getFirstNameAlias(parsed.data.title),
+  ].filter((alias) => alias && alias !== canonicalId))];
+}
+
 function extractContributorRoleIds(frontmatterLines = []) {
   const ids = [];
   const contributorsStart = frontmatterLines.findIndex((line) => /^contributors\s*:\s*$/.test(line));
@@ -245,7 +263,7 @@ function parseFrontmatter(text) {
     const key = line.slice(0, idx).trim();
     const raw = line.slice(idx + 1).trim();
 
-    if ((key === 'tags' || key === 'authors') && raw === '') {
+    if ((key === 'tags' || key === 'authors' || key === 'aliases') && raw === '') {
       const listItems = [];
       let cursor = i + 1;
       while (cursor < frontmatterLines.length) {
@@ -427,6 +445,20 @@ export async function validateContentTree(config) {
   const warnings = [];
   const parsedEntries = [];
   const contributorIds = new Set();
+  const contributorAliasOwners = new Map();
+
+  const registerContributorIdentity = (identity, canonicalId, relPath) => {
+    const existingContributorId = contributorAliasOwners.get(identity);
+    if (existingContributorId && existingContributorId !== canonicalId) {
+      failures.push(
+        `${relPath} contributor alias "${identity}" is claimed by both "${existingContributorId}" and "${canonicalId}"`,
+      );
+      return;
+    }
+
+    contributorAliasOwners.set(identity, canonicalId);
+    contributorIds.add(identity);
+  };
 
   for (const fileEntry of fileEntries) {
     const relPath = `${fileEntry.labelPrefix}${path.relative(fileEntry.labelRoot, fileEntry.file).split(path.sep).join('/')}`;
@@ -439,7 +471,11 @@ export async function validateContentTree(config) {
 
     if ((declaredCollection ?? expectedCollection) === 'contributors') {
       hasContributorCollection = true;
-      contributorIds.add(normalizeRelativeMarkdownId(fileEntry.root, fileEntry.file));
+      const canonicalId = normalizeRelativeMarkdownId(fileEntry.root, fileEntry.file);
+      registerContributorIdentity(canonicalId, canonicalId, relPath);
+      for (const alias of collectContributorIdentityAliases(parsed, canonicalId)) {
+        registerContributorIdentity(alias, canonicalId, relPath);
+      }
     }
   }
 

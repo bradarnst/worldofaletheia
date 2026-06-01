@@ -106,6 +106,28 @@ function normalizeAuthors(frontmatterAuthors) {
   return [];
 }
 
+function normalizeStringList(value) {
+  return normalizeAuthors(value);
+}
+
+function getFirstNameAlias(value) {
+  const normalized = normalizeNullableString(value);
+  if (!normalized) {
+    return null;
+  }
+
+  const firstToken = normalized.split(/\s+/)[0]?.trim();
+  return firstToken && firstToken !== normalized ? firstToken : null;
+}
+
+function collectContributorAliases(frontmatterRecord, canonicalId) {
+  return [...new Set([
+    ...normalizeStringList(frontmatterRecord.aliases),
+    getFirstNameAlias(frontmatterRecord.displayName),
+    getFirstNameAlias(frontmatterRecord.title),
+  ].filter((alias) => alias && alias !== canonicalId))];
+}
+
 function normalizeRole(value) {
   if (typeof value !== 'string') {
     return null;
@@ -184,6 +206,7 @@ function createContributorRegistryRow({ contentEntry, frontmatterRecord, generat
 
   return {
     id: contentEntry.id,
+    aliases: collectContributorAliases(frontmatterRecord, contentEntry.id),
     displayName: normalizeNullableString(frontmatterRecord.displayName) ?? normalizeNullableString(frontmatterRecord.title) ?? contentEntry.id,
     title: normalizeNullableString(frontmatterRecord.title),
     status: normalizeNullableString(frontmatterRecord.status) ?? 'draft',
@@ -557,12 +580,29 @@ export async function collectCloudContentMetadata(config, services, wikiIndex) {
     }
   }
 
+  const contributorAliasMap = new Map();
+  for (const row of contributorRows) {
+    for (const alias of [row.id, ...(row.aliases ?? [])]) {
+      const existingContributorId = contributorAliasMap.get(alias);
+      if (existingContributorId && existingContributorId !== row.id) {
+        throw new Error(`Contributor alias "${alias}" is claimed by both "${existingContributorId}" and "${row.id}".`);
+      }
+
+      contributorAliasMap.set(alias, row.id);
+    }
+  }
+
+  const canonicalAttributionRows = attributionRows.map((row) => ({
+    ...row,
+    contributorId: contributorAliasMap.get(row.contributorId) ?? row.contributorId,
+  }));
+
   return {
     generatedAt,
     managedCollections: Array.from(managedCollections).sort((a, b) => a.localeCompare(b)),
     contentIndexRows,
     contentSearchRows,
     contributorRows,
-    attributionRows,
+    attributionRows: canonicalAttributionRows,
   };
 }
