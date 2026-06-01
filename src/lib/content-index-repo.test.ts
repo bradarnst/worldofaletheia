@@ -403,4 +403,67 @@ describe('ContentIndexRepo', () => {
     ]);
     expect(seenQueries[0]?.values.slice(8)).toEqual(['"journal"']);
   });
+
+  it('filters search results by exact contributor attribution without bypassing visibility guards', async () => {
+    const seenQueries: Array<{ query: string; values: unknown[]; method: 'first' | 'all' }> = [];
+    const repo = new ContentIndexRepo(
+      createDbMock((query, values, method) => {
+        seenQueries.push({ query, values, method });
+
+        if (method === 'first') {
+          return { total_count: 2 };
+        }
+
+        return [];
+      }),
+    );
+
+    await repo.searchContent({
+      query: '',
+      contributorId: 'brad',
+      page: 1,
+      pageSize: 10,
+    });
+
+    expect(seenQueries[0]?.query).toContain('FROM attributions');
+    expect(seenQueries[0]?.query).toContain('attributions.contributor_id = ?');
+    expect(seenQueries[0]?.query).toContain("COALESCE(content_index.visibility, 'gm') = 'public'");
+    expect(seenQueries[0]?.query).not.toContain('content_search_fts MATCH');
+    expect(seenQueries[0]?.values).toEqual(['publish', 'published', 'review', 'draft', 'brad']);
+  });
+
+  it('combines contributor filtering with FTS search terms for authored or credited work', async () => {
+    const seenQueries: Array<{ query: string; values: unknown[]; method: 'first' | 'all' }> = [];
+    const repo = new ContentIndexRepo(
+      createDbMock((query, values, method) => {
+        seenQueries.push({ query, values, method });
+
+        if (method === 'first') {
+          return { total_count: 1 };
+        }
+
+        return [];
+      }),
+    );
+
+    await repo.searchContent({
+      query: 'magic',
+      contributorId: 'alex',
+      collection: 'systems',
+      page: 1,
+      pageSize: 5,
+    });
+
+    expect(seenQueries[0]?.query).toContain('INNER JOIN content_search_fts');
+    expect(seenQueries[0]?.query).toContain('FROM attributions');
+    expect(seenQueries[0]?.values).toEqual([
+      'systems',
+      'publish',
+      'published',
+      'review',
+      'draft',
+      'alex',
+      '"magic"',
+    ]);
+  });
 });

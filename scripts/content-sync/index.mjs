@@ -64,23 +64,27 @@ ${label}:`);
   show('Stale files', diff.grouped.stale);
 }
 
+function reportValidationFailure(validation, action) {
+  fail('Content checks failed.');
+  console.log(`Action: ${action}`);
+  support('VALIDATION-FAILED');
+  for (const line of validation.failures) {
+    console.log(`- ${line}`);
+  }
+  if (validation.warnings.length) {
+    warn('Warnings:');
+    for (const line of validation.warnings.slice(0, 20)) {
+      console.log(`- ${line}`);
+    }
+  }
+  process.exitCode = 1;
+}
+
 async function runValidateOnly(config) {
   step('Validate content');
   const validation = await validateContentTree(config);
   if (!validation.ok) {
-    fail('Content checks failed.');
-    console.log('Action: fix listed files, then run content sync again.');
-    support('VALIDATION-FAILED');
-    for (const line of validation.failures) {
-      console.log(`- ${line}`);
-    }
-    if (validation.warnings.length) {
-      warn('Warnings:');
-      for (const line of validation.warnings.slice(0, 20)) {
-        console.log(`- ${line}`);
-      }
-    }
-    process.exitCode = 1;
+    reportValidationFailure(validation, 'fix listed files, then run content sync again.');
     return;
   }
   ok(`Validation passed for ${validation.checkedFiles} file(s).`);
@@ -112,6 +116,17 @@ async function runFullSync(config, { dryRun, services }) {
     }
   }
 
+  step('Validate content');
+  const preApplyValidation = await validateContentTree(config);
+  if (!preApplyValidation.ok) {
+    reportValidationFailure(preApplyValidation, 'fix listed files before applying sync or writing D1 discovery indexes.');
+    return;
+  }
+  ok(`Validation passed for ${preApplyValidation.checkedFiles} file(s).`);
+  if (preApplyValidation.warnings.length) {
+    warn(`Validation warnings: ${preApplyValidation.warnings.length}`);
+  }
+
   step('Apply sync');
   const applyResult = await applySync(diff, config, staleAction, services);
   ok(`Applied sync changes to ${applyResult.changedFiles.length} path(s).`);
@@ -122,19 +137,7 @@ async function runFullSync(config, { dryRun, services }) {
   step('Validate content');
   const validation = await validateContentTree(config);
   if (!validation.ok) {
-    fail('Content checks failed after sync.');
-    console.log('Action: fix listed files, then run sync again.');
-    support('VALIDATION-FAILED');
-    for (const line of validation.failures) {
-      console.log(`- ${line}`);
-    }
-    if (validation.warnings.length) {
-      warn('Warnings:');
-      for (const line of validation.warnings.slice(0, 20)) {
-        console.log(`- ${line}`);
-      }
-    }
-    process.exitCode = 1;
+    reportValidationFailure(validation, 'fix listed files, then run sync again.');
     return;
   }
   ok(`Validation passed for ${validation.checkedFiles} file(s).`);

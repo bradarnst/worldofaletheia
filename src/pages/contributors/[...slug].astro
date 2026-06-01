@@ -95,7 +95,7 @@ if (!contributorEntry) {
 
 const { Content } = await render(contributorEntry);
 const displayName = getContributorDisplayName(contributorEntry.data, contributorEntry.id);
-const searchHref = `/search?q=${encodeURIComponent(displayName)}`;
+const searchHref = `/search?contributor=${encodeURIComponent(contributorEntry.id)}`;
 
 const collectionResults = await Promise.all(
   PUBLIC_COLLECTIONS.map(async (collection) => {

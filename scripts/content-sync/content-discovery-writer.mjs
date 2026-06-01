@@ -9,10 +9,22 @@ import {
   resolveContentIndexSyncTarget,
 } from './content-index-writer.mjs';
 import { buildContentSearchSql, buildContentSearchSyncPlan } from './content-search-writer.mjs';
+import {
+  buildAttributionDeleteSql,
+  buildAttributionInsertSql,
+  buildContributorAttributionSyncPlan,
+  buildContributorRegistrySql,
+} from './contributor-attribution-writer.mjs';
 
 const require = createRequire(import.meta.url);
 
-export function buildContentDiscoverySyncPlan({ contentIndexRows, contentSearchRows, managedCollections }) {
+export function buildContentDiscoverySyncPlan({
+  contentIndexRows,
+  contentSearchRows,
+  contributorRows = [],
+  attributionRows = [],
+  managedCollections,
+}) {
   return {
     contentIndex: buildContentIndexSyncPlan({
       rows: contentIndexRows,
@@ -22,13 +34,26 @@ export function buildContentDiscoverySyncPlan({ contentIndexRows, contentSearchR
       rows: contentSearchRows,
       managedCollections,
     }),
+    contributorAttribution: buildContributorAttributionSyncPlan({
+      contributorRows,
+      attributionRows,
+      managedCollections,
+    }),
   };
 }
 
 export function buildContentDiscoverySyncSql(plan, options = {}) {
   const contentSearchSql = buildContentSearchSql(plan.contentSearch).trim();
   const contentIndexSql = buildContentIndexSql(plan.contentIndex).trim();
-  const body = [contentSearchSql, contentIndexSql].filter((segment) => segment.length > 0).join('\n');
+  const contributorRegistrySql = buildContributorRegistrySql(plan.contributorAttribution).trim();
+  const attributionDeleteSql = plan.contributorAttribution.managedCollections
+    .map((collection) => buildAttributionDeleteSql(collection))
+    .join('\n')
+    .trim();
+  const attributionInsertSql = buildAttributionInsertSql(plan.contributorAttribution).trim();
+  const body = [contributorRegistrySql, contentSearchSql, attributionDeleteSql, contentIndexSql, attributionInsertSql]
+    .filter((segment) => segment.length > 0)
+    .join('\n');
   const transactional = options.transactional ?? false;
 
   if (!body) {
@@ -46,6 +71,7 @@ function buildCollectionChunkSql({
   collection,
   contentIndexRows,
   contentSearchRows,
+  attributionRows,
   replaceCollection,
   transactional,
 }) {
@@ -65,7 +91,16 @@ function buildCollectionChunkSql({
     { replaceCollections: replaceCollection },
   ).trim();
 
-  const body = [contentSearchSql, contentIndexSql].filter((segment) => segment.length > 0).join('\n');
+  const attributionPlan = buildContributorAttributionSyncPlan({
+    attributionRows,
+    managedCollections: [collection],
+  });
+  const attributionDeleteSql = replaceCollection ? buildAttributionDeleteSql(collection) : '';
+  const attributionInsertSql = buildAttributionInsertSql(attributionPlan, { collection }).trim();
+
+  const body = [contentSearchSql, attributionDeleteSql, contentIndexSql, attributionInsertSql]
+    .filter((segment) => segment.length > 0)
+    .join('\n');
   if (!body) {
     return '';
   }
@@ -80,14 +115,23 @@ function buildCollectionChunkSql({
 export function buildContentDiscoverySyncSqlChunks(plan, options = {}) {
   const transactional = options.transactional ?? false;
   const chunks = [];
+  const contributorRegistrySql = buildContributorRegistrySql(plan.contributorAttribution).trim();
+
+  if (contributorRegistrySql) {
+    chunks.push(transactional ? ['BEGIN IMMEDIATE;', contributorRegistrySql, 'COMMIT;'].join('\n') + '\n' : `${contributorRegistrySql}\n`);
+  }
 
   for (const collection of plan.contentIndex.managedCollections) {
     const collectionIndexRows = plan.contentIndex.rows.filter((row) => row.collection === collection);
     const collectionSearchRows = plan.contentSearch.rows.filter((row) => row.collection === collection);
+    const collectionAttributionRows = plan.contributorAttribution.attributionRows.filter(
+      (row) => row.targetCollection === collection,
+    );
     const sql = buildCollectionChunkSql({
       collection,
       contentIndexRows: collectionIndexRows,
       contentSearchRows: collectionSearchRows,
+      attributionRows: collectionAttributionRows,
       replaceCollection: true,
       transactional,
     });
@@ -136,11 +180,20 @@ function runWranglerSqlFile(target, filePath) {
   }
 }
 
-export async function syncContentDiscovery({ contentIndexRows, contentSearchRows, managedCollections, env = process.env }) {
+export async function syncContentDiscovery({
+  contentIndexRows,
+  contentSearchRows,
+  contributorRows = [],
+  attributionRows = [],
+  managedCollections,
+  env = process.env,
+}) {
   const target = resolveContentIndexSyncTarget(env);
   const plan = buildContentDiscoverySyncPlan({
     contentIndexRows,
     contentSearchRows,
+    contributorRows,
+    attributionRows,
     managedCollections,
   });
 

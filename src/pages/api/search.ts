@@ -30,8 +30,16 @@ function buildHref(item: ContentIndexRow): string {
 export const GET: APIRoute = async ({ request, locals }) => {
   const url = new URL(request.url);
   const query = url.searchParams.get('q')?.trim() ?? '';
+  const contributorId = normalizeFilterValueOptional(url.searchParams.get('contributor'));
 
-  if (query.length < 2) {
+  if (query.length < 2 && !contributorId) {
+    return new Response(JSON.stringify({ ok: false, error: 'invalid_query' }), {
+      status: 400,
+      headers: getNoIndexHeaders('application/json'),
+    });
+  }
+
+  if (query.length > 0 && query.length < 2) {
     return new Response(JSON.stringify({ ok: false, error: 'invalid_query' }), {
       status: 400,
       headers: getNoIndexHeaders('application/json'),
@@ -43,6 +51,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
     const access = await resolveSearchAccess(request, locals);
     const result = await repo.searchContent({
       query,
+      contributorId,
       collection: normalizeFilterValueOptional(url.searchParams.get('collection')),
       type: normalizeFilterValueOptional(url.searchParams.get('type')),
       subtype: normalizeFilterValueOptional(url.searchParams.get('subtype')),
@@ -56,6 +65,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
       JSON.stringify({
         ok: true,
         query,
+        contributor: contributorId ?? null,
         scope: access.responseScope,
         pagination: result.pagination,
         items: result.items.map((item) => ({

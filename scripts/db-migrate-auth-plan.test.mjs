@@ -112,10 +112,11 @@ describe('db-migrate-auth-plan wrangler parsing', () => {
     });
   });
 
-  it('includes migration 0011 after the gm assignment removal migration', () => {
-    expect(orderedMigrations.at(-3)).toBe('./migrations/0009_campaign_memberships_role_unification.sql');
-    expect(orderedMigrations.at(-2)).toBe('./migrations/0010_drop_campaign_gm_assignments.sql');
-    expect(orderedMigrations.at(-1)).toBe('./migrations/0011_content_search_fts.sql');
+  it('includes contributor attribution migration after the content search FTS migration', () => {
+    expect(orderedMigrations.at(-4)).toBe('./migrations/0009_campaign_memberships_role_unification.sql');
+    expect(orderedMigrations.at(-3)).toBe('./migrations/0010_drop_campaign_gm_assignments.sql');
+    expect(orderedMigrations.at(-2)).toBe('./migrations/0011_content_search_fts.sql');
+    expect(orderedMigrations.at(-1)).toBe('./migrations/0012_contributors_and_attributions.sql');
   });
 
   it('reports invalid membership roles as a blocking conflict', () => {

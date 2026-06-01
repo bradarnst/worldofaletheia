@@ -47,6 +47,7 @@ type SearchErrorCode = 'invalid_query' | 'unavailable';
 interface SearchSuccessResponse {
   ok: true;
   query: string;
+  contributor: string | null;
   scope: SearchScope;
   pagination: SearchPagination;
   items: SearchItem[];
@@ -58,16 +59,21 @@ interface SearchErrorResponse {
 }
 
 const query = Astro.url.searchParams.get('q')?.trim() ?? '';
+const contributor = Astro.url.searchParams.get('contributor')?.trim() ?? '';
 const pageParam = Number.parseInt(Astro.url.searchParams.get('page') ?? '1', 10);
 const page = Number.isNaN(pageParam) || pageParam < 1 ? 1 : pageParam;
 
 let searchResponse: SearchSuccessResponse | SearchErrorResponse | null = null;
 let loadError: SearchErrorCode | null = null;
 
-if (query.length >= 2) {
+if (query.length >= 2 || contributor.length > 0) {
   try {
     const cookie = Astro.request.headers.get('cookie');
-    const response = await fetch(new URL(`/api/search?q=${encodeURIComponent(query)}&page=${page}`, Astro.url), {
+    const params = new URLSearchParams();
+    if (query) params.set('q', query);
+    if (contributor) params.set('contributor', contributor);
+    if (page > 1) params.set('page', String(page));
+    const response = await fetch(new URL(`/api/search?${params.toString()}`, Astro.url), {
       headers: cookie ? { cookie } : undefined,
     });
     const payload = await response.json() as SearchSuccessResponse | SearchErrorResponse;
@@ -86,10 +92,12 @@ if (query.length >= 2) {
 
 const pagination = searchResponse?.ok ? searchResponse.pagination : null;
 const items = searchResponse?.ok ? searchResponse.items : [];
-const hasQuery = query.length > 0;
-const isInvalidQuery = hasQuery && query.length < 2;
-const noResults = query.length >= 2 && !loadError && items.length === 0;
-const title = query.length >= 2 ? `Search: ${query} - World of Aletheia` : 'Search - World of Aletheia';
+const hasQuery = query.length > 0 || contributor.length > 0;
+const isInvalidQuery = query.length > 0 && query.length < 2;
+const isSearchReady = query.length >= 2 || contributor.length > 0;
+const noResults = isSearchReady && !loadError && items.length === 0;
+const resultLabel = contributor ? `contributor ${contributor}${query.length >= 2 ? ` and ${query}` : ''}` : query;
+const title = isSearchReady ? `Search: ${resultLabel} - World of Aletheia` : 'Search - World of Aletheia';
 const description = 'Search across public canon, reference, and campaign content in World of Aletheia.';
 
 function formatCollectionLabel(collection: string): string {
@@ -102,6 +110,7 @@ function formatCollectionLabel(collection: string): string {
 function buildSearchHref(targetPage: number): string {
   const params = new URLSearchParams();
   if (query) params.set('q', query);
+  if (contributor) params.set('contributor', contributor);
   if (targetPage > 1) params.set('page', String(targetPage));
   const nextQuery = params.toString();
   return nextQuery ? `/search?${nextQuery}` : '/search';
@@ -174,6 +183,8 @@ const scopeNotice = searchResponse?.ok ? getScopeNotice(searchResponse.scope) : 
           />
         </label>
 
+        {contributor && <input type="hidden" name="contributor" value={contributor} />}
+
         <div class="flex gap-2 md:justify-end">
           <button type="submit" class="ui-button ui-button--primary js-search-submit">
             <SiteGlyph name="Search" class="h-4 w-4" />
@@ -211,13 +222,13 @@ const scopeNotice = searchResponse?.ok ? getScopeNotice(searchResponse.scope) : 
           </div>
         )}
 
-        {query.length >= 2 && !loadError && (
+        {isSearchReady && !loadError && (
           <>
             <div class="flex flex-wrap items-center justify-between gap-3">
               <p class="text-sm text-ink-700">
                 <span class="font-semibold text-ink-950">{pagination?.totalItems ?? 0}</span>
                 {' '}
-                {(pagination?.totalItems ?? 0) === 1 ? 'result' : 'results'} for <span class="font-semibold text-ink-950">{query}</span>
+                {(pagination?.totalItems ?? 0) === 1 ? 'result' : 'results'} for <span class="font-semibold text-ink-950">{resultLabel}</span>
               </p>
 
               {pagination && pagination.totalPages > 1 && (
@@ -231,6 +242,15 @@ const scopeNotice = searchResponse?.ok ? getScopeNotice(searchResponse.scope) : 
               <div class="rounded-2xl border border-base-300/80 bg-base-100/80 p-5">
                 <p class="text-sm font-semibold uppercase tracking-[0.18em] text-ink-600">{scopeNotice.title}</p>
                 <p class="mt-2 text-base leading-7 text-ink-700">{scopeNotice.body}</p>
+              </div>
+            )}
+
+            {contributor && (
+              <div class="rounded-2xl border border-primary/25 bg-base-100/80 p-5">
+                <p class="text-sm font-semibold uppercase tracking-[0.18em] text-ink-600">Exact contributor filter</p>
+                <p class="mt-2 text-base leading-7 text-ink-700">
+                  Results include authored work and non-author credited work for contributor id <span class="font-semibold text-ink-950">{contributor}</span>.
+                </p>
               </div>
             )}
 
@@ -310,6 +330,7 @@ const scopeNotice = searchResponse?.ok ? getScopeNotice(searchResponse.scope) : 
       const form = document.querySelector('.js-search-form');
       const input = document.querySelector('.js-search-query');
       const submitButton = document.querySelector('.js-search-submit');
+      const contributorInput = document.querySelector('input[name="contributor"]');
 
       if (!(form instanceof HTMLFormElement) || !(input instanceof HTMLInputElement) || !(submitButton instanceof HTMLButtonElement)) {
         return;
@@ -322,8 +343,16 @@ const scopeNotice = searchResponse?.ok ? getScopeNotice(searchResponse.scope) : 
       form.addEventListener('submit', (event) => {
         const trimmedQuery = input.value.trim();
         input.value = trimmedQuery;
+        const hasContributorFilter = contributorInput instanceof HTMLInputElement && contributorInput.value.trim().length > 0;
 
-        if (trimmedQuery.length < 2) {
+        if (trimmedQuery.length > 0 && trimmedQuery.length < 2) {
+          event.preventDefault();
+          input.focus();
+          input.reportValidity();
+          return;
+        }
+
+        if (!hasContributorFilter && trimmedQuery.length < 2) {
           event.preventDefault();
           input.focus();
           input.reportValidity();

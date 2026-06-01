@@ -65,6 +65,7 @@ interface ContentIndexBaseFilters {
   subtype?: string;
   tags?: string[];
   query?: string;
+  contributorId?: string;
   environment?: ContentEnvironment;
   visibilityScope?: 'public';
   visibilityAccess?: ContentIndexCampaignVisibilityAccess;
@@ -147,6 +148,15 @@ function normalizeCampaignSlugs(slugs: string[] | undefined): string[] {
 
 function normalizeSearchTerms(query: string): string[] {
   return [...new Set(query.toLowerCase().split(/\s+/).map((term) => term.trim()).filter((term) => term.length > 0))];
+}
+
+function normalizeExactFilter(value: string | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
 }
 
 function escapeLikePattern(value: string): string {
@@ -262,6 +272,19 @@ function buildWhereClause(filters: ContentIndexBaseFilters): { sql: string; valu
         .join(', ')}))`,
     );
     values.push(...tags);
+  }
+
+  const contributorId = normalizeExactFilter(filters.contributorId);
+  if (contributorId) {
+    clauses.push(`EXISTS (
+      SELECT 1
+      FROM attributions
+      WHERE attributions.target_type = 'content'
+        AND attributions.target_collection = content_index.collection
+        AND attributions.target_id = content_index.id
+        AND attributions.contributor_id = ?
+    )`);
+    values.push(contributorId);
   }
 
   const visibility = buildVisibilityClause(filters);
@@ -455,8 +478,9 @@ export class ContentIndexRepo {
     const requestedPage = normalizePage(options.page);
     const pageSize = normalizePageSize(options.pageSize);
     const searchMode = options.searchMode ?? 'fts';
+    const hasSearchQuery = normalizeSearchTerms(options.query).length > 0;
 
-    if (searchMode === 'metadata') {
+    if (searchMode === 'metadata' || !hasSearchQuery) {
       return this.searchMetadataContent(options, requestedPage, pageSize);
     }
 

@@ -40,6 +40,7 @@ describe('validateContentTree tags compatibility', () => {
 
     const markdown = `---
 title: Copper Bit
+collection: lore
 type: economy
 status: draft
 authors:
@@ -69,6 +70,7 @@ Body text.`;
 
     const markdown = `---
 title: Copper Bit
+collection: lore
 type: economy
 status: draft
 authors:
@@ -95,6 +97,7 @@ Currency #money and #copper are discussed here.`;
 
     const markdown = `---
 title: Brad
+collection: contributors
 status: publish
 displayName: Brad
 profileMode: featured
@@ -106,10 +109,151 @@ Contributor profile body.`;
 
     const result = await validateContentTree({
       repoRoot: tempRoot,
-      mappings: [{ to: 'contributors' }],
+      mappings: [{ to: 'src/content/contributors', collection: 'contributors' }],
     });
 
     expect(result.ok).toBe(true);
     expect(result.failures).toEqual([]);
+  });
+
+  it('rejects author and attribution contributor ids without contributor profiles', async () => {
+    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'content-sync-validate-'));
+    const loreRoot = path.join(tempRoot, 'src/content/lore');
+    const contributorRoot = path.join(tempRoot, 'src/content/contributors');
+    await fs.mkdir(loreRoot, { recursive: true });
+    await fs.mkdir(contributorRoot, { recursive: true });
+
+    await fs.writeFile(
+      path.join(contributorRoot, 'brad.md'),
+      `---
+title: Brad
+collection: contributors
+status: publish
+profileMode: featured
+---
+
+Contributor profile body.`,
+      'utf8',
+    );
+
+    await fs.writeFile(
+      path.join(loreRoot, 'Copper Bit.md'),
+      `---
+title: Copper Bit
+collection: lore
+type: economy
+status: draft
+authors:
+  - brad
+  - missing-author
+contributors:
+  - id: missing-artist
+    roles:
+      - artist
+---
+
+Currency text.`,
+      'utf8',
+    );
+
+    const result = await validateContentTree({
+      repoRoot: tempRoot,
+      mappings: [
+        { to: 'src/content/lore', collection: 'lore' },
+        { to: 'src/content/contributors', collection: 'contributors' },
+      ],
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.failures).toContain(
+      'src/content/lore/Copper Bit.md references unknown contributor id "missing-author" in authors; add a contributor profile at contributors/missing-author.md or fix the id',
+    );
+    expect(result.failures).toContain(
+      'src/content/lore/Copper Bit.md references unknown contributor id "missing-artist" in contributors[].id; add a contributor profile at contributors/missing-artist.md or fix the id',
+    );
+  });
+
+  it('rejects contributor entries without explicit collection or profileMode', async () => {
+    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'content-sync-validate-'));
+    const contentRoot = path.join(tempRoot, 'src/content/contributors');
+    await fs.mkdir(contentRoot, { recursive: true });
+
+    await fs.writeFile(
+      path.join(contentRoot, 'brad.md'),
+      `---
+title: Brad
+status: publish
+---
+
+Contributor profile body.`,
+      'utf8',
+    );
+
+    const result = await validateContentTree({
+      repoRoot: tempRoot,
+      mappings: [{ to: 'src/content/contributors', collection: 'contributors' }],
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.failures).toContain('src/content/contributors/brad.md missing required key collection');
+    expect(result.failures).toContain('src/content/contributors/brad.md missing required key profileMode');
+  });
+
+  it('rejects unknown frontmatter collections', async () => {
+    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'content-sync-validate-'));
+    const contentRoot = path.join(tempRoot, 'src/content/lore');
+    await fs.mkdir(contentRoot, { recursive: true });
+
+    await fs.writeFile(
+      path.join(contentRoot, 'Copper Bit.md'),
+      `---
+title: Copper Bit
+collection: unknownThings
+type: economy
+status: draft
+authors:
+  - brad
+---
+
+Currency text.`,
+      'utf8',
+    );
+
+    const result = await validateContentTree({
+      repoRoot: tempRoot,
+      mappings: [{ to: 'src/content/lore', collection: 'lore' }],
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.failures).toContain('src/content/lore/Copper Bit.md has unknown collection unknownThings');
+  });
+
+  it('rejects frontmatter collection mismatches with sync mapping or folder-derived collection', async () => {
+    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'content-sync-validate-'));
+    const contentRoot = path.join(tempRoot, 'src/content/contributors');
+    await fs.mkdir(contentRoot, { recursive: true });
+
+    await fs.writeFile(
+      path.join(contentRoot, 'brad.md'),
+      `---
+title: Brad
+collection: lore
+status: publish
+profileMode: featured
+---
+
+Contributor profile body.`,
+      'utf8',
+    );
+
+    const result = await validateContentTree({
+      repoRoot: tempRoot,
+      mappings: [{ to: 'src/content/contributors', collection: 'contributors' }],
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.failures).toContain(
+      'src/content/contributors/brad.md frontmatter collection "lore" does not match sync mapping/folder collection "contributors"',
+    );
   });
 });

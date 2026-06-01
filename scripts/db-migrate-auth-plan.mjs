@@ -15,6 +15,7 @@ export const orderedMigrations = [
   './migrations/0009_campaign_memberships_role_unification.sql',
   './migrations/0010_drop_campaign_gm_assignments.sql',
   './migrations/0011_content_search_fts.sql',
+  './migrations/0012_contributors_and_attributions.sql',
 ];
 
 export function parseArgs(argv) {

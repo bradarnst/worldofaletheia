@@ -106,6 +106,96 @@ function normalizeAuthors(frontmatterAuthors) {
   return [];
 }
 
+function normalizeRole(value) {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
+}
+
+function normalizeContributorRoleEntries(frontmatterContributors) {
+  if (!Array.isArray(frontmatterContributors)) {
+    return [];
+  }
+
+  return frontmatterContributors.flatMap((entry) => {
+    if (!entry || typeof entry !== 'object') {
+      return [];
+    }
+
+    const contributorId = normalizeNullableString(entry.id);
+    if (!contributorId || !Array.isArray(entry.roles)) {
+      return [];
+    }
+
+    return entry.roles
+      .map(normalizeRole)
+      .filter((role) => role !== null)
+      .map((role) => ({ contributorId, role }));
+  });
+}
+
+function createAttributionRows({ contentEntry, frontmatterRecord, generatedAt }) {
+  if (contentEntry.collection === 'contributors') {
+    return [];
+  }
+
+  const attributionMap = new Map();
+  const addAttribution = (contributorId, role) => {
+    const key = `${contributorId}\u0000${contentEntry.collection}\u0000${contentEntry.id}\u0000${role}`;
+    attributionMap.set(key, {
+      contributorId,
+      targetType: 'content',
+      targetCollection: contentEntry.collection,
+      targetId: contentEntry.id,
+      role,
+      indexedAt: generatedAt,
+    });
+  };
+
+  for (const authorId of normalizeAuthors(frontmatterRecord.authors ?? frontmatterRecord.author)) {
+    addAttribution(authorId, 'author');
+  }
+
+  for (const attribution of normalizeContributorRoleEntries(frontmatterRecord.contributors)) {
+    addAttribution(attribution.contributorId, attribution.role);
+  }
+
+  return [...attributionMap.values()].sort(
+    (left, right) =>
+      left.contributorId.localeCompare(right.contributorId) ||
+      left.targetCollection.localeCompare(right.targetCollection) ||
+      left.targetId.localeCompare(right.targetId) ||
+      left.role.localeCompare(right.role),
+  );
+}
+
+function createContributorRegistryRow({ contentEntry, frontmatterRecord, generatedAt }) {
+  if (contentEntry.collection !== 'contributors') {
+    return null;
+  }
+
+  const profileMode = normalizeNullableString(frontmatterRecord.profileMode);
+  if (!profileMode) {
+    throw new Error(`${contentEntry.id} missing required contributor profileMode.`);
+  }
+
+  return {
+    id: contentEntry.id,
+    displayName: normalizeNullableString(frontmatterRecord.displayName) ?? normalizeNullableString(frontmatterRecord.title) ?? contentEntry.id,
+    title: normalizeNullableString(frontmatterRecord.title),
+    status: normalizeNullableString(frontmatterRecord.status) ?? 'draft',
+    profileMode,
+    bioExcerpt: normalizeNullableString(frontmatterRecord.bioExcerpt),
+    avatar: normalizeNullableString(frontmatterRecord.avatar),
+    sourceId: contentEntry.id,
+    r2Key: contentEntry.r2Key,
+    indexedAt: generatedAt,
+  };
+}
+
 function normalizeSearchText(value) {
   if (typeof value !== 'string') {
     return '';
@@ -158,6 +248,23 @@ const CAMPAIGN_FAMILY_COLLECTIONS = {
 };
 
 const CAMPAIGN_FAMILY_SEGMENT_PATTERN = Object.keys(CAMPAIGN_FAMILY_COLLECTIONS).join('|');
+
+function requireFrontmatterCollection(frontmatterRecord, contextLabel) {
+  const collection = normalizeNullableString(frontmatterRecord.collection);
+  if (!collection) {
+    throw new Error(`${contextLabel} missing required frontmatter collection.`);
+  }
+
+  return collection;
+}
+
+function assertCollectionMatch(frontmatterCollection, expectedCollection, contextLabel) {
+  if (frontmatterCollection !== expectedCollection) {
+    throw new Error(
+      `${contextLabel} frontmatter collection "${frontmatterCollection}" does not match sync mapping/folder collection "${expectedCollection}".`,
+    );
+  }
+}
 
 function createContentIndexRow({
   contentEntry,
@@ -220,6 +327,7 @@ export async function deriveCollectionEntries(mapping, relativePath, transformed
 
   const { frontmatter } = parseFrontmatter(transformedMarkdown);
   const frontmatterRecord = frontmatter && typeof frontmatter === 'object' ? frontmatter : {};
+  const frontmatterCollection = requireFrontmatterCollection(frontmatterRecord, normalizedRelative);
   const bodyText = transformedMarkdown.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, '');
   const sourceEtag = buildSourceEtag(transformedMarkdown);
   const lastModified = sourceStats.mtime.toISOString();
@@ -251,6 +359,16 @@ export async function deriveCollectionEntries(mapping, relativePath, transformed
         frontmatterRecord,
         bodyText,
       }),
+      contributorRegistryRow: createContributorRegistryRow({
+        contentEntry,
+        frontmatterRecord,
+        generatedAt,
+      }),
+      attributionRows: createAttributionRows({
+        contentEntry,
+        frontmatterRecord,
+        generatedAt,
+      }),
     };
   };
 
@@ -259,9 +377,10 @@ export async function deriveCollectionEntries(mapping, relativePath, transformed
     if (sessionMatch) {
       const campaignSlug = sessionMatch[1];
       const sessionSlug = normalizeNullableString(frontmatterRecord.slug) ?? sessionMatch[2];
+      assertCollectionMatch(frontmatterCollection, 'sessions', normalizedRelative);
       return [
         buildEntry({
-          collection: 'sessions',
+          collection: frontmatterCollection,
           id: stripMarkdownExtension(normalizedRelative),
           slug: sessionSlug,
           routePath: `${mapping.to}/${normalizedRelative}`,
@@ -276,10 +395,11 @@ export async function deriveCollectionEntries(mapping, relativePath, transformed
       const familySegment = familyMatch[2].toLowerCase();
       const familySlug = normalizeNullableString(frontmatterRecord.slug) ?? familyMatch[3];
       const collection = CAMPAIGN_FAMILY_COLLECTIONS[familySegment];
+      assertCollectionMatch(frontmatterCollection, collection, normalizedRelative);
 
       return [
         buildEntry({
-          collection,
+          collection: frontmatterCollection,
           id: stripMarkdownExtension(normalizedRelative),
           slug: familySlug,
           routePath: `${mapping.to}/${normalizedRelative}`,
@@ -291,9 +411,10 @@ export async function deriveCollectionEntries(mapping, relativePath, transformed
     const campaignMatch = /^([^/]+)\/index\.md$/i.exec(normalizedRelative);
     if (campaignMatch) {
       const campaignSlug = campaignMatch[1];
+      assertCollectionMatch(frontmatterCollection, 'campaigns', normalizedRelative);
       return [
         buildEntry({
-          collection: 'campaigns',
+          collection: frontmatterCollection,
           id: stripMarkdownExtension(normalizedRelative),
           slug: normalizeNullableString(frontmatterRecord.slug) ?? campaignSlug,
           routePath: `${mapping.to}/${normalizedRelative}`,
@@ -311,9 +432,10 @@ export async function deriveCollectionEntries(mapping, relativePath, transformed
         topLevelFileName !== 'sessions' &&
         !Object.prototype.hasOwnProperty.call(CAMPAIGN_FAMILY_COLLECTIONS, topLevelFileName)
       ) {
+        assertCollectionMatch(frontmatterCollection, 'campaigns', normalizedRelative);
         return [
           buildEntry({
-            collection: 'campaigns',
+            collection: frontmatterCollection,
             id: stripMarkdownExtension(normalizedRelative),
             slug: normalizeNullableString(frontmatterRecord.slug) ?? campaignSlug,
             routePath: `${mapping.to}/${normalizedRelative}`,
@@ -326,7 +448,9 @@ export async function deriveCollectionEntries(mapping, relativePath, transformed
     return [];
   }
 
-  const collection = mapping.collection || mapping.to;
+  const collection = frontmatterCollection;
+  const expectedCollection = mapping.collection || mapping.to;
+  assertCollectionMatch(collection, expectedCollection, normalizedRelative);
   const id = stripMarkdownExtension(normalizedRelative);
 
   return [
@@ -385,12 +509,16 @@ export async function collectCloudContentMetadata(config, services, wikiIndex) {
       managedCollections: [],
       contentIndexRows: [],
       contentSearchRows: [],
+      contributorRows: [],
+      attributionRows: [],
     };
   }
 
   const managedCollections = new Set();
   const contentIndexRows = [];
   const contentSearchRows = [];
+  const contributorRows = [];
+  const attributionRows = [];
   const generatedAt = new Date().toISOString();
 
   for (const mapping of config.mappings.filter((candidate) => candidate.target === 'cloud')) {
@@ -421,6 +549,10 @@ export async function collectCloudContentMetadata(config, services, wikiIndex) {
         managedCollections.add(derivedEntry.contentEntry.collection);
         contentIndexRows.push(derivedEntry.contentIndexRow);
         contentSearchRows.push(derivedEntry.contentSearchRow);
+        if (derivedEntry.contributorRegistryRow) {
+          contributorRows.push(derivedEntry.contributorRegistryRow);
+        }
+        attributionRows.push(...derivedEntry.attributionRows);
       }
     }
   }
@@ -430,5 +562,7 @@ export async function collectCloudContentMetadata(config, services, wikiIndex) {
     managedCollections: Array.from(managedCollections).sort((a, b) => a.localeCompare(b)),
     contentIndexRows,
     contentSearchRows,
+    contributorRows,
+    attributionRows,
   };
 }

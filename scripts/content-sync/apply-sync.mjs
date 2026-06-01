@@ -210,11 +210,15 @@ export async function applySync(diff, config, staleAction, services = {}) {
       const contentDiscoverySync = await syncContentDiscovery({
         contentIndexRows: contentMetadata.contentIndexRows,
         contentSearchRows: contentMetadata.contentSearchRows ?? [],
+        contributorRows: contentMetadata.contributorRows ?? [],
+        attributionRows: contentMetadata.attributionRows ?? [],
         managedCollections: contentMetadata.managedCollections,
       });
       if (contentDiscoverySync.applied) {
         changedFiles.push('d1:content_index');
         changedFiles.push('d1:content_search');
+        changedFiles.push('d1:contributors');
+        changedFiles.push('d1:attributions');
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

@@ -16,6 +16,7 @@ describe('deriveCollectionEntries', () => {
       'brad/Campaign - Brad.md',
       `---
 title: Campaign - Brad
+collection: campaigns
 slug: brad
 visibility: public
 ---
@@ -57,6 +58,7 @@ Legacy campaign overview body.
       'barry/index.md',
       `---
 title: Campaign - Barry
+collection: campaigns
 visibility: public
 ---
 
@@ -86,6 +88,7 @@ Preferred campaign overview body.
   it('truncates oversized body text for stable FTS sync statements', async () => {
     const oversizedBody = `---
 title: Long Entry
+collection: lore
 authors:
   - brad
 ---
@@ -111,6 +114,7 @@ ${'lorem ipsum '.repeat(5000)}
       'contributors-test.md',
       `---
 title: Contributors Test
+collection: lore
 type: history
 status: publish
 authors:
@@ -126,5 +130,153 @@ Joined author body.
     );
 
     expect(entries[0].contentIndexRow.author).toBe('brad, barry');
+  });
+
+  it('derives multi-author and multi-role attribution rows without source JSON fields', async () => {
+    const entries = await deriveCollectionEntries(
+      { to: 'lore' },
+      'contributors-test.md',
+      `---
+title: Contributors Test
+collection: lore
+type: history
+status: publish
+authors:
+  - brad
+  - barry
+contributors:
+  - id: alex
+    roles:
+      - artist
+      - cartographer
+  - id: alex
+    roles:
+      - artist
+---
+
+Attribution body.
+`,
+      { mtime: new Date('2026-04-06T12:00:00.000Z') },
+      createCloudMock(),
+      '2026-04-06T12:30:00.000Z',
+    );
+
+    expect(entries[0].attributionRows).toEqual([
+      {
+        contributorId: 'alex',
+        targetType: 'content',
+        targetCollection: 'lore',
+        targetId: 'contributors-test',
+        role: 'artist',
+        indexedAt: '2026-04-06T12:30:00.000Z',
+      },
+      {
+        contributorId: 'alex',
+        targetType: 'content',
+        targetCollection: 'lore',
+        targetId: 'contributors-test',
+        role: 'cartographer',
+        indexedAt: '2026-04-06T12:30:00.000Z',
+      },
+      {
+        contributorId: 'barry',
+        targetType: 'content',
+        targetCollection: 'lore',
+        targetId: 'contributors-test',
+        role: 'author',
+        indexedAt: '2026-04-06T12:30:00.000Z',
+      },
+      {
+        contributorId: 'brad',
+        targetType: 'content',
+        targetCollection: 'lore',
+        targetId: 'contributors-test',
+        role: 'author',
+        indexedAt: '2026-04-06T12:30:00.000Z',
+      },
+    ]);
+    expect(entries[0].contentIndexRow).not.toHaveProperty('contributorsJson');
+    expect(entries[0].contentIndexRow).not.toHaveProperty('attributionsJson');
+  });
+
+  it('derives contributor registry rows from contributor profile markdown', async () => {
+    const entries = await deriveCollectionEntries(
+      { to: 'contributors' },
+      'alex.md',
+      `---
+title: Alex Example
+collection: contributors
+displayName: Alex E.
+status: publish
+profileMode: standard
+bioExcerpt: Makes maps.
+avatar: /assets/images/contributors/alex.jpg
+---
+
+Profile body.
+`,
+      { mtime: new Date('2026-04-06T12:00:00.000Z') },
+      createCloudMock(),
+      '2026-04-06T12:30:00.000Z',
+    );
+
+    expect(entries[0].contributorRegistryRow).toEqual({
+      id: 'alex',
+      displayName: 'Alex E.',
+      title: 'Alex Example',
+      status: 'publish',
+      profileMode: 'standard',
+      bioExcerpt: 'Makes maps.',
+      avatar: '/assets/images/contributors/alex.jpg',
+      sourceId: 'alex',
+      r2Key: 'contributors/alex.md',
+      indexedAt: '2026-04-06T12:30:00.000Z',
+    });
+    expect(entries[0].attributionRows).toEqual([]);
+  });
+
+  it('rejects missing frontmatter collection during metadata derivation', async () => {
+    await expect(
+      deriveCollectionEntries(
+        { to: 'lore' },
+        'missing-collection.md',
+        `---
+title: Missing Collection
+type: history
+status: publish
+authors:
+  - brad
+---
+
+Body.
+`,
+        { mtime: new Date('2026-04-06T12:00:00.000Z') },
+        createCloudMock(),
+        '2026-04-06T12:30:00.000Z',
+      ),
+    ).rejects.toThrow('missing-collection.md missing required frontmatter collection.');
+  });
+
+  it('rejects frontmatter collection mismatches during metadata derivation', async () => {
+    await expect(
+      deriveCollectionEntries(
+        { to: 'lore' },
+        'wrong-collection.md',
+        `---
+title: Wrong Collection
+collection: places
+type: history
+status: publish
+authors:
+  - brad
+---
+
+Body.
+`,
+        { mtime: new Date('2026-04-06T12:00:00.000Z') },
+        createCloudMock(),
+        '2026-04-06T12:30:00.000Z',
+      ),
+    ).rejects.toThrow('wrong-collection.md frontmatter collection "places" does not match sync mapping/folder collection "lore".');
   });
 });

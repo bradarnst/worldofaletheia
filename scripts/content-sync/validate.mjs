@@ -1,10 +1,33 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-const DEFAULT_REQUIRED_KEYS = ['title', 'type', 'status', 'authors'];
-const COLLECTION_REQUIRED_KEYS = {
-  contributors: ['title', 'status'],
+const ARTICLE_REQUIRED_KEYS = ['title', 'collection', 'type', 'status', 'authors'];
+const COLLECTION_VALIDATION_RULES = {
+  lore: { requiredKeys: ARTICLE_REQUIRED_KEYS },
+  places: { requiredKeys: ARTICLE_REQUIRED_KEYS },
+  sentients: { requiredKeys: ARTICLE_REQUIRED_KEYS },
+  bestiary: { requiredKeys: ARTICLE_REQUIRED_KEYS },
+  flora: { requiredKeys: ARTICLE_REQUIRED_KEYS },
+  factions: { requiredKeys: ARTICLE_REQUIRED_KEYS },
+  systems: { requiredKeys: ARTICLE_REQUIRED_KEYS },
+  meta: { requiredKeys: ARTICLE_REQUIRED_KEYS },
+  campaigns: { requiredKeys: ARTICLE_REQUIRED_KEYS },
+  sessions: { requiredKeys: ARTICLE_REQUIRED_KEYS },
+  campaignLore: { requiredKeys: ARTICLE_REQUIRED_KEYS },
+  campaignPlaces: { requiredKeys: ARTICLE_REQUIRED_KEYS },
+  campaignSentients: { requiredKeys: ARTICLE_REQUIRED_KEYS },
+  campaignBestiary: { requiredKeys: ARTICLE_REQUIRED_KEYS },
+  campaignFlora: { requiredKeys: ARTICLE_REQUIRED_KEYS },
+  campaignFactions: { requiredKeys: ARTICLE_REQUIRED_KEYS },
+  campaignSystems: { requiredKeys: ARTICLE_REQUIRED_KEYS },
+  campaignMeta: { requiredKeys: ARTICLE_REQUIRED_KEYS },
+  campaignCharacters: { requiredKeys: ARTICLE_REQUIRED_KEYS },
+  campaignScenes: { requiredKeys: ARTICLE_REQUIRED_KEYS },
+  campaignAdventures: { requiredKeys: ARTICLE_REQUIRED_KEYS },
+  campaignHooks: { requiredKeys: ARTICLE_REQUIRED_KEYS },
+  contributors: { requiredKeys: ['title', 'collection', 'status', 'profileMode'] },
 };
+const CONTRIBUTOR_PROFILE_MODES = ['standard', 'featured'];
 const ALLOWED_STATUS = [
   'draft',
   'publish',
@@ -85,6 +108,75 @@ function normalizeStringListValue(value) {
   return parsedValues
     .map((item) => item.trim().replace(/^['"]|['"]$/g, ''))
     .filter((item) => item.length > 0);
+}
+
+function normalizeContributorId(value) {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const trimmed = value.trim().replace(/^['"]|['"]$/g, '');
+  return trimmed ? trimmed : null;
+}
+
+function normalizeFrontmatterScalar(value) {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const trimmed = value.trim().replace(/^['"]|['"]$/g, '');
+  return trimmed ? trimmed : null;
+}
+
+function normalizeRelativeMarkdownId(root, file) {
+  return path.relative(root, file).split(path.sep).join('/').replace(/\.md$/i, '');
+}
+
+function extractContributorRoleIds(frontmatterLines = []) {
+  const ids = [];
+  const contributorsStart = frontmatterLines.findIndex((line) => /^contributors\s*:\s*$/.test(line));
+  if (contributorsStart === -1) {
+    return ids;
+  }
+
+  for (const line of frontmatterLines.slice(contributorsStart + 1)) {
+    if (/^\S/.test(line)) {
+      break;
+    }
+
+    const idMatch = /^\s*-\s*id\s*:\s*(.+?)\s*$/.exec(line);
+    if (!idMatch) {
+      continue;
+    }
+
+    const id = normalizeContributorId(idMatch[1]);
+    if (id) {
+      ids.push(id);
+    }
+  }
+
+  return ids;
+}
+
+function collectContributorReferences(parsed) {
+  const references = [];
+
+  for (const id of normalizeStringListValue(parsed.data.authors)) {
+    references.push({ id, source: 'authors' });
+  }
+
+  const legacyAuthor = normalizeContributorId(parsed.data.author);
+  if (legacyAuthor) {
+    for (const id of normalizeStringListValue(legacyAuthor)) {
+      references.push({ id, source: 'author' });
+    }
+  }
+
+  for (const id of extractContributorRoleIds(parsed.frontmatterLines)) {
+    references.push({ id, source: 'contributors[].id' });
+  }
+
+  return references;
 }
 
 export function normalizeObsidianTags({ frontmatterTags, inlineTags = [] }) {
@@ -182,11 +274,76 @@ function parseFrontmatter(text) {
     data[key] = raw;
   }
 
-  return { hasFrontmatter: true, malformed: false, data, body };
+  return { hasFrontmatter: true, malformed: false, data, body, frontmatterLines };
 }
 
-function getRequiredKeysForCollection(collection) {
-  return COLLECTION_REQUIRED_KEYS[collection] ?? DEFAULT_REQUIRED_KEYS;
+function getValidationRuleForCollection(collection) {
+  return collection ? COLLECTION_VALIDATION_RULES[collection] ?? null : null;
+}
+
+const CAMPAIGN_FAMILY_COLLECTIONS = {
+  lore: 'campaignLore',
+  places: 'campaignPlaces',
+  sentients: 'campaignSentients',
+  bestiary: 'campaignBestiary',
+  flora: 'campaignFlora',
+  factions: 'campaignFactions',
+  systems: 'campaignSystems',
+  meta: 'campaignMeta',
+  characters: 'campaignCharacters',
+  scenes: 'campaignScenes',
+  adventures: 'campaignAdventures',
+  hooks: 'campaignHooks',
+};
+
+const CAMPAIGN_FAMILY_SEGMENT_PATTERN = Object.keys(CAMPAIGN_FAMILY_COLLECTIONS).join('|');
+
+function inferCollectionFromMappingTo(mappingTo) {
+  const normalized = String(mappingTo || '').trim().split('\\').join('/').replace(/\/+$/, '');
+  const contentMatch = /^src\/content\/([^/]+)$/.exec(normalized);
+  if (contentMatch) {
+    return contentMatch[1];
+  }
+
+  return normalized.split('/').pop() || normalized;
+}
+
+function inferCampaignCollectionFromRelativePath(relativePath) {
+  if (/^[^/]+\/sessions\/[^/]+\.md$/i.test(relativePath)) {
+    return 'sessions';
+  }
+
+  const familyMatch = new RegExp(`^[^/]+\/(${CAMPAIGN_FAMILY_SEGMENT_PATTERN})\/.+\.md$`, 'i').exec(relativePath);
+  if (familyMatch) {
+    return CAMPAIGN_FAMILY_COLLECTIONS[familyMatch[1].toLowerCase()];
+  }
+
+  if (/^[^/]+\/index\.md$/i.test(relativePath)) {
+    return 'campaigns';
+  }
+
+  const legacyCampaignMatch = /^[^/]+\/([^/]+)\.md$/i.exec(relativePath);
+  if (legacyCampaignMatch) {
+    const topLevelFileName = legacyCampaignMatch[1].toLowerCase();
+    if (
+      topLevelFileName !== 'index' &&
+      topLevelFileName !== 'sessions' &&
+      !Object.prototype.hasOwnProperty.call(CAMPAIGN_FAMILY_COLLECTIONS, topLevelFileName)
+    ) {
+      return 'campaigns';
+    }
+  }
+
+  return 'campaigns';
+}
+
+function inferExpectedCollection(fileEntry) {
+  const relativePath = path.relative(fileEntry.root, fileEntry.file).split(path.sep).join('/');
+  if (fileEntry.collection === 'campaigns') {
+    return inferCampaignCollectionFromRelativePath(relativePath);
+  }
+
+  return fileEntry.collection;
 }
 
 function checkHeadings(content) {
@@ -241,7 +398,7 @@ function determineValidationRoots(config) {
         root: path.resolve(config.repoRoot, mapping.to),
         labelRoot: config.repoRoot,
         labelPrefix: '',
-        collection: mapping.collection || mapping.to,
+        collection: mapping.collection || inferCollectionFromMappingTo(mapping.to),
       };
     }
 
@@ -249,7 +406,7 @@ function determineValidationRoots(config) {
       root: path.resolve(config.vaultRoot, mapping.from),
       labelRoot: config.vaultRoot,
       labelPrefix: 'vault/',
-      collection: mapping.collection || mapping.to,
+      collection: mapping.collection || inferCollectionFromMappingTo(mapping.to),
     };
   });
 }
@@ -257,6 +414,7 @@ function determineValidationRoots(config) {
 export async function validateContentTree(config) {
   const roots = determineValidationRoots(config);
   const fileEntries = [];
+  let hasContributorCollection = roots.some((root) => root.collection === 'contributors');
 
   for (const root of roots) {
     const files = await gatherMarkdownFiles(root.root);
@@ -267,12 +425,29 @@ export async function validateContentTree(config) {
 
   const failures = [];
   const warnings = [];
+  const parsedEntries = [];
+  const contributorIds = new Set();
 
   for (const fileEntry of fileEntries) {
     const relPath = `${fileEntry.labelPrefix}${path.relative(fileEntry.labelRoot, fileEntry.file).split(path.sep).join('/')}`;
     const text = await fs.readFile(fileEntry.file, 'utf8');
     const parsed = parseFrontmatter(text);
-    const requiredKeys = getRequiredKeysForCollection(fileEntry.collection);
+    parsedEntries.push({ fileEntry, relPath, text, parsed });
+
+    const declaredCollection = normalizeFrontmatterScalar(parsed.data.collection);
+    const expectedCollection = inferExpectedCollection(fileEntry);
+
+    if ((declaredCollection ?? expectedCollection) === 'contributors') {
+      hasContributorCollection = true;
+      contributorIds.add(normalizeRelativeMarkdownId(fileEntry.root, fileEntry.file));
+    }
+  }
+
+  for (const { fileEntry, relPath, text, parsed } of parsedEntries) {
+    const declaredCollection = normalizeFrontmatterScalar(parsed.data.collection);
+    const expectedCollection = inferExpectedCollection(fileEntry);
+    const validationCollection = declaredCollection ?? expectedCollection;
+    const validationRule = getValidationRuleForCollection(validationCollection);
 
     if (!parsed.hasFrontmatter) {
       failures.push(`${relPath} missing frontmatter block`);
@@ -284,10 +459,27 @@ export async function validateContentTree(config) {
       continue;
     }
 
+    if (!validationRule) {
+      failures.push(`${relPath} has unknown collection ${validationCollection ?? '<missing>'}`);
+      continue;
+    }
+
+    if (declaredCollection && declaredCollection !== expectedCollection) {
+      failures.push(
+        `${relPath} frontmatter collection "${declaredCollection}" does not match sync mapping/folder collection "${expectedCollection}"`,
+      );
+    }
+
+    const requiredKeys = validationRule.requiredKeys;
+
     for (const key of requiredKeys) {
       if (!Object.hasOwn(parsed.data, key)) {
         failures.push(`${relPath} missing required key ${key}`);
       }
+    }
+
+    if (declaredCollection && !getValidationRuleForCollection(declaredCollection)) {
+      failures.push(`${relPath} has unknown frontmatter collection "${declaredCollection}"`);
     }
 
     if (requiredKeys.includes('authors')) {
@@ -299,6 +491,13 @@ export async function validateContentTree(config) {
 
     if (Object.hasOwn(parsed.data, 'status') && !ALLOWED_STATUS.includes(parsed.data.status.replace(/['"]/g, ''))) {
       failures.push(`${relPath} invalid status value ${parsed.data.status}`);
+    }
+
+    if (validationCollection === 'contributors' && Object.hasOwn(parsed.data, 'profileMode')) {
+      const profileMode = normalizeFrontmatterScalar(parsed.data.profileMode);
+      if (!profileMode || !CONTRIBUTOR_PROFILE_MODES.includes(profileMode)) {
+        failures.push(`${relPath} invalid profileMode value ${parsed.data.profileMode}`);
+      }
     }
 
     const inlineTags = extractInlineHashtags(parsed.body || '');
@@ -321,6 +520,16 @@ export async function validateContentTree(config) {
 
     for (const headingIssue of checkHeadings(text)) {
       warnings.push(`${relPath} ${headingIssue}`);
+    }
+
+    if (hasContributorCollection && validationCollection !== 'contributors') {
+      for (const reference of collectContributorReferences(parsed)) {
+        if (!contributorIds.has(reference.id)) {
+          failures.push(
+            `${relPath} references unknown contributor id "${reference.id}" in ${reference.source}; add a contributor profile at contributors/${reference.id}.md or fix the id`,
+          );
+        }
+      }
     }
   }
 

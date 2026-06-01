@@ -31,6 +31,7 @@ function createMarkdownLoader(collection: string, pattern: string, base: string)
 
 // Base frontmatter schema for all collections
 const baseSchema = z.object({
+  collection: z.string().trim().min(1),
   status: z.enum(['draft', 'publish', 'published', 'archive', 'archived']),
   authors: z.array(z.string()).min(1),
   contributors: z.array(z.object({
@@ -69,6 +70,7 @@ const baseSchema = z.object({
 });
 
 const contributorsSchema = z.object({
+  collection: z.literal('contributors'),
   title: z.string(),
   displayName: z.string().optional(),
   status: z.enum(['draft', 'publish', 'published', 'archive', 'archived']),
@@ -78,7 +80,7 @@ const contributorsSchema = z.object({
     label: z.string(),
     url: z.string().url(),
   })).optional().default([]),
-  profileMode: z.enum(['standard', 'featured']).default('standard'),
+  profileMode: z.enum(['standard', 'featured']),
   featuredContributions: z.array(z.object({
     collection: z.string(),
     slug: z.string(),
@@ -86,6 +88,7 @@ const contributorsSchema = z.object({
 });
 
 const loreSchema = baseSchema.extend({
+  collection: z.literal('lore'),
   title: z.string(),
   type: z.enum(LORE_TYPES),
   excerpt: z.string().optional(),
@@ -151,6 +154,7 @@ const loreSchema = baseSchema.extend({
 });
 
 const placesSchema = baseSchema.extend({
+  collection: z.literal('places'),
   title: z.string(),
   type: z.enum(PLACES_TYPES),
   excerpt: z.string().optional(),
@@ -161,6 +165,7 @@ const placesSchema = baseSchema.extend({
 });
 
 const sentientsSchema = baseSchema.extend({
+  collection: z.literal('sentients'),
   title: z.string(),
   type: z.enum(SENTIENTS_TYPES),
   excerpt: z.string().optional(),
@@ -168,6 +173,7 @@ const sentientsSchema = baseSchema.extend({
 });
 
 const bestiarySchema = baseSchema.extend({
+  collection: z.literal('bestiary'),
   title: z.string(),
   type: z.enum(BESTIARY_TYPES),
   excerpt: z.string().optional(),
@@ -175,12 +181,14 @@ const bestiarySchema = baseSchema.extend({
 });
 
 const floraSchema = baseSchema.extend({
+  collection: z.literal('flora'),
   title: z.string(),
   type: z.enum(FLORA_TYPES),
   excerpt: z.string().optional(),
 });
 
 const factionsSchema = baseSchema.extend({
+  collection: z.literal('factions'),
   title: z.string(),
   type: z.enum(FACTIONS_TYPES),
   excerpt: z.string().optional(),
@@ -188,6 +196,7 @@ const factionsSchema = baseSchema.extend({
 });
 
 const systemsSchema = baseSchema.extend({
+  collection: z.literal('systems'),
   title: z.string(),
   type: z.enum(SYSTEMS_TYPES),
   subtype: z.enum(['magic', 'combat', 'skill', 'language', 'character', 'economy', 'social', 'equipment']),
@@ -195,12 +204,14 @@ const systemsSchema = baseSchema.extend({
 });
 
 const metaSchema = baseSchema.extend({
+  collection: z.literal('meta'),
   title: z.string(),
   type: z.enum(META_TYPES).default('info'),
   excerpt: z.string().optional(),
 });
 
 const campaignsSchema = baseSchema.omit({ status: true }).extend({
+  collection: z.literal('campaigns'),
   title: z.string(),
   type: z.string().trim().min(1).default('campaign'),
   // Legacy field retained for backward compatibility with pre-family campaign metadata.
@@ -213,6 +224,7 @@ const campaignsSchema = baseSchema.omit({ status: true }).extend({
 });
 
 const sessionsSchema = baseSchema.extend({
+  collection: z.literal('sessions'),
   title: z.string(),
   type: z.enum(SESSIONS_TYPES),
   excerpt: z.string().optional(),
@@ -223,6 +235,7 @@ const sessionsSchema = baseSchema.extend({
 });
 
 const campaignLoreSchema = baseSchema.extend({
+  collection: z.literal('campaignLore'),
   title: z.string(),
   type: z.enum(LORE_TYPES),
   excerpt: z.string().optional(),
@@ -231,47 +244,56 @@ const campaignLoreSchema = baseSchema.extend({
 });
 
 const campaignPlacesSchema = placesSchema.extend({
+  collection: z.literal('campaignPlaces'),
   campaign: z.string(),
   visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('campaignMembers'),
 });
 
 const campaignSentientsSchema = sentientsSchema.extend({
+  collection: z.literal('campaignSentients'),
   campaign: z.string(),
   visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('campaignMembers'),
 });
 
 const campaignBestiarySchema = bestiarySchema.extend({
+  collection: z.literal('campaignBestiary'),
   campaign: z.string(),
   visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('campaignMembers'),
 });
 
 const campaignFloraSchema = floraSchema.extend({
+  collection: z.literal('campaignFlora'),
   campaign: z.string(),
   visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('campaignMembers'),
 });
 
 const campaignFactionsSchema = factionsSchema.extend({
+  collection: z.literal('campaignFactions'),
   campaign: z.string(),
   visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('campaignMembers'),
 });
 
 const campaignSystemsSchema = systemsSchema.extend({
+  collection: z.literal('campaignSystems'),
   campaign: z.string(),
   visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('campaignMembers'),
 });
 
 const campaignMetaSchema = metaSchema.extend({
+  collection: z.literal('campaignMeta'),
   campaign: z.string(),
   visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('campaignMembers'),
 });
 
 const campaignCharactersSchema = sentientsSchema.extend({
+  collection: z.literal('campaignCharacters'),
   type: z.enum(CAMPAIGN_CHARACTERS_TYPES),
   campaign: z.string(),
   visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('campaignMembers'),
 });
 
 const campaignScenesSchema = baseSchema.extend({
+  collection: z.literal('campaignScenes'),
   title: z.string(),
   type: z.enum(CAMPAIGN_SCENES_TYPES),
   excerpt: z.string().optional(),
@@ -281,6 +303,7 @@ const campaignScenesSchema = baseSchema.extend({
 });
 
 const campaignAdventuresSchema = baseSchema.extend({
+  collection: z.literal('campaignAdventures'),
   title: z.string(),
   type: z.enum(CAMPAIGN_ADVENTURES_TYPES),
   excerpt: z.string().optional(),
@@ -290,6 +313,7 @@ const campaignAdventuresSchema = baseSchema.extend({
 });
 
 const campaignHooksSchema = baseSchema.extend({
+  collection: z.literal('campaignHooks'),
   title: z.string(),
   type: z.enum(CAMPAIGN_HOOKS_TYPES),
   excerpt: z.string().optional(),
