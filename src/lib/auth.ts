@@ -1,7 +1,8 @@
 import { betterAuth } from 'better-auth';
 import { type BetterAuthOptions } from 'better-auth';
-import { getD1BindingFromLocals } from './d1';
-import { sendVerificationEmail } from './email';
+import { getD1BindingFromLocals } from '~/lib/d1';
+import { sendVerificationEmail } from '~/lib/email';
+import { hashPassword, verifyPassword } from '~/lib/password-hashing';
 
 const authByBinding = new WeakMap<object, ReturnType<typeof betterAuth>>();
 
@@ -56,6 +57,10 @@ function buildAuthOptions(env: Record<string, unknown>): BetterAuthOptions {
       enabled: true,
       autoSignIn: true,
       requireEmailVerification: false,
+      password: {
+        hash: (password: string) => hashPassword(password, env),
+        verify: (input: { hash: string; password: string }) => verifyPassword(input, env),
+      },
     },
     emailVerification: {
       sendVerificationEmail: async (data: {

@@ -44,7 +44,7 @@
     "content:sync:staging:dry-run": "CONTENT_INDEX_SYNC_MODE=remote CONTENT_INDEX_SYNC_ENV=staging node ./scripts/content-sync/index.mjs --dry-run",
     "content:sync:prod:dry-run": "CONTENT_INDEX_SYNC_MODE=remote CONTENT_INDEX_SYNC_ENV= node ./scripts/content-sync/index.mjs --dry-run",
     "content:sync:validate": "node ./scripts/content-sync/index.mjs --validate-only",
-    "campaign:rename": "node ./scripts/rename-campaign-slug.mjs",
+    "campaign:rename": "node ./scripts/rename-campaign-slug.mjs"
   },
   "dependencies": {
     "@astrojs/cloudflare": "13.2.1",

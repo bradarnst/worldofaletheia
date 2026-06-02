@@ -5,6 +5,7 @@ import { getNoIndexHeaders } from '@utils/seo';
 const REQUIRED_AUTH_ENV_KEYS = [
   'BETTER_AUTH_URL',
   'BETTER_AUTH_SECRET',
+  'PASSWORD_HASH_PEPPER',
   'GOOGLE_CLIENT_ID',
   'GOOGLE_CLIENT_SECRET',
 ] as const;
