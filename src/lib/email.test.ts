@@ -1,113 +1,68 @@
-import { describe, expect, it, vi } from 'vitest';
-import { sendContactEmail, sendVerificationEmail } from './email';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { sendPasswordResetEmail } from '~/lib/email';
 
-describe('email adapter', () => {
-  it('sends verification email through Mailjet with sandbox mode enabled', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(null, {
-        status: 202,
-      }),
-    );
+describe('password reset Mailjet email', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
 
-    await sendVerificationEmail({
+  it('sends the expected Mailjet reset payload and request id header', async () => {
+    const fetchMock = vi.fn(async () => new Response('{}', { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await sendPasswordResetEmail({
       env: {
-        MAILJET_API_KEY: 'mailjet-api-key',
-        MAILJET_SECRET_KEY: 'mailjet-secret-key',
+        MAILJET_API_KEY: 'api-key',
+        MAILJET_SECRET_KEY: 'secret-key',
+        EMAIL_FROM: 'gm@worldofaletheia.com',
+        EMAIL_REPLY_TO: 'reply@worldofaletheia.com',
         MAILJET_SANDBOX_MODE: 'on',
-        EMAIL_FROM: 'gm@worldofaletheia.com',
       },
-      email: 'reader@example.com',
-      verificationUrl: 'https://worldofaletheia.com/verify?token=abc',
+      email: 'user@example.com',
+      resetUrl: 'https://worldofaletheia.com/reset-password?token=raw-token',
+      expiresInMinutes: 30,
+      requestId: 'request-1',
     });
 
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
-    fetchSpy.mockRestore();
+    expect(fetchMock).toHaveBeenCalledOnce();
+    const [, init] = fetchMock.mock.calls[0];
+    const bodyText = typeof init?.body === 'string' ? init.body : '';
+    const payload = JSON.parse(bodyText) as {
+      SandboxMode: boolean;
+      Messages: Array<{
+        To: Array<{ Email: string }>;
+        Subject: string;
+        TextPart: string;
+        Headers: Record<string, string>;
+      }>;
+    };
+
+    expect(payload.SandboxMode).toBe(true);
+    expect(payload.Messages[0].To).toEqual([{ Email: 'user@example.com' }]);
+    expect(payload.Messages[0].Subject).toBe('Reset your Aletheia password');
+    expect(payload.Messages[0].TextPart).toContain('https://worldofaletheia.com/reset-password?token=raw-token');
+    expect(payload.Messages[0].Headers['X-Aletheia-Request-Id']).toBe('request-1');
   });
 
-  it('calls Mailjet endpoint for verification email', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(null, {
-        status: 202,
-      }),
-    );
-
-    await sendVerificationEmail({
-      env: {
-        MAILJET_API_KEY: 'mailjet-api-key',
-        MAILJET_SECRET_KEY: 'mailjet-secret-key',
-        MAILJET_SANDBOX_MODE: 'off',
-        EMAIL_FROM: 'gm@worldofaletheia.com',
-        EMAIL_REPLY_TO: 'gm@worldofaletheia.com',
-      },
-      email: 'reader@example.com',
-      verificationUrl: 'https://worldofaletheia.com/verify?token=abc',
-    });
-
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
-    expect(fetchSpy).toHaveBeenCalledWith(
-      'https://api.mailjet.com/v3.1/send',
-      expect.objectContaining({
-        method: 'POST',
-      }),
-    );
-    fetchSpy.mockRestore();
-  });
-
-  it('throws on non-success contact relay response', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(null, {
-        status: 500,
-      }),
-    );
-
+  it('fails closed for missing Mailjet env without leaking reset URLs', async () => {
     await expect(
-      sendContactEmail({
-        env: {
-          MAILJET_API_KEY: 'mailjet-api-key',
-          MAILJET_SECRET_KEY: 'mailjet-secret-key',
-          MAILJET_SANDBOX_MODE: 'on',
-          EMAIL_FROM: 'gm@worldofaletheia.com',
-          CONTACT_TO_EMAIL: 'brad@worldofaletheia.com,barry@worldofaletheia.com',
-        },
-        name: 'Brad',
-        email: 'brad@example.com',
-        message: 'Hello',
+      sendPasswordResetEmail({
+        env: {},
+        email: 'user@example.com',
+        resetUrl: 'https://worldofaletheia.com/reset-password?token=raw-token',
+        expiresInMinutes: 30,
         requestId: 'request-1',
       }),
-    ).rejects.toThrow('Contact email relay failed with status 500');
+    ).rejects.toThrow('password reset email');
 
-    fetchSpy.mockRestore();
-  });
-
-  it('labels contribution relay subjects distinctly', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(null, {
-        status: 202,
+    await expect(
+      sendPasswordResetEmail({
+        env: {},
+        email: 'user@example.com',
+        resetUrl: 'https://worldofaletheia.com/reset-password?token=raw-token',
+        expiresInMinutes: 30,
+        requestId: 'request-1',
       }),
-    );
-
-    await sendContactEmail({
-      env: {
-        MAILJET_API_KEY: 'mailjet-api-key',
-        MAILJET_SECRET_KEY: 'mailjet-secret-key',
-        MAILJET_SANDBOX_MODE: 'on',
-        EMAIL_FROM: 'gm@worldofaletheia.com',
-        CONTACT_TO_EMAIL: 'brad@worldofaletheia.com',
-      },
-      kind: 'contribute',
-      name: 'Brad',
-      email: 'brad@example.com',
-      message: 'I want to help with proofreading.',
-      requestId: 'request-2',
-    });
-
-    expect(fetchSpy).toHaveBeenCalledWith(
-      'https://api.mailjet.com/v3.1/send',
-      expect.objectContaining({
-        body: expect.stringContaining('Aletheia contribution form: Brad'),
-      }),
-    );
-
-    fetchSpy.mockRestore();
+    ).rejects.not.toThrow('raw-token');
   });
 });

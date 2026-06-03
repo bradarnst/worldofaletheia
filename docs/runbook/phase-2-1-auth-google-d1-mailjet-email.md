@@ -16,6 +16,7 @@ Runtime vars (non-secret):
 Secrets:
 
 - `BETTER_AUTH_SECRET`
+- `PASSWORD_HASH_PEPPER`
 - `GOOGLE_CLIENT_ID`
 - `GOOGLE_CLIENT_SECRET`
 - `MAILJET_API_KEY`
@@ -118,6 +119,7 @@ Set production secrets:
 
 ```bash
 wrangler secret put BETTER_AUTH_SECRET
+wrangler secret put PASSWORD_HASH_PEPPER
 wrangler secret put GOOGLE_CLIENT_ID
 wrangler secret put GOOGLE_CLIENT_SECRET
 wrangler secret put MAILJET_API_KEY
@@ -128,6 +130,7 @@ Set staging secrets:
 
 ```bash
 wrangler secret put BETTER_AUTH_SECRET --env staging
+wrangler secret put PASSWORD_HASH_PEPPER --env staging
 wrangler secret put GOOGLE_CLIENT_ID --env staging
 wrangler secret put GOOGLE_CLIENT_SECRET --env staging
 wrangler secret put MAILJET_API_KEY --env staging
@@ -155,6 +158,7 @@ Use two lanes locally:
 cat > .dev.vars <<'EOF'
 BETTER_AUTH_URL=http://127.0.0.1:8788
 BETTER_AUTH_SECRET=replace-with-32-byte-secret
+PASSWORD_HASH_PEPPER=replace-with-password-hash-pepper
 GOOGLE_CLIENT_ID=replace-with-google-client-id
 GOOGLE_CLIENT_SECRET=replace-with-google-client-secret
 MAILJET_API_KEY=replace-with-mailjet-key
@@ -358,6 +362,94 @@ Additional optional operator templates for controlled auth maintenance:
 - verification upsert: `scripts/operator-sql/templates/verification-upsert.sql`
 
 These are intended for corrective operations only; normal sign-up/sign-in remains preferred.
+
+### 12.6.1 Password reset paths
+
+Normal user password recovery is self-service:
+
+1. User opens `/forgot-password` and enters only their email address.
+2. The site returns the same generic response for known, unknown, and Google-only accounts.
+3. If exactly one matching user has exactly one existing `providerId = 'credential'` account row, the site stores a hashed reset token in `verification` and sends a Mailjet reset link.
+4. User opens `/reset-password?token=...` and sets a new password without providing their current password.
+5. The reset writes an ADR-0023 password hash to the existing credential row, deletes the reset token, and revokes existing sessions for that Better Auth `user.id`.
+
+Do not query or print `verification.value` during routine checks because it contains password-reset token hashes. Never log raw reset tokens, full reset URLs, passwords, full hashes, salts, derived keys, or pepper values.
+
+Application reset-token verification query examples:
+
+```sql
+SELECT identifier, expiresAt, createdAt
+FROM verification
+WHERE identifier LIKE 'password-reset:%'
+ORDER BY createdAt DESC
+LIMIT 20;
+```
+
+Expected credential hash prefix after either self-service or operator reset:
+
+```text
+woa-pbkdf2-sha256-v1
+```
+
+### 12.6.2 Emergency operator password reset/recreation
+
+The operator reset script remains an emergency/manual fallback for account repair, delivery failures, or verified support cases. Prefer the self-service `/forgot-password` flow for routine forgotten-password recovery.
+
+Prerequisites:
+
+1. `PASSWORD_HASH_PEPPER` must be set in the operator shell and must match the target environment secret.
+2. Run staging first for production-like verification whenever possible.
+3. Identify the existing Better Auth `user.id`; password reset preserves that ID so campaign memberships remain valid.
+
+Dry-run examples:
+
+```bash
+PASSWORD_HASH_PEPPER=... pnpm node scripts/operator-reset-password.mjs --env local --email user@example.com --dry-run
+PASSWORD_HASH_PEPPER=... pnpm node scripts/operator-reset-password.mjs --env staging --email user@example.com --dry-run
+PASSWORD_HASH_PEPPER=... pnpm node scripts/operator-reset-password.mjs --env prod --user-id <better-auth-user-id> --dry-run
+```
+
+Apply examples:
+
+```bash
+PASSWORD_HASH_PEPPER=... pnpm node scripts/operator-reset-password.mjs --env staging --email user@example.com --revoke-sessions
+PASSWORD_HASH_PEPPER=... pnpm node scripts/operator-reset-password.mjs --env prod --user-id <better-auth-user-id> --revoke-sessions
+```
+
+If the user has no existing Better Auth credential row, creation requires an explicit operator choice:
+
+```bash
+PASSWORD_HASH_PEPPER=... pnpm node scripts/operator-reset-password.mjs --env staging --user-id <better-auth-user-id> --create-credential
+```
+
+The script uses ADR-0023 PBKDF2-SHA-256 hashes with this prefix and does not print passwords, full hashes, salts,
+derived keys, or pepper values:
+
+```text
+woa-pbkdf2-sha256-v1
+```
+
+Verify recent credential hash prefixes without dumping full hashes:
+
+```sql
+SELECT providerId, substr(password, 1, 24) AS password_prefix, updatedAt
+FROM account
+WHERE providerId = 'credential'
+ORDER BY updatedAt DESC
+LIMIT 20;
+```
+
+After reset, verify campaign memberships still point at the same preserved `user.id`:
+
+```sql
+SELECT campaign_slug, user_id, role, created_at, updated_at
+FROM campaign_memberships
+WHERE user_id = '<better-auth-user-id>'
+ORDER BY campaign_slug ASC;
+```
+
+Then sign in with the new password, open `/account`, and confirm the campaign membership list and restricted campaign
+access still behave as expected.
 
 ### 12.7 Post-operation verification (mandatory)
 

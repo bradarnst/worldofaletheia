@@ -7,6 +7,7 @@ export interface D1PreparedStatementLike {
 
 export interface D1DatabaseLike {
   prepare(query: string): D1PreparedStatementLike;
+  batch?(statements: D1PreparedStatementLike[]): Promise<unknown[]>;
 }
 
 function isD1DatabaseLike(candidate: unknown): candidate is D1DatabaseLike {

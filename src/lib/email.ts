@@ -13,9 +13,18 @@ interface SendContactEmailInput {
   requestId: string;
 }
 
+interface SendPasswordResetEmailInput {
+  env?: Record<string, unknown>;
+  email: string;
+  resetUrl: string;
+  expiresInMinutes: number;
+  requestId: string;
+}
+
 interface EmailProvider {
   sendVerificationEmail(input: SendVerificationEmailInput): Promise<void>;
   sendContactEmail(input: SendContactEmailInput): Promise<void>;
+  sendPasswordResetEmail(input: SendPasswordResetEmailInput): Promise<void>;
 }
 
 interface EmailEnv {
@@ -163,6 +172,52 @@ class MailjetEmailProvider implements EmailProvider {
       throw new Error(`Contact email relay failed with status ${response.status}`);
     }
   }
+
+  async sendPasswordResetEmail(input: SendPasswordResetEmailInput): Promise<void> {
+    const env = getEnv(input.env);
+    if (!env.mailjetApiKey || !env.mailjetSecretKey || !env.emailFrom) {
+      throw new Error('MAILJET_API_KEY, MAILJET_SECRET_KEY and EMAIL_FROM are required for password reset email');
+    }
+
+    const response = await fetch('https://api.mailjet.com/v3.1/send', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        authorization: createMailjetAuthorizationHeader(env.mailjetApiKey, env.mailjetSecretKey),
+      },
+      body: JSON.stringify({
+        SandboxMode: isSandboxEnabled(env.mailjetSandboxMode),
+        Messages: [
+          {
+            From: {
+              Email: env.emailFrom,
+            },
+            To: [{ Email: input.email }],
+            ...(env.emailReplyTo
+              ? {
+                  ReplyTo: {
+                    Email: env.emailReplyTo,
+                  },
+                }
+              : {}),
+            Subject: 'Reset your Aletheia password',
+            TextPart: `You requested a password reset for World of Aletheia.
+Use this link within ${input.expiresInMinutes} minutes to set a new password:
+${input.resetUrl}
+
+If you did not request this, you can ignore this email.`,
+            Headers: {
+              'X-Aletheia-Request-Id': input.requestId,
+            },
+          },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Password reset email relay failed with status ${response.status}`);
+    }
+  }
 }
 
 const provider: EmailProvider = new MailjetEmailProvider();
@@ -175,4 +230,8 @@ export async function sendContactEmail(input: SendContactEmailInput): Promise<vo
   await provider.sendContactEmail(input);
 }
 
-export type { SendContactEmailInput, SendVerificationEmailInput };
+export async function sendPasswordResetEmail(input: SendPasswordResetEmailInput): Promise<void> {
+  await provider.sendPasswordResetEmail(input);
+}
+
+export type { SendContactEmailInput, SendPasswordResetEmailInput, SendVerificationEmailInput };

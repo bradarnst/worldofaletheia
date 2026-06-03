@@ -1,7 +1,7 @@
 ---
 import MainSiteLayout from '@layouts/MainSiteLayout.astro';
-import { getRequestSession } from '../lib/auth-session';
-import { createCampaignMembershipRepoFromLocals } from '../lib/campaign-membership-repo';
+import { getRequestSession } from '~/lib/auth-session';
+import { createCampaignMembershipRepoFromLocals } from '~/lib/campaign-membership-repo';
 
 const session = await getRequestSession(Astro.request, Astro.locals);
 
@@ -19,25 +19,89 @@ if (session) {
 }
 ---
 
-<MainSiteLayout title="Account - World of Aletheia" description="Session and campaign membership overview.">
-  <section class="max-w-2xl mx-auto py-12">
-    <h1 class="text-3xl font-bold mb-4">Account</h1>
+<MainSiteLayout
+  title="Account - World of Aletheia"
+  description="Session and campaign membership overview."
+  robots="noindex,nofollow"
+>
+  <section class="mx-auto max-w-2xl py-12">
+    <h1 class="mb-4 text-3xl font-bold text-ink-950">Account</h1>
 
     {session ? (
       <>
-        <p class="mb-2"><strong>User:</strong> {session.user.name} ({session.user.email})</p>
-        <p class="mb-6"><strong>Session ID:</strong> {session.session.id}</p>
+        <div class="ui-surface mb-6 p-6">
+          <p class="mb-2"><strong>User:</strong> {session.user.name} ({session.user.email})</p>
+          <p><strong>Session ID:</strong> {session.session.id}</p>
+        </div>
 
-        <h2 class="text-xl font-semibold mb-2">Campaign memberships</h2>
-        {memberships.length === 0 ? (
-          <p>No campaign memberships are currently assigned.</p>
-        ) : (
-          <ul class="list-disc pl-5">
-            {memberships.map((slug) => (
-              <li>{slug}</li>
-            ))}
-          </ul>
-        )}
+        <section class="ui-surface mb-6 p-6">
+          <h2 class="mb-2 text-xl font-semibold text-ink-950">Campaign memberships</h2>
+          {memberships.length === 0 ? (
+            <p>No campaign memberships are currently assigned.</p>
+          ) : (
+            <ul class="list-disc pl-5">
+              {memberships.map((slug) => (
+                <li>{slug}</li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section class="ui-surface mb-6 p-6">
+          <h2 class="mb-2 text-xl font-semibold text-ink-950">Change password</h2>
+          <p class="mb-4 text-sm text-ink-800">
+            Use this if you know your current email/password credentials. Google-only accounts or accounts with older
+            unsupported password hashes need operator-assisted recovery instead.
+          </p>
+
+          <form id="change-password-form" class="space-y-4">
+            <label class="ui-field w-full">
+              <span class="ui-field-label">Current password</span>
+              <input
+                type="password"
+                name="currentPassword"
+                required
+                class="ui-field-control"
+                minlength="8"
+                autocomplete="current-password"
+              />
+            </label>
+
+            <label class="ui-field w-full">
+              <span class="ui-field-label">New password</span>
+              <input
+                type="password"
+                name="newPassword"
+                required
+                class="ui-field-control"
+                minlength="8"
+                autocomplete="new-password"
+              />
+            </label>
+
+            <label class="ui-field w-full">
+              <span class="ui-field-label">Confirm new password</span>
+              <input
+                type="password"
+                name="confirmPassword"
+                required
+                class="ui-field-control"
+                minlength="8"
+                autocomplete="new-password"
+              />
+            </label>
+
+            <label class="flex items-start gap-3 text-sm text-ink-800">
+              <input type="checkbox" name="revokeOtherSessions" class="checkbox checkbox-sm mt-1" />
+              <span>Sign out other sessions after changing my password</span>
+            </label>
+
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <button type="submit" class="ui-button ui-button--primary">Update password</button>
+              <p id="change-password-status" class="text-sm" aria-live="polite"></p>
+            </div>
+          </form>
+        </section>
 
         <p class="mt-6"><a href="/logout">Sign out</a></p>
       </>
@@ -50,3 +114,75 @@ if (session) {
   </section>
 </MainSiteLayout>
 
+<script>
+  const form = document.getElementById('change-password-form') as HTMLFormElement | null;
+  const status = document.getElementById('change-password-status');
+
+  form?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const submitButton = form.querySelector('button[type="submit"]') as HTMLButtonElement | null;
+    const formData = new FormData(form);
+    const currentPassword = String(formData.get('currentPassword') ?? '');
+    const newPassword = String(formData.get('newPassword') ?? '');
+    const confirmPassword = String(formData.get('confirmPassword') ?? '');
+    const revokeOtherSessions = formData.get('revokeOtherSessions') === 'on';
+
+    const setStatus = (message: string, tone: 'ok' | 'error' = 'ok') => {
+      if (!status) return;
+      status.textContent = message;
+      status.className = tone === 'ok' ? 'text-sm text-success' : 'text-sm text-error';
+    };
+
+    if (newPassword !== confirmPassword) {
+      setStatus('New password and confirmation must match.', 'error');
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setStatus('New password must be at least 8 characters.', 'error');
+      return;
+    }
+
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = 'Updating...';
+    }
+    setStatus('Updating password...');
+
+    try {
+      const response = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword, newPassword, revokeOtherSessions }),
+      });
+
+      if (response.ok) {
+        form.reset();
+        setStatus('Password updated.');
+        return;
+      }
+
+      const contentType = response.headers.get('content-type') ?? '';
+      const payload = contentType.includes('application/json')
+        ? await response.json() as { error?: { message?: string }; message?: string }
+        : null;
+      const message = payload?.error?.message ?? payload?.message ?? '';
+      const lowerMessage = message.toLowerCase();
+
+      if (lowerMessage.includes('credential') || lowerMessage.includes('password account')) {
+        setStatus('No email/password credential is available for this account. Use operator-assisted recovery.', 'error');
+        return;
+      }
+
+      setStatus('Password change failed. Confirm your current password and try again.', 'error');
+    } catch {
+      setStatus('Password change failed. Try again later.', 'error');
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Update password';
+      }
+    }
+  });
+</script>

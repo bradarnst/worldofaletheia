@@ -6,12 +6,13 @@ export interface Props {
   title?: string;
   description?: string;
   fullBleed?: boolean;
+  robots?: string;
 }
 
-const { title, description, fullBleed = false } = Astro.props;
+const { title, description, fullBleed = false, robots } = Astro.props;
 ---
 
-<BaseLayout title={title} description={description}>
+<BaseLayout title={title} description={description} robots={robots}>
   <GlobalNavigation />
   <main class="min-h-screen bg-base-100">
     {fullBleed ? (
