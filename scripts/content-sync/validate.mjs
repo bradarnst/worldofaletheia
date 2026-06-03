@@ -197,6 +197,49 @@ function collectContributorReferences(parsed) {
   return references;
 }
 
+function extractContributorIdFromMarkdownLinkTarget(target) {
+  if (typeof target !== 'string') {
+    return null;
+  }
+
+  const cleaned = target.trim().replace(/^<|>$/g, '');
+  const markerIndex = cleaned.indexOf('contributors/');
+  if (markerIndex === -1) {
+    return null;
+  }
+
+  const pathAfterContributors = cleaned
+    .slice(markerIndex + 'contributors/'.length)
+    .split(/[?#]/)[0]
+    .replace(/\.md$/i, '')
+    .replace(/\/+$/g, '')
+    .trim();
+
+  return pathAfterContributors || null;
+}
+
+function collectMarkdownContributorLinkReferences(text) {
+  const references = [];
+  const markdownLinkPattern = /(?<!!)(?:\[[^\]]*\])\(([^)]+)\)/g;
+  let match;
+
+  while ((match = markdownLinkPattern.exec(text)) !== null) {
+    const id = extractContributorIdFromMarkdownLinkTarget(match[1]);
+    if (id) {
+      references.push({ id, source: 'markdown link' });
+    }
+  }
+
+  return references;
+}
+
+function collectAllContributorReferences(parsed, text) {
+  return [
+    ...collectContributorReferences(parsed),
+    ...collectMarkdownContributorLinkReferences(text),
+  ];
+}
+
 export function normalizeObsidianTags({ frontmatterTags, inlineTags = [] }) {
   let frontmatterValues = [];
 
@@ -559,7 +602,7 @@ export async function validateContentTree(config) {
     }
 
     if (hasContributorCollection && validationCollection !== 'contributors') {
-      for (const reference of collectContributorReferences(parsed)) {
+      for (const reference of collectAllContributorReferences(parsed, text)) {
         if (!contributorIds.has(reference.id)) {
           failures.push(
             `${relPath} references unknown contributor id "${reference.id}" in ${reference.source}; add a contributor profile at contributors/${reference.id}.md or fix the id`,

@@ -149,7 +149,7 @@ Use Obsidian-friendly Markdown. The credit caption must immediately follow the i
 ```md
 ![Avenholm market at dusk](./avenholm-market.jpg)
 
-*Art by [[contributors/example-artist|Example Artist]]. Used with permission.*
+*Art by [Example Artist](../contributors/example-artist.md). Used with permission.*
 ```
 
 This convention preserves:
@@ -166,7 +166,7 @@ This convention preserves:
 3. Detect image credits by looking for:
    - a Markdown image line,
    - optional whitespace-only lines,
-   - a following caption line containing `[[contributors/`.
+   - a following caption line containing a Markdown link whose `()` target includes `contributors/`.
 4. Add initial warnings for:
    - image credit links that do not resolve to contributor entries,
    - `authors[]` ids that do not resolve,

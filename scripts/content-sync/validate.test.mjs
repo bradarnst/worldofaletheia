@@ -173,6 +173,106 @@ Currency text.`,
     );
   });
 
+  it('rejects markdown contributor links without contributor profiles', async () => {
+    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'content-sync-validate-'));
+    const loreRoot = path.join(tempRoot, 'src/content/lore');
+    const contributorRoot = path.join(tempRoot, 'src/content/contributors');
+    await fs.mkdir(loreRoot, { recursive: true });
+    await fs.mkdir(contributorRoot, { recursive: true });
+
+    await fs.writeFile(
+      path.join(contributorRoot, 'known-artist.md'),
+      `---
+title: Known Artist
+collection: contributors
+status: publish
+profileMode: standard
+---
+
+Contributor profile body.`,
+      'utf8',
+    );
+
+    await fs.writeFile(
+      path.join(loreRoot, 'Copper Bit.md'),
+      `---
+title: Copper Bit
+collection: lore
+type: economy
+status: draft
+authors:
+  - known-artist
+---
+
+![Copper Bit coin](./copper-bit.jpg)
+
+*Art by [Missing Artist](../contributors/missing-artist.md). Used with permission.*`,
+      'utf8',
+    );
+
+    const result = await validateContentTree({
+      repoRoot: tempRoot,
+      mappings: [
+        { to: 'src/content/lore', collection: 'lore' },
+        { to: 'src/content/contributors', collection: 'contributors' },
+      ],
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.failures).toContain(
+      'src/content/lore/Copper Bit.md references unknown contributor id "missing-artist" in markdown link; add a contributor profile at contributors/missing-artist.md or fix the id',
+    );
+  });
+
+  it('accepts markdown contributor links using contributors paths', async () => {
+    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'content-sync-validate-'));
+    const loreRoot = path.join(tempRoot, 'src/content/lore');
+    const contributorRoot = path.join(tempRoot, 'src/content/contributors');
+    await fs.mkdir(loreRoot, { recursive: true });
+    await fs.mkdir(contributorRoot, { recursive: true });
+
+    await fs.writeFile(
+      path.join(contributorRoot, 'known-artist.md'),
+      `---
+title: Known Artist
+collection: contributors
+status: publish
+profileMode: standard
+---
+
+Contributor profile body.`,
+      'utf8',
+    );
+
+    await fs.writeFile(
+      path.join(loreRoot, 'Copper Bit.md'),
+      `---
+title: Copper Bit
+collection: lore
+type: economy
+status: draft
+authors:
+  - known-artist
+---
+
+![Copper Bit coin](./copper-bit.jpg)
+
+*Art by [Known Artist](../contributors/known-artist.md). Used with permission.*`,
+      'utf8',
+    );
+
+    const result = await validateContentTree({
+      repoRoot: tempRoot,
+      mappings: [
+        { to: 'src/content/lore', collection: 'lore' },
+        { to: 'src/content/contributors', collection: 'contributors' },
+      ],
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.failures).toEqual([]);
+  });
+
   it('accepts author ids that match contributor profile aliases', async () => {
     const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'content-sync-validate-'));
     const loreRoot = path.join(tempRoot, 'src/content/lore');

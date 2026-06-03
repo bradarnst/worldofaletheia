@@ -200,7 +200,7 @@ Valid:
 ```md
 ![Avenholm market at dusk](./avenholm-market.jpg)
 
-*Art by [[contributors/example-artist|Example Artist]]. Used with permission.*
+*Art by [Example Artist](../contributors/example-artist.md). Used with permission.*
 ```
 
 Invalid because paragraph text appears between image and credit:
@@ -210,10 +210,10 @@ Invalid because paragraph text appears between image and credit:
 
 Some paragraph text.
 
-*Art by [[contributors/example-artist|Example Artist]]. Used with permission.*
+*Art by [Example Artist](../contributors/example-artist.md). Used with permission.*
 ```
 
-The content sync validation can therefore look for a Markdown image, optional whitespace-only lines, and then a following caption line containing `[[contributors/`.
+The content sync validation can therefore look for a Markdown image, optional whitespace-only lines, and then a following caption line containing a Markdown link whose `()` target includes `contributors/`.
 
 ### Validation Direction
 
@@ -225,7 +225,7 @@ Desired validation over time:
 
 1. `authors[]` ids resolve to existing contributor entries.
 2. `contributors[].id` ids resolve to existing contributor entries.
-3. Image credit links using `[[contributors/...]]` resolve to existing contributor entries.
+3. Image credit links using Markdown link targets that include `contributors/...` resolve to existing contributor entries.
 4. If `contributors[].roles` includes `artist`, the article should contain at least one immediate image caption crediting that contributor.
 5. If an image caption credits a contributor, the article should list that contributor in frontmatter with `roles: [artist]` or an equivalent multi-role array containing `artist`.
 6. Non-decorative images include alt text.
