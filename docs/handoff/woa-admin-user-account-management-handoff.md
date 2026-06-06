@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This handoff summarizes the current World of Aletheia user/account model and the requirements for an associated administrative site, `woa-admin`, that manages users, accounts, campaign memberships, campaign roles, password resets, and account/user deletion workflows.
+This handoff summarizes the current World of Aletheia user/account model and the boundary with the associated administrative site, `woa-admin`, that manages global users, campaign memberships, campaign roles, administrator-required resets, and account/user deletion workflows.
 
 The admin site should be a separate privileged surface, not an extension of the public World of Aletheia UI. This matches ADR-0021: privileged dashboards and operator workflows belong outside the public Astro site unless a new ADR changes that boundary.
 
@@ -14,6 +14,7 @@ The admin site should be a separate privileged surface, not an extension of the 
 - Staging D1: `world-of-aletheia-staging`.
 - Auth route on public site: `/api/auth/[...all]`.
 - User-facing auth pages: `/login`, `/account`, `/logout`, `/forgot-password`, `/reset-password`.
+- User self-service account actions remain in this repo and should use Better Auth by default.
 - Runtime env access: `cloudflare:workers`; do not rely on `Astro.locals.cfContext`.
 - Real identities and campaign assignments live in D1/private operator state, not in tracked repo content.
 
@@ -98,14 +99,15 @@ Expected write semantics:
 
 ### Password reset and credential recovery
 
-Normal path:
+User self-service path:
 
-- Prefer self-service `/forgot-password` and `/reset-password` for routine forgotten-password recovery.
-- The public flow stores hashed reset tokens in `verification`, sends Mailjet reset links, updates the existing credential account row, deletes the reset token, and revokes sessions.
+- Keep self-service `/forgot-password`, `/reset-password`, and signed-in change password in the public site.
+- These flows should use Better Auth native APIs (`requestPasswordReset`, `resetPassword`, `changePassword`, and future `setPassword`) rather than direct D1 mutation code.
+- The public site may send Mailjet reset links through Better Auth's `sendResetPassword` callback.
 
 Admin path:
 
-- Provide an emergency/operator reset flow for verified support cases or delivery failures.
+- Provide administrator-required reset and recovery workflows in `woa-admin`, not through public-site operator scripts.
 - Preserve the existing Better Auth `user.id` so campaign memberships remain valid.
 - Require `PASSWORD_HASH_PEPPER` in the privileged runtime/worker secret context.
 - Generate ADR-0023 hashes with prefix `woa-pbkdf2-sha256-v1`.
@@ -131,9 +133,9 @@ Credential creation/recreation:
 - Optionally revoke individual sessions by session id.
 - After password reset, default to revoking all sessions.
 
-### Campaign admin dashboard for this repo
+### Campaign admin front-end for this repo
 
-The public World of Aletheia repo should eventually include a campaign admin dashboard for campaign-scoped user administration. This is expected to be primarily front-end/page development plus calls to narrowly scoped APIs. It should not expose global account-management dashboards inside this repo.
+The public World of Aletheia repo may include campaign-scoped management UI, but it should be front-end/page development plus calls to `woa-admin` APIs defined in `docs/contracts/user-account-management-api.openapi.yaml`. It should not write directly to D1 and should not expose global account-management dashboards inside this repo.
 
 Minimum capabilities:
 
@@ -366,7 +368,7 @@ Audit logs must not include secrets, raw tokens, passwords, full hashes, OAuth t
 
 ## API/operation contract sketch
 
-Global account-administration APIs belong primarily to `woa-admin`. Campaign-scoped membership APIs may be implemented first in this repo for the campaign admin dashboard described in `plans/features/campaign-admin-dashboard-hld-2026-06-03.md`, but should be documented as external-facing contracts so `woa-admin` can consume or replace them later.
+Global account-administration APIs and campaign membership mutation APIs belong to `woa-admin`. This repo should consume those APIs from campaign-facing UI instead of implementing direct mutation endpoints or D1 operator workflows.
 
 Global admin operations expected for `woa-admin`:
 
@@ -438,14 +440,8 @@ OpenAPI requirements for these APIs:
 ## Existing operational references
 
 - `docs/runbook/phase-2-1-auth-google-d1-mailjet-email.md`
-- `scripts/operator-sql/templates/membership-grant.sql`
-- `scripts/operator-sql/templates/membership-revoke.sql`
-- `scripts/operator-sql/templates/membership-role-update.sql`
-- `scripts/operator-sql/templates/user-upsert.sql`
-- `scripts/operator-sql/templates/user-email-update.sql`
-- `scripts/operator-sql/templates/account-link-upsert.sql`
-- `scripts/operator-sql/templates/account-link-revoke.sql`
-- `scripts/operator-reset-password.mjs`
+- `docs/integrations/woa-admin-campaign-user-management-front-end-guide.md`
+- `docs/contracts/user-account-management-api.openapi.yaml`
 - `plans/adrs/0019-campaign-membership-role-unification.md`
 - `plans/adrs/0021-external-admin-capability-boundary.md`
 - `plans/adrs/0023-cloudflare-worker-friendly-versioned-password-hashing.md`

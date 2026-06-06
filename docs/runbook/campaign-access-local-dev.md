@@ -49,26 +49,7 @@ Compatibility note:
 }
 ```
 
-If you rename a campaign slug, update local membership config to match the new slug or use the rename helper documented in [`docs/runbook/campaign-authoring-and-rename.md`](docs/runbook/campaign-authoring-and-rename.md).
-
-Campaign visibility defaults are now maintained in [`config/campaign-access.config.json`](config/campaign-access.config.json).
-
-- This file is validated at runtime through [`normalizeCampaignAccessConfig()`](src/utils/campaign-access-config.ts:18).
-- Safe default is empty config (no overrides).
-- Existing frontmatter `visibility` remains the source of truth when no valid campaign override exists.
-- Security precedence is fail-safe: config may tighten to `campaignMembers`, but never downgrade `campaignMembers` content to `public`.
-
-Config format:
-
-```json
-{
-  "campaigns": {
-    "brad": { "visibility": "campaignMembers" },
-    "barry": { "visibility": "public" },
-    "sample-campaign": { "visibility": "public" }
-  }
-}
-```
+If you rename a campaign slug, update any private local `CAMPAIGN_MEMBERSHIPS` fixture values to match the new slug. Tracked campaign-access config files are no longer used for membership management.
 
 ## Example (local)
 
@@ -88,4 +69,4 @@ aletheia-dev-session=dev123
 
 ## Current replacement status
 
-Phase 2.1 has replaced primary resolver internals with Better Auth session + D1 membership-role checks. The local cookie map path remains only as an explicit development fallback in `src/utils/campaign-access.ts`.
+Phase 2.1 has replaced primary resolver internals with Better Auth session + D1 membership-role checks. The local cookie map path remains only as an explicit development fallback in `src/utils/campaign-access.ts`; production and staging membership mutations belong to `woa-admin`.

@@ -3,8 +3,8 @@
 ## Status
 
 - Date: 2026-06-03
-- Status: Proposed / pending approval
-- Scope: Initial internal feature description, requirements, use cases, and high-level design for a campaign-scoped admin dashboard in this repository.
+- Status: Superseded by `docs/integrations/woa-admin-campaign-user-management-front-end-guide.md` and `docs/contracts/user-account-management-api.openapi.yaml`
+- Scope: Historical initial feature description. Campaign user and campaign membership management APIs now belong to `woa-admin`; this repo should only build front-end surfaces that consume those APIs.
 - Related handoff: `docs/handoff/woa-admin-user-account-management-handoff.md`
 - Related ADRs:
   - `plans/adrs/0019-campaign-membership-role-unification.md`
@@ -13,7 +13,7 @@
 
 ## Summary
 
-This feature adds an in-site campaign admin dashboard for campaign-scoped user administration. It is not a global user/account admin UI. It allows authorized campaign administrators to manage access for their own campaign without exposing all users/accounts in D1.
+This historical feature plan described an in-site campaign admin dashboard for campaign-scoped user administration. The current direction is narrower for this repo: build any campaign management UI as a front-end consumer of `woa-admin` APIs, not as direct D1 mutation endpoints inside the public site.
 
 The first dashboard should be built in this repo because the immediate UX belongs near campaign pages and uses the current Better Auth session plus `campaign_memberships` authorization model. However, the implementation should remain loosely coupled because campaign administration may later move to `woa-admin` or another external service.
 

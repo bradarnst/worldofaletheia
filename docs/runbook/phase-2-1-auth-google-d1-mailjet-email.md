@@ -88,24 +88,17 @@ Conflict-handling behavior in migration runner:
 2. `--force` allows continuing despite conflicts and performs intentional collision overwrite behavior for duplicate canonical emails prior to apply.
 3. This behavior is identical across local/staging/production wrappers.
 
-## 4) Membership seed bootstrap (optional)
+## 4) Campaign membership authority
 
-Seed source: [`config/campaign-access.config.json`](config/campaign-access.config.json)
-
-Run local seed:
-
-```bash
-pnpm db:seed:memberships:local
-```
-
-The seed is idempotent (`INSERT OR IGNORE`) and will not overwrite existing membership rows.
+Campaign membership mutation is no longer managed by tracked public-site seed files or operator SQL templates.
 
 Campaign entitlement authority after cutover:
 
 - Better Auth remains the auth/session boundary.
 - staging/prod entitlement authority: D1 `campaign_memberships`
 - `campaign_memberships.role = 'gm'` is the only live GM authority.
-- localhost-only fallback uses `CAMPAIGN_MEMBERSHIPS` or [`config/campaign-access.config.json`](config/campaign-access.config.json).
+- membership add/update/revoke workflows belong to `woa-admin` and the API contract in `docs/contracts/user-account-management-api.openapi.yaml`.
+- local protected-content testing should use local D1 fixtures created outside tracked operator-management files.
 
 ## 5) Secret provisioning
 
@@ -170,31 +163,19 @@ MAILJET_SANDBOX_MODE=on
 EOF
 ```
 
-If needed for local/dev fallback override, add:
-
-```bash
-CAMPAIGN_MEMBERSHIPS={"jim":{"campaigns":{"brad":"gm","barry":"member"}},"tom":{"campaigns":{"barry":"gm"}}}
-```
-
 2. Ensure local DB schema is current:
 
 ```bash
 pnpm db:migrate:plan:local
 ```
 
-3. Optionally seed membership bootstrap data:
-
-```bash
-pnpm db:seed:memberships:local
-```
-
-4. Run parity lane:
+3. Run parity lane:
 
 ```bash
 pnpm dev:cf:auth
 ```
 
-This command builds Astro Cloudflare server output, applies local D1 migration/seed scripts, then starts Wrangler dev against [`entry.mjs`](dist/server/entry.mjs) with generated config [`wrangler.json`](dist/server/wrangler.json).
+This command builds Astro Cloudflare server output, applies local D1 migrations, then starts Wrangler dev against [`entry.mjs`](dist/server/entry.mjs) with generated config [`wrangler.json`](dist/server/wrangler.json).
 
 ## 8) Auth/session verification checklist (parity lane)
 
@@ -314,54 +295,24 @@ If preflight does not show expected tables, stop and fix migrations first.
 
 If migration dry-run reports conflicts, do not apply until resolved unless an approved force override is required.
 
-### 12.4 Option A2 execution model
+### 12.4 Administrative operation boundary
 
-Use SQL templates from [`scripts/operator-sql/templates/`](scripts/operator-sql/templates/) and execute copied files from private gitignored path:
+This public-site repository no longer carries direct D1 mutation templates for user, account, provider-link, verification-token, or campaign-membership administration.
 
-```bash
-mkdir -p ./.wrangler/operators
-cp ./scripts/operator-sql/templates/membership-grant.sql ./.wrangler/operators/op.sql
-```
+Administrative mutation workflows belong to `woa-admin`:
 
-Edit placeholders, then apply:
+- Front-end consumption guide: `docs/integrations/woa-admin-campaign-user-management-front-end-guide.md`
+- API contract: `docs/contracts/user-account-management-api.openapi.yaml`
 
-```bash
-OP_FILE=./.wrangler/operators/op.sql pnpm run ops:a2:apply:staging
-OP_FILE=./.wrangler/operators/op.sql pnpm run ops:a2:apply:prod
-```
+Use the public site for Better Auth self-service flows and campaign authorization reads. Use `woa-admin` for add/update/revoke campaign memberships, global user search, administrator-required resets, session revocation, provider repair, and deletion/deprovisioning.
 
-### 12.5 Deterministic operation templates
-
-Available templates:
-
-- membership grant/upsert: [`scripts/operator-sql/templates/membership-grant.sql`](scripts/operator-sql/templates/membership-grant.sql)
-- membership revoke: [`scripts/operator-sql/templates/membership-revoke.sql`](scripts/operator-sql/templates/membership-revoke.sql)
-- membership role update: [`scripts/operator-sql/templates/membership-role-update.sql`](scripts/operator-sql/templates/membership-role-update.sql)
-- auth account link upsert: [`scripts/operator-sql/templates/account-link-upsert.sql`](scripts/operator-sql/templates/account-link-upsert.sql)
-- auth account link revoke: [`scripts/operator-sql/templates/account-link-revoke.sql`](scripts/operator-sql/templates/account-link-revoke.sql)
-
-### 12.6 Create user/account records when needed
+### 12.5 Create user/account records when needed
 
 Preferred account creation path:
 
 1. Use normal Better Auth sign-up/login flow in staging then production.
-2. Use manual account-table templates only for corrective linking operations.
-
-If identity is ambiguous, resolve before any assignment:
-
-```bash
-cp ./scripts/operator-sql/identity-resolution.sql ./.wrangler/operators/resolve.sql
-# fill <email>/<name>
-OP_FILE=./.wrangler/operators/resolve.sql pnpm run ops:a2:resolve:prod
-```
-
-Additional optional operator templates for controlled auth maintenance:
-
-- user upsert: `scripts/operator-sql/templates/user-upsert.sql`
-- user email update: `scripts/operator-sql/templates/user-email-update.sql`
-- verification upsert: `scripts/operator-sql/templates/verification-upsert.sql`
-
-These are intended for corrective operations only; normal sign-up/sign-in remains preferred.
+2. Use Better Auth self-service account APIs for user-managed account changes.
+3. Use `woa-admin` for corrective or administrator-required operations.
 
 ### 12.6.1 Password reset paths
 
@@ -369,9 +320,9 @@ Normal user password recovery is self-service:
 
 1. User opens `/forgot-password` and enters only their email address.
 2. The site returns the same generic response for known, unknown, and Google-only accounts.
-3. If exactly one matching user has exactly one existing `providerId = 'credential'` account row, the site stores a hashed reset token in `verification` and sends a Mailjet reset link.
+3. Better Auth handles reset-token persistence and calls the public site's Mailjet `sendResetPassword` callback when eligible.
 4. User opens `/reset-password?token=...` and sets a new password without providing their current password.
-5. The reset writes an ADR-0023 password hash to the existing credential row, deletes the reset token, and revokes existing sessions for that Better Auth `user.id`.
+5. Better Auth resets the credential password through the configured ADR-0023 hash hook and revokes sessions when configured.
 
 Do not query or print `verification.value` during routine checks because it contains password-reset token hashes. Never log raw reset tokens, full reset URLs, passwords, full hashes, salts, derived keys, or pepper values.
 
@@ -385,49 +336,15 @@ ORDER BY createdAt DESC
 LIMIT 20;
 ```
 
-Expected credential hash prefix after either self-service or operator reset:
+Expected credential hash prefix after self-service reset:
 
 ```text
 woa-pbkdf2-sha256-v1
 ```
 
-### 12.6.2 Emergency operator password reset/recreation
+### 12.6.2 Administrator-required password reset/recreation
 
-The operator reset script remains an emergency/manual fallback for account repair, delivery failures, or verified support cases. Prefer the self-service `/forgot-password` flow for routine forgotten-password recovery.
-
-Prerequisites:
-
-1. `PASSWORD_HASH_PEPPER` must be set in the operator shell and must match the target environment secret.
-2. Run staging first for production-like verification whenever possible.
-3. Identify the existing Better Auth `user.id`; password reset preserves that ID so campaign memberships remain valid.
-
-Dry-run examples:
-
-```bash
-PASSWORD_HASH_PEPPER=... pnpm node scripts/operator-reset-password.mjs --env local --email user@example.com --dry-run
-PASSWORD_HASH_PEPPER=... pnpm node scripts/operator-reset-password.mjs --env staging --email user@example.com --dry-run
-PASSWORD_HASH_PEPPER=... pnpm node scripts/operator-reset-password.mjs --env prod --user-id <better-auth-user-id> --dry-run
-```
-
-Apply examples:
-
-```bash
-PASSWORD_HASH_PEPPER=... pnpm node scripts/operator-reset-password.mjs --env staging --email user@example.com --revoke-sessions
-PASSWORD_HASH_PEPPER=... pnpm node scripts/operator-reset-password.mjs --env prod --user-id <better-auth-user-id> --revoke-sessions
-```
-
-If the user has no existing Better Auth credential row, creation requires an explicit operator choice:
-
-```bash
-PASSWORD_HASH_PEPPER=... pnpm node scripts/operator-reset-password.mjs --env staging --user-id <better-auth-user-id> --create-credential
-```
-
-The script uses ADR-0023 PBKDF2-SHA-256 hashes with this prefix and does not print passwords, full hashes, salts,
-derived keys, or pepper values:
-
-```text
-woa-pbkdf2-sha256-v1
-```
+Administrator-required reset, credential recreation, and verified support recovery belong to `woa-admin`, not to public-site scripts. The public site keeps only Better Auth self-service forgot/reset/change password flows.
 
 Verify recent credential hash prefixes without dumping full hashes:
 
@@ -439,7 +356,7 @@ ORDER BY updatedAt DESC
 LIMIT 20;
 ```
 
-After reset, verify campaign memberships still point at the same preserved `user.id`:
+After any reset workflow, verify campaign memberships still point at the same preserved `user.id`:
 
 ```sql
 SELECT campaign_slug, user_id, role, created_at, updated_at
@@ -448,8 +365,7 @@ WHERE user_id = '<better-auth-user-id>'
 ORDER BY campaign_slug ASC;
 ```
 
-Then sign in with the new password, open `/account`, and confirm the campaign membership list and restricted campaign
-access still behave as expected.
+Then sign in with the new password, open `/account`, and confirm the campaign membership list and restricted campaign access still behave as expected.
 
 ### 12.7 Post-operation verification (mandatory)
 
@@ -476,24 +392,15 @@ pnpm run ops:a2:audit:prod
 
 ### 12.9 Failure handling and incident recovery
 
-If apply command fails:
+If an administrative mutation fails or the wrong assignment is applied, stop using public-site tooling and resolve through `woa-admin` so authorization, audit, and postcondition checks remain in one privileged system.
 
-1. Stop and fix SQL/runtime issue.
-2. Re-run preflight.
-3. Re-apply corrected file once.
+If identity mismatch is discovered after a change:
 
-If wrong assignment applied:
-
-1. Execute corresponding revoke template.
-2. Re-apply correct assignment template.
-3. Run verify and audit scripts.
-4. Record incident in private ops log (timestamp, env, action, resolution).
-
-If identity mismatch discovered after change:
-
-1. Revoke incorrect mapping.
-2. Resolve identity with `identity-resolution.sql`.
-3. Re-apply to verified user id only.
+1. Stop additional public-site deploy or sync activity that depends on the bad assignment.
+2. Resolve identity in `woa-admin` using canonical email/user-id policy.
+3. Apply the corrective membership/account action in `woa-admin`.
+4. Run public-site read-only verify/audit scripts if needed.
+5. Record the incident in the private ops log (timestamp, env, action, resolution).
 
 If canonical email collisions are reported:
 
@@ -513,16 +420,16 @@ All of the following must hold before declaring the Option A2 auth/email path pr
 3. D1 has all required tables and indexes validated by `ops:a2:preflight:*`:
    - `user`, `account`, `session`, `verification`
    - canonical email + provider/account uniqueness indexes
-4. Operator identity resolution is deterministic under canonical email policy (canonical-first, name fallback only).
+4. Operator identity resolution is handled by `woa-admin` under canonical email policy.
 5. Canonical collisions are explicitly handled through immediate fail-fast-or-force behavior with no conflict backlog table.
 
 ### 12.10 Rollback guidance for mistaken assignments
 
-Use deterministic inverse operations:
+Use `woa-admin` corrective operations for mistaken assignments:
 
-- membership grant ↔ membership revoke
-- membership role update ↔ membership role update/revoke
-- account-link upsert ↔ account-link revoke
+- membership grant/update/revoke
+- account/provider repair
+- administrator-required password/session actions
 
 Always verify with:
 
@@ -531,14 +438,11 @@ pnpm run ops:a2:verify:prod
 pnpm run ops:a2:audit:prod
 ```
 
-### 12.11 Complete operator execution sequence (new operator safe-start)
+### 12.11 Complete operator execution sequence
 
 1. Run account/database preflight commands.
-2. Run environment preflight SQL.
-3. Copy template into private operator file.
-4. Fill placeholders.
-5. Apply to staging.
-6. Verify staging output.
-7. Apply to production.
-8. Verify production output.
-9. Record private ops log entry.
+2. Use `woa-admin` for administrative mutation workflows.
+3. Verify staging output where applicable.
+4. Apply to production only after staging verification.
+5. Verify production output.
+6. Record private ops log entry.

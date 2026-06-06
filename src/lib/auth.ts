@@ -1,10 +1,11 @@
 import { betterAuth } from 'better-auth';
 import { type BetterAuthOptions } from 'better-auth';
 import { getD1BindingFromLocals } from '~/lib/d1';
-import { sendVerificationEmail } from '~/lib/email';
+import { sendPasswordResetEmail, sendVerificationEmail } from '~/lib/email';
 import { hashPassword, verifyPassword } from '~/lib/password-hashing';
 
 const authByBinding = new WeakMap<object, ReturnType<typeof betterAuth>>();
+const PASSWORD_RESET_EXPIRY_MINUTES = 30;
 
 function getRequiredString(env: Record<string, unknown>, key: string): string {
   const value = env[key];
@@ -57,6 +58,21 @@ function buildAuthOptions(env: Record<string, unknown>): BetterAuthOptions {
       enabled: true,
       autoSignIn: true,
       requireEmailVerification: false,
+      revokeSessionsOnPasswordReset: true,
+      resetPasswordTokenExpiresIn: PASSWORD_RESET_EXPIRY_MINUTES * 60,
+      sendResetPassword: async (data: {
+        user: { email: string };
+        url: string;
+        token: string;
+      }) => {
+        await sendPasswordResetEmail({
+          env,
+          email: data.user.email,
+          resetUrl: data.url,
+          expiresInMinutes: PASSWORD_RESET_EXPIRY_MINUTES,
+          requestId: crypto.randomUUID(),
+        });
+      },
       password: {
         hash: (password: string) => hashPassword(password, env),
         verify: (input: { hash: string; password: string }) => verifyPassword(input, env),

@@ -1,5 +1,3 @@
-import membershipConfigJson from '../../config/campaign-access.config.json';
-
 export type CampaignMembershipRole = 'member' | 'gm';
 
 export interface CampaignMembershipConfigEntry {
@@ -72,6 +70,5 @@ export function normalizeCampaignMembershipConfig(rawConfig: unknown): CampaignM
 }
 
 export function getCampaignMembershipConfigForEnv(): string {
-  const normalized = normalizeCampaignMembershipConfig(membershipConfigJson);
-  return JSON.stringify(normalized.memberships);
+  return JSON.stringify(EMPTY_CONFIG.memberships);
 }

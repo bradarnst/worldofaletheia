@@ -130,11 +130,11 @@ What the script updates:
 
 - Renames the campaign folder in the configured Obsidian Campaigns source root.
 - Rewrites nested Markdown frontmatter values from `campaign: old-campaign-slug` to `campaign: new-campaign-slug`.
-- Updates `config/campaign-access.config.json` membership arrays and GM-assignment keys when that file exists.
+- Updates tracked campaign content only. Campaign membership changes belong to `woa-admin`.
 
 What the script does not update:
 
-- Remote D1 membership rows already applied outside the local seed/config flow.
+- Remote D1 membership rows and campaign-management state owned by `woa-admin`.
 - External links or hardcoded route strings outside the renamed campaign content.
 - Redirect rules from the old slug to the new slug.
 
@@ -146,12 +146,7 @@ After the rename:
 pnpm content:sync
 ```
 
-2. If you use local auth parity data, reseed local memberships:
-
-```bash
-pnpm db:seed:memberships:local
-```
-
+2. If campaign memberships exist for the renamed campaign, update them through `woa-admin`.
 3. Verify the new routes resolve and the old slug no longer appears where it should not.
 4. Add redirects separately if you need old public links to keep working.
 

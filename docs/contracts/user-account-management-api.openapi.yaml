@@ -1,0 +1,1565 @@
+openapi: 3.1.2
+info:
+  title: World of Aletheia Admin User and Account Management API
+  version: 0.1.0
+  summary: Source-of-truth contract for woa-admin user, account, and campaign administration APIs.
+  description: Initial source-of-truth contract for woa-admin user/account/campaign administration. It covers internal global operator APIs and campaign-scoped APIs consumed by the public World of Aletheia site. Global admin APIs are protected by Cloudflare Access per ADR-0003 and intentionally do not define app-native admin roles. Campaign-scoped APIs authorize the signed-in World of Aletheia actor for the exact campaign_slug and expose only campaign-relevant data. Version 1 deliberately does not model invitations, access requests, acceptance links, or membership notification emails; campaign membership mutations are active immediately and their responses provide the confirmation data the dashboard UI should show to GMs and global operators. All response DTOs are transport shapes, not raw D1 rows. Responses must never include session tokens, reset tokens or URLs, password hashes, salts, pepper material, OAuth tokens, or unrelated account data. DELETE /api/v1/admin/users/{userId} is a soft
+    delete that writes timestamped admin_user_status state; physical hard delete is not part of this v1 contract.
+servers:
+- url: https://woa-admin.worldofaletheia.com
+  description: Cloudflare Access-protected woa-admin production origin.
+- url: https://worldofaletheia.com
+  description: Public-site origin when campaign-scoped routes are proxied or exposed under the public API namespace.
+tags:
+- name: Global Admin Users
+  description: Cloudflare Access-protected global user/account discovery APIs.
+- name: Global Admin Memberships
+  description: Cloudflare Access-protected global campaign membership mutations.
+- name: Global Admin Account Actions
+  description: Cloudflare Access-protected password reset, session, soft-delete, and feature-flagged deprovision APIs.
+- name: Campaign Members
+  description: Campaign-scoped member listing and membership mutation APIs.
+- name: Campaign Capability
+  description: Campaign-scoped current-actor capability bootstrap APIs.
+paths:
+  /api/v1/admin/users:
+    get:
+      operationId: searchAdminUsers
+      tags:
+      - Global Admin Users
+      summary: Search users for global operator workflows
+      description: Searches users by exact user id, exact or prefix canonical email, and display name. At least one search parameter is required. Email input is normalized as trim(lower(email)) for lookup. Display-name search requires at least three characters and is an operator convenience search for the expected small admin dataset; add an indexed normalized field if user volume grows. This global endpoint is Cloudflare Access protected and may enumerate matching users for trusted operators only.
+      security:
+      - CloudflareAccess: []
+      parameters:
+      - $ref: '#/components/parameters/UserIdQuery'
+      - $ref: '#/components/parameters/EmailQuery'
+      - $ref: '#/components/parameters/NameQuery'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: User search results with secret-safe summaries.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUserSearchPage'
+              examples:
+                byEmail:
+                  value:
+                    items:
+                    - userId: user_01hy6m7bq0example000000000
+                      displayName: Mira Stone
+                      email: mira@example.invalid
+                      emailCanonical: mira@example.invalid
+                      createdAt: '2026-05-24T11:12:13Z'
+                      updatedAt: '2026-06-02T08:10:00Z'
+                      credentialAccountState: present
+                      linkedProviders:
+                      - credential
+                      - google
+                      activeSessionCount: 2
+                      campaignMembershipCount: 3
+                    nextCursor: null
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /api/v1/admin/users/{userId}:
+    get:
+      operationId: getAdminUserDetail
+      tags:
+      - Global Admin Users
+      summary: Get secret-safe user detail
+      description: Returns a global operator detail view for one user. Provider links, sessions, verification summaries, and campaign memberships are shaped to exclude secrets. Session token values, verification token values, password hashes, salts, pepper, OAuth access/refresh/id tokens, and unrelated account data are never returned.
+      security:
+      - CloudflareAccess: []
+      parameters:
+      - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: Secret-safe user detail.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUserDetail'
+              examples:
+                default:
+                  value:
+                    user:
+                      userId: user_01hy6m7bq0example000000000
+                      displayName: Mira Stone
+                      email: mira@example.invalid
+                      emailCanonical: mira@example.invalid
+                      createdAt: '2026-05-24T11:12:13Z'
+                      updatedAt: '2026-06-02T08:10:00Z'
+                      adminStatus:
+                        status: active
+                        statusAt: null
+                        reason: null
+                    providerAccounts:
+                    - providerId: credential
+                      providerAccountId: mira@example.invalid
+                      createdAt: '2026-05-24T11:12:14Z'
+                      updatedAt: '2026-05-24T11:12:14Z'
+                    - providerId: google
+                      providerAccountId: google-sub-redacted-for-example
+                      createdAt: '2026-06-01T09:00:00Z'
+                      updatedAt: '2026-06-01T09:00:00Z'
+                    sessions:
+                      activeCount: 2
+                      recent:
+                      - sessionId: sess_01hyexample00000000000000
+                        createdAt: '2026-06-02T09:00:00Z'
+                        updatedAt: '2026-06-03T09:00:00Z'
+                        expiresAt: '2026-06-10T09:00:00Z'
+                        ipAddress: 203.0.113.10
+                        userAgent: Mozilla/5.0 example
+                    campaignMemberships:
+                    - campaignSlug: crownfall
+                      role: gm
+                      grantedAt: '2026-05-25T10:00:00Z'
+                      updatedAt: '2026-05-25T10:00:00Z'
+                    verificationSummary:
+                      activePasswordResetRequestCount: 0
+                    deletion:
+                      softDeleteAvailable: true
+                      deprovisionEnabled: false
+                      hardDeleteAvailable: false
+                      reason: Hard delete is not part of the v1 contract; deprovision is feature-flagged pending policy.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    delete:
+      operationId: softDeleteAdminUser
+      tags:
+      - Global Admin Account Actions
+      summary: Soft-delete a user by recording admin status
+      description: Records a timestamped soft-delete status for the exact user id in admin-owned user status state, such as an admin_user_status table, without physically deleting the Better Auth user row or dependent records. This preserves relationships to campaign characters, campaign history, contributions, and future recovery workflows. Implementations should revoke active sessions as part of soft delete unless a later ADR decides otherwise. Public-site UI may later use this status to display that a user is no longer active, but existing user display fields remain available unless a separate deprovision/anonymization workflow changes them. The request requires typed confirmation and stores only secret-safe status metadata.
+      security:
+      - CloudflareAccess: []
+      parameters:
+      - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SoftDeleteUserRequest'
+            examples:
+              softDelete:
+                value:
+                  confirmation:
+                    userId: user_01hy6m7bq0example000000000
+                    emailCanonical: mira@example.invalid
+                    phrase: SOFT DELETE user_01hy6m7bq0example000000000
+                  reason: User requested account closure.
+      responses:
+        '200':
+          description: User was soft-deleted by timestamped admin status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SoftDeleteUserResponse'
+              examples:
+                softDeleted:
+                  value:
+                    userId: user_01hy6m7bq0example000000000
+                    adminStatus:
+                      status: soft_deleted
+                      statusAt: '2026-06-04T09:30:00Z'
+                      reason: User requested account closure.
+                    sessionsRevoked: 2
+                    confirmationMessage: User soft-deleted; preserved records remain available for recovery and relationship history.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /api/v1/admin/users/{userId}/campaign-memberships/{campaignSlug}:
+    put:
+      operationId: grantOrUpdateAdminUserCampaignMembership
+      tags:
+      - Global Admin Memberships
+      summary: Grant or upsert a campaign membership globally
+      description: Inserts or updates the exact (userId, campaignSlug) membership row with role member or gm. The mutation verifies the postcondition. This global endpoint is for trusted operators behind Cloudflare Access. The response is the contractual confirmation that the mutation occurred and should be used by the dashboard UI for operator feedback. No invitation, access-request, acceptance, or email-notification workflow is part of this v1 mutation.
+      security:
+      - CloudflareAccess: []
+      parameters:
+      - $ref: '#/components/parameters/UserId'
+      - $ref: '#/components/parameters/CampaignSlug'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MembershipRoleRequest'
+            examples:
+              makeGm:
+                value:
+                  role: gm
+                  reason: Verified campaign GM assignment.
+      responses:
+        '200':
+          description: Membership exists with the requested role.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminMembershipMutationResponse'
+              examples:
+                updated:
+                  value:
+                    membership:
+                      userId: user_01hy6m7bq0example000000000
+                      campaignSlug: crownfall
+                      role: gm
+                      grantedAt: '2026-05-25T10:00:00Z'
+                      updatedAt: '2026-06-03T15:00:00Z'
+                    outcome: updated
+                    confirmationMessage: Campaign membership updated.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    delete:
+      operationId: revokeAdminUserCampaignMembership
+      tags:
+      - Global Admin Memberships
+      summary: Revoke a campaign membership globally
+      description: Deletes exactly the targeted (userId, campaignSlug) membership row and verifies the postcondition. A missing row is surfaced as not found or conflict rather than silent success. The response is the contractual confirmation that the mutation occurred and should be used by the dashboard UI for operator feedback. No invitation, access-request, acceptance, or email-notification workflow is part of this v1 mutation.
+      security:
+      - CloudflareAccess: []
+      parameters:
+      - $ref: '#/components/parameters/UserId'
+      - $ref: '#/components/parameters/CampaignSlug'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RevokeRequest'
+            examples:
+              revoke:
+                value:
+                  reason: Player left the campaign.
+      responses:
+        '200':
+          description: Membership was revoked.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipRevokeResponse'
+              examples:
+                revoked:
+                  value:
+                    revokedMembership:
+                      userId: user_01hy6m7bq0example000000000
+                      campaignSlug: crownfall
+                      role: member
+                      grantedAt: '2026-05-25T10:00:00Z'
+                      updatedAt: '2026-05-25T10:00:00Z'
+                    outcome: revoked
+                    confirmationMessage: Campaign membership revoked.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /api/v1/admin/users/{userId}/password-reset-request:
+    post:
+      operationId: requestAdminPasswordReset
+      tags:
+      - Global Admin Account Actions
+      summary: Initiate an admin-assisted password reset request
+      description: Initiates a password reset through the approved public-site reset semantics for an exact user id. The response is intentionally secret-safe and never returns reset tokens, reset URLs, password hashes, salts, or pepper material. Direct operator-set temporary passwords and credential-account creation are out of scope for this contract.
+      security:
+      - CloudflareAccess: []
+      parameters:
+      - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+            examples:
+              requestEmail:
+                value:
+                  deliveryMode: email
+                  reason: Verified support request.
+      responses:
+        '202':
+          description: Reset request was accepted or safely no-op'd according to reset policy.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasswordResetResponse'
+              examples:
+                accepted:
+                  value:
+                    status: accepted
+                    credentialAccountState: present
+                    deliveryMode: email
+                    expiresAt: '2026-06-03T16:00:00Z'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /api/v1/admin/users/{userId}/sessions/revoke-all:
+    post:
+      operationId: revokeAllAdminUserSessions
+      tags:
+      - Global Admin Account Actions
+      summary: Revoke all sessions for a user
+      description: Accepts a request to revoke active sessions for the exact user id. The server performs best-effort revocation with bounded retries and logs incomplete revocation for operator follow-up. The response confirms acceptance only; session counts and tokens are never returned.
+      security:
+      - CloudflareAccess: []
+      parameters:
+      - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RevokeSessionsRequest'
+            examples:
+              supportCase:
+                value:
+                  reason: Account recovery completed.
+      responses:
+        '200':
+          description: Session revocation was accepted for processing.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevokeSessionsResponse'
+              examples:
+                accepted:
+                  value:
+                    status: accepted
+                    confirmationMessage: Session revocation accepted.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /api/v1/admin/users/{userId}/deprovision:
+    post:
+      operationId: deprovisionAdminUser
+      tags:
+      - Global Admin Account Actions
+      summary: Run feature-flagged account deprovisioning actions
+      description: 'Runs account-deprovisioning actions for an exact user id only when the deprovision feature flag, such as ACCOUNT_DEPROVISION_ENABLED, is enabled after the supporting policy and implementation documentation are accepted. Deprovisioning is broader than soft delete: it can revoke sessions, remove campaign memberships, unlink provider accounts, or anonymize identity depending on approved policy. The request requires typed confirmation for destructive actions. When the feature flag is disabled, this endpoint must reject without changing user, account, session, membership, or admin_user_status state.'
+      security:
+      - CloudflareAccess: []
+      parameters:
+      - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeprovisionUserRequest'
+            examples:
+              revokeAndRemoveMemberships:
+                value:
+                  actions:
+                    revokeSessions: true
+                    removeCampaignMemberships: true
+                    unlinkProviderAccounts: false
+                    anonymizeIdentity: false
+                  confirmation:
+                    userId: user_01hy6m7bq0example000000000
+                    emailCanonical: mira@example.invalid
+                    phrase: DEPROVISION user_01hy6m7bq0example000000000
+                  reason: User requested account deprovisioning.
+      responses:
+        '200':
+          description: Deprovision workflow completed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeprovisionUserResponse'
+              examples:
+                completed:
+                  value:
+                    userId: user_01hy6m7bq0example000000000
+                    sessionsRevoked: 2
+                    campaignMembershipsRemoved: 3
+                    providerAccountsUnlinked: 0
+                    identityAnonymized: false
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Deprovisioning is feature-flag disabled, policy-pending, or the actor is not admitted by Cloudflare Access.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                featureDisabled:
+                  value:
+                    error: deprovision_disabled
+                    message: Deprovisioning is disabled pending policy and implementation documentation.
+                    requestId: req_01hzexample00000000000000
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /api/v1/campaigns/{campaignSlug}/members:
+    get:
+      operationId: listCampaignMembers
+      tags:
+      - Campaign Members
+      summary: List members for one campaign
+      description: Returns campaign-relevant member identity fields for one campaign only. This endpoint does not expose provider rows, sessions, password state, global user search, or users unrelated to the campaign. The actor must have campaign user-admin capability for the exact campaign or be admitted as a global Cloudflare Access operator.
+      security:
+      - BetterAuthSession: []
+      - CloudflareAccess: []
+      parameters:
+      - $ref: '#/components/parameters/CampaignSlug'
+      - $ref: '#/components/parameters/RoleFilter'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Campaign member page.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CampaignMemberPage'
+              examples:
+                default:
+                  value:
+                    campaignSlug: crownfall
+                    items:
+                    - userId: user_01hy6m7bq0example000000000
+                      displayName: Mira Stone
+                      email: mira@example.invalid
+                      role: gm
+                      joinedAt: '2026-05-25T10:00:00Z'
+                      updatedAt: '2026-06-03T15:00:00Z'
+                    nextCursor: null
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/CampaignForbidden'
+        '404':
+          $ref: '#/components/responses/CampaignNotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /api/v1/campaigns/{campaignSlug}/members/{userId}:
+    put:
+      operationId: upsertCampaignMember
+      tags:
+      - Campaign Members
+      summary: Create or update a campaign member role
+      description: Creates or updates the exact active membership for the requested campaign and already-known existing user. Campaign-scoped actors may only mutate memberships inside campaigns where they have user-admin capability and may not use this endpoint for global user enumeration. The target user must be safely identified, preferably by exact userId. The response is the contractual confirmation that the mutation occurred and should be used by the dashboard UI for GM/admin feedback. No invitation, access-request, acceptance, or email-notification workflow is part of this v1 mutation.
+      security:
+      - BetterAuthSession: []
+      - CloudflareAccess: []
+      parameters:
+      - $ref: '#/components/parameters/CampaignSlug'
+      - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MembershipRoleRequest'
+            examples:
+              memberUpdate:
+                value:
+                  role: member
+                  reason: Player should no longer administer this campaign.
+      responses:
+        '200':
+          description: Membership was created, updated, or confirmed unchanged.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CampaignMemberMutationResponse'
+              examples:
+                updated:
+                  value:
+                    member:
+                      userId: user_01hy6m7bq0example000000000
+                      displayName: Mira Stone
+                      email: mira@example.invalid
+                      role: member
+                      joinedAt: '2026-05-25T10:00:00Z'
+                      updatedAt: '2026-06-03T15:15:00Z'
+                    outcome: updated
+                    confirmationMessage: Campaign membership updated.
+                created:
+                  value:
+                    member:
+                      userId: user_01hy6m7bq0example000000002
+                      displayName: Tamsin Reed
+                      email: tamsin@example.invalid
+                      role: member
+                      joinedAt: '2026-06-03T15:15:00Z'
+                      updatedAt: '2026-06-03T15:15:00Z'
+                    outcome: created
+                    confirmationMessage: Campaign membership created.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/CampaignForbidden'
+        '404':
+          $ref: '#/components/responses/CampaignMemberNotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    delete:
+      operationId: revokeCampaignMember
+      tags:
+      - Campaign Members
+      summary: Revoke a campaign member
+      description: Revokes exactly one membership in the requested campaign. The response returns only campaign-scoped data about the removed membership and does not reveal unrelated account information. The response is the contractual confirmation that the mutation occurred and should be used by the dashboard UI for operator feedback. No invitation, access-request, acceptance, or email-notification workflow is part of this v1 mutation.
+      security:
+      - BetterAuthSession: []
+      - CloudflareAccess: []
+      parameters:
+      - $ref: '#/components/parameters/CampaignSlug'
+      - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RevokeRequest'
+            examples:
+              memberRevoke:
+                value:
+                  reason: Player left the table.
+      responses:
+        '200':
+          description: Campaign membership was revoked.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CampaignMemberRevokeResponse'
+              examples:
+                revoked:
+                  value:
+                    revokedMember:
+                      userId: user_01hy6m7bq0example000000000
+                      displayName: Mira Stone
+                      email: mira@example.invalid
+                      role: member
+                      joinedAt: '2026-05-25T10:00:00Z'
+                      updatedAt: '2026-05-25T10:00:00Z'
+                    outcome: revoked
+                    confirmationMessage: Campaign membership revoked.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/CampaignForbidden'
+        '404':
+          $ref: '#/components/responses/CampaignMemberNotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /api/v1/campaigns/{campaignSlug}/admin-capability:
+    get:
+      operationId: getCampaignAdminCapability
+      tags:
+      - Campaign Capability
+      summary: Check current actor campaign administration capability
+      description: Reports whether the current signed-in actor can administer users for the exact campaign. By default, campaign_memberships.role = gm grants user-admin capability for that campaign. This capability is campaign-scoped and is not an app-native woa-admin role. The response does not expose other users, provider state, session state, or password state.
+      security:
+      - BetterAuthSession: []
+      - CloudflareAccess: []
+      parameters:
+      - $ref: '#/components/parameters/CampaignSlug'
+      responses:
+        '200':
+          description: Current actor capability for this campaign.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CampaignAdminCapability'
+              examples:
+                gm:
+                  value:
+                    campaignSlug: crownfall
+                    actor:
+                      userId: user_01hy6m7bq0example000000000
+                      displayName: Mira Stone
+                    canAdministerUsers: true
+                    capabilities:
+                    - user-admin
+                    source: campaign-gm
+                member:
+                  value:
+                    campaignSlug: crownfall
+                    actor:
+                      userId: user_01hy6m7bq0example000000001
+                      displayName: Rook Vale
+                    canAdministerUsers: false
+                    capabilities: []
+                    source: none
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/CampaignNotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+components:
+  securitySchemes:
+    CloudflareAccess:
+      type: apiKey
+      in: header
+      name: CF-Access-Jwt-Assertion
+      description: Cloudflare Access admission for global woa-admin operator APIs. Per ADR-0003, admitted human operators have one effective global admin capability; this contract does not define app-native admin roles.
+    BetterAuthSession:
+      type: apiKey
+      in: cookie
+      name: better-auth.session_token
+      description: World of Aletheia signed-in user session for campaign-scoped public-site APIs. Session cookie names may vary by Better Auth deployment config; API responses must never expose session token values.
+  parameters:
+    UserId:
+      name: userId
+      in: path
+      required: true
+      description: Stable Better Auth user id. Required for mutations; email is not accepted as a mutation target.
+      schema:
+        $ref: '#/components/schemas/UserId'
+    CampaignSlug:
+      name: campaignSlug
+      in: path
+      required: true
+      description: Campaign key used by campaign_memberships.campaign_slug.
+      schema:
+        $ref: '#/components/schemas/CampaignSlug'
+    UserIdQuery:
+      name: userId
+      in: query
+      required: false
+      description: Exact stable Better Auth user id.
+      schema:
+        $ref: '#/components/schemas/UserId'
+    EmailQuery:
+      name: email
+      in: query
+      required: false
+      description: Exact or prefix email search input. Server normalizes using trim(lower(email)).
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 254
+    NameQuery:
+      name: name
+      in: query
+      required: false
+      description: Display-name search input for operator discovery. Requires at least three characters to avoid overly broad scans.
+      schema:
+        type: string
+        minLength: 3
+        maxLength: 120
+    Limit:
+      name: limit
+      in: query
+      required: false
+      description: Page size limit.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 50
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      description: Opaque pagination cursor from a previous response.
+      schema:
+        type:
+        - string
+        - 'null'
+        maxLength: 512
+    RoleFilter:
+      name: role
+      in: query
+      required: false
+      description: Optional campaign membership role filter.
+      schema:
+        $ref: '#/components/schemas/CampaignRole'
+  responses:
+    BadRequest:
+      description: Request was malformed or failed validation.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            invalidRole:
+              value:
+                error: invalid_request
+                message: role must be one of member or gm.
+                requestId: req_01hzexample00000000000000
+    Unauthorized:
+      description: Authentication is missing or invalid.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            unauthenticated:
+              value:
+                error: unauthenticated
+                message: Authentication is required.
+                requestId: req_01hzexample00000000000000
+    Forbidden:
+      description: Actor is not admitted to the protected global admin surface.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            forbidden:
+              value:
+                error: forbidden
+                message: Cloudflare Access admission is required for this operation.
+                requestId: req_01hzexample00000000000000
+    CampaignForbidden:
+      description: Actor cannot administer users for the exact campaign.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            forbidden:
+              value:
+                error: campaign_forbidden
+                message: You cannot administer users for this campaign.
+                requestId: req_01hzexample00000000000000
+    NotFound:
+      description: The requested resource was not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            missing:
+              value:
+                error: not_found
+                message: The requested resource was not found.
+                requestId: req_01hzexample00000000000000
+    CampaignNotFound:
+      description: The campaign was not found or is not visible to the actor.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            missing:
+              value:
+                error: not_found
+                message: The campaign was not found.
+                requestId: req_01hzexample00000000000000
+    CampaignMemberNotFound:
+      description: The campaign membership was not found for the exact campaign and user.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            missing:
+              value:
+                error: not_found
+                message: The campaign membership was not found.
+                requestId: req_01hzexample00000000000000
+    Conflict:
+      description: Request could not be applied because of current resource state or failed postcondition.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            conflict:
+              value:
+                error: conflict
+                message: The requested mutation could not be applied to the current state.
+                requestId: req_01hzexample00000000000000
+    TooManyRequests:
+      description: Rate limit exceeded.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            limited:
+              value:
+                error: rate_limited
+                message: Too many requests. Try again later.
+                requestId: req_01hzexample00000000000000
+    ServiceUnavailable:
+      description: Database, mail, or dependent service is unavailable.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            unavailable:
+              value:
+                error: service_unavailable
+                message: Service is temporarily unavailable.
+                requestId: req_01hzexample00000000000000
+  schemas:
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - error
+      - message
+      properties:
+        error:
+          type: string
+          description: Stable machine-readable error code.
+        message:
+          type: string
+          description: Human-readable debugging message. Must not include secrets.
+        requestId:
+          type: string
+          description: Correlation id for support and audit review.
+    UserId:
+      type: string
+      minLength: 1
+      maxLength: 128
+      pattern: ^[A-Za-z0-9_:\\-]+$
+    CampaignSlug:
+      type: string
+      minLength: 1
+      maxLength: 80
+      pattern: ^[a-z0-9][a-z0-9-]*[a-z0-9]$
+    Timestamp:
+      type: string
+      format: date-time
+    CampaignRole:
+      type: string
+      enum:
+      - member
+      - gm
+      description: Current campaign_memberships role. gm implies member access.
+    CredentialAccountState:
+      type: string
+      enum:
+      - present
+      - absent
+      - unknown
+      description: Secret-safe credential account state; does not expose password hashes.
+    ProviderId:
+      type: string
+      enum:
+      - credential
+      - google
+      description: Known provider ids for current Better Auth account links.
+    AdminUserSearchPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - nextCursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminUserSearchResult'
+        nextCursor:
+          type:
+          - string
+          - 'null'
+    AdminUserSearchResult:
+      type: object
+      additionalProperties: false
+      required:
+      - userId
+      - displayName
+      - email
+      - emailCanonical
+      - createdAt
+      - credentialAccountState
+      - linkedProviders
+      - activeSessionCount
+      - campaignMembershipCount
+      properties:
+        userId:
+          $ref: '#/components/schemas/UserId'
+        displayName:
+          type:
+          - string
+          - 'null'
+        email:
+          type: string
+          format: email
+        emailCanonical:
+          type: string
+          format: email
+        createdAt:
+          $ref: '#/components/schemas/Timestamp'
+        updatedAt:
+          anyOf:
+          - $ref: '#/components/schemas/Timestamp'
+          - type: 'null'
+        credentialAccountState:
+          $ref: '#/components/schemas/CredentialAccountState'
+        linkedProviders:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProviderId'
+          uniqueItems: true
+        activeSessionCount:
+          type: integer
+          minimum: 0
+        campaignMembershipCount:
+          type: integer
+          minimum: 0
+    AdminUserDetail:
+      type: object
+      additionalProperties: false
+      required:
+      - user
+      - providerAccounts
+      - sessions
+      - campaignMemberships
+      - verificationSummary
+      - deletion
+      properties:
+        user:
+          $ref: '#/components/schemas/AdminUserIdentity'
+        providerAccounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/SafeProviderAccount'
+        sessions:
+          $ref: '#/components/schemas/SafeSessionSummary'
+        campaignMemberships:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminCampaignMembership'
+        verificationSummary:
+          $ref: '#/components/schemas/VerificationSummary'
+        deletion:
+          $ref: '#/components/schemas/DeletionAvailability'
+    AdminUserIdentity:
+      type: object
+      additionalProperties: false
+      required:
+      - userId
+      - displayName
+      - email
+      - emailCanonical
+      - createdAt
+      - adminStatus
+      properties:
+        userId:
+          $ref: '#/components/schemas/UserId'
+        displayName:
+          type:
+          - string
+          - 'null'
+        email:
+          type: string
+          format: email
+        emailCanonical:
+          type: string
+          format: email
+        createdAt:
+          $ref: '#/components/schemas/Timestamp'
+        updatedAt:
+          anyOf:
+          - $ref: '#/components/schemas/Timestamp'
+          - type: 'null'
+        adminStatus:
+          $ref: '#/components/schemas/AdminUserStatus'
+    SafeProviderAccount:
+      type: object
+      additionalProperties: false
+      required:
+      - providerId
+      - providerAccountId
+      properties:
+        providerId:
+          $ref: '#/components/schemas/ProviderId'
+        providerAccountId:
+          type: string
+          description: Provider account identifier. OAuth token values are never included.
+          maxLength: 254
+        createdAt:
+          anyOf:
+          - $ref: '#/components/schemas/Timestamp'
+          - type: 'null'
+        updatedAt:
+          anyOf:
+          - $ref: '#/components/schemas/Timestamp'
+          - type: 'null'
+    SafeSessionSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - activeCount
+      - recent
+      properties:
+        activeCount:
+          type: integer
+          minimum: 0
+        recent:
+          type: array
+          items:
+            $ref: '#/components/schemas/SafeSessionMetadata'
+    SafeSessionMetadata:
+      type: object
+      additionalProperties: false
+      required:
+      - sessionId
+      - expiresAt
+      properties:
+        sessionId:
+          type: string
+          description: Opaque session id only; token values are never returned.
+        createdAt:
+          anyOf:
+          - $ref: '#/components/schemas/Timestamp'
+          - type: 'null'
+        updatedAt:
+          anyOf:
+          - $ref: '#/components/schemas/Timestamp'
+          - type: 'null'
+        expiresAt:
+          $ref: '#/components/schemas/Timestamp'
+        ipAddress:
+          type:
+          - string
+          - 'null'
+          description: Safe metadata only if already stored and approved for operator display.
+        userAgent:
+          type:
+          - string
+          - 'null'
+          maxLength: 512
+          description: Safe metadata only if already stored and approved for operator display.
+    VerificationSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - activePasswordResetRequestCount
+      properties:
+        activePasswordResetRequestCount:
+          type: integer
+          minimum: 0
+          description: Count only. Token values are never returned.
+    DeletionAvailability:
+      type: object
+      additionalProperties: false
+      required:
+      - softDeleteAvailable
+      - deprovisionEnabled
+      - hardDeleteAvailable
+      properties:
+        softDeleteAvailable:
+          type: boolean
+          description: DELETE /admin/users/{userId} can record timestamped soft-delete status.
+        deprovisionEnabled:
+          type: boolean
+          description: Whether the feature-flagged deprovision endpoint may execute broader destructive actions.
+        hardDeleteAvailable:
+          type: boolean
+          const: false
+          description: Physical hard delete is not part of the v1 contract.
+        reason:
+          type:
+          - string
+          - 'null'
+    AdminCampaignMembership:
+      type: object
+      additionalProperties: false
+      required:
+      - campaignSlug
+      - role
+      properties:
+        campaignSlug:
+          $ref: '#/components/schemas/CampaignSlug'
+        role:
+          $ref: '#/components/schemas/CampaignRole'
+        grantedAt:
+          anyOf:
+          - $ref: '#/components/schemas/Timestamp'
+          - type: 'null'
+        updatedAt:
+          anyOf:
+          - $ref: '#/components/schemas/Timestamp'
+          - type: 'null'
+    MembershipRoleRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - role
+      properties:
+        role:
+          $ref: '#/components/schemas/CampaignRole'
+        reason:
+          type:
+          - string
+          - 'null'
+          maxLength: 500
+          description: Optional audit note. Must not include secrets or private tokens.
+    RevokeRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        reason:
+          type:
+          - string
+          - 'null'
+          maxLength: 500
+          description: Optional audit note. Must not include secrets or private tokens.
+    AdminMembershipMutationResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - membership
+      - outcome
+      - confirmationMessage
+      properties:
+        membership:
+          $ref: '#/components/schemas/AdminUserCampaignMembership'
+        outcome:
+          type: string
+          enum:
+          - created
+          - updated
+          - unchanged
+        confirmationMessage:
+          type: string
+          description: Human-readable confirmation text suitable for dashboard feedback after the server verified the membership mutation postcondition.
+    AdminUserCampaignMembership:
+      allOf:
+      - $ref: '#/components/schemas/AdminCampaignMembership'
+      - type: object
+        additionalProperties: false
+        required:
+        - userId
+        properties:
+          userId:
+            $ref: '#/components/schemas/UserId'
+    MembershipRevokeResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - revokedMembership
+      - outcome
+      - confirmationMessage
+      properties:
+        revokedMembership:
+          $ref: '#/components/schemas/AdminUserCampaignMembership'
+        outcome:
+          type: string
+          const: revoked
+        confirmationMessage:
+          type: string
+          description: Human-readable confirmation text suitable for dashboard feedback after the server verified the membership mutation postcondition.
+    PasswordResetRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - deliveryMode
+      properties:
+        deliveryMode:
+          type: string
+          enum:
+          - email
+          description: Admin-assisted reset currently uses public reset email semantics only.
+        reason:
+          type:
+          - string
+          - 'null'
+          maxLength: 500
+    PasswordResetResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - status
+      - credentialAccountState
+      - deliveryMode
+      properties:
+        status:
+          type: string
+          enum:
+          - accepted
+          - unavailable
+        credentialAccountState:
+          $ref: '#/components/schemas/CredentialAccountState'
+        deliveryMode:
+          type: string
+          enum:
+          - email
+        expiresAt:
+          anyOf:
+          - $ref: '#/components/schemas/Timestamp'
+          - type: 'null'
+          description: Reset expiry if a reset request was created. No token or URL is returned.
+    RevokeSessionsRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        reason:
+          type:
+          - string
+          - 'null'
+          maxLength: 500
+    RevokeSessionsResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - status
+      - confirmationMessage
+      properties:
+        status:
+          type: string
+          const: accepted
+        confirmationMessage:
+          type: string
+          description: Human-readable confirmation that the revocation workflow was accepted. The response intentionally does not expose active-session counts.
+    DeprovisionUserRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - actions
+      - confirmation
+      properties:
+        actions:
+          $ref: '#/components/schemas/DeprovisionActions'
+        confirmation:
+          $ref: '#/components/schemas/UserTypedConfirmation'
+        reason:
+          type:
+          - string
+          - 'null'
+          maxLength: 500
+    DeprovisionActions:
+      type: object
+      additionalProperties: false
+      required:
+      - revokeSessions
+      - removeCampaignMemberships
+      - unlinkProviderAccounts
+      - anonymizeIdentity
+      properties:
+        revokeSessions:
+          type: boolean
+        removeCampaignMemberships:
+          type: boolean
+        unlinkProviderAccounts:
+          type: boolean
+          description: May be rejected until provider unlink policy is approved.
+        anonymizeIdentity:
+          type: boolean
+          description: May be rejected until anonymization policy is approved.
+    UserTypedConfirmation:
+      type: object
+      additionalProperties: false
+      required:
+      - userId
+      - emailCanonical
+      - phrase
+      properties:
+        userId:
+          $ref: '#/components/schemas/UserId'
+        emailCanonical:
+          type: string
+          format: email
+        phrase:
+          type: string
+          minLength: 1
+          maxLength: 200
+    DeprovisionUserResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - userId
+      - sessionsRevoked
+      - campaignMembershipsRemoved
+      - providerAccountsUnlinked
+      - identityAnonymized
+      properties:
+        userId:
+          $ref: '#/components/schemas/UserId'
+        sessionsRevoked:
+          type: integer
+          minimum: 0
+        campaignMembershipsRemoved:
+          type: integer
+          minimum: 0
+        providerAccountsUnlinked:
+          type: integer
+          minimum: 0
+        identityAnonymized:
+          type: boolean
+    CampaignMemberPage:
+      type: object
+      additionalProperties: false
+      required:
+      - campaignSlug
+      - items
+      - nextCursor
+      properties:
+        campaignSlug:
+          $ref: '#/components/schemas/CampaignSlug'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CampaignMember'
+        nextCursor:
+          type:
+          - string
+          - 'null'
+    CampaignMember:
+      type: object
+      additionalProperties: false
+      required:
+      - userId
+      - displayName
+      - email
+      - role
+      properties:
+        userId:
+          $ref: '#/components/schemas/UserId'
+        displayName:
+          type:
+          - string
+          - 'null'
+        email:
+          type: string
+          format: email
+          description: Campaign-relevant contact identity for an existing member only.
+        role:
+          $ref: '#/components/schemas/CampaignRole'
+        joinedAt:
+          anyOf:
+          - $ref: '#/components/schemas/Timestamp'
+          - type: 'null'
+        updatedAt:
+          anyOf:
+          - $ref: '#/components/schemas/Timestamp'
+          - type: 'null'
+    CampaignMemberMutationResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - member
+      - outcome
+      - confirmationMessage
+      properties:
+        member:
+          $ref: '#/components/schemas/CampaignMember'
+        outcome:
+          type: string
+          enum:
+          - created
+          - updated
+          - unchanged
+        confirmationMessage:
+          type: string
+          description: Human-readable confirmation text suitable for dashboard feedback after the server verified the membership mutation postcondition.
+    CampaignMemberRevokeResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - revokedMember
+      - outcome
+      - confirmationMessage
+      properties:
+        revokedMember:
+          $ref: '#/components/schemas/CampaignMember'
+        outcome:
+          type: string
+          const: revoked
+        confirmationMessage:
+          type: string
+          description: Human-readable confirmation text suitable for dashboard feedback after the server verified the membership mutation postcondition.
+    CampaignAdminCapability:
+      type: object
+      additionalProperties: false
+      required:
+      - campaignSlug
+      - actor
+      - canAdministerUsers
+      - capabilities
+      - source
+      properties:
+        campaignSlug:
+          $ref: '#/components/schemas/CampaignSlug'
+        actor:
+          $ref: '#/components/schemas/CapabilityActor'
+        canAdministerUsers:
+          type: boolean
+        capabilities:
+          type: array
+          items:
+            type: string
+            enum:
+            - user-admin
+          uniqueItems: true
+        source:
+          type: string
+          enum:
+          - campaign-gm
+          - global-admin
+          - none
+    CapabilityActor:
+      type: object
+      additionalProperties: false
+      required:
+      - userId
+      - displayName
+      properties:
+        userId:
+          $ref: '#/components/schemas/UserId'
+        displayName:
+          type:
+          - string
+          - 'null'
+    AdminUserStatusValue:
+      type: string
+      enum:
+      - active
+      - soft_deleted
+      description: Admin-owned user status stored outside the Better Auth user table, e.g. admin_user_status.
+    AdminUserStatus:
+      type: object
+      additionalProperties: false
+      required:
+      - status
+      - statusAt
+      - reason
+      properties:
+        status:
+          $ref: '#/components/schemas/AdminUserStatusValue'
+        statusAt:
+          anyOf:
+          - $ref: '#/components/schemas/Timestamp'
+          - type: 'null'
+          description: Timestamp when this admin status was recorded. Null for active/default state.
+        reason:
+          type:
+          - string
+          - 'null'
+          maxLength: 500
+          description: Secret-safe operator reason or null.
+    SoftDeleteUserRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - confirmation
+      properties:
+        confirmation:
+          $ref: '#/components/schemas/UserTypedConfirmation'
+        reason:
+          type:
+          - string
+          - 'null'
+          maxLength: 500
+          description: Optional audit/status reason. Must not include secrets or private tokens.
+    SoftDeleteUserResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - userId
+      - adminStatus
+      - sessionsRevoked
+      - confirmationMessage
+      properties:
+        userId:
+          $ref: '#/components/schemas/UserId'
+        adminStatus:
+          $ref: '#/components/schemas/AdminUserStatus'
+        sessionsRevoked:
+          type: integer
+          minimum: 0
+          description: Active sessions revoked as part of soft delete.
+        confirmationMessage:
+          type: string
+          description: Human-readable confirmation text suitable for dashboard feedback after soft-delete status is recorded.
