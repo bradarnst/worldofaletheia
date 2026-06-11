@@ -1,20 +1,9 @@
 ---
 import { getCollection } from 'astro:content';
 import CampaignsLayout from '@layouts/CampaignsLayout.astro';
-import { getRequestSession } from '~/lib/auth-session';
-import { createCampaignMembershipRepoFromLocals } from '~/lib/campaign-membership-repo';
 import { extractCampaignSlugFromEntryId } from '@utils/campaign-collections';
 
 export const prerender = false;
-
-interface DashboardMember {
-  userId: string;
-  displayName: string | null;
-  email: string;
-  role: 'member' | 'gm';
-  joinedAt: string | null;
-  updatedAt: string | null;
-}
 
 const { campaign } = Astro.params;
 const campaignSlug = campaign ?? '';
@@ -42,63 +31,7 @@ try {
   contentUnavailable = true;
 }
 
-const session = await getRequestSession(Astro.request, Astro.locals);
-let canAdministerUsers = false;
-let members: DashboardMember[] = [];
-let memberCount = 0;
-let gmCount = 0;
-let dataUnavailable = false;
-
-if (session && campaignFound && !contentUnavailable) {
-  try {
-    const repo = await createCampaignMembershipRepoFromLocals(Astro.locals);
-    canAdministerUsers = await repo.isUserGmOfCampaign(session.user.id, campaignSlug);
-
-    if (canAdministerUsers) {
-      const [memberPage, campaignGmCount] = await Promise.all([
-        repo.listCampaignMembers({ campaignSlug, limit: 100 }),
-        repo.countCampaignGms(campaignSlug),
-      ]);
-      members = memberPage.items;
-      memberCount = members.length;
-      gmCount = campaignGmCount;
-    }
-  } catch (error) {
-    console.error('campaign.admin.membership_lookup_failed', {
-      campaignSlug,
-      actorUserId: session.user.id,
-      message: error instanceof Error ? error.message : 'unknown error',
-    });
-    dataUnavailable = true;
-  }
-}
-
 const title = campaignFound ? `${campaignTitle} - Campaign Administration` : 'Campaign Administration';
-const status = !session
-  ? 'unauthenticated'
-  : contentUnavailable || dataUnavailable
-    ? 'unavailable'
-    : !campaignFound
-      ? 'not-found'
-      : canAdministerUsers
-        ? 'authorized'
-        : 'forbidden';
-
-function formatTimestamp(value: string | null): string {
-  if (!value) {
-    return 'Unknown';
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return date.toLocaleString('en-GB', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  });
-}
 ---
 
 <CampaignsLayout title={title} description={`Campaign administration for ${campaignTitle}`} robots="noindex,nofollow">
@@ -118,7 +51,7 @@ function formatTimestamp(value: string | null): string {
     <header class="mb-8">
       <div class="mb-3 flex flex-wrap items-center gap-3">
         <span class="ui-pill ui-pill--outline">Campaign tools</span>
-        {status === 'authorized' && <span class="badge badge-primary">GM access</span>}
+        <span class="badge badge-primary hidden" data-capability-badge>GM access</span>
       </div>
       <h1 class="mb-3 text-3xl font-bold text-ink-950 md:text-4xl">{campaignTitle}</h1>
       <p class="max-w-3xl text-ink-800">
@@ -126,183 +59,189 @@ function formatTimestamp(value: string | null): string {
       </p>
     </header>
 
-    {status === 'unauthenticated' && (
+    {contentUnavailable && (
       <section class="ui-surface p-6">
-        <h2 class="mb-2 text-xl font-semibold text-ink-950">Sign in required</h2>
-        <p class="mb-4 text-ink-800">Campaign administration is available only to signed-in campaign GMs.</p>
-        <a href={loginHref} class="ui-button ui-button--primary">Sign in to continue</a>
-      </section>
-    )}
-
-    {status === 'forbidden' && (
-      <section class="ui-surface p-6">
-        <h2 class="mb-2 text-xl font-semibold text-ink-950">Campaign permission required</h2>
+        <h2 class="mb-2 text-xl font-semibold text-ink-950">Campaign administration unavailable</h2>
         <p class="text-ink-800">
-          Your account is signed in, but it does not have campaign GM authority for {campaignTitle}. Member and
-          non-member accounts cannot administer campaign users.
+          Campaign administration is temporarily unavailable. Protected campaign user data remains closed until the
+          content source is available.
         </p>
       </section>
     )}
 
-    {status === 'not-found' && (
+    {!contentUnavailable && !campaignFound && (
       <section class="ui-surface p-6">
         <h2 class="mb-2 text-xl font-semibold text-ink-950">Campaign not found</h2>
         <p class="text-ink-800">The requested campaign could not be found.</p>
       </section>
     )}
 
-    {status === 'unavailable' && (
-      <section class="ui-surface p-6">
-        <h2 class="mb-2 text-xl font-semibold text-ink-950">Campaign administration unavailable</h2>
-        <p class="text-ink-800">
-          Campaign administration is temporarily unavailable. Protected campaign user data remains closed until the
-          content and D1 membership sources are available.
-        </p>
-      </section>
-    )}
-
-    {status === 'authorized' && (
-      <div class="space-y-8" data-campaign-admin data-campaign-slug={campaignSlug}>
-        <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <div class="ui-surface p-5">
-            <p class="meta-muted text-sm">Actor</p>
-            <p class="mt-1 font-semibold text-ink-950">{session?.user.name || session?.user.email}</p>
-          </div>
-          <div class="ui-surface p-5">
-            <p class="meta-muted text-sm">Capability source</p>
-            <p class="mt-1 font-semibold text-ink-950">campaign-gm</p>
-          </div>
-          <div class="ui-surface p-5">
-            <p class="meta-muted text-sm">Members shown</p>
-            <p class="mt-1 font-semibold text-ink-950" data-member-count>{memberCount}</p>
-          </div>
-          <div class="ui-surface p-5">
-            <p class="meta-muted text-sm">Campaign GMs</p>
-            <p class="mt-1 font-semibold text-ink-950" data-gm-count>{gmCount}</p>
-          </div>
+    {!contentUnavailable && campaignFound && (
+      <div
+        class="space-y-8"
+        data-campaign-admin
+        data-campaign-slug={campaignSlug}
+        data-login-href={loginHref}
+      >
+        <section class="ui-surface p-6" data-admin-loading>
+          <h2 class="mb-2 text-xl font-semibold text-ink-950">Checking campaign permissions</h2>
+          <p class="text-ink-800">Campaign management controls load after your Better Auth session is verified.</p>
         </section>
 
-        <section class="ui-surface p-6">
-          <div class="mb-5">
-            <h2 class="text-2xl font-bold text-ink-950">Add existing account</h2>
-            <p class="mt-2 text-sm text-ink-800">
-              Add an existing World of Aletheia account by exact email address. This does not invite new users or
-              search all users. If the person has not created an account yet, have them sign up first.
-            </p>
-          </div>
+        <section class="ui-surface hidden p-6" data-admin-auth-required>
+          <h2 class="mb-2 text-xl font-semibold text-ink-950">Sign in required</h2>
+          <p class="mb-4 text-ink-800">Campaign administration is available only to signed-in campaign GMs.</p>
+          <a href={loginHref} class="ui-button ui-button--primary">Sign in to continue</a>
+        </section>
 
-          <form class="grid gap-4 md:grid-cols-[minmax(0,1fr)_12rem_auto]" data-add-member-form>
-            <label class="form-control">
-              <span class="label-text font-medium text-ink-900">Email address</span>
-              <input
-                class="input input-bordered w-full"
-                type="email"
-                name="email"
-                autocomplete="email"
-                maxlength="254"
-                required
-                placeholder="player@example.com"
-              />
-            </label>
+        <section class="ui-surface hidden p-6" data-admin-forbidden>
+          <h2 class="mb-2 text-xl font-semibold text-ink-950">Campaign permission required</h2>
+          <p class="text-ink-800">
+            Your account does not have campaign user-admin capability for {campaignTitle}. Member and non-member
+            accounts cannot administer campaign users.
+          </p>
+        </section>
 
-            <label class="form-control">
-              <span class="label-text font-medium text-ink-900">Role</span>
-              <select class="select select-bordered w-full" name="role" required>
-                <option value="member" selected>Member</option>
-                <option value="gm">GM</option>
-              </select>
-            </label>
+        <section class="ui-surface hidden p-6" data-admin-unavailable>
+          <h2 class="mb-2 text-xl font-semibold text-ink-950">Campaign administration unavailable</h2>
+          <p class="text-ink-800" data-admin-unavailable-message>
+            Campaign administration is temporarily unavailable. Please retry later.
+          </p>
+        </section>
 
-            <div class="flex items-end">
-              <button class="btn btn-primary w-full" type="submit" data-add-member-submit>Add member</button>
+        <div class="hidden space-y-8" data-admin-controls>
+          <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div class="ui-surface p-5">
+              <p class="meta-muted text-sm">Actor</p>
+              <p class="mt-1 font-semibold text-ink-950" data-actor-name>Unknown user</p>
             </div>
-          </form>
+            <div class="ui-surface p-5">
+              <p class="meta-muted text-sm">Capability source</p>
+              <p class="mt-1 font-semibold text-ink-950" data-capability-source>campaign-gm</p>
+            </div>
+            <div class="ui-surface p-5">
+              <p class="meta-muted text-sm">Members shown</p>
+              <p class="mt-1 font-semibold text-ink-950" data-member-count>0</p>
+            </div>
+            <div class="ui-surface p-5">
+              <p class="meta-muted text-sm">Campaign GMs</p>
+              <p class="mt-1 font-semibold text-ink-950" data-gm-count>0</p>
+            </div>
+          </section>
 
-          <div class="alert mt-4 hidden" role="status" aria-live="polite" data-add-member-message></div>
-        </section>
+          <section class="ui-surface p-6">
+            <div class="mb-5">
+              <h2 class="text-2xl font-bold text-ink-950">Add existing account</h2>
+              <p class="mt-2 text-sm text-ink-800">
+                Add an existing World of Aletheia account by exact email address. This does not invite new users or
+                search all users. If the person has not created an account yet, have them sign up first.
+              </p>
+            </div>
 
-        <section class="ui-surface overflow-hidden p-0">
-          <div class="border-b border-base-300 p-6">
-            <h2 class="text-2xl font-bold text-ink-950">Campaign members</h2>
-            <p class="mt-2 text-sm text-ink-800">
-              Members are campaign-scoped only. Revocation, demotion, invitations, access requests, and global user
-              search are intentionally not exposed here.
-            </p>
-          </div>
+            <form class="grid gap-4 md:grid-cols-[minmax(0,1fr)_12rem_auto]" data-add-member-form>
+              <label class="form-control">
+                <span class="label-text font-medium text-ink-900">Email address</span>
+                <input
+                  class="input input-bordered w-full"
+                  type="email"
+                  name="email"
+                  autocomplete="email"
+                  maxlength="254"
+                  required
+                  placeholder="player@example.com"
+                />
+              </label>
 
-          <div class:list={["p-6 text-ink-800", members.length > 0 && "hidden"]} data-empty-members>
-            No campaign members were found.
-          </div>
-          <div class:list={["overflow-x-auto", members.length === 0 && "hidden"]} data-members-table-wrapper>
-            <table class="table w-full">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Role</th>
-                  <th>Joined</th>
-                  <th>Updated</th>
-                </tr>
-              </thead>
-              <tbody data-members-table-body>
-                {members.map((member) => (
-                  <tr data-member-row data-user-id={member.userId} data-role={member.role}>
-                    <td>
-                      <div class="font-medium text-ink-950">{member.displayName ?? 'Unnamed user'}</div>
-                      <div class="text-xs meta-muted">{member.userId}</div>
-                    </td>
-                    <td>{member.email}</td>
-                    <td>
-                      <span class={member.role === 'gm' ? 'badge badge-primary' : 'badge badge-outline'}>
-                        {member.role === 'gm' ? 'GM' : 'Member'}
-                      </span>
-                    </td>
-                    <td>{formatTimestamp(member.joinedAt)}</td>
-                    <td>{formatTimestamp(member.updatedAt)}</td>
+              <label class="form-control">
+                <span class="label-text font-medium text-ink-900">Role</span>
+                <select class="select select-bordered w-full" name="role" required>
+                  <option value="member" selected>Member</option>
+                  <option value="gm">GM</option>
+                </select>
+              </label>
+
+              <div class="flex items-end">
+                <button class="btn btn-primary w-full" type="submit" data-add-member-submit>Add member</button>
+              </div>
+            </form>
+
+            <div class="alert mt-4 hidden" role="status" aria-live="polite" data-admin-message></div>
+          </section>
+
+          <section class="ui-surface overflow-hidden p-0">
+            <div class="border-b border-base-300 p-6">
+              <h2 class="text-2xl font-bold text-ink-950">Campaign members</h2>
+              <p class="mt-2 text-sm text-ink-800">
+                Members are campaign-scoped only. Invitations, access requests, and global user search are intentionally
+                not exposed here.
+              </p>
+            </div>
+
+            <div class="p-6 text-ink-800" data-empty-members>No campaign members were found.</div>
+            <div class="hidden overflow-x-auto" data-members-table-wrapper>
+              <table class="table w-full">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Joined</th>
+                    <th>Updated</th>
+                    <th class="text-right">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
+                </thead>
+                <tbody data-members-table-body></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
       </div>
     )}
   </div>
 </CampaignsLayout>
 
 <script>
-  type CampaignRole = 'member' | 'gm';
-
-  interface CampaignMemberDto {
-    userId: string;
-    displayName: string | null;
-    email: string;
-    role: CampaignRole;
-    joinedAt: string | null;
-    updatedAt: string | null;
-  }
-
-  interface CampaignMemberCreateResponseDto {
-    member: CampaignMemberDto;
-    outcome: 'created';
-    confirmationMessage: string;
-  }
-
-  interface ErrorResponseBody {
-    message?: string;
-  }
+  import {
+    CampaignApiError,
+    addCampaignMember,
+    getCampaignAdminCapability,
+    listCampaignMembers,
+    revokeCampaignMember,
+    updateCampaignMember,
+    type CampaignMember,
+    type CampaignRole,
+  } from '@utils/campaign-management-api-client';
 
   const root = document.querySelector<HTMLElement>('[data-campaign-admin]');
+  const capabilityBadge = document.querySelector<HTMLElement>('[data-capability-badge]');
+  const loadingPanel = document.querySelector<HTMLElement>('[data-admin-loading]');
+  const authRequiredPanel = document.querySelector<HTMLElement>('[data-admin-auth-required]');
+  const forbiddenPanel = document.querySelector<HTMLElement>('[data-admin-forbidden]');
+  const unavailablePanel = document.querySelector<HTMLElement>('[data-admin-unavailable]');
+  const unavailableMessage = document.querySelector<HTMLElement>('[data-admin-unavailable-message]');
+  const controls = document.querySelector<HTMLElement>('[data-admin-controls]');
   const form = document.querySelector<HTMLFormElement>('[data-add-member-form]');
   const submitButton = document.querySelector<HTMLButtonElement>('[data-add-member-submit]');
-  const message = document.querySelector<HTMLElement>('[data-add-member-message]');
+  const message = document.querySelector<HTMLElement>('[data-admin-message]');
   const tableBody = document.querySelector<HTMLTableSectionElement>('[data-members-table-body]');
   const tableWrapper = document.querySelector<HTMLElement>('[data-members-table-wrapper]');
   const emptyMembers = document.querySelector<HTMLElement>('[data-empty-members]');
   const memberCount = document.querySelector<HTMLElement>('[data-member-count]');
   const gmCount = document.querySelector<HTMLElement>('[data-gm-count]');
+  const actorName = document.querySelector<HTMLElement>('[data-actor-name]');
+  const capabilitySource = document.querySelector<HTMLElement>('[data-capability-source]');
 
-  function formatTimestampClient(value: string | null): string {
+  const membersByUserId = new Map<string, CampaignMember>();
+
+  function hide(element: HTMLElement | null): void {
+    element?.classList.add('hidden');
+  }
+
+  function show(element: HTMLElement | null): void {
+    element?.classList.remove('hidden');
+  }
+
+  function formatTimestampClient(value: string | null | undefined): string {
     if (!value) {
       return 'Unknown';
     }
@@ -324,11 +263,63 @@ function formatTimestamp(value: string | null): string {
     }
 
     message.textContent = text;
-    message.classList.remove('hidden', 'alert-success', 'alert-error');
+    message.classList.remove('hidden', 'alert-success', 'alert-error', 'alert-warning');
     message.classList.add(kind === 'success' ? 'alert-success' : 'alert-error');
   }
 
-  function setPending(isPending: boolean): void {
+  function setUnavailable(text: string): void {
+    hide(loadingPanel);
+    hide(authRequiredPanel);
+    hide(forbiddenPanel);
+    hide(controls);
+    hide(capabilityBadge);
+    if (unavailableMessage) {
+      unavailableMessage.textContent = text;
+    }
+    show(unavailablePanel);
+  }
+
+  function messageForError(error: unknown, action: 'add' | 'update' | 'revoke' | 'load'): string {
+    if (!(error instanceof CampaignApiError)) {
+      return 'Campaign administration is temporarily unavailable.';
+    }
+
+    if (error.status === 401) {
+      return 'Sign in is required to administer this campaign.';
+    }
+
+    if (error.status === 403) {
+      return 'You cannot administer users for this campaign.';
+    }
+
+    if (error.status === 404 && action === 'add') {
+      return 'No existing account found for that email.';
+    }
+
+    if (error.status === 404 && action !== 'load') {
+      return 'Campaign membership was not found. Refreshing the member list.';
+    }
+
+    if (error.status === 409 && action === 'add') {
+      return 'This user is already a campaign member.';
+    }
+
+    if (error.status === 409) {
+      return error.message || 'The requested change conflicts with the current campaign state.';
+    }
+
+    if (error.status === 429) {
+      return error.message || 'Too many requests. Please wait before trying again.';
+    }
+
+    if (error.status === 503) {
+      return error.message || 'Campaign administration is temporarily unavailable.';
+    }
+
+    return error.message || 'Campaign membership could not be updated.';
+  }
+
+  function setFormPending(isPending: boolean): void {
     if (!form || !submitButton) {
       return;
     }
@@ -348,7 +339,24 @@ function formatTimestamp(value: string | null): string {
     return badge;
   }
 
-  function renderMemberRow(member: CampaignMemberDto): HTMLTableRowElement {
+  function renderRoleSelect(member: CampaignMember): HTMLSelectElement {
+    const select = document.createElement('select');
+    select.className = 'select select-bordered select-sm';
+    select.dataset.roleSelect = '';
+    select.dataset.userId = member.userId;
+
+    for (const role of ['member', 'gm'] as const) {
+      const option = document.createElement('option');
+      option.value = role;
+      option.textContent = role === 'gm' ? 'GM' : 'Member';
+      option.selected = member.role === role;
+      select.append(option);
+    }
+
+    return select;
+  }
+
+  function renderMemberRow(member: CampaignMember): HTMLTableRowElement {
     const row = document.createElement('tr');
     row.dataset.memberRow = '';
     row.dataset.userId = member.userId;
@@ -375,53 +383,123 @@ function formatTimestamp(value: string | null): string {
     const updatedCell = document.createElement('td');
     updatedCell.textContent = formatTimestampClient(member.updatedAt);
 
-    row.append(nameCell, emailCell, roleCell, joinedCell, updatedCell);
+    const actionsCell = document.createElement('td');
+    actionsCell.className = 'text-right';
+    const actions = document.createElement('div');
+    actions.className = 'flex flex-wrap justify-end gap-2';
+    const roleSelect = renderRoleSelect(member);
+    const revokeButton = document.createElement('button');
+    revokeButton.className = 'btn btn-outline btn-sm';
+    revokeButton.type = 'button';
+    revokeButton.dataset.revokeMember = '';
+    revokeButton.dataset.userId = member.userId;
+    revokeButton.textContent = 'Revoke';
+    actions.append(roleSelect, revokeButton);
+    actionsCell.append(actions);
+
+    row.append(nameCell, emailCell, roleCell, joinedCell, updatedCell, actionsCell);
     return row;
   }
 
-  function incrementCount(element: HTMLElement | null, delta: number): void {
-    if (!element || delta === 0) {
-      return;
+  function refreshCounts(): void {
+    const members = Array.from(membersByUserId.values());
+    if (memberCount) {
+      memberCount.textContent = String(members.length);
     }
-
-    const current = Number.parseInt(element.textContent ?? '0', 10);
-    element.textContent = String((Number.isNaN(current) ? 0 : current) + delta);
+    if (gmCount) {
+      gmCount.textContent = String(members.filter((member) => member.role === 'gm').length);
+    }
   }
 
-  function upsertMemberRow(member: CampaignMemberDto): void {
+  function renderMembers(): void {
     if (!tableBody) {
       return;
     }
 
-    const existingRow = tableBody.querySelector<HTMLTableRowElement>(`[data-member-row][data-user-id="${CSS.escape(member.userId)}"]`);
-    const previousRole = existingRow?.dataset.role as CampaignRole | undefined;
-    const nextRow = renderMemberRow(member);
+    tableBody.replaceChildren(...Array.from(membersByUserId.values()).map(renderMemberRow));
+    refreshCounts();
 
-    if (existingRow) {
-      existingRow.replaceWith(nextRow);
-      if (previousRole !== member.role) {
-        incrementCount(gmCount, member.role === 'gm' ? 1 : -1);
-      }
+    if (membersByUserId.size > 0) {
+      show(tableWrapper);
+      hide(emptyMembers);
     } else {
-      tableBody.append(nextRow);
-      incrementCount(memberCount, 1);
-      incrementCount(gmCount, member.role === 'gm' ? 1 : 0);
+      hide(tableWrapper);
+      show(emptyMembers);
     }
-
-    tableWrapper?.classList.remove('hidden');
-    emptyMembers?.classList.add('hidden');
   }
 
-  async function readErrorMessage(response: Response): Promise<string> {
+  async function loadMembers(campaignSlug: string): Promise<void> {
+    const page = await listCampaignMembers({ campaignSlug, limit: 100 });
+    membersByUserId.clear();
+    for (const member of page.items) {
+      membersByUserId.set(member.userId, member);
+    }
+    renderMembers();
+  }
+
+  async function refetchAfterConflict(campaignSlug: string): Promise<void> {
     try {
-      const body = (await response.json()) as ErrorResponseBody;
-      return body.message || 'Campaign membership could not be updated.';
+      await loadMembers(campaignSlug);
     } catch {
-      return 'Campaign membership could not be updated.';
+      // Keep the user's original error visible; a later manual retry can reload state.
+    }
+  }
+
+  async function bootstrap(): Promise<void> {
+    if (!root) {
+      return;
+    }
+
+    const campaignSlug = root.dataset.campaignSlug;
+    if (!campaignSlug) {
+      setUnavailable('Campaign administration is temporarily unavailable.');
+      return;
+    }
+
+    try {
+      const capability = await getCampaignAdminCapability(campaignSlug);
+      hide(loadingPanel);
+
+      if (!capability.canAdministerUsers) {
+        hide(controls);
+        hide(capabilityBadge);
+        show(forbiddenPanel);
+        return;
+      }
+
+      if (actorName) {
+        actorName.textContent = capability.actor.displayName ?? capability.actor.userId;
+      }
+      if (capabilitySource) {
+        capabilitySource.textContent = capability.source;
+      }
+
+      show(capabilityBadge);
+      show(controls);
+      await loadMembers(campaignSlug);
+    } catch (error) {
+      if (error instanceof CampaignApiError && error.status === 401) {
+        hide(loadingPanel);
+        hide(controls);
+        show(authRequiredPanel);
+        return;
+      }
+
+      if (error instanceof CampaignApiError && error.status === 403) {
+        hide(loadingPanel);
+        hide(controls);
+        hide(capabilityBadge);
+        show(forbiddenPanel);
+        return;
+      }
+
+      setUnavailable(messageForError(error, 'load'));
     }
   }
 
   if (root && form) {
+    void bootstrap();
+
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
 
@@ -439,29 +517,82 @@ function formatTimestamp(value: string | null): string {
         return;
       }
 
-      setPending(true);
+      setFormPending(true);
       try {
-        const response = await fetch(`/api/v1/campaigns/${encodeURIComponent(campaignSlug)}/members`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ email, role }),
-        });
-
-        if (!response.ok) {
-          setMessage('error', await readErrorMessage(response));
-          return;
-        }
-
-        const body = (await response.json()) as CampaignMemberCreateResponseDto;
-        upsertMemberRow(body.member);
+        const body = await addCampaignMember({ campaignSlug, email, role });
+        membersByUserId.set(body.member.userId, body.member);
+        renderMembers();
         form.reset();
         setMessage('success', body.confirmationMessage);
-      } catch {
-        setMessage('error', 'Campaign administration is temporarily unavailable.');
+      } catch (error) {
+        setMessage('error', messageForError(error, 'add'));
+        if (error instanceof CampaignApiError && error.status === 409) {
+          await refetchAfterConflict(campaignSlug);
+        }
       } finally {
-        setPending(false);
+        setFormPending(false);
+      }
+    });
+
+    tableBody?.addEventListener('change', async (event) => {
+      const select = event.target instanceof HTMLSelectElement ? event.target : null;
+      const campaignSlug = root.dataset.campaignSlug;
+      const userId = select?.dataset.userId;
+      const role = select?.value;
+
+      if (!select || !campaignSlug || !userId || (role !== 'member' && role !== 'gm')) {
+        return;
+      }
+
+      const currentMember = membersByUserId.get(userId);
+      if (currentMember?.role === role) {
+        return;
+      }
+
+      select.disabled = true;
+      try {
+        const body = await updateCampaignMember({ campaignSlug, userId, role, reason: 'Updated from campaign admin UI.' });
+        membersByUserId.set(body.member.userId, body.member);
+        renderMembers();
+        setMessage('success', body.confirmationMessage);
+      } catch (error) {
+        setMessage('error', messageForError(error, 'update'));
+        if (error instanceof CampaignApiError && (error.status === 404 || error.status === 409)) {
+          await refetchAfterConflict(campaignSlug);
+        } else if (currentMember) {
+          select.value = currentMember.role;
+        }
+      } finally {
+        select.disabled = false;
+      }
+    });
+
+    tableBody?.addEventListener('click', async (event) => {
+      const button = event.target instanceof HTMLElement ? event.target.closest<HTMLButtonElement>('[data-revoke-member]') : null;
+      const campaignSlug = root.dataset.campaignSlug;
+      const userId = button?.dataset.userId;
+
+      if (!button || !campaignSlug || !userId) {
+        return;
+      }
+
+      button.disabled = true;
+      try {
+        const body = await revokeCampaignMember({
+          campaignSlug,
+          userId,
+          reason: 'Revoked from campaign admin UI.',
+        });
+        membersByUserId.delete(body.revokedMembership.userId);
+        renderMembers();
+        setMessage('success', body.confirmationMessage);
+      } catch (error) {
+        setMessage('error', messageForError(error, 'revoke'));
+        if (error instanceof CampaignApiError && (error.status === 404 || error.status === 409)) {
+          await refetchAfterConflict(campaignSlug);
+        }
+      } finally {
+        button.disabled = false;
       }
     });
   }
