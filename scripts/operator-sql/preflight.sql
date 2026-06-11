@@ -20,11 +20,6 @@ WHERE EXISTS (
   SELECT 1 FROM pragma_table_info('user') WHERE name = 'emailVerified'
 );
 
-SELECT 'column_exists' AS check_name, 'user.email_canonical' AS value
-WHERE EXISTS (
-  SELECT 1 FROM pragma_table_info('user') WHERE name = 'email_canonical'
-);
-
 SELECT 'column_exists' AS check_name, 'verification.expiresAt' AS value
 WHERE EXISTS (
   SELECT 1 FROM pragma_table_info('verification') WHERE name = 'expiresAt'
@@ -37,7 +32,7 @@ WHERE type = 'index'
     'idx_account_provider_account_unique',
     'idx_session_user_id',
     'idx_verification_identifier_value_unique',
-    'idx_user_email_canonical_unique'
+    'idx_user_email_unique'
   )
 ORDER BY name;
 
@@ -48,20 +43,20 @@ FROM "user"
 WHERE email IS NULL OR trim(email) = '';
 
 SELECT 'data_quality' AS check_name,
-       'non_canonical_email_rows' AS value,
+       'non_normalized_email_rows' AS value,
        COUNT(*) AS issue_count
 FROM "user"
 WHERE email IS NOT NULL
   AND email <> trim(lower(email));
 
 SELECT 'data_quality' AS check_name,
-       'duplicate_canonical_email_groups' AS value,
+       'duplicate_normalized_email_groups' AS value,
        COUNT(*) AS issue_count
 FROM (
-  SELECT email_canonical
+  SELECT trim(lower(email)) AS normalized_email
   FROM "user"
-  WHERE email_canonical IS NOT NULL
-    AND email_canonical <> ''
-  GROUP BY email_canonical
+  WHERE email IS NOT NULL
+    AND trim(email) <> ''
+  GROUP BY trim(lower(email))
   HAVING COUNT(*) > 1
 );

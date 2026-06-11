@@ -78,14 +78,14 @@ Ordered migration files are:
 
 Policy constraints:
 
-- Canonical email is `trim(lower(email))`.
-- Canonical collisions are fail-fast by default (migration runner exits with explicit collision output).
+- `user.email` stores `trim(lower(email))` and is the only persisted identity email.
+- Normalized-email collisions are fail-fast by default (migration runner exits with explicit collision output).
 - No persistent conflict-backlog table is used.
 
 Conflict-handling behavior in migration runner:
 
-1. By default, if conflicts are detected (canonical-email collisions or schema/object conflicts), execution stops with actionable error output.
-2. `--force` allows continuing despite conflicts and performs intentional collision overwrite behavior for duplicate canonical emails prior to apply.
+1. By default, if conflicts are detected (normalized-email collisions or schema/object conflicts), execution stops with actionable error output.
+2. `--force` allows continuing despite conflicts and performs intentional collision overwrite behavior for duplicate normalized emails prior to apply.
 3. This behavior is identical across local/staging/production wrappers.
 
 ## 4) Campaign membership authority
@@ -397,12 +397,12 @@ If an administrative mutation fails or the wrong assignment is applied, stop usi
 If identity mismatch is discovered after a change:
 
 1. Stop additional public-site deploy or sync activity that depends on the bad assignment.
-2. Resolve identity in `woa-admin` using canonical email/user-id policy.
+2. Resolve identity in `woa-admin` using normalized email/user-id policy.
 3. Apply the corrective membership/account action in `woa-admin`.
 4. Run public-site read-only verify/audit scripts if needed.
 5. Record the incident in the private ops log (timestamp, env, action, resolution).
 
-If canonical email collisions are reported:
+If normalized-email collisions are reported:
 
 1. Stop and resolve manually, or run approved `--force` path.
 2. Under force, duplicate identities are deterministically rewritten to unique forced aliases before migration apply.
@@ -419,9 +419,9 @@ All of the following must hold before declaring the Option A2 auth/email path pr
    - `sendOnSignIn = false`
 3. D1 has all required tables and indexes validated by `ops:a2:preflight:*`:
    - `user`, `account`, `session`, `verification`
-   - canonical email + provider/account uniqueness indexes
-4. Operator identity resolution is handled by `woa-admin` under canonical email policy.
-5. Canonical collisions are explicitly handled through immediate fail-fast-or-force behavior with no conflict backlog table.
+   - `user.email` + provider/account uniqueness indexes
+4. Operator identity resolution is handled by `woa-admin` under normalized email policy.
+5. Normalized-email collisions are explicitly handled through immediate fail-fast-or-force behavior with no conflict backlog table.
 
 ### 12.10 Rollback guidance for mistaken assignments
 

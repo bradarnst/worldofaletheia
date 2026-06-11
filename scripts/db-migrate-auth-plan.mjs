@@ -16,6 +16,7 @@ export const orderedMigrations = [
   './migrations/0010_drop_campaign_gm_assignments.sql',
   './migrations/0011_content_search_fts.sql',
   './migrations/0012_contributors_and_attributions.sql',
+  './migrations/0013_drop_email_canonical.sql',
 ];
 
 export function parseArgs(argv) {
@@ -404,7 +405,7 @@ export function buildConflictReportFromInspector(inspector) {
     });
   }
 
-  const requiredUserColumns = ['email', 'emailVerified', 'email_canonical'];
+  const requiredUserColumns = ['email', 'emailVerified'];
   const userTableExists = inspector.queryNumeric(
     'user_table_exists',
     `SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='user';`,
@@ -426,33 +427,33 @@ export function buildConflictReportFromInspector(inspector) {
     }
 
     const duplicateCanonical = inspector.queryNumeric(
-      'duplicate_canonical_email_groups',
+      'duplicate_normalized_email_groups',
       `SELECT COUNT(*)
        FROM (
-         SELECT trim(lower(email)) AS canonical_email
+          SELECT trim(lower(email)) AS normalized_email
          FROM "user"
          WHERE email IS NOT NULL AND trim(email) <> ''
          GROUP BY trim(lower(email))
          HAVING COUNT(*) > 1
        );`,
     );
-    if (requireNumericValue(duplicateCanonical, 'canonical email collision detection') > 0) {
+    if (requireNumericValue(duplicateCanonical, 'normalized email collision detection') > 0) {
       const duplicateDetails = inspector.queryText(
-        `SELECT trim(lower(email)) AS canonical_email,
+        `SELECT trim(lower(email)) AS normalized_email,
                 COUNT(*) AS duplicate_count,
                 GROUP_CONCAT(id) AS conflicting_user_ids
          FROM "user"
          WHERE email IS NOT NULL AND trim(email) <> ''
          GROUP BY trim(lower(email))
          HAVING COUNT(*) > 1
-         ORDER BY duplicate_count DESC, canonical_email ASC
-         LIMIT 20;`,
+          ORDER BY duplicate_count DESC, normalized_email ASC
+          LIMIT 20;`,
       );
 
       conflicts.push({
-        type: 'canonical_email_collision',
+        type: 'normalized_email_collision',
         message:
-          'Canonical-email collisions detected (`trim(lower(email))`). Running without force is blocked to prevent ambiguous identity state changes.',
+          'Normalized-email collisions detected (`trim(lower(email))`). Running without force is blocked to prevent ambiguous identity state changes.',
         details: duplicateDetails.output || duplicateDetails.error || 'No details available.',
       });
     }
@@ -565,18 +566,18 @@ export function collectDryRunMetricsFromInspector(inspector) {
   if (userExists) {
     metrics.push(
       inspector.queryNumeric(
-        'users_with_non_canonical_email',
+        'users_with_non_normalized_email',
         `SELECT COUNT(*) FROM "user" WHERE email IS NOT NULL AND email <> trim(lower(email));`,
       ),
       inspector.queryNumeric(
-        'users_with_missing_email_canonical',
-        `SELECT COUNT(*) FROM "user" WHERE email IS NOT NULL AND (email_canonical IS NULL OR email_canonical <> trim(lower(email)));`,
+        'users_with_null_or_empty_email',
+        `SELECT COUNT(*) FROM "user" WHERE email IS NULL OR trim(email) = '';`,
       ),
       inspector.queryNumeric(
-        'canonical_collision_groups',
+        'normalized_email_collision_groups',
         `SELECT COUNT(*)
          FROM (
-           SELECT trim(lower(email)) AS canonical_email
+            SELECT trim(lower(email)) AS normalized_email
            FROM "user"
            WHERE email IS NOT NULL AND trim(email) <> ''
            GROUP BY trim(lower(email))
@@ -587,17 +588,17 @@ export function collectDryRunMetricsFromInspector(inspector) {
   } else {
     metrics.push(
       {
-        label: 'users_with_non_canonical_email',
+        label: 'users_with_non_normalized_email',
         value: 0,
         error: 'user table not present yet (would be created by migration plan)',
       },
       {
-        label: 'users_with_missing_email_canonical',
+        label: 'users_with_null_or_empty_email',
         value: 0,
         error: 'user table not present yet (would be created by migration plan)',
       },
       {
-        label: 'canonical_collision_groups',
+        label: 'normalized_email_collision_groups',
         value: 0,
         error: 'user table not present yet (would be created by migration plan)',
       },
@@ -622,8 +623,8 @@ function printPlanSummary(baseArgs) {
   console.log('- Apply legacy GM-table decommission so final schema relies only on campaign_memberships roles.');
   console.log('- Ensure Better Auth core tables/user columns/indexes exist (idempotent create-if-missing).');
   console.log('- Ensure content discovery index table + supporting indexes exist (idempotent create-if-missing).');
-  console.log('- Normalize email values to trim(lower(email)) and backfill email_canonical where needed.');
-  console.log('- Enforce strict unique canonical email index (fails immediately if duplicates remain).');
+  console.log('- Normalize user.email values to trim(lower(email)) and enforce it as the sole identity email.');
+  console.log('- Enforce strict unique user.email index and drop legacy email_canonical storage.');
 
   const metrics = collectDryRunMetricsFromInspector(createSchemaInspector(baseArgs));
 
@@ -645,35 +646,35 @@ function hasNonForceableConflict(conflicts) {
   return hasConflictType(conflicts, 'invalid_membership_roles');
 }
 
-function applyForcedCanonicalCollisionOverwrite(baseArgs) {
+function applyForcedNormalizedEmailCollisionOverwrite(baseArgs) {
   const userExists = tableExists(baseArgs, 'user');
   if (!userExists) {
     return;
   }
 
-  console.warn('\nApplying forced canonical-email overwrite strategy for duplicate rows...');
+  console.warn('\nApplying forced normalized-email overwrite strategy for duplicate rows...');
 
   const emailOverwriteSql = `
 WITH normalized AS (
-  SELECT id, trim(lower(email)) AS canonical_email
+  SELECT id, trim(lower(email)) AS normalized_email
   FROM "user"
   WHERE email IS NOT NULL AND trim(email) <> ''
 ),
 ranked AS (
   SELECT
     id,
-    canonical_email,
-    ROW_NUMBER() OVER (PARTITION BY canonical_email ORDER BY id ASC) AS rn
+    normalized_email,
+    ROW_NUMBER() OVER (PARTITION BY normalized_email ORDER BY id ASC) AS rn
   FROM normalized
 ),
 losers AS (
-  SELECT id, canonical_email
+  SELECT id, normalized_email
   FROM ranked
   WHERE rn > 1
 )
 UPDATE "user"
 SET email = 'forced+' || substr("user".id, 1, 8) || '+' || (
-      SELECT losers.canonical_email
+      SELECT losers.normalized_email
       FROM losers
       WHERE losers.id = "user".id
     ),
@@ -682,25 +683,6 @@ WHERE id IN (SELECT id FROM losers);
 `;
 
   runWrangler(baseArgs, ['--command', emailOverwriteSql]);
-
-  const hasCanonicalColumn = queryNumeric(
-    baseArgs,
-    'user.email_canonical',
-    `SELECT COUNT(*) FROM pragma_table_info('user') WHERE name='email_canonical';`,
-  );
-
-  if (requireNumericValue(hasCanonicalColumn, 'user.email_canonical column existence check') === 1) {
-    runWrangler(
-      baseArgs,
-      [
-        '--command',
-        `UPDATE "user"
-         SET email_canonical = trim(lower(email))
-         WHERE email IS NOT NULL
-           AND (email_canonical IS NULL OR email_canonical <> trim(lower(email)));`,
-      ],
-    );
-  }
 }
 
 function printConflictBlock(conflicts, { forced }) {
@@ -760,8 +742,8 @@ async function main() {
         return;
       }
 
-      if (!args.dryRun && hasConflictType(conflicts, 'canonical_email_collision')) {
-        applyForcedCanonicalCollisionOverwrite(baseArgs);
+      if (!args.dryRun && hasConflictType(conflicts, 'normalized_email_collision')) {
+        applyForcedNormalizedEmailCollisionOverwrite(baseArgs);
       }
     } else {
       console.log('\nNo conflicts detected.');

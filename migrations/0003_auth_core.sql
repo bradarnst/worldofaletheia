@@ -4,19 +4,15 @@
 CREATE TABLE IF NOT EXISTS "user" (
   id TEXT PRIMARY KEY,
   name TEXT,
-  email TEXT NOT NULL,
-  email_canonical TEXT,
+  email TEXT NOT NULL CHECK (email = trim(lower(email)) AND trim(email) <> ''),
   emailVerified INTEGER NOT NULL DEFAULT 0 CHECK (emailVerified IN (0, 1)),
   image TEXT,
   createdAt TEXT NOT NULL,
   updatedAt TEXT NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_user_email
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_email_unique
   ON "user"(email);
-
-CREATE INDEX IF NOT EXISTS idx_user_email_canonical
-  ON "user"(email_canonical);
 
 CREATE INDEX IF NOT EXISTS idx_user_created_at
   ON "user"(createdAt);

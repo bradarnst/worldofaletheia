@@ -18,9 +18,7 @@ tags:
 - name: Global Admin Account Actions
   description: Cloudflare Access-protected password reset, session, soft-delete, and feature-flagged deprovision APIs.
 - name: Campaign Members
-  description: Public-site campaign-scoped member listing and membership mutation APIs protected by Better Auth and campaign-scoped user-admin capability.
-- name: Admin Campaign Members
-  description: Cloudflare Access-protected campaign member support/remediation APIs for global operators.
+  description: Campaign-scoped member listing and membership mutation APIs.
 - name: Campaign Capability
   description: Campaign-scoped current-actor capability bootstrap APIs.
 paths:
@@ -470,166 +468,16 @@ paths:
           $ref: '#/components/responses/TooManyRequests'
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
-  /api/v1/admin/campaigns/{campaignSlug}/members:
-    get:
-      operationId: listAdminCampaignMembers
-      tags:
-      - Admin Campaign Members
-      summary: List campaign members as a global operator
-      description: Returns campaign-relevant member identity fields for one campaign only. This Cloudflare Access-protected admin-console route is for trusted global operators supporting or remediating campaign membership workflows. It bypasses campaign-scoped GM authorization without changing list semantics or exposing provider rows, sessions, password state, global user search, or users unrelated to the campaign.
-      security:
-      - CloudflareAccess: []
-      parameters:
-      - $ref: '#/components/parameters/CampaignSlug'
-      - $ref: '#/components/parameters/RoleFilter'
-      - $ref: '#/components/parameters/Limit'
-      - $ref: '#/components/parameters/Cursor'
-      responses:
-        '200':
-          description: Campaign member page.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CampaignMemberPage'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/CampaignNotFound'
-        '429':
-          $ref: '#/components/responses/TooManyRequests'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
-    post:
-      operationId: addAdminCampaignMember
-      tags:
-      - Admin Campaign Members
-      summary: Add an existing user to a campaign by exact email as a global operator
-      description: Resolves exactly one existing user by exact email normalized with trim(lower(email)) and matched against user.email, then creates a new membership for the requested campaign only if that user is not already a campaign member. This Cloudflare Access-protected admin-console route is for trusted global operators and bypasses campaign-scoped GM authorization without changing create-only mutation semantics. No invitation, access-request, acceptance, or email-notification workflow is part of this v1 mutation.
-      security:
-      - CloudflareAccess: []
-      parameters:
-      - $ref: '#/components/parameters/CampaignSlug'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddCampaignMemberRequest'
-      responses:
-        '201':
-          description: Campaign membership was created. The outcome is always created for a successful POST.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CampaignMemberCreateResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          description: The exact user email was not found.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '429':
-          $ref: '#/components/responses/TooManyRequests'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
-  /api/v1/admin/campaigns/{campaignSlug}/members/{userId}:
-    put:
-      operationId: updateAdminCampaignMember
-      tags:
-      - Admin Campaign Members
-      summary: Update a campaign member role as a global operator
-      description: Updates only an existing active membership for the requested campaign and exact userId. This Cloudflare Access-protected admin-console route is for trusted global operators and bypasses campaign-scoped GM authorization without changing exact-target update semantics. It never creates campaign memberships; if the exact (campaignSlug, userId) membership does not exist, it must return 404.
-      security:
-      - CloudflareAccess: []
-      parameters:
-      - $ref: '#/components/parameters/CampaignSlug'
-      - $ref: '#/components/parameters/UserId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MembershipRoleRequest'
-      responses:
-        '200':
-          description: Existing campaign membership was updated or confirmed unchanged.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CampaignMemberUpdateResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/CampaignMemberNotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '429':
-          $ref: '#/components/responses/TooManyRequests'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
-    delete:
-      operationId: revokeAdminCampaignMember
-      tags:
-      - Admin Campaign Members
-      summary: Revoke a campaign member as a global operator
-      description: Revokes exactly one membership in the requested campaign. This Cloudflare Access-protected admin-console route is for trusted global operators and bypasses campaign-scoped GM authorization without changing exact-target revoke semantics. The response returns only campaign-scoped data about the removed membership and does not reveal unrelated account information.
-      security:
-      - CloudflareAccess: []
-      parameters:
-      - $ref: '#/components/parameters/CampaignSlug'
-      - $ref: '#/components/parameters/UserId'
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RevokeRequest'
-      responses:
-        '200':
-          description: Campaign membership was revoked.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CampaignMemberRevokeResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/CampaignMemberNotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '429':
-          $ref: '#/components/responses/TooManyRequests'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
   /api/v1/campaigns/{campaignSlug}/members:
     get:
       operationId: listCampaignMembers
       tags:
       - Campaign Members
       summary: List members for one campaign
-      description: Returns campaign-relevant member identity fields for one campaign only. This endpoint does not expose provider rows, sessions, password state, global user search, or users unrelated to the campaign. Public-site campaign administration requires a Better Auth session and campaign-scoped user-admin capability for the exact campaign. Global operators admitted by Cloudflare Access must use the /api/v1/admin/campaigns/* route surface.
+      description: Returns campaign-relevant member identity fields for one campaign only. This endpoint does not expose provider rows, sessions, password state, global user search, or users unrelated to the campaign. The actor must have campaign user-admin capability for the exact campaign or be admitted as a global Cloudflare Access operator.
       security:
       - BetterAuthSession: []
+      - CloudflareAccess: []
       parameters:
       - $ref: '#/components/parameters/CampaignSlug'
       - $ref: '#/components/parameters/RoleFilter'
@@ -671,7 +519,7 @@ paths:
       tags:
       - Campaign Members
       summary: Add an existing user to a campaign by exact email
-      description: Resolves exactly one existing user by exact email normalized with trim(lower(email)) and matched against user.email, then creates a new membership for the requested campaign only if that user is not already a campaign member. Campaign GMs are trusted for this exact-email add flow; audit and rate limiting are the intended mitigations for account-existence disclosure. Public-site campaign administration requires a Better Auth session and campaign-scoped user-admin capability for the exact campaign. Global operators admitted by Cloudflare Access must use the /api/v1/admin/campaigns/* route surface. This endpoint never modifies an existing campaign_memberships row and must return 409 Conflict if the resolved user already has a membership for the campaign, including when the requested role differs. Role changes for existing memberships are reserved for PUT /api/v1/campaigns/{campaignSlug}/members/{userId}. No invitation, access-request, acceptance, or email-notification workflow is part of this v1 mutation.
+      description: Resolves exactly one existing user by exact email normalized with trim(lower(email)) and matched against user.email, then creates a new membership for the requested campaign only if that user is not already a campaign member. Campaign GMs are trusted for this exact-email add flow; audit and rate limiting are the intended mitigations for account-existence disclosure. This endpoint never modifies an existing campaign_memberships row and must return 409 Conflict if the resolved user already has a membership for the campaign, including when the requested role differs. Role changes for existing memberships are reserved for PUT /api/v1/campaigns/{campaignSlug}/members/{userId}. No invitation, access-request, acceptance, or email-notification workflow is part of this v1 mutation.
       security:
       - BetterAuthSession: []
       parameters:
@@ -746,7 +594,7 @@ paths:
       tags:
       - Campaign Members
       summary: Update an existing campaign member role
-      description: Updates only an existing active membership for the requested campaign and exact userId. This endpoint never creates campaign memberships; if the exact (campaignSlug, userId) membership does not exist, it must return 404. Campaign-scoped actors may only mutate memberships inside campaigns where they have user-admin capability and may not use this endpoint for global user enumeration. Public-site campaign administration requires a Better Auth session and campaign-scoped user-admin capability for the exact campaign. Global operators admitted by Cloudflare Access must use the /api/v1/admin/campaigns/* route surface. Implementations must apply the campaign role-change policy, including self-demotion safeguards, before changing a role. The response is the contractual confirmation that the mutation occurred and should be used by the dashboard UI for GM/admin feedback. No invitation, access-request, acceptance, or email-notification workflow is part of this v1 mutation.
+      description: Updates only an existing active membership for the requested campaign and exact userId. This endpoint never creates campaign memberships; if the exact (campaignSlug, userId) membership does not exist, it must return 404. Campaign-scoped actors may only mutate memberships inside campaigns where they have user-admin capability and may not use this endpoint for global user enumeration. Implementations must apply the campaign role-change policy, including self-demotion safeguards, before changing a role. The response is the contractual confirmation that the mutation occurred and should be used by the dashboard UI for GM/admin feedback. No invitation, access-request, acceptance, or email-notification workflow is part of this v1 mutation.
       security:
       - BetterAuthSession: []
       parameters:
@@ -811,7 +659,7 @@ paths:
       tags:
       - Campaign Members
       summary: Revoke a campaign member
-      description: Revokes exactly one membership in the requested campaign. Public-site campaign administration requires a Better Auth session and campaign-scoped user-admin capability for the exact campaign. Global operators admitted by Cloudflare Access must use the /api/v1/admin/campaigns/* route surface. The response returns only campaign-scoped data about the removed membership and does not reveal unrelated account information. The response is the contractual confirmation that the mutation occurred and should be used by the dashboard UI for operator feedback. No invitation, access-request, acceptance, or email-notification workflow is part of this v1 mutation.
+      description: Revokes exactly one membership in the requested campaign. The response returns only campaign-scoped data about the removed membership and does not reveal unrelated account information. The response is the contractual confirmation that the mutation occurred and should be used by the dashboard UI for operator feedback. No invitation, access-request, acceptance, or email-notification workflow is part of this v1 mutation.
       security:
       - BetterAuthSession: []
       parameters:
@@ -865,7 +713,7 @@ paths:
       tags:
       - Campaign Capability
       summary: Check current actor campaign administration capability
-      description: Reports whether the current Better Auth signed-in actor can administer users for the exact campaign. By default, campaign_memberships.role = gm grants user-admin capability for that campaign. This capability is campaign-scoped and is not an app-native woa-admin role. The response does not expose other users, provider state, session state, or password state.
+      description: Reports whether the current signed-in actor can administer users for the exact campaign. By default, campaign_memberships.role = gm grants user-admin capability for that campaign. This capability is campaign-scoped and is not an app-native woa-admin role. The response does not expose other users, provider state, session state, or password state.
       security:
       - BetterAuthSession: []
       parameters:

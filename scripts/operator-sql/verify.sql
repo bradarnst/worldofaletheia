@@ -36,24 +36,23 @@ SELECT 'null_or_empty_email_rows' AS metric, COUNT(*) AS value
 FROM "user"
 WHERE email IS NULL OR trim(email) = '';
 
-SELECT 'non_canonical_email_rows' AS metric, COUNT(*) AS value
+SELECT 'non_normalized_email_rows' AS metric, COUNT(*) AS value
 FROM "user"
 WHERE email IS NOT NULL
   AND email <> trim(lower(email));
 
-SELECT 'duplicate_canonical_email_groups' AS metric, COUNT(*) AS value
+SELECT 'duplicate_normalized_email_groups' AS metric, COUNT(*) AS value
 FROM (
-  SELECT email_canonical
+  SELECT trim(lower(email)) AS normalized_email
   FROM "user"
-  WHERE email_canonical IS NOT NULL
-    AND email_canonical <> ''
-  GROUP BY email_canonical
+  WHERE email IS NOT NULL
+    AND trim(email) <> ''
+  GROUP BY trim(lower(email))
   HAVING COUNT(*) > 1
 );
 
 SELECT id,
        email,
-       email_canonical,
        emailVerified,
        createdAt,
        updatedAt

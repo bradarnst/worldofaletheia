@@ -108,8 +108,7 @@ Current schema highlights:
 
 - `id` primary key
 - `name`
-- `email`
-- `email_canonical`
+- `email` (the normalized identity email; stores `trim(lower(email))`)
 - `emailVerified` integer boolean
 - `image`
 - `createdAt`, `updatedAt`
@@ -145,14 +144,14 @@ Current schema highlights:
 
 ## Email identity policy
 
-This repo enforces canonical email handling via `migrations/0004_auth_email_hardening.sql`.
+This repo enforces canonical email handling via `migrations/0004_auth_email_hardening.sql` and the forward migration that drops the legacy duplicate column.
 
 Rules:
 
-- canonical email is `trim(lower(email))`
-- `email` is normalized in place during hardening migration
-- `email_canonical` is backfilled from normalized email
-- uniqueness is enforced on `email_canonical`
+- canonical email is the persisted `user.email` value after `trim(lower(email))`
+- `email` is normalized in place during hardening migration and at auth/account input boundaries
+- uniqueness is enforced on `user.email`
+- do not reintroduce a separate `email_canonical` column or fallback lookup
 - collisions are fail-fast by default in the migration runner
 - `--force` is an intentional operator override, not a normal path
 
@@ -268,7 +267,7 @@ SELECT COUNT(*) AS total_accounts FROM account;
 SELECT COUNT(*) AS total_sessions FROM session;
 SELECT COUNT(*) AS total_verifications FROM verification;
 
-SELECT id, email, email_canonical, emailVerified, createdAt
+SELECT id, email, emailVerified, createdAt
 FROM "user"
 ORDER BY createdAt DESC
 LIMIT 20;

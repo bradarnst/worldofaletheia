@@ -80,6 +80,10 @@ const canView =
         access: accessResolver,
       })
     : false;
+const campaignAccess = entry && !contentUnavailable
+  ? await accessResolver.hasCampaignAccess(campaignSlug)
+  : { isMember: false, isGm: false };
+const canAdministerCampaign = campaignAccess.isGm;
 
 const sectionCards: CampaignSectionCard[] = [];
 if (entry && canView && !contentUnavailable) {
@@ -169,11 +173,20 @@ const loginHref = `/login?next=${encodeURIComponent(Astro.url.pathname + Astro.u
 
       <section class="not-prose mt-12 border-t border-base-300 pt-8">
         <div class="mb-6 flex flex-col gap-3">
-          <h2 class="text-2xl font-bold text-ink-950">Campaign Records</h2>
-          <p class="meta-muted max-w-3xl">
-            Browse the campaign's session history and family-specific records. Record counts include protected entries
-            without exposing their titles.
-          </p>
+          <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div>
+              <h2 class="text-2xl font-bold text-ink-950">Campaign Records</h2>
+              <p class="meta-muted max-w-3xl">
+                Browse the campaign's session history and family-specific records. Record counts include protected entries
+                without exposing their titles.
+              </p>
+            </div>
+            {canAdministerCampaign && (
+              <a href={`/campaigns/${campaignSlug}/admin`} class="ui-button ui-button--primary ui-button--sm">
+                Manage members
+              </a>
+            )}
+          </div>
           {hasRestrictedSectionRecords && (
             <div class="inline-flex w-fit items-center gap-3 rounded-xl border border-base-300 bg-base-200/70 px-3 py-2 text-sm text-ink-800">
               <span>Some records are hidden until you sign in.</span>

@@ -34,7 +34,7 @@ Migration plan command set (consistent local/staging/prod behavior):
 
 Conflict classes detected by runner include:
 
-1. canonical-email collisions under `trim(lower(email))`
+1. normalized-email collisions under `trim(lower(email))`
 2. schema/object conflicts (required table names occupied by incompatible objects)
 3. required-column shape conflicts on existing auth tables
 4. invalid `campaign_memberships.role` values outside `member|gm`
@@ -49,8 +49,8 @@ Validation/support files:
 
 Execution policy notes:
 
-1. Email identity lookup is canonical-first: `trim(lower(email))`.
-2. If canonical collisions exist, migration apply is blocked by default with actionable output listing canonical emails and conflicting user IDs.
+1. Email identity lookup uses `user.email`, which stores `trim(lower(email))`.
+2. If normalized-email collisions exist, migration apply is blocked by default with actionable output listing normalized emails and conflicting user IDs.
 3. `--force` is an explicit override path and may rewrite colliding duplicate identities to deterministic forced aliases before apply.
 4. Migration runner stops on conflict by default and returns actionable conflict details; `--force` is an explicit override, not default behavior.
 5. Administrative repair and mutation workflows should be executed in `woa-admin`, not from copied SQL templates in this repo.

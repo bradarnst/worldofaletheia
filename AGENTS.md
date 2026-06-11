@@ -8,6 +8,16 @@
     *   If you see `package-lock.json` or `yarn.lock`, **WARN THE USER** immediately.
 2.  **Dependency Hygiene:**
     *   **Permission First:** Do NOT add new dependencies without explicit confirmation.
+3.  **Auth Boundary:** **DO NOT use Cloudflare Access for this site.**
+    *   Authentication is handled by Better Auth.
+    *   Campaign authorization is handled by D1 `campaign_memberships` using the exact campaign slug and role (`member` or `gm`).
+    *   Do not add Cloudflare Access checks to site code, route protection, or campaign APIs.
+    *   If Better Auth is suboptimal for a specific use case, document the concern and request architectural review before changing the auth boundary.
+4.  **External Contract Boundary:** **NEVER edit files under `docs/contracts/`.**
+    *   Treat `docs/contracts/` as externally owned API contracts this repo must follow.
+    *   If this project needs a contract change, write a formal documented request for the owning team/project instead of modifying the contract.
+    *   This repo does not own or implement endpoints defined by contracts in `docs/contracts/`; it only implements front-end consumers of those endpoints and approved Better Auth integration needed to access them.
+    *   If this repo authors its own OpenAPI/spec artifacts, place them outside `docs/contracts/` unless ownership has been explicitly transferred and documented.
 
 ## 🎭 DYNAMIC ROLES
 *Adopt the mindset below that matches the user's current request. If ambiguous, default to **Code Mode**.*
@@ -115,4 +125,3 @@ Use Astro content APIs (`getCollection`, `getEntry`, `render`) directly in route
 #### ADRs
 Formal Architecture Decision Records exist in `plans/adrs/` (MADR format):
 Read these before making architectural changes. New significant decisions should follow the same MADR format.
-

@@ -36,11 +36,6 @@ SELECT 'auth_user_email_verified_column_present' AS check_name,
          SELECT 1 FROM pragma_table_info('user') WHERE name = 'emailVerified'
        ) AS value;
 
-SELECT 'auth_user_email_canonical_column_present' AS check_name,
-       EXISTS(
-         SELECT 1 FROM pragma_table_info('user') WHERE name = 'email_canonical'
-       ) AS value;
-
 SELECT 'auth_verification_expires_at_column_present' AS check_name,
        EXISTS(
          SELECT 1 FROM pragma_table_info('verification') WHERE name = 'expiresAt'
@@ -53,11 +48,11 @@ SELECT 'auth_account_provider_account_unique_index_present' AS check_name,
          WHERE type = 'index' AND name = 'idx_account_provider_account_unique'
        ) AS value;
 
-SELECT 'auth_user_email_canonical_unique_index_present' AS check_name,
+SELECT 'auth_user_email_unique_index_present' AS check_name,
        EXISTS(
          SELECT 1
           FROM sqlite_master
-         WHERE type = 'index' AND name = 'idx_user_email_canonical_unique'
+          WHERE type = 'index' AND name = 'idx_user_email_unique'
        ) AS value;
 
 SELECT 'auth_session_user_index_present' AS check_name,
@@ -79,26 +74,25 @@ SELECT 'auth_null_or_empty_email_rows' AS metric,
 FROM "user"
 WHERE email IS NULL OR trim(email) = '';
 
-SELECT 'auth_non_canonical_email_rows' AS metric,
+SELECT 'auth_non_normalized_email_rows' AS metric,
        COUNT(*) AS value
 FROM "user"
 WHERE email IS NOT NULL
   AND email <> trim(lower(email));
 
-SELECT 'auth_duplicate_canonical_email_groups' AS metric,
+SELECT 'auth_duplicate_normalized_email_groups' AS metric,
        COUNT(*) AS value
 FROM (
-  SELECT email_canonical
+  SELECT trim(lower(email)) AS normalized_email
   FROM "user"
-  WHERE email_canonical IS NOT NULL
-    AND email_canonical <> ''
-  GROUP BY email_canonical
+  WHERE email IS NOT NULL
+    AND trim(email) <> ''
+  GROUP BY trim(lower(email))
   HAVING COUNT(*) > 1
 );
 
 SELECT id,
        email,
-       email_canonical,
        emailVerified,
        createdAt,
        updatedAt

@@ -24,7 +24,7 @@ The admin site should be a separate privileged surface, not an extension of the 
 
 | Table | Purpose | Notes |
 |---|---|---|
-| `user` | Human identity record | `id` is the stable Better Auth user id. `email_canonical` is the identity lookup field. |
+| `user` | Human identity record | `id` is the stable Better Auth user id. `email` is the normalized identity lookup field. |
 | `account` | Auth provider credentials/links | `providerId = 'credential'` for email/password; `providerId = 'google'` for Google. Password hashes live here for credential accounts. |
 | `session` | Active sessions | Delete rows by `userId` to revoke sessions. |
 | `verification` | Verification/reset/rate-limit tokens | May contain password-reset token hashes; do not expose values in admin UI/logs. |
@@ -38,8 +38,8 @@ The admin site should be a separate privileged surface, not an extension of the 
 ## Identity policy
 
 - Canonical email policy is `trim(lower(email))`.
-- `email_canonical` is unique where non-empty.
-- Admin lookup should prefer `user.id` for mutations and `email_canonical` for search/resolution.
+- `user.email` stores the normalized identity email and is unique.
+- Admin lookup should prefer `user.id` for mutations and normalized `user.email` for search/resolution.
 - If identity is ambiguous, stop and resolve before mutating campaign access or auth links.
 - Never commit real user identifiers, private assignments, reset URLs, token values, full password hashes, salts, derived keys, or pepper values.
 
@@ -71,7 +71,7 @@ Near-future campaign administration capability:
 
 ### User/account discovery
 
-- Search users by canonical email, display name, and user id.
+- Search users by normalized email, display name, and user id.
 - Show linked auth accounts per user: provider, provider account id, created/updated timestamps.
 - Show active session count and recent session metadata without exposing session tokens.
 - Show campaign memberships and roles for a selected user.
@@ -165,9 +165,9 @@ Recommended default: disable/deprovision rather than hard-delete until a retenti
 
 If hard deletion is implemented, it must be a deliberate, multi-step admin flow:
 
-1. Resolve the user by `user.id` and canonical email.
+1. Resolve the user by `user.id` and normalized email.
 2. Show linked accounts, active sessions, verification rows, and campaign memberships.
-3. Require confirmation with environment, user id, and canonical email.
+3. Require confirmation with environment, user id, and normalized email.
 4. Execute in a transaction/batch where possible.
 5. Delete dependent rows before the user row:
    - `session` rows for `userId`
@@ -359,7 +359,7 @@ Audit logs must not include secrets, raw tokens, passwords, full hashes, OAuth t
 
 ## Suggested admin screens
 
-1. **User search**: email/user id search, canonical email display, linked accounts, session count.
+1. **User search**: normalized email/user id search, email display, linked accounts, session count.
 2. **User detail**: identity, provider accounts, campaign memberships, password/session actions.
 3. **Campaign access**: campaign slug, member list, GM list, add/update/revoke controls.
 4. **Password recovery**: self-service status, admin reset fallback, credential creation warning.
