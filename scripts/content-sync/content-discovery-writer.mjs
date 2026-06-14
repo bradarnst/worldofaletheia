@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { createRequire } from 'node:module';
+import { resolveWranglerCommand } from '../../src/lib/wrangler-command.mjs';
 import {
   buildContentIndexSql,
   buildContentIndexSyncPlan,
@@ -15,8 +15,6 @@ import {
   buildContributorAttributionSyncPlan,
   buildContributorRegistrySql,
 } from './contributor-attribution-writer.mjs';
-
-const require = createRequire(import.meta.url);
 
 export function buildContentDiscoverySyncPlan({
   contentIndexRows,
@@ -143,14 +141,6 @@ export function buildContentDiscoverySyncSqlChunks(plan, options = {}) {
   }
 
   return chunks;
-}
-
-function resolveWranglerCommand() {
-  try {
-    return require.resolve('wrangler/bin/wrangler.js');
-  } catch {
-    return 'wrangler';
-  }
 }
 
 function runWranglerSqlFile(target, filePath) {

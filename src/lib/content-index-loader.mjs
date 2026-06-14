@@ -1,7 +1,6 @@
 import { spawnSync } from 'node:child_process';
-import { createRequire } from 'node:module';
+import { resolveWranglerCommand } from './wrangler-command.mjs';
 
-const require = createRequire(import.meta.url);
 const lookupCache = new Map();
 
 function normalizeNullableString(value) {
@@ -15,14 +14,6 @@ function normalizeNullableString(value) {
 
 function quoteSqlLiteral(value) {
   return `'${String(value).replace(/'/g, "''")}'`;
-}
-
-function resolveWranglerCommand() {
-  try {
-    return require.resolve('wrangler/bin/wrangler.js');
-  } catch {
-    return 'wrangler';
-  }
 }
 
 export function resolveContentLookupTarget(env = process.env) {

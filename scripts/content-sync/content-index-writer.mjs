@@ -2,10 +2,8 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
-
-const require = createRequire(import.meta.url);
+import { resolveWranglerCommand } from '../../src/lib/wrangler-command.mjs';
 
 function normalizeNullableString(value) {
   if (typeof value !== 'string') {
@@ -142,14 +140,6 @@ export function resolveContentIndexSyncTarget(env = process.env) {
     mode: modeRaw === 'remote' ? 'remote' : 'local',
     envName: normalizeNullableString(env.CONTENT_INDEX_SYNC_ENV),
   };
-}
-
-function resolveWranglerCommand() {
-  try {
-    return require.resolve('wrangler/bin/wrangler.js');
-  } catch {
-    return 'wrangler';
-  }
 }
 
 function runWranglerSqlFile(target, filePath) {
