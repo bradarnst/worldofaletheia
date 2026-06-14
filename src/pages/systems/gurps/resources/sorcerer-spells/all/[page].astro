@@ -44,7 +44,7 @@ try {
 if (!unavailableMessage) {
   try {
     const [resolvedSpellTypes, resolvedSourceSpellTypes] = await Promise.all([listSpellTypes(), listSourceSpellTypes()]);
-    spellTypes = sortSpellTypeLabels(resolvedSpellTypes);
+    spellTypes = resolvedSpellTypes;
     sourceSpellTypes = sortSpellTypeLabels(resolvedSourceSpellTypes);
   } catch (error) {
     if (!isPublicSpellApiError(error)) {

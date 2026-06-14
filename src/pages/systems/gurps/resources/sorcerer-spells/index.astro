@@ -32,7 +32,7 @@ try {
     listSpells({ page: 1, pageSize: 1 }),
   ]);
 
-  spellTypes = sortSpellTypeLabels(resolvedSpellTypes);
+  spellTypes = resolvedSpellTypes;
   totalSpells = firstSpellPage.total;
 } catch (error) {
   if (!isPublicSpellApiError(error)) {
