@@ -19,6 +19,8 @@ relatedFiles:
 
 ## Why
 
+This is a future todo, not a next implementation task.
+
 High-utility resources such as the Sorcerer Spells browser are valuable once users find them, but they currently rely mostly on direct navigation into `/systems/gurps/resources/**`, manual bookmarking, or prior familiarity with the site structure.
 
 That is acceptable in the current smaller site, but it will become harder to maintain and harder to discover as the number of articles grows.
@@ -28,11 +30,13 @@ At the same time, the long-term direction should avoid two failure modes:
 - manually maintaining per-article related-resource links forever
 - re-analyzing the entire site body on every build once content volume becomes large
 
-The project already has a D1-first discovery/search direction under ADR-0011, and the current Sorcerer Spells dataset is already large enough to justify thinking ahead about a more reusable discovery layer.
+The project already has a D1-first discovery/search direction under ADR-0011, and the Sorcerer Spells browser is useful enough to justify thinking ahead about a more reusable discovery layer. Spell data authority itself remains external.
 
 ## Deferred requirement
 
-Introduce a future **related-resource enrichment** capability that can infer and surface high-utility links for relevant articles without requiring manual per-article maintenance.
+Introduce a future **related-resource enrichment** capability that can infer and surface high-utility front-end links for relevant articles without requiring manual per-article maintenance.
+
+This repository may own the rendering and public-site consumption of promoted resource surfaces. It does not own spell data, spell types, spell counts, spell search authority, or spell API contract behavior.
 
 The eventual target shape should support all of the following:
 
@@ -60,8 +64,9 @@ The preferred long-term model is:
    - page rendering stays cheap and deterministic
 
 4. **Later search/discovery integration for highest-value resources**
-   - for maximum flexibility, Sorcerer Spells may eventually participate in richer search/discovery infrastructure through an approved API or data artifact boundary
-   - richer spell FTS, spell CRUD, and spell-admin ownership are expected to live outside this repo per ADR-0021, while this site remains responsible for consuming and rendering the resulting public discovery surfaces
+   - for maximum flexibility, Sorcerer Spells may eventually participate in richer search/discovery infrastructure through an approved external API or data artifact boundary
+   - spell data, spell types, spell counts, spell search, richer spell FTS, spell CRUD, and spell-admin ownership live outside this repo per ADR-0021 and the 2026-06-17 pipeline clarification
+   - this site remains responsible only for consuming and rendering approved public discovery surfaces
 
 ## Why not solve this with manual frontmatter alone
 
@@ -115,7 +120,7 @@ Possible trigger models:
 
 ### Phase 3 — External spell search/discovery integration
 
-For best long-term value and flexibility, include spells in richer discovery/search infrastructure through an external spell authority and a public consumption boundary.
+For best long-term value and flexibility, include spells in richer discovery/search infrastructure through an external spell authority and a public consumption boundary. This phase is external-first and future-only.
 
 That should enable:
 
@@ -130,15 +135,15 @@ That should enable:
 - Keep homepage story-first constraints from ADR-0002 intact.
 - Prefer static/build-friendly rendering even if enrichment happens in a new pre-build or between-build-and-deploy phase.
 - Avoid speculative service/adapter abstractions unless concrete duplication or external-boundary triggers emerge.
-- Keep related-resource enrichment owned in this repo even if spell CRUD/search authority lives elsewhere.
-- Treat spell admin, CRUD, and richer spell FTS as external-project concerns unless a later ADR changes that boundary.
+- Keep only public-site related-resource rendering/consumption concerns in this repo.
+- Treat spell data, spell types, spell counts, spell admin, spell CRUD, spell search, and richer spell FTS as external-project concerns unless a later ADR changes that boundary.
 
 ## Success criteria
 
 - High-utility resources can be surfaced without manually editing large numbers of articles.
 - The system can avoid whole-site re-analysis on every routine build.
 - Resource route changes are centralized in a registry or equivalent single source of truth.
-- The Sorcerer Spells resource can eventually participate in richer search/discovery with a clean public-site consumption path.
+- The Sorcerer Spells resource can eventually participate in richer external search/discovery with a clean public-site consumption path.
 - Early UI/UX can still be tested cheaply with manual linking before the larger enrichment pipeline is built.
 
 ## Links

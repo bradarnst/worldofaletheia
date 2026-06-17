@@ -17,7 +17,9 @@ Taxonomy changes such as adding, modifying, or deleting values in `src/lib/conte
 
 That is acceptable for the current small-team workflow, but it should eventually be part of a broader privileged admin/operator surface instead of remaining an undocumented or ad hoc code-only responsibility.
 
-Per ADR-0021, that privileged surface is external to this repository by default. This todo remains open to preserve the requirement, but its implementation home is expected to be `woa-admin` or a related external operator-facing project.
+Per ADR-0021 and the 2026-06-17 pipeline clarification, that privileged surface is external to this repository. This todo remains open to preserve the requirement, but its implementation home is `woa-admin` or a related external operator-facing project.
+
+This is not an in-repo next task. Treat it as an external-admin requirement that this public site should document and consume around, not implement.
 
 ## Deferred requirement
 
@@ -32,10 +34,11 @@ As part of a future **external admin** effort (specific architecture and design 
 
 ## Constraints
 
-- Do not assume a specific implementation beyond external ownership by default.
+- Do not assume a specific implementation beyond external ownership.
 - Do not plan an admin dashboard or CRUD surface inside this repository unless a later ADR explicitly changes the boundary.
 - Keep the public site Astro-native and API/artifact-consuming rather than growing a privileged operator runtime here.
 - Preserve a clear handoff contract: the external admin project should define validation, workflow guidance, privilege boundaries, and any audit expectations.
+- Public-site work should be limited to front-end consumption, documentation, and compatibility with artifacts/APIs produced by the external admin/operator project.
 
 ## Success criteria
 

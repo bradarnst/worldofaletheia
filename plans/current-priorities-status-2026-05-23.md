@@ -6,7 +6,7 @@
 - Purpose: planning cleanup after inventory review
 - Scope: documentation/status alignment only
 
-## Current sprint order
+## Historical sprint order
 
 1. ADR-0021 external admin capability boundary
 2. planning/todo cleanup to align with that boundary
@@ -15,12 +15,20 @@
    - TypeScript baseline triage using `pnpm exec tsc --noEmit`
 4. reassess whether Search S2 or Sorcerer spell-list UX is the next implementation slice
 
+## 2026-06-17 status update
+
+- Search S2 is done or good enough for now. Do not treat Search S2 as the next active implementation slice unless a fresh issue identifies a concrete user-facing gap.
+- Sorcerer spell-list UX is no longer the active next slice; the public site now has front-end spell-list consumption/display behavior.
+- Campaign member add/update/revoke behavior is external API behavior. This repo owns the front-end client and display states that call those endpoints, not endpoint business logic.
+- Spell data, spell types, spell counts, and spell API contract behavior are external. This repo owns only front-end consumption and presentation decisions.
+- The remaining in-repo next-step candidate from this cleanup is breadcrumb verification/restoration, because that is a front-end/navigation concern.
+
 ## Current state summary
 
-- Admin capability boundary has moved external by default. Privileged admin consoles, dashboards, taxonomy-management UIs, and similar CRUD/operator surfaces belong in `woa-admin` or a related external project unless a later ADR explicitly changes that boundary.
-- Site-wide search docs had drifted. Current evidence suggests S1 and S3 are complete or nearly complete, while S2 remains pending.
-- Sorcerer Spells public API consumption has already started in this repo. The still-open work in this repo is visitor-side spell-list UX, while richer spell CRUD and richer spell FTS stay external by default.
-- Incremental related-resource enrichment remains an in-repo concern because this site still owns how promoted and related resources are consumed and rendered.
+- Admin capability boundary has moved external. Privileged admin consoles, dashboards, taxonomy-management UIs, and similar CRUD/operator surfaces belong in `woa-admin` or a related external project unless a later ADR explicitly changes that boundary.
+- Site-wide search is done or good enough for now; keep the architecture plan as reference rather than active pipeline work.
+- Sorcerer Spells public API consumption is front-end-only in this repo. Visitor-side display/list behavior belongs here; spell CRUD, spell types, spell counts, spell ordering authority, and richer spell FTS stay external.
+- Incremental related-resource enrichment is future work, not next work. This site may own future promoted-resource rendering, but external spell/search authority remains external.
 - Campaign image variants are backlog, not this sprint.
 - Staging/production parity scripts are backlog, not this sprint.
 
@@ -28,8 +36,8 @@
 
 - Keep the first slice documentation-first.
 - Do not reopen S1 or S3 search work unless verification finds a concrete gap.
-- Do not convert the taxonomy-management requirement into an in-repo admin-console feature.
-- Use Sorcerer Spells as the precedent for external authority plus public-site consumption.
+- Do not convert the taxonomy-management requirement into an in-repo admin-console feature; it is external admin/operator work.
+- Use Sorcerer Spells as the precedent for external authority plus public-site consumption and display only.
 
 ## Related files
 

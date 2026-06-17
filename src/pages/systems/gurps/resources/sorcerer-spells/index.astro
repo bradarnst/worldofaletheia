@@ -23,10 +23,10 @@ const emptyFilters = {
 };
 
 try {
-  // TODO: We only need the total spell count here, but the contract has no
-  // dedicated count/HEAD endpoint, so we issue a 1-item list query. If the
-  // public spell API ever grows /spell-count or supports pageSize=0, switch to
-  // that to avoid serializing one unused spell payload on every page render.
+  // External API trigger: this front-end only needs the total spell count here.
+  // The external spell API currently exposes that through list responses, so we
+  // issue a 1-item list query. If the external API later adds a dedicated count,
+  // HEAD, or pageSize=0 capability, switch the front-end to that lighter call.
   const [resolvedSpellTypes, firstSpellPage] = await Promise.all([
     listSpellTypes(),
     listSpells({ page: 1, pageSize: 1 }),

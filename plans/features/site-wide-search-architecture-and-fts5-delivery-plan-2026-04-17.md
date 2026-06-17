@@ -3,18 +3,18 @@
 ## Status
 
 - Date: 2026-04-17
-- Status: Active implementation plan
+- Status: Reference plan; implemented/good enough for now as of 2026-06-17
 - Required phase order: `S1 -> S3 -> S2`
 
 ## Current status note
 
-This plan remains the architecture reference, but its execution status has drifted.
+This plan remains the architecture reference, but it is no longer active pipeline work.
 
-- S1 appears implemented or very close to implemented: auth-aware scope handling and scope metadata are present in current search code.
-- S3 appears implemented or very close to implemented: FTS migration and FTS-backed query path exist in the repo.
-- S2 remains the clearest pending slice: relevance, snippets/highlighting, empty-state refinement, and result-presentation tuning.
+- S1 is implemented or good enough for now: auth-aware scope handling and scope metadata are present in current search code.
+- S3 is implemented or good enough for now: FTS migration and FTS-backed query path exist in the repo.
+- S2 is implemented or good enough for now: relevance, snippets/highlighting, empty-state refinement, and result-presentation tuning should not be treated as the next active implementation slice unless a fresh user-facing issue identifies a concrete gap.
 
-Until a fresh verification pass says otherwise, treat this plan as effectively in the `S2 pending` state rather than as a fully untouched `S1 -> S3 -> S2` roadmap.
+Do not use this document as an active `S1 -> S3 -> S2` roadmap. Use it as historical architecture context and reopen search work only from a specific new bug, UX gap, or product requirement.
 
 ## Goal
 
@@ -99,7 +99,7 @@ Recommended success payload extension:
 3. Switch search query execution to the FTS path while preserving the S1 API envelope and authz rules.
 4. Keep rollback available by retaining the metadata query path until parity is verified.
 
-### S2 — Post-FTS Relevance and UX Tuning
+### S2 — Post-FTS Relevance and UX Tuning (good enough for now)
 
 1. Add weighting/ranking adjustments.
 2. Add snippets/highlighting where useful.
@@ -145,3 +145,5 @@ Rollback: keep the metadata search path callable until FTS validation is complet
 1. `pnpm test`
 2. `pnpm build`
 3. Report final delivery and closure state.
+
+As of 2026-06-17, this gate is considered satisfied or good enough for planning purposes. Do not keep Search S2 in the active todo pipeline without a newly identified issue.

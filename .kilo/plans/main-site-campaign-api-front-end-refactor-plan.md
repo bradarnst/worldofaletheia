@@ -2,7 +2,7 @@
 
 ## Status
 
-Ready for Code handoff.
+Front-end integration reference. Endpoint implementation is external.
 
 ## Source of Truth
 
@@ -16,6 +16,8 @@ Do **not** edit OpenAPI specs in this repo. If implementation exposes a contract
 
 This repository does **not** own or implement the campaign user-management API endpoints. It owns only the main website front-end integration that consumes those endpoints.
 
+The `/api/v1/campaigns/**` member-management paths used by the UI are external API calls. Missing local route files under `src/pages/api/v1/campaigns/**` are expected and should not be treated as a backend gap in this repo.
+
 Owned here:
 
 - Campaign management UI/pages in the public Astro site.
@@ -26,14 +28,14 @@ Owned here:
 Not owned here:
 
 - OpenAPI contract changes.
-- `/api/v1/campaigns/**` endpoint business logic.
+- `/api/v1/campaigns/**` endpoint business logic, including add/update/revoke membership behavior.
 - `/api/v1/admin/**` or `/api/v1/admin/campaigns/**` endpoints.
 - Cloudflare Access-protected global operator workflows.
 - D1 campaign membership mutations from the campaign admin UI.
 
 ## Goal
 
-Refactor the main website campaign management front-end so it consumes the new Better Auth public-site campaign API contract, while removing or bypassing in-repo prototype endpoint/business-logic assumptions.
+Refactor the main website campaign management front-end so it consumes the new Better Auth public-site campaign API contract, while keeping all endpoint implementation and business logic external.
 
 The front-end must call only these non-admin public campaign endpoints:
 
@@ -50,6 +52,7 @@ It must never call or depend on:
 - Cloudflare Access headers
 - `CF-Access-Jwt-Assertion`
 - global admin/operator assumptions
+- local D1-backed implementations of these public campaign API routes
 
 ## Architecture Direction
 
@@ -72,10 +75,9 @@ Keep the client small and explicit. Do not generate a client or add dependencies
 
 - `src/pages/campaigns/[campaign]/admin.astro`
   - likely owns the current management UI and client-side fetch behavior.
-- `src/pages/api/v1/campaigns/[campaignSlug]/members.ts`
-  - currently appears to implement local prototype GET/POST endpoint behavior; this should not remain the front-end-owned business logic path.
-- `src/pages/api/v1/campaigns/[campaignSlug]/admin-capability.ts`
-  - currently appears to implement local prototype capability endpoint behavior; this should not remain the front-end-owned business logic path.
+- Local `src/pages/api/v1/campaigns/**` route files
+  - should not exist for campaign member-management business logic in this repo under the current boundary.
+  - if found, treat them as stale prototypes or explicit proxies to review, not as the owned backend implementation.
 - `src/utils/campaign-admin-api.ts`
   - currently mixes DTOs, validation, API responses, and D1-backed context resolution. For front-end-only integration, keep only reusable DTO/client concerns if useful; avoid endpoint/server business logic for campaign membership mutation.
 - `src/lib/campaign-membership-repo.ts`
@@ -90,19 +92,19 @@ Keep the client small and explicit. Do not generate a client or add dependencies
 - Use `docs/integrations/main-site-campaign-api-refactor-guide.md` as the implementation guide.
 - If discrepancies appear, add a note to the implementation summary for the contract-owning team.
 
-### 2. Decide how deployed API routing reaches the external implementation
+### 2. Keep endpoint routing external
 
-Before coding, verify deployment topology with existing project config and routes:
+The front-end calls same-origin `/api/v1/campaigns/**` contract paths, but endpoint behavior is external to this repository.
 
-- If `/api/v1/campaigns/**` is routed externally at Cloudflare/edge level, remove local prototype endpoints that would shadow it.
-- If the main site must proxy same-origin requests to the external API, implement only a minimal proxy that forwards authenticated requests and responses without owning business logic. The proxy must not inspect Cloudflare Access, implement D1 membership mutation, or reshape contract DTOs beyond unavoidable transport handling.
+- If `/api/v1/campaigns/**` is routed externally at Cloudflare/edge level, this repo should not contain local route files that shadow it.
+- If the main site ever requires a same-origin transport proxy, that proxy must be a separate, explicit architecture decision. It must forward authenticated requests and responses without owning business logic.
+- This repo must not inspect Cloudflare Access, implement D1 membership mutation, or reshape contract DTOs for campaign member-management behavior.
 
-Default target for Code handoff unless deployment config proves otherwise:
+Default target:
 
 - Front-end code calls same-origin `/api/v1/campaigns/**` contract paths.
-- The endpoint implementation is external or edge-routed, not the local D1 prototype code.
-
-If this assumption cannot be verified in code, stop and ask before removing local route files.
+- The endpoint implementation is external or edge-routed, not local D1 code.
+- No local backend implementation is required or expected in this repo.
 
 ### 3. Introduce a main-site campaign API client
 
@@ -343,6 +345,6 @@ Manual checklist:
 
 - Treat `docs/contracts/user-account-management-api.openapi.yaml` as immutable contract input.
 - Treat `docs/integrations/main-site-campaign-api-refactor-guide.md` as the main implementation guide.
-- If local prototype endpoint files block same-origin routing to the real API, remove them or replace them with a minimal transport proxy only after confirming deployment topology.
-- If a proxy is required, it must forward rather than own behavior: no D1 membership mutation, no Cloudflare Access, no contract-shape invention.
+- If local prototype endpoint files block same-origin routing to the real API, remove them after confirming they are stale. Do not replace them with business logic in this repo.
+- If a proxy is ever required, document that as a separate decision; it must forward rather than own behavior: no D1 membership mutation, no Cloudflare Access, no contract-shape invention.
 - Keep changes scoped to the campaign management front-end integration and supporting client/tests.

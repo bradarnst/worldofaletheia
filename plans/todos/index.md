@@ -18,8 +18,8 @@ This folder is the canonical place for deferred implementation todos that need e
 | Title | Date Added | Status | Notes |
 | --- | --- | --- | --- |
 | [Breadcrumb Restoration as Deferred Navigation UX Work](./breadcrumb-restoration-navigation-ux-2026-05-08.md) | 2026-05-08 | Open | Tracks restoring expected breadcrumb navigation as a separate shared UX/navigation task rather than bundling it into sorcerer spells or admin-dashboard work. |
-| [External Admin Taxonomy Management Requirement](./admin-console-and-taxonomy-management-2026-04-25.md) | 2026-04-25 | Open | Tracks taxonomy management as an external-admin requirement with workflow guidance and safeguards instead of an in-repo admin console. |
-| [Future Related Resource Enrichment and Spell Discovery](./related-resource-enrichment-and-spell-discovery-2026-04-27.md) | 2026-04-27 | Open | Tracks a low-priority path from manual promoted-resource UX experiments toward incremental related-resource enrichment and eventual external spell-search/public-consumption integration. |
+| [External Admin Taxonomy Management Requirement](./admin-console-and-taxonomy-management-2026-04-25.md) | 2026-04-25 | Open / External | Tracks taxonomy management as a 100% external-admin requirement with workflow guidance and safeguards; not an in-repo admin console task. |
+| [Future Related Resource Enrichment and Spell Discovery](./related-resource-enrichment-and-spell-discovery-2026-04-27.md) | 2026-04-27 | Open / Future | Tracks future promoted-resource UX/enrichment ideas; not next work, and spell data/API authority remains external. |
 
 ## Completed Todos
 
