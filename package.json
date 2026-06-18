@@ -40,6 +40,7 @@
     "content:sync:prod:dry-run": "CONTENT_INDEX_SYNC_MODE=remote CONTENT_INDEX_SYNC_ENV= node ./scripts/content-sync/index.mjs --dry-run",
     "content:sync:validate": "node ./scripts/content-sync/index.mjs --validate-only",
     "content:publication:migration:plan": "node ./scripts/content-sync/publication-frontmatter-migration.mjs",
+    "content:legacy:migration:plan": "node ./scripts/content-sync/legacy-frontmatter-removal.mjs",
     "campaign:rename": "node ./scripts/rename-campaign-slug.mjs"
   },
   "dependencies": {
