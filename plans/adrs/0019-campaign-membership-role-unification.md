@@ -104,6 +104,7 @@ Introduce a broader authorization schema such as role bindings plus per-permissi
 7. Local/dev fallback should also converge on one membership-role source and deprecate separate GM-only config/env inputs.
 8. Better Auth identity and session handling remain unchanged; campaign entitlement continues to key off Better Auth `user.id`.
 9. This decision does not change route structure, content frontmatter visibility values, or non-campaign informational markers such as `gmResource`.
+10. `audienceWarnings: [gmSpoilers]` from ADR-0024 is informational only and must never be read as campaign authorization input.
 
 ## Consequences
 
@@ -125,6 +126,7 @@ Introduce a broader authorization schema such as role bindings plus per-permissi
 - This does not introduce repository/service/adapter layers beyond the existing D1-backed access seam.
 - This does not change the Obsidian-first content flow under ADR-0001.
 - This does not change Campaign route SSR behavior or the broader four-layer IA.
+- Publication/content warning metadata from ADR-0024 is orthogonal to campaign authorization.
 
 ## Links
 
@@ -133,3 +135,4 @@ Introduce a broader authorization schema such as role bindings plus per-permissi
 - `plans/campaign-permissions-phased-enhancement-plan.md`
 - `plans/phase-2-1-better-auth-google-mailjet-email-implementation-plan.md`
 - `plans/adrs/0004-campaigns-astro-native-content-access-policy.md`
+- `plans/adrs/0024-content-publication-metadata-model.md`

@@ -1,5 +1,7 @@
 # Draft Visibility Policy Closure
 
+> **Superseded:** This policy has been superseded by [ADR-0024: Content Publication Metadata Model](adrs/0024-content-publication-metadata-model.md). Treat this file as historical context only; implementers should follow ADR-0024 for current publication, content-state, and audience-warning semantics.
+
 ## Context
 
 Previous policy was temporary while preview workflow questions were still open.

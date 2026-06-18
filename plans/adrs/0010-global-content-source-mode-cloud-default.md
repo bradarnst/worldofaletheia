@@ -20,6 +20,7 @@ Related context:
 - `plans/adrs/0001-obsidian-first-content-architecture.md`
 - `plans/adrs/0004-campaigns-astro-native-content-access-policy.md`
 - `plans/adrs/0009-campaign-content-source-separation-for-public-repo.md`
+- `plans/adrs/0024-content-publication-metadata-model.md`
 
 We are moving from technical feasibility to operational default policy.
 
@@ -86,12 +87,14 @@ Let each collection independently choose local or cloud as standard operation.
 3. `CONTENT_SOURCE_OVERRIDES` remains emergency-only and must not become normal operation.
 4. All collections are expected to support both source modes under one global switch.
 5. Protected content remains deny-by-default on cloud fetch/parse/validation failure.
+6. Publication-lane behavior from ADR-0024 is resolved by environment target: production reads the production content target; Cloudflare preview deploys read the staging content target.
 
 ### Environment Expectations
 
 - `pnpm dev`: local convenience lane; not authoritative for cloud parity.
 - `pnpm dev:cf`: cloud parity lane and canonical verification path.
 - staging/production: cloud mode canonical.
+- Cloudflare preview deploys: cloud mode canonical against the staging content target, so `publication: preview` content can be reviewed without being present in production D1/R2.
 
 ## Consequences
 
@@ -110,6 +113,7 @@ Let each collection independently choose local or cloud as standard operation.
 
 - Obsidian remains authoring source of truth.
 - Astro-native route/content APIs remain the application read model.
+- Publication metadata values are defined by ADR-0024; this ADR only assigns runtime lanes to content targets.
 
 ## Acceptance Criteria
 
@@ -117,6 +121,7 @@ Let each collection independently choose local or cloud as standard operation.
 2. Local mode is documented as rollback/editorial lane, not primary production posture.
 3. Core runbooks and handoff docs reference the same default/rollback semantics.
 4. Protected-route failure behavior remains deny-by-default in cloud mode.
+5. Cloudflare preview deploys are documented as reading staging D1/R2 content targets rather than production content targets.
 
 ## Links
 
@@ -124,3 +129,4 @@ Let each collection independently choose local or cloud as standard operation.
 - `plans/adrs/0001-obsidian-first-content-architecture.md`
 - `plans/adrs/0004-campaigns-astro-native-content-access-policy.md`
 - `plans/adrs/0009-campaign-content-source-separation-for-public-repo.md`
+- `plans/adrs/0024-content-publication-metadata-model.md`

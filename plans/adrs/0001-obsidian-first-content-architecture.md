@@ -128,6 +128,10 @@ The Obsidian vault remains the primary authoring environment. Content is ingeste
 4. **File Ownership**: Two global co-authors for shared content; campaign-level overrides allowed
 5. **Error Policy**: Warn on non-critical schema drift; fail on route identity breakage
 
+### Clarification: Portable Source Contract
+
+ADR-0025 clarifies that “Obsidian-first” means Obsidian is the preferred authoring UX, not an exclusive tool dependency. The canonical enforcement boundary is the portable Markdown/frontmatter/link/media contract. Frontmatter owns machine-readable facts such as collection, type, campaign identity, and publication metadata; folder hierarchy is derived or validated placement.
+
 ## Consequences
 
 ### Positive
@@ -165,3 +169,4 @@ This decision is validated by:
 - [Astro Content Collections](https://docs.astro.build/en/guides/content-collections/)
 - [Obsidian Publish](https://obsidian.md/publish) (alternative we chose not to use)
 - Related: [Campaigns Architecture Implementation](../campaigns-architecture-implementation-checklist.md)
+- Clarification: [0025-portable-markdown-source-contract-and-frontmatter-authority.md](0025-portable-markdown-source-contract-and-frontmatter-authority.md)

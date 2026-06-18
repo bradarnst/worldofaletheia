@@ -87,6 +87,9 @@ Chosen option: Option 3 - selective indexability with layered crawler governance
 5. `robots.txt` provides advisory crawl rules and sitemap references but is not treated as a security boundary.
 6. Edge controls (WAF, bot management, rate limiting) are authoritative for abusive crawler behavior.
 7. Staging environments are noindex by default.
+8. Production sitemaps, production search indexes, and production discovery feeds include only production-publishable content as defined by ADR-0024 and the D1/R2 sync policy in ADR-0016.
+9. `publication: preview` content must not appear in production SEO artifacts, even if a runtime route or local source mode could theoretically resolve it during development.
+10. `contentState` and `audienceWarnings` may affect visible page labels, but they do not by themselves change indexability for otherwise production-publishable public content.
 
 ### Consequences
 
@@ -106,3 +109,10 @@ Chosen option: Option 3 - selective indexability with layered crawler governance
 - Does not change Obsidian-first content authoring flow.
 - Does not introduce new service/adaptor/contract layers.
 - Aligns with the four-layer information architecture after ADR-0018 and does not otherwise change content-source or service boundaries.
+- Publication metadata is defined in ADR-0024; this ADR governs crawler-facing artifacts and directives only.
+
+## Links
+
+- `plans/adrs/0010-global-content-source-mode-cloud-default.md`
+- `plans/adrs/0016-d1-as-canonical-cloud-content-index-and-r2-blob-storage.md`
+- `plans/adrs/0024-content-publication-metadata-model.md`

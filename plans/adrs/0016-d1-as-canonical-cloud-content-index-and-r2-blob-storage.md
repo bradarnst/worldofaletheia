@@ -101,11 +101,17 @@ Chosen option: Option 2 - D1 is the canonical cloud content index and R2 is blob
    - `campaign_slug`
    - freshness metadata such as `source_etag`, `source_last_modified`, and `indexed_at`
 3. R2 stores markdown/media objects and variants only; it does not store authoritative entry-manifest contracts.
-4. Sync recovery is source-driven:
+4. Publication-lane metadata from ADR-0024 is enforced by sync target:
+   - production sync includes normal production-publishable content and excludes `publication: preview` content from production D1 rows and production R2 objects;
+   - staging sync may include `publication: preview` and `publication: publish` content for Cloudflare preview deploys;
+   - `publication: archive` is excluded from normal discovery/listing unless a future archive surface defines a deliberate inclusion rule.
+5. Production sync must not upload preview-only markdown or preview-only media to production R2 when source metadata identifies the entry or media as preview-only. Runtime filtering remains defense-in-depth, not the primary production protection.
+6. `content_index` may carry publication/content-state/audience-warning metadata when needed for query, badge, or search behavior, but D1 remains the index/lookup surface and R2 remains blob storage.
+7. Sync recovery is source-driven:
    - rerun sync, or
    - rebuild the D1 index from source content and current object-key derivation rules.
-5. `content_index` identity must be hardened so collection-local Astro IDs cannot collide across collections.
-6. Older manifest-based planning documents are historical only and must be updated or superseded in active runbooks/handoffs.
+8. `content_index` identity must be hardened so collection-local Astro IDs cannot collide across collections.
+9. Older manifest-based planning documents are historical only and must be updated or superseded in active runbooks/handoffs.
 
 ### Consequences
 
@@ -127,11 +133,12 @@ Chosen option: Option 2 - D1 is the canonical cloud content index and R2 is blob
 - Obsidian remains the source of truth under ADR-0001.
 - Astro-native loaders remain the application read model.
 - This decision does not require new repository/service/adapter layers under ADR-0004.
+- Publication metadata values are defined by ADR-0024; this ADR governs how those values affect D1/R2 sync and lookup artifacts.
 
 
 ## Implementation Update
 
-Implementation is now complete in the repository for the intended scope of this decision.
+Implementation is complete in the repository for the original D1 lookup hardening scope of this decision. The publication-aware sync additions from ADR-0024 are follow-up implementation work and are not claimed complete by this historical implementation update.
 
 Implemented artifacts:
 
@@ -159,4 +166,5 @@ Validation status at implementation time:
 - `plans/adrs/0010-global-content-source-mode-cloud-default.md`
 - `plans/adrs/0011-discovery-navigation-and-search-index-strategy.md`
 - `plans/adrs/0012-content-producer-extraction-strategy.md`
+- `plans/adrs/0024-content-publication-metadata-model.md`
 - `plans/d1-manifest-removal-and-d1-index-hardening-handoff-to-code-2026-04-05.md`
