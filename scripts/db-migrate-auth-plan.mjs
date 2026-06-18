@@ -17,6 +17,7 @@ export const orderedMigrations = [
   './migrations/0011_content_search_fts.sql',
   './migrations/0012_contributors_and_attributions.sql',
   './migrations/0013_drop_email_canonical.sql',
+  './migrations/0014_content_publication_metadata.sql',
 ];
 
 export function parseArgs(argv) {
@@ -715,6 +716,11 @@ function runMigrationPlan(baseArgs) {
       contentIndexUsesCollectionScopedPrimaryKey(baseArgs)
     ) {
       console.log(`Skipping ${migrationFile} (content_index already uses PRIMARY KEY (collection, id)).`);
+      continue;
+    }
+
+    if (migrationFile === './migrations/0014_content_publication_metadata.sql' && columnExists(baseArgs, 'content_index', 'publication')) {
+      console.log(`Skipping ${migrationFile} (content_index.publication already exists).`);
       continue;
     }
 

@@ -21,6 +21,24 @@ import {
   CONTRIBUTOR_ROLE_TYPES,
 } from './lib/content-types';
 
+const legacyStatusSchema = z.enum([
+  'draft',
+  'review',
+  'publish',
+  'published',
+  'archive',
+  'archived',
+  'planning',
+  'active',
+  'completed',
+  'on-hold',
+  'cancelled',
+]);
+
+const publicationSchema = z.enum(['preview', 'publish', 'archive']);
+const contentStateSchema = z.enum(['stable', 'mayChange', 'unfinished']);
+const audienceWarningSchema = z.enum(['gmSpoilers']);
+
 function createMarkdownLoader(collection: string, pattern: string, base: string) {
   if (resolveCollectionSource(collection) === 'cloud') {
     return createR2MarkdownCollectionLoader(collection);
@@ -32,7 +50,12 @@ function createMarkdownLoader(collection: string, pattern: string, base: string)
 // Base frontmatter schema for all collections
 const baseSchema = z.object({
   collection: z.string().trim().min(1),
-  status: z.enum(['draft', 'publish', 'published', 'archive', 'archived']),
+  publication: publicationSchema.optional(),
+  contentState: contentStateSchema.optional().default('stable'),
+  audienceWarnings: z.array(audienceWarningSchema).optional().default([]),
+  // Legacy migration input only. Runtime filtering derives publication from this field
+  // only when publication is not present; access control must never use it.
+  status: legacyStatusSchema.optional(),
   authors: z.array(z.string()).min(1),
   contributors: z.array(z.object({
     id: z.string(),
@@ -74,7 +97,11 @@ const contributorsSchema = z.object({
   title: z.string(),
   displayName: z.string().optional(),
   aliases: z.array(z.string()).optional().default([]),
-  status: z.enum(['draft', 'publish', 'published', 'archive', 'archived']),
+  publication: publicationSchema.optional(),
+  contentState: contentStateSchema.optional().default('stable'),
+  audienceWarnings: z.array(audienceWarningSchema).optional().default([]),
+  // Legacy migration input only.
+  status: legacyStatusSchema.optional(),
   avatar: z.string().optional(),
   bioExcerpt: z.string().optional(),
   socials: z.array(z.object({
@@ -211,7 +238,7 @@ const metaSchema = baseSchema.extend({
   excerpt: z.string().optional(),
 });
 
-const campaignsSchema = baseSchema.omit({ status: true }).extend({
+const campaignsSchema = baseSchema.extend({
   collection: z.literal('campaigns'),
   title: z.string(),
   type: z.string().trim().min(1).default('campaign'),

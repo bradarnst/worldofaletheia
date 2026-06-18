@@ -17,7 +17,22 @@ const { content, showExcerpt = true, showTags = true, showStatus = false, showCa
 const data = content.data || content;
 const collection = content.collection || '';
 const id = content.id || '';
-const shouldShowStatusBadge = showStatus || (data.status && data.status !== 'publish' && data.status !== 'published');
+const contentStateLabels: Record<string, string> = {
+  mayChange: 'May change',
+  unfinished: 'Unfinished',
+};
+const audienceWarningLabels: Record<string, string> = {
+  gmSpoilers: 'GM spoilers',
+};
+const visibleContentState = typeof data.contentState === 'string' && data.contentState !== 'stable'
+  ? contentStateLabels[data.contentState] ?? data.contentState
+  : null;
+const audienceWarnings = Array.isArray(data.audienceWarnings) ? data.audienceWarnings : [];
+const visibleAudienceWarnings = audienceWarnings
+  .map((warning: string) => audienceWarningLabels[warning] ?? warning)
+  .filter((warning: string) => warning.length > 0);
+const shouldShowStatusBadge = showStatus && data.status;
+const shouldShowPreviewBadge = data.publication === 'preview';
 const iconName = data.type || collection || 'Entry';
 const href = collection && id ? `/${collection}/${id}` : '#';
 const authorsLabel = Array.isArray(data.authors) && data.authors.length > 0
@@ -43,7 +58,14 @@ const createdDate = data.created instanceof Date
         <h3 class="text-xl font-semibold leading-tight text-ink-950 transition-colors group-hover:text-primary">{data.title}</h3>
       </div>
     </div>
-    {shouldShowStatusBadge && <span class="rounded-full border border-info/35 bg-info/10 px-2.5 py-1 text-xs font-medium text-info-700">{data.status}</span>}
+    {(shouldShowStatusBadge || shouldShowPreviewBadge || visibleContentState || visibleAudienceWarnings.length > 0) && (
+      <div class="flex shrink-0 flex-wrap justify-end gap-2">
+        {shouldShowPreviewBadge && <span class="badge badge-info badge-outline">Preview</span>}
+        {visibleContentState && <span class="badge badge-warning badge-outline">{visibleContentState}</span>}
+        {visibleAudienceWarnings.map((warning: string) => <span class="badge badge-secondary badge-outline">{warning}</span>)}
+        {shouldShowStatusBadge && <span class="badge badge-info badge-outline">{data.status}</span>}
+      </div>
+    )}
   </div>
 
   {showExcerpt && data.excerpt && <p class="text-sm leading-7 text-ink-800">{data.excerpt}</p>}

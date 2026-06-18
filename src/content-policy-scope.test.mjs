@@ -11,7 +11,7 @@ describe('campaign visibility policy scope', () => {
     expect(baseSchemaBlock).toBeTruthy();
     expect(baseSchemaBlock[1]).not.toContain('visibility:');
 
-    const campaignsSchemaBlock = source.match(/const campaignsSchema = baseSchema\.omit\(\{ status: true \}\)\.extend\(\{([\s\S]*?)\}\);/);
+    const campaignsSchemaBlock = source.match(/const campaignsSchema = baseSchema\.extend\(\{([\s\S]*?)\}\);/);
     expect(campaignsSchemaBlock).toBeTruthy();
     expect(campaignsSchemaBlock[1]).toContain("visibility: z.enum(['public', 'campaignMembers', 'gm'])");
     expect(campaignsSchemaBlock[1]).toContain("default('gm')");

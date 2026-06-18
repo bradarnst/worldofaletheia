@@ -83,9 +83,9 @@ describe('ContentIndexRepo', () => {
 
     const [countQuery, listQuery] = seenQueries;
     expect(countQuery.query).toContain("COALESCE(content_index.visibility, 'gm') = 'public'");
-    expect(countQuery.values).toEqual(['lore', 'publish', 'published', 'review', 'draft']);
+    expect(countQuery.values).toEqual(['lore', 'publish']);
     expect(listQuery.query).toContain('ORDER BY updated_at DESC, slug ASC');
-    expect(listQuery.values).toEqual(['lore', 'publish', 'published', 'review', 'draft', 10, 10]);
+    expect(listQuery.values).toEqual(['lore', 'publish', 10, 10]);
   });
 
   it('clamps out-of-range pages to the last available page', async () => {
@@ -130,7 +130,7 @@ describe('ContentIndexRepo', () => {
       "SELECT tag.value AS value, COUNT(DISTINCT content_index.collection || ':' || content_index.id) AS total_count",
     );
     expect(recordedQuery).toContain("COALESCE(content_index.visibility, 'gm') = 'public'");
-    expect(recordedValues).toEqual(['campaigns', 'publish', 'published', 'review', 'draft']);
+    expect(recordedValues).toEqual(['campaigns', 'publish']);
   });
 
   it('applies the public visibility guard to campaign family collections', async () => {
@@ -148,14 +148,14 @@ describe('ContentIndexRepo', () => {
 
     expect(recordedQuery).toContain("content_index.collection NOT LIKE 'campaign%'");
     expect(recordedQuery).toContain("COALESCE(content_index.visibility, 'gm') = 'public'");
-    expect(recordedValues).toEqual(['campaignLore', 'publish', 'published', 'review', 'draft', 12, 0]);
+    expect(recordedValues).toEqual(['campaignLore', 'publish', 12, 0]);
   });
 
   it('returns grouped facet counts for type queries', async () => {
     const repo = new ContentIndexRepo(
       createDbMock((query, values) => {
         expect(query).toContain('SELECT content_index.type AS value, COUNT(*) AS total_count');
-        expect(values).toEqual(['systems', 'publish', 'published', 'review', 'draft']);
+        expect(values).toEqual(['systems', 'publish']);
         return [
           { value: 'general', total_count: 3 },
           { value: 'gurps', total_count: 7 },
@@ -218,9 +218,6 @@ describe('ContentIndexRepo', () => {
     expect(seenQueries[0]?.values).toEqual([
       'systems',
       'publish',
-      'published',
-      'review',
-      'draft',
       '%magic%',
       '%magic%',
       '%magic%',
@@ -286,9 +283,6 @@ describe('ContentIndexRepo', () => {
     expect(seenQueries[0]?.values).toEqual([
       'systems',
       'publish',
-      'published',
-      'review',
-      'draft',
       '"magic" AND "gurps"',
     ]);
     expect(seenQueries[1]?.query).toContain('ORDER BY content_index.updated_at DESC, content_index.slug ASC');
@@ -348,9 +342,6 @@ describe('ContentIndexRepo', () => {
     expect(seenQueries[1]?.values).toEqual([
       'systems',
       'publish',
-      'published',
-      'review',
-      'draft',
       '%magic%',
       '%magic%',
       '%magic%',
@@ -391,17 +382,14 @@ describe('ContentIndexRepo', () => {
 
     expect(seenQueries[0]?.query).toContain("COALESCE(content_index.visibility, 'gm') = 'campaignMembers'");
     expect(seenQueries[0]?.query).toContain("COALESCE(content_index.visibility, 'gm') = 'gm'");
-    expect(seenQueries[0]?.values.slice(0, 8)).toEqual([
+    expect(seenQueries[0]?.values.slice(0, 5)).toEqual([
       'campaigns',
       'publish',
-      'published',
-      'review',
-      'draft',
       'barry',
       'brad',
       'brad',
     ]);
-    expect(seenQueries[0]?.values.slice(8)).toEqual(['"journal"']);
+    expect(seenQueries[0]?.values.slice(5)).toEqual(['"journal"']);
   });
 
   it('filters search results by exact contributor attribution without bypassing visibility guards', async () => {
@@ -429,7 +417,7 @@ describe('ContentIndexRepo', () => {
     expect(seenQueries[0]?.query).toContain('attributions.contributor_id = ?');
     expect(seenQueries[0]?.query).toContain("COALESCE(content_index.visibility, 'gm') = 'public'");
     expect(seenQueries[0]?.query).not.toContain('content_search_fts MATCH');
-    expect(seenQueries[0]?.values).toEqual(['publish', 'published', 'review', 'draft', 'brad']);
+    expect(seenQueries[0]?.values).toEqual(['publish', 'brad']);
   });
 
   it('combines contributor filtering with FTS search terms for authored or credited work', async () => {
@@ -459,9 +447,6 @@ describe('ContentIndexRepo', () => {
     expect(seenQueries[0]?.values).toEqual([
       'systems',
       'publish',
-      'published',
-      'review',
-      'draft',
       'alex',
       '"magic"',
     ]);

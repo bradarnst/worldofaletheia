@@ -4,6 +4,7 @@ import { normalizeFilterValueOptional, normalizePage } from '~/lib/normalizers';
 import { resolveSearchAccess } from '~/lib/search-access';
 import { buildCampaignContentHref } from '@utils/campaign-collections';
 import { getNoIndexHeaders } from '@utils/seo';
+import { getDefaultContentEnvironment } from '@utils/content-filter';
 
 function normalizePageSize(value: string | null): number {
   const parsed = Number.parseInt(value ?? '10', 10);
@@ -58,6 +59,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
       tags: normalizeTags(url.searchParams),
       page: normalizePage(url.searchParams.get('page')),
       pageSize: normalizePageSize(url.searchParams.get('pageSize')),
+      environment: getDefaultContentEnvironment(),
       visibilityAccess: access.visibilityAccess,
     });
 
@@ -78,6 +80,8 @@ export const GET: APIRoute = async ({ request, locals }) => {
           type: item.type,
           subtype: item.subtype,
           tags: item.tags,
+          contentState: item.contentState,
+          audienceWarnings: item.audienceWarnings,
           createdAt: item.createdAt,
           updatedAt: item.updatedAt,
         })),

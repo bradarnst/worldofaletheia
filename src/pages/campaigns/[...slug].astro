@@ -13,6 +13,7 @@ import {
   pickCampaignEntryDate,
 } from '@utils/campaign-collections';
 import { getAllCampaignFamilyEntries } from '@utils/campaign-content';
+import { getFilteredCollection } from '@utils/content-filter';
 import { createCampaignRequestAccessResolver } from '~/lib/campaign-request-access';
 
 interface CampaignSectionCard {
@@ -38,8 +39,8 @@ try {
     getCollection('sessions'),
     getAllCampaignFamilyEntries(),
   ]);
-  entry = campaigns.find((item) => extractCampaignSlugFromEntryId(item.id) === slug) ?? null;
-  sessions = sessionsCollection;
+  entry = getFilteredCollection(campaigns).find((item) => extractCampaignSlugFromEntryId(item.id) === slug) ?? null;
+  sessions = getFilteredCollection(sessionsCollection);
   familyEntries = allFamilyEntries;
 } catch (error) {
   console.error('campaign.route.content_unavailable', {

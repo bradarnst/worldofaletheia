@@ -1,6 +1,10 @@
 export type ContentEnvironment = 'production' | 'preview' | 'development';
+export type Publication = 'preview' | 'publish' | 'archive';
 
 interface ContentDataLike {
+  publication?: string;
+  contentState?: string;
+  audienceWarnings?: string[];
   status?: string;
   authors?: string[];
   author?: string;
@@ -27,13 +31,48 @@ function unwrapContentData<TData extends ContentDataLike>(content: ContentLike<T
 }
 
 export function getIncludedStatuses(environment: ContentEnvironment = 'production'): string[] {
-  const shared = ['publish', 'published', 'review', 'draft'];
-
-  if (environment === 'development') {
-    return [...shared, 'archive', 'archived'];
-  }
+  // Legacy status compatibility only. New code should prefer publication metadata.
+  const shared = ['publish', 'published', 'review', 'draft', 'planning', 'active', 'completed', 'on-hold', 'cancelled'];
 
   return shared;
+}
+
+export function getDefaultContentEnvironment(): ContentEnvironment {
+  if (import.meta.env.DEV) {
+    return 'development';
+  }
+
+  if (import.meta.env.CONTENT_LOADER_D1_ENV === 'staging') {
+    return 'preview';
+  }
+
+  return 'production';
+}
+
+export function getIncludedPublications(environment: ContentEnvironment = 'production'): Publication[] {
+  if (environment === 'preview' || environment === 'development') {
+    return ['preview', 'publish'];
+  }
+
+  return ['publish'];
+}
+
+export function publicationFromLegacyStatus(status: string | undefined | null): Publication | null {
+  const normalized = status?.trim().toLowerCase();
+  if (!normalized) {
+    return null;
+  }
+
+  return normalized === 'archive' || normalized === 'archived' ? 'archive' : 'publish';
+}
+
+export function resolvePublication(data: ContentDataLike): Publication | null {
+  const publication = data.publication?.trim();
+  if (publication === 'preview' || publication === 'publish' || publication === 'archive') {
+    return publication;
+  }
+
+  return publicationFromLegacyStatus(data.status);
 }
 
 /**
@@ -41,14 +80,14 @@ export function getIncludedStatuses(environment: ContentEnvironment = 'productio
  */
 export function shouldIncludeContent<TData extends ContentDataLike>(
   content: ContentLike<TData>,
-  environment: ContentEnvironment = 'production',
+  environment: ContentEnvironment = getDefaultContentEnvironment(),
 ): boolean {
   const data = unwrapContentData(content);
   if (!data) {
     return false;
   }
 
-  return getIncludedStatuses(environment).includes(data.status ?? '');
+  return getIncludedPublications(environment).includes(resolvePublication(data));
 }
 
 /**
@@ -56,7 +95,7 @@ export function shouldIncludeContent<TData extends ContentDataLike>(
  */
 export function getFilteredCollection<TData extends ContentDataLike, T extends ContentLike<TData>>(
   collection: T[],
-  environment: ContentEnvironment = 'production',
+  environment: ContentEnvironment = getDefaultContentEnvironment(),
 ): T[] {
   return collection.filter((item) => shouldIncludeContent(item, environment));
 }

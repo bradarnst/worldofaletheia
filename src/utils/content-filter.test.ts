@@ -2,19 +2,31 @@ import { describe, expect, it } from 'vitest';
 import { shouldIncludeContent } from './content-filter';
 
 describe('shouldIncludeContent', () => {
-  it('ignores deprecated secret when status is publish/published', () => {
-    expect(shouldIncludeContent({ status: 'publish', secret: true }, 'production')).toBe(true);
-    expect(shouldIncludeContent({ status: 'published', secret: true }, 'production')).toBe(true);
+  it('includes published content in production through publication metadata', () => {
+    expect(shouldIncludeContent({ publication: 'publish', secret: true }, 'production')).toBe(true);
   });
 
-  it('ignores deprecated secret when status is draft', () => {
+  it('derives production publication from legacy non-archive status values', () => {
+    expect(shouldIncludeContent({ status: 'publish', secret: true }, 'production')).toBe(true);
+    expect(shouldIncludeContent({ status: 'published', secret: true }, 'production')).toBe(true);
     expect(shouldIncludeContent({ status: 'draft', secret: true }, 'production')).toBe(true);
   });
 
-  it('keeps archived content development-only', () => {
-    expect(shouldIncludeContent({ status: 'archive', secret: false }, 'development')).toBe(true);
+  it('excludes content with neither publication nor legacy status', () => {
+    expect(shouldIncludeContent({}, 'production')).toBe(false);
+  });
+
+  it('excludes preview content from production and includes it in preview/development', () => {
+    expect(shouldIncludeContent({ publication: 'preview' }, 'production')).toBe(false);
+    expect(shouldIncludeContent({ publication: 'preview' }, 'preview')).toBe(true);
+    expect(shouldIncludeContent({ publication: 'preview' }, 'development')).toBe(true);
+  });
+
+  it('keeps archived content out of normal listing environments', () => {
+    expect(shouldIncludeContent({ publication: 'archive', secret: false }, 'development')).toBe(false);
+    expect(shouldIncludeContent({ publication: 'archive', secret: false }, 'production')).toBe(false);
     expect(shouldIncludeContent({ status: 'archive', secret: false }, 'production')).toBe(false);
-    expect(shouldIncludeContent({ status: 'archived', secret: false }, 'development')).toBe(true);
+    expect(shouldIncludeContent({ status: 'archived', secret: false }, 'development')).toBe(false);
     expect(shouldIncludeContent({ status: 'archived', secret: false }, 'production')).toBe(false);
   });
 
@@ -32,8 +44,9 @@ describe('shouldIncludeContent', () => {
     expect(shouldIncludeContent({ status: 'published', 'gm-info': 'true' }, 'production')).toBe(true);
   });
 
-  it('keeps drafts visible in production', () => {
-    expect(shouldIncludeContent({ status: 'draft' }, 'production')).toBe(true);
+  it('lets publication override legacy status during migration', () => {
+    expect(shouldIncludeContent({ publication: 'preview', status: 'publish' }, 'production')).toBe(false);
+    expect(shouldIncludeContent({ publication: 'publish', status: 'archive' }, 'production')).toBe(true);
   });
 
   it('returns false for missing content data', () => {

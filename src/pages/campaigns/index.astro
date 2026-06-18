@@ -6,6 +6,7 @@ import TagCloud from '@components/TagCloud.astro';
 import rideOnTheBeach from '@images/ride-on-the-beach.png';
 import { getAllCampaignFamilyEntries } from '@utils/campaign-content';
 import { extractCampaignSlugFromEntryId } from '@utils/campaign-collections';
+import { getFilteredCollection } from '@utils/content-filter';
 import {
   resolveCampaignContentVisibility,
   type CampaignVisibility,
@@ -18,8 +19,8 @@ type CampaignRecordCounter = {
 };
 
 const [campaigns, sessions, familyEntries] = await Promise.all([
-  getCollection('campaigns'),
-  getCollection('sessions'),
+  getFilteredCollection(await getCollection('campaigns')),
+  getFilteredCollection(await getCollection('sessions')),
   getAllCampaignFamilyEntries(),
 ]);
 

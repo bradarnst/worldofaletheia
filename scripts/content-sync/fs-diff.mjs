@@ -3,6 +3,11 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { normalizePathForDisplay } from './utils.mjs';
 import { transformObsidianLinks } from './obsidian-links.mjs';
+import {
+  getIncludedPublicationsForSyncLane,
+  resolvePublicationFromFrontmatter,
+  resolvePublicationSyncLane,
+} from './publication-policy.mjs';
 
 async function pathExists(target) {
   try {
@@ -46,6 +51,95 @@ async function filesAreEqual(sourcePath, destPath) {
 async function fileMd5Hex(filePath) {
   const data = await fs.readFile(filePath);
   return createHash('md5').update(data).digest('hex');
+}
+
+async function parseFrontmatterRecord(filePath) {
+  const text = await fs.readFile(filePath, 'utf8');
+  const lines = text.split(/\r?\n/);
+  if (lines[0] !== '---') {
+    return {};
+  }
+
+  const record = {};
+  for (let index = 1; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (line === '---') {
+      break;
+    }
+
+    const match = /^([A-Za-z0-9_-]+)\s*:\s*(.*?)\s*$/.exec(line);
+    if (match) {
+      record[match[1]] = match[2];
+    }
+  }
+
+  return record;
+}
+
+function extractMarkdownMediaRefs(markdownText, markdownRelativePath) {
+  const refs = new Set();
+  const baseDir = path.posix.dirname(markdownRelativePath.split(path.sep).join('/'));
+  const addRef = (rawTarget) => {
+    const target = String(rawTarget || '').split(/[?#|]/)[0].trim();
+    if (!target || /^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith('/')) {
+      return;
+    }
+
+    const normalized = normalizePathForDisplay(path.posix.normalize(path.posix.join(baseDir, target)));
+    refs.add(normalized);
+  };
+
+  for (const match of markdownText.matchAll(/!\[[^\]]*\]\(([^)]+)\)/g)) {
+    addRef(match[1]);
+  }
+
+  for (const match of markdownText.matchAll(/!\[\[([^\]]+)\]\]/g)) {
+    addRef(match[1]);
+  }
+
+  return refs;
+}
+
+async function filterSourceFilesForPublication(sourceFiles, sourceRoot) {
+  const lane = resolvePublicationSyncLane(process.env);
+  const includedPublications = getIncludedPublicationsForSyncLane(lane);
+  if (lane !== 'production') {
+    return { files: sourceFiles, excluded: [] };
+  }
+
+  const markdownFiles = sourceFiles.filter((file) => path.extname(file).toLowerCase() === '.md');
+  const mediaFiles = sourceFiles.filter((file) => path.extname(file).toLowerCase() !== '.md');
+  const includedMediaRefs = new Set();
+  const excludedMediaRefs = new Set();
+  const includedMarkdown = [];
+  const excluded = [];
+
+  for (const file of markdownFiles) {
+    const relativePath = normalizePathForDisplay(path.relative(sourceRoot, file));
+    const text = await fs.readFile(file, 'utf8');
+    const frontmatter = await parseFrontmatterRecord(file);
+    const includeFile = includedPublications.includes(resolvePublicationFromFrontmatter(frontmatter));
+    const mediaRefs = extractMarkdownMediaRefs(text, relativePath);
+
+    if (includeFile) {
+      includedMarkdown.push(file);
+      for (const ref of mediaRefs) {
+        includedMediaRefs.add(ref);
+      }
+    } else {
+      excluded.push(file);
+      for (const ref of mediaRefs) {
+        excludedMediaRefs.add(ref);
+      }
+    }
+  }
+
+  const includedMedia = mediaFiles.filter((file) => {
+    const relativePath = normalizePathForDisplay(path.relative(sourceRoot, file));
+    return !excludedMediaRefs.has(relativePath) || includedMediaRefs.has(relativePath);
+  });
+
+  return { files: [...includedMarkdown, ...includedMedia], excluded };
 }
 
 function isPlainMd5Hash(value) {
@@ -93,10 +187,24 @@ async function computeSourceEtag(sourceAbs, mapping, relativePath, config, wikiI
 
 export async function buildSyncDiff(config, services = {}, { previousEtags = null, wikiIndex = null } = {}) {
   const records = [];
+  const excludedByPublication = [];
 
   for (const mapping of config.mappings) {
     const sourceRoot = path.resolve(config.vaultRoot, mapping.from);
-    const sourceFiles = await walkFiles(sourceRoot, config.includeExtensions);
+    const unfilteredSourceFiles = await walkFiles(sourceRoot, config.includeExtensions);
+    const publicationFiltered = mapping.target === 'cloud'
+      ? await filterSourceFilesForPublication(unfilteredSourceFiles, sourceRoot)
+      : { files: unfilteredSourceFiles, excluded: [] };
+    const sourceFiles = publicationFiltered.files;
+    excludedByPublication.push(...publicationFiltered.excluded.map((file) => ({
+      type: 'excluded',
+      relativePath: normalizePathForDisplay(path.relative(sourceRoot, file)),
+      sourceAbs: file,
+      destAbs: null,
+      cloudKey: null,
+      mapping,
+      excludedReason: 'publication',
+    })));
 
     if (mapping.target === 'repo') {
       const destRoot = path.resolve(config.repoRoot, mapping.to);
@@ -250,6 +358,7 @@ export async function buildSyncDiff(config, services = {}, { previousEtags = nul
     updated: records.filter((r) => r.type === 'updated'),
     unchanged: records.filter((r) => r.type === 'unchanged'),
     stale: records.filter((r) => r.type === 'stale'),
+    excludedByPublication,
   };
 
   return {
@@ -260,6 +369,7 @@ export async function buildSyncDiff(config, services = {}, { previousEtags = nul
       updated: grouped.updated.length,
       unchanged: grouped.unchanged.length,
       stale: grouped.stale.length,
+      excludedByPublication: grouped.excludedByPublication.length,
     },
   };
 }

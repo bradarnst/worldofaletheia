@@ -5,6 +5,11 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { transformObsidianLinks } from './obsidian-links.mjs';
 import { normalizeObsidianTags } from './validate.mjs';
+import {
+  getIncludedPublicationsForSyncLane,
+  resolvePublicationFromFrontmatter,
+  resolvePublicationSyncLane,
+} from './publication-policy.mjs';
 
 let cachedParseFrontmatter = null;
 const MAX_CONTENT_SEARCH_BODY_LENGTH = 32000;
@@ -108,6 +113,10 @@ function normalizeAuthors(frontmatterAuthors) {
 
 function normalizeStringList(value) {
   return normalizeAuthors(value);
+}
+
+function normalizeAudienceWarnings(value) {
+  return normalizeStringList(value).filter((warning) => warning === 'gmSpoilers');
 }
 
 function getFirstNameAlias(value) {
@@ -295,6 +304,7 @@ function createContentIndexRow({
   generatedAt,
 }) {
   const authors = normalizeAuthors(frontmatterRecord.authors ?? frontmatterRecord.author);
+  const publication = resolvePublicationFromFrontmatter(frontmatterRecord);
   const createdAt = normalizeDateValue(frontmatterRecord.created ?? frontmatterRecord['created-date']);
   const updatedAt =
     normalizeDateValue(frontmatterRecord.modified ?? frontmatterRecord['modified-date']) ??
@@ -312,6 +322,9 @@ function createContentIndexRow({
     visibility: toCampaignVisibility(frontmatterRecord.visibility) ?? contentEntry.visibility,
     campaignSlug: contentEntry.campaignSlug,
     summary: normalizeNullableString(frontmatterRecord.excerpt),
+    publication,
+    contentState: normalizeNullableString(frontmatterRecord.contentState) ?? 'stable',
+    audienceWarningsJson: JSON.stringify(normalizeAudienceWarnings(frontmatterRecord.audienceWarnings)),
     status: normalizeNullableString(frontmatterRecord.status),
     author: authors.length > 0 ? authors.join(', ') : null,
     createdAt,
@@ -543,6 +556,8 @@ export async function collectCloudContentMetadata(config, services, wikiIndex) {
   const contributorRows = [];
   const attributionRows = [];
   const generatedAt = new Date().toISOString();
+  const syncLane = resolvePublicationSyncLane(process.env);
+  const includedPublications = getIncludedPublicationsForSyncLane(syncLane);
 
   for (const mapping of config.mappings.filter((candidate) => candidate.target === 'cloud')) {
     const { sourceRoot, files } = await gatherSourceFiles(config, mapping);
@@ -570,6 +585,9 @@ export async function collectCloudContentMetadata(config, services, wikiIndex) {
         generatedAt,
       )) {
         managedCollections.add(derivedEntry.contentEntry.collection);
+        if (!includedPublications.includes(derivedEntry.contentIndexRow.publication)) {
+          continue;
+        }
         contentIndexRows.push(derivedEntry.contentIndexRow);
         contentSearchRows.push(derivedEntry.contentSearchRow);
         if (derivedEntry.contributorRegistryRow) {

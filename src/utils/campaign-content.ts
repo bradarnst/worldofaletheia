@@ -1,5 +1,6 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
 import type { CampaignFamilyCollection } from '@utils/campaign-collections';
+import { getFilteredCollection } from '@utils/content-filter';
 
 export type CampaignFamilyEntry =
   | CollectionEntry<'campaignLore'>
@@ -20,29 +21,29 @@ export async function getCampaignFamilyCollectionEntries(
 ): Promise<CampaignFamilyEntry[]> {
   switch (collection) {
     case 'campaignLore':
-      return getCollection('campaignLore');
+      return getFilteredCollection(await getCollection('campaignLore'));
     case 'campaignPlaces':
-      return getCollection('campaignPlaces');
+      return getFilteredCollection(await getCollection('campaignPlaces'));
     case 'campaignSentients':
-      return getCollection('campaignSentients');
+      return getFilteredCollection(await getCollection('campaignSentients'));
     case 'campaignBestiary':
-      return getCollection('campaignBestiary');
+      return getFilteredCollection(await getCollection('campaignBestiary'));
     case 'campaignFlora':
-      return getCollection('campaignFlora');
+      return getFilteredCollection(await getCollection('campaignFlora'));
     case 'campaignFactions':
-      return getCollection('campaignFactions');
+      return getFilteredCollection(await getCollection('campaignFactions'));
     case 'campaignSystems':
-      return getCollection('campaignSystems');
+      return getFilteredCollection(await getCollection('campaignSystems'));
     case 'campaignMeta':
-      return getCollection('campaignMeta');
+      return getFilteredCollection(await getCollection('campaignMeta'));
     case 'campaignCharacters':
-      return getCollection('campaignCharacters');
+      return getFilteredCollection(await getCollection('campaignCharacters'));
     case 'campaignScenes':
-      return getCollection('campaignScenes');
+      return getFilteredCollection(await getCollection('campaignScenes'));
     case 'campaignAdventures':
-      return getCollection('campaignAdventures');
+      return getFilteredCollection(await getCollection('campaignAdventures'));
     case 'campaignHooks':
-      return getCollection('campaignHooks');
+      return getFilteredCollection(await getCollection('campaignHooks'));
   }
 
   throw new Error(`Unsupported campaign family collection: ${collection}`);
@@ -78,17 +79,17 @@ export async function getAllCampaignFamilyEntries(): Promise<CampaignFamilyEntry
   ]);
 
   return [
-    ...campaignLore,
-    ...campaignPlaces,
-    ...campaignSentients,
-    ...campaignBestiary,
-    ...campaignFlora,
-    ...campaignFactions,
-    ...campaignSystems,
-    ...campaignMeta,
-    ...campaignCharacters,
-    ...campaignScenes,
-    ...campaignAdventures,
-    ...campaignHooks,
+    ...getFilteredCollection(campaignLore),
+    ...getFilteredCollection(campaignPlaces),
+    ...getFilteredCollection(campaignSentients),
+    ...getFilteredCollection(campaignBestiary),
+    ...getFilteredCollection(campaignFlora),
+    ...getFilteredCollection(campaignFactions),
+    ...getFilteredCollection(campaignSystems),
+    ...getFilteredCollection(campaignMeta),
+    ...getFilteredCollection(campaignCharacters),
+    ...getFilteredCollection(campaignScenes),
+    ...getFilteredCollection(campaignAdventures),
+    ...getFilteredCollection(campaignHooks),
   ];
 }

@@ -6,7 +6,7 @@ import {
   type ContentIndexRow,
 } from './content-index-repo';
 import { tryGetD1BindingFromLocals } from './d1';
-import { getFilteredCollection, type ContentEnvironment } from '~/utils/content-filter';
+import { getDefaultContentEnvironment, getFilteredCollection, type ContentEnvironment } from '~/utils/content-filter';
 import { normalizeFilterValue, normalizePage, normalizeView, type DiscoveryViewMode } from './normalizers';
 import { formatAuthors } from '@utils/contributors';
 
@@ -19,6 +19,9 @@ interface LocalCollectionData {
   subtype?: string;
   excerpt?: string;
   tags?: string[];
+  publication?: string;
+  contentState?: string;
+  audienceWarnings?: string[];
   status?: string;
   authors?: string[];
   author?: string;
@@ -45,6 +48,9 @@ export interface ContentCardEntry {
     subtype?: string;
       excerpt?: string;
       tags: string[];
+      publication?: string;
+      contentState?: string;
+      audienceWarnings?: string[];
       status?: string;
       authors?: string[];
       author?: string;
@@ -145,6 +151,9 @@ function mapLocalEntryToCard(entry: LocalCollectionEntry): ContentCardEntry {
       subtype: entry.data.subtype,
       excerpt: entry.data.excerpt,
       tags: entry.data.tags ?? [],
+      publication: entry.data.publication,
+      contentState: entry.data.contentState,
+      audienceWarnings: entry.data.audienceWarnings,
       status: entry.data.status,
       authors: entry.data.authors,
       author: formatAuthors(entry.data.authors, entry.data.author),
@@ -164,6 +173,9 @@ function mapIndexRowToCard(row: ContentIndexRow): ContentCardEntry {
       subtype: row.subtype ?? undefined,
       excerpt: row.summary ?? undefined,
       tags: row.tags,
+      publication: row.publication ?? undefined,
+      contentState: row.contentState ?? undefined,
+      audienceWarnings: row.audienceWarnings,
       status: row.status ?? undefined,
       author: row.author ?? undefined,
       campaign: row.campaignSlug ?? undefined,
@@ -301,7 +313,7 @@ export async function loadIndexBackedCollectionPage(options: {
   const pageSize = options.pageSize ?? 12;
   const groupPreviewSize = options.groupPreviewSize ?? 3;
   const filters = parseFilters(options.searchParams);
-  const environment = options.environment ?? 'production';
+  const environment = options.environment ?? getDefaultContentEnvironment();
   const db = await tryGetD1BindingFromLocals(options.locals);
 
   if (!db) {

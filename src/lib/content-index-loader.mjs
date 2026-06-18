@@ -25,6 +25,14 @@ export function resolveContentLookupTarget(env = process.env) {
   };
 }
 
+function getIncludedPublicationsForLookup(target) {
+  if (target.mode === 'remote' && !target.envName) {
+    return ['publish'];
+  }
+
+  return ['preview', 'publish'];
+}
+
 export function parseWranglerJsonResults(rawOutput) {
   let parsed;
   try {
@@ -88,6 +96,8 @@ function runCollectionLookupQuery(collection, target) {
     args.push('--local');
   }
 
+  const publications = getIncludedPublicationsForLookup(target);
+  const publicationList = publications.map(quoteSqlLiteral).join(', ');
   const sql = `
 SELECT
   id,
@@ -97,6 +107,7 @@ SELECT
   campaign_slug
 FROM content_index
 WHERE collection = ${quoteSqlLiteral(collection)}
+  AND publication IN (${publicationList})
   AND r2_key != ''
 ORDER BY slug ASC, id ASC;
   `.trim();

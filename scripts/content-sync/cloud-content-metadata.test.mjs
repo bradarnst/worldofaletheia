@@ -133,6 +133,39 @@ Joined author body.
     );
 
     expect(entries[0].contentIndexRow.author).toBe('brad, barry');
+    expect(entries[0].contentIndexRow.publication).toBe('publish');
+    expect(entries[0].contentIndexRow.contentState).toBe('stable');
+    expect(entries[0].contentIndexRow.audienceWarningsJson).toBe('[]');
+  });
+
+  it('derives publication metadata and label-only audience warnings', async () => {
+    const entries = await deriveCollectionEntries(
+      { to: 'lore' },
+      'gm-preview.md',
+      `---
+title: GM Preview
+collection: lore
+type: history
+publication: preview
+contentState: unfinished
+audienceWarnings:
+  - gmSpoilers
+authors:
+  - brad
+---
+
+Spoiler body.
+`,
+      { mtime: new Date('2026-04-06T12:00:00.000Z') },
+      createCloudMock(),
+      '2026-04-06T12:30:00.000Z',
+    );
+
+    expect(entries[0].contentIndexRow).toMatchObject({
+      publication: 'preview',
+      contentState: 'unfinished',
+      audienceWarningsJson: '["gmSpoilers"]',
+    });
   });
 
   it('derives multi-author and multi-role attribution rows without source JSON fields', async () => {
@@ -405,5 +438,78 @@ Example body.
       contributorId: 'Brad Arnst',
       role: 'author',
     }));
+  });
+
+  it('excludes preview content from production content index metadata', async () => {
+    const previousMode = process.env.CONTENT_INDEX_SYNC_MODE;
+    const previousEnv = process.env.CONTENT_INDEX_SYNC_ENV;
+    process.env.CONTENT_INDEX_SYNC_MODE = 'remote';
+    process.env.CONTENT_INDEX_SYNC_ENV = '';
+
+    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'content-sync-metadata-'));
+    const vaultRoot = path.join(tempRoot, 'vault');
+    await fs.mkdir(path.join(vaultRoot, 'lore'), { recursive: true });
+
+    await fs.writeFile(
+      path.join(vaultRoot, 'lore', 'Preview.md'),
+      `---
+title: Preview
+collection: lore
+type: history
+publication: preview
+contentState: unfinished
+audienceWarnings: []
+authors:
+  - brad
+---
+
+Preview body.
+`,
+      'utf8',
+    );
+    await fs.writeFile(
+      path.join(vaultRoot, 'lore', 'Published.md'),
+      `---
+title: Published
+collection: lore
+type: history
+publication: publish
+contentState: stable
+audienceWarnings: []
+authors:
+  - brad
+---
+
+Published body.
+`,
+      'utf8',
+    );
+
+    try {
+      const metadata = await collectCloudContentMetadata(
+        {
+          repoRoot: tempRoot,
+          vaultRoot,
+          includeExtensions: ['.md'],
+          mappings: [{ from: 'lore', to: 'lore', target: 'cloud', localCleanupPath: 'src/content/lore' }],
+        },
+        { cloud: createCloudMock() },
+        new Map(),
+      );
+
+      expect(metadata.managedCollections).toEqual(['lore']);
+      expect(metadata.contentIndexRows.map((row) => row.slug)).toEqual(['Published']);
+    } finally {
+      if (previousMode === undefined) {
+        delete process.env.CONTENT_INDEX_SYNC_MODE;
+      } else {
+        process.env.CONTENT_INDEX_SYNC_MODE = previousMode;
+      }
+      if (previousEnv === undefined) {
+        delete process.env.CONTENT_INDEX_SYNC_ENV;
+      } else {
+        process.env.CONTENT_INDEX_SYNC_ENV = previousEnv;
+      }
+    }
   });
 });

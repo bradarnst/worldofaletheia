@@ -10,10 +10,11 @@ import {
   extractCampaignSlugFromEntryId,
   extractLeafSlugFromEntryId,
 } from '@utils/campaign-collections';
+import { getFilteredCollection } from '@utils/content-filter';
 import { createCampaignRequestAccessResolver } from '~/lib/campaign-request-access';
 
 export async function getStaticPaths() {
-  const campaignsCollection = await getCollection('campaigns');
+  const campaignsCollection = getFilteredCollection(await getCollection('campaigns'));
 
   return campaignsCollection.map((item) => ({
     params: { campaign: extractCampaignSlugFromEntryId(item.id) || item.id },
@@ -32,8 +33,8 @@ try {
     getCollection('campaigns'),
     getCollection('sessions'),
   ]);
-  campaignEntry = campaignsCollection.find((entry) => extractCampaignSlugFromEntryId(entry.id) === campaign) ?? null;
-  allSessions = sessionsCollection;
+  campaignEntry = getFilteredCollection(campaignsCollection).find((entry) => extractCampaignSlugFromEntryId(entry.id) === campaign) ?? null;
+  allSessions = getFilteredCollection(sessionsCollection);
 } catch (error) {
   console.error('campaign.sessions.index_unavailable', {
     campaignSlug: campaign,

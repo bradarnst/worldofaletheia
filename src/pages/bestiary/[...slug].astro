@@ -1,9 +1,10 @@
 ---
 import { getCollection, getEntry, render } from 'astro:content';
 import WorldAletheiaContentLayout from '@layouts/WorldAletheiaContentLayout.astro';
+import { getFilteredCollection } from '@utils/content-filter';
 
 export async function getStaticPaths() {
-  const bestiaryCollection = await getCollection('bestiary');
+  const bestiaryCollection = getFilteredCollection(await getCollection('bestiary'));
   return bestiaryCollection.map((item) => ({
     params: { slug: item.id },
   }));

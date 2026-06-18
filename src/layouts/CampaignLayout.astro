@@ -18,7 +18,11 @@ const { content, title, description, children } = Astro.props;
     <p class="text-blue-700">This content is part of the <strong>{content.campaign}</strong> campaign.</p>
     <div class="mt-2 flex flex-wrap gap-2">
       <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">{content.campaign}</span>
-      <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">{content.status}</span>
+      {content.publication && <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">{content.publication}</span>}
+      {content.contentState && content.contentState !== 'stable' && <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">{content.contentState}</span>}
+      {Array.isArray(content.audienceWarnings) && content.audienceWarnings.includes('gmSpoilers') && (
+        <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">GM spoilers</span>
+      )}
       {content.visibility && <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-sm">{content.visibility}</span>}
     </div>
   </div>

@@ -90,6 +90,66 @@ Currency #money and #copper are discussed here.`;
     expect(result.failures).toEqual([]);
   });
 
+  it('accepts new publication metadata and GM spoiler warnings', async () => {
+    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'content-sync-validate-'));
+    const contentRoot = path.join(tempRoot, 'src/content/lore');
+    await fs.mkdir(contentRoot, { recursive: true });
+
+    const markdown = `---
+title: Copper Bit
+collection: lore
+type: economy
+publication: preview
+contentState: unfinished
+audienceWarnings:
+  - gmSpoilers
+authors:
+  - brad
+---
+
+Currency #money is discussed here.`;
+
+    await fs.writeFile(path.join(contentRoot, 'Copper Bit.md'), markdown, 'utf8');
+
+    const result = await validateContentTree({
+      repoRoot: tempRoot,
+      mappings: [{ to: 'src/content/lore' }],
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.failures).toEqual([]);
+  });
+
+  it('rejects missing publication metadata when no legacy status exists', async () => {
+    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'content-sync-validate-'));
+    const contentRoot = path.join(tempRoot, 'src/content/lore');
+    await fs.mkdir(contentRoot, { recursive: true });
+
+    await fs.writeFile(
+      path.join(contentRoot, 'Copper Bit.md'),
+      `---
+title: Copper Bit
+collection: lore
+type: economy
+authors:
+  - brad
+---
+
+Currency text.`,
+      'utf8',
+    );
+
+    const result = await validateContentTree({
+      repoRoot: tempRoot,
+      mappings: [{ to: 'src/content/lore' }],
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.failures).toContain(
+      'src/content/lore/Copper Bit.md missing required publication metadata; add publication: preview|publish|archive (legacy status is accepted only during migration)',
+    );
+  });
+
   it('accepts contributor entries without type or authors requirements', async () => {
     const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'content-sync-validate-'));
     const contentRoot = path.join(tempRoot, 'src/content/contributors');

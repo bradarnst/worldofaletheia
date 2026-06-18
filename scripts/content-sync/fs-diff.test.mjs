@@ -45,4 +45,56 @@ describe('buildSyncDiff', () => {
     expect(diff.grouped.stale[0].destAbs).toContain(path.join('src', 'content', 'lore', 'legacy.md'));
     expect(diff.grouped.stale[0].staleReason).toBe('localCleanup');
   });
+
+  it('excludes preview markdown from production cloud diffs', async () => {
+    const previousMode = process.env.CONTENT_INDEX_SYNC_MODE;
+    const previousEnv = process.env.CONTENT_INDEX_SYNC_ENV;
+    process.env.CONTENT_INDEX_SYNC_MODE = 'remote';
+    process.env.CONTENT_INDEX_SYNC_ENV = '';
+
+    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'content-sync-diff-'));
+    const vaultRoot = path.join(tempRoot, 'vault');
+    const repoRoot = path.join(tempRoot, 'repo');
+    await fs.mkdir(path.join(vaultRoot, 'lore'), { recursive: true });
+    await fs.writeFile(
+      path.join(vaultRoot, 'lore', 'preview.md'),
+      '---\ntitle: Preview\ncollection: lore\ntype: history\npublication: preview\nauthors:\n  - brad\n---\n',
+      'utf8',
+    );
+    await fs.writeFile(
+      path.join(vaultRoot, 'lore', 'published.md'),
+      '---\ntitle: Published\ncollection: lore\ntype: history\npublication: publish\nauthors:\n  - brad\n---\n',
+      'utf8',
+    );
+
+    try {
+      const diff = await buildSyncDiff(
+        {
+          vaultRoot,
+          repoRoot,
+          includeExtensions: ['.md'],
+          mappings: [{ from: 'lore', to: 'lore', target: 'cloud' }],
+        },
+        {
+          cloud: {
+            listObjects: async () => new Map(),
+          },
+        },
+      );
+
+      expect(diff.grouped.new.map((record) => record.relativePath)).toEqual(['published.md']);
+      expect(diff.grouped.excludedByPublication.map((record) => record.relativePath)).toEqual(['preview.md']);
+    } finally {
+      if (previousMode === undefined) {
+        delete process.env.CONTENT_INDEX_SYNC_MODE;
+      } else {
+        process.env.CONTENT_INDEX_SYNC_MODE = previousMode;
+      }
+      if (previousEnv === undefined) {
+        delete process.env.CONTENT_INDEX_SYNC_ENV;
+      } else {
+        process.env.CONTENT_INDEX_SYNC_ENV = previousEnv;
+      }
+    }
+  });
 });

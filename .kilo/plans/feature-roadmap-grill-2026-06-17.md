@@ -439,28 +439,32 @@ Admin boundary:
 
 ## Implementation-Ready Plan
 
-### Phase 1: Publication Policy ADR
+### Phase 1: Publication Policy ADR — Complete
 
-Create a new ADR or ADR amendment covering:
+Status: Completed on 2026-06-18.
 
-- `publication`, `contentState`, and `audienceWarnings` field semantics.
-- Migration from legacy `status` and deprecated `secret`.
-- Production vs staging/preview content inclusion rules.
-- D1/R2 publish filters for production and staging.
-- Public UI badge/warning expectations.
-- SEO/crawler behavior for preview/staging and production.
-- Explicit statement that `gmSpoilers` is label-only.
+Completed decision artifacts:
 
-Acceptance criteria:
+- `plans/adrs/0024-content-publication-metadata-model.md` defines the narrow metadata model: `publication`, `contentState`, `audienceWarnings`, legacy `status` migration, deprecated `secret`, and `gmSpoilers` as label-only.
+- `plans/adrs/0010-global-content-source-mode-cloud-default.md` now assigns Cloudflare preview deploys to the staging content target.
+- `plans/adrs/0015-seo-and-crawler-governance-policy.md` now covers production SEO/search/sitemap exclusion for preview-only content.
+- `plans/adrs/0016-d1-as-canonical-cloud-content-index-and-r2-blob-storage.md` now covers production vs staging D1/R2 publication filters.
+- `plans/adrs/0019-campaign-membership-role-unification.md` now clarifies that `audienceWarnings: [gmSpoilers]` is never authorization input.
+- `plans/adrs/0025-portable-markdown-source-contract-and-frontmatter-authority.md` separates the source-contract decision from publication policy.
+- `plans/adrs/0001-obsidian-first-content-architecture.md` now points to ADR-0025 as a clarification.
 
-- The ADR unambiguously defines production, staging, and local behavior.
-- Production storage/index excludes `publication: preview` content.
-- Existing non-archive content migration keeps the current site broadly visible.
-- Templates default new content to preview.
+Acceptance criteria status:
 
-### Phase 2: Publication Schema/Sync Plan
+- Complete: The ADR set unambiguously defines production, staging, preview, and local behavior.
+- Complete: Production storage/index excludes `publication: preview` content by ADR-0016 policy.
+- Complete: Existing non-archive content migration keeps the current site broadly visible by ADR-0024 policy.
+- Complete: New templates default new content to preview by ADR-0024 policy.
 
-After the ADR is accepted, implement or plan:
+### Phase 2: Publication Schema/Sync Plan — Next
+
+Phase 2 entry status: ready to plan/implement from the accepted ADR set.
+
+Implement or plan:
 
 - `src/content.config.ts` schema changes.
 - Content-sync validation changes.

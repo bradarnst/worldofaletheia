@@ -15,12 +15,13 @@ import {
   pickCampaignEntryDate,
 } from '@utils/campaign-collections';
 import { getCampaignFamilyCollectionEntries } from '@utils/campaign-content';
+import { getFilteredCollection } from '@utils/content-filter';
 import { createCampaignRequestAccessResolver } from '~/lib/campaign-request-access';
 
 const isDefined = <T,>(value: T | null): value is T => value !== null;
 
 export async function getStaticPaths() {
-  const campaignsCollection = await getCollection('campaigns');
+  const campaignsCollection = getFilteredCollection(await getCollection('campaigns'));
 
   return campaignsCollection.flatMap((item) => {
     const campaign = extractCampaignSlugFromEntryId(item.id);
@@ -46,7 +47,7 @@ try {
     getCollection('campaigns'),
     getCampaignFamilyCollectionEntries(familyConfig.collection),
   ]);
-  campaignEntry = campaignsCollection.find((entry) => extractCampaignSlugFromEntryId(entry.id) === campaign) ?? null;
+  campaignEntry = getFilteredCollection(campaignsCollection).find((entry) => extractCampaignSlugFromEntryId(entry.id) === campaign) ?? null;
   familyEntries = collectionEntries.filter((entry) => entry.data.campaign === campaign);
 } catch (error) {
   console.error('campaign.family.index_unavailable', {

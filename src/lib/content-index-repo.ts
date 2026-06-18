@@ -1,4 +1,4 @@
-import { type ContentEnvironment, getIncludedStatuses } from '~/utils/content-filter';
+import { type ContentEnvironment, getIncludedPublications } from '~/utils/content-filter';
 import { type D1DatabaseLike, getD1BindingFromLocals } from './d1';
 
 type ContentIndexVisibility = 'public' | 'campaignMembers' | 'gm';
@@ -28,6 +28,9 @@ interface ContentIndexRowRecord {
   visibility: ContentIndexVisibility | null;
   campaign_slug: string | null;
   summary: string | null;
+  publication: string | null;
+  content_state: string | null;
+  audience_warnings_json: string | null;
   status: string | null;
   author: string | null;
   created_at: string | null;
@@ -49,6 +52,9 @@ export interface ContentIndexRow {
   visibility: ContentIndexVisibility | null;
   campaignSlug: string | null;
   summary: string | null;
+  publication: string | null;
+  contentState: string | null;
+  audienceWarnings: string[];
   status: string | null;
   author: string | null;
   createdAt: string | null;
@@ -180,6 +186,19 @@ function parseTagsJson(value: string | null): string[] {
   }
 }
 
+function parseStringArrayJson(value: string | null): string[] {
+  if (!value) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
 function toContentIndexRow(record: ContentIndexRowRecord): ContentIndexRow {
   return {
     id: record.id,
@@ -192,6 +211,9 @@ function toContentIndexRow(record: ContentIndexRowRecord): ContentIndexRow {
     visibility: record.visibility,
     campaignSlug: record.campaign_slug,
     summary: record.summary,
+    publication: record.publication,
+    contentState: record.content_state,
+    audienceWarnings: parseStringArrayJson(record.audience_warnings_json),
     status: record.status,
     author: record.author,
     createdAt: record.created_at,
@@ -249,10 +271,10 @@ function buildWhereClause(filters: ContentIndexBaseFilters): { sql: string; valu
     values.push(filters.collection);
   }
 
-  const statuses = getIncludedStatuses(filters.environment ?? 'production');
+  const publications = getIncludedPublications(filters.environment ?? 'production');
 
-  clauses.push(`content_index.status IN (${statuses.map(() => '?').join(', ')})`);
-  values.push(...statuses);
+  clauses.push(`content_index.publication IN (${publications.map(() => '?').join(', ')})`);
+  values.push(...publications);
 
   if (filters.type) {
     clauses.push('content_index.type = ?');
@@ -406,6 +428,9 @@ export class ContentIndexRepo {
         visibility,
         campaign_slug,
         summary,
+        publication,
+        content_state,
+        audience_warnings_json,
         status,
         author,
         created_at,
@@ -450,6 +475,9 @@ export class ContentIndexRepo {
         visibility,
         campaign_slug,
         summary,
+        publication,
+        content_state,
+        audience_warnings_json,
         status,
         author,
         created_at,
@@ -530,6 +558,9 @@ export class ContentIndexRepo {
         content_index.visibility,
         content_index.campaign_slug,
         content_index.summary,
+        content_index.publication,
+        content_index.content_state,
+        content_index.audience_warnings_json,
         content_index.status,
         content_index.author,
         content_index.created_at,
@@ -588,6 +619,9 @@ export class ContentIndexRepo {
         visibility,
         campaign_slug,
         summary,
+        publication,
+        content_state,
+        audience_warnings_json,
         status,
         author,
         created_at,

@@ -1,7 +1,13 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import {
+  AUDIENCE_WARNING_VALUES,
+  CONTENT_STATE_VALUES,
+  PUBLICATION_VALUES,
+  normalizeScalar,
+} from './publication-policy.mjs';
 
-const ARTICLE_REQUIRED_KEYS = ['title', 'collection', 'type', 'status', 'authors'];
+const ARTICLE_REQUIRED_KEYS = ['title', 'collection', 'type', 'authors'];
 const COLLECTION_VALIDATION_RULES = {
   lore: { requiredKeys: ARTICLE_REQUIRED_KEYS },
   places: { requiredKeys: ARTICLE_REQUIRED_KEYS },
@@ -25,7 +31,7 @@ const COLLECTION_VALIDATION_RULES = {
   campaignScenes: { requiredKeys: ARTICLE_REQUIRED_KEYS },
   campaignAdventures: { requiredKeys: ARTICLE_REQUIRED_KEYS },
   campaignHooks: { requiredKeys: ARTICLE_REQUIRED_KEYS },
-  contributors: { requiredKeys: ['title', 'collection', 'status', 'profileMode'] },
+  contributors: { requiredKeys: ['title', 'collection', 'profileMode'] },
 };
 const CONTRIBUTOR_PROFILE_MODES = ['standard', 'featured'];
 const ALLOWED_STATUS = [
@@ -120,12 +126,7 @@ function normalizeContributorId(value) {
 }
 
 function normalizeFrontmatterScalar(value) {
-  if (typeof value !== 'string') {
-    return null;
-  }
-
-  const trimmed = value.trim().replace(/^['"]|['"]$/g, '');
-  return trimmed ? trimmed : null;
+  return normalizeScalar(value);
 }
 
 function normalizeRelativeMarkdownId(root, file) {
@@ -306,7 +307,7 @@ function parseFrontmatter(text) {
     const key = line.slice(0, idx).trim();
     const raw = line.slice(idx + 1).trim();
 
-    if ((key === 'tags' || key === 'authors' || key === 'aliases') && raw === '') {
+    if ((key === 'tags' || key === 'authors' || key === 'aliases' || key === 'audienceWarnings') && raw === '') {
       const listItems = [];
       let cursor = i + 1;
       while (cursor < frontmatterLines.length) {
@@ -570,6 +571,52 @@ export async function validateContentTree(config) {
 
     if (Object.hasOwn(parsed.data, 'status') && !ALLOWED_STATUS.includes(parsed.data.status.replace(/['"]/g, ''))) {
       failures.push(`${relPath} invalid status value ${parsed.data.status}`);
+    }
+
+    const publication = normalizeFrontmatterScalar(parsed.data.publication);
+    const legacyStatus = normalizeFrontmatterScalar(parsed.data.status);
+    if (!publication && !legacyStatus) {
+      failures.push(
+        `${relPath} missing required publication metadata; add publication: preview|publish|archive (legacy status is accepted only during migration)`,
+      );
+    }
+
+    if (publication && !PUBLICATION_VALUES.includes(publication)) {
+      failures.push(`${relPath} invalid publication value ${parsed.data.publication}`);
+    }
+
+    if (!publication && legacyStatus) {
+      warnings.push(`${relPath} uses legacy status without publication; migrate to publication/contentState/audienceWarnings metadata`);
+    }
+
+    if (Object.hasOwn(parsed.data, 'secret')) {
+      warnings.push(`${relPath} uses deprecated secret metadata; it is ignored for access control and should be removed from templates`);
+    }
+
+    const contentState = normalizeFrontmatterScalar(parsed.data.contentState);
+    if (contentState && !CONTENT_STATE_VALUES.includes(contentState)) {
+      failures.push(`${relPath} invalid contentState value ${parsed.data.contentState}`);
+    }
+
+    if (!contentState) {
+      warnings.push(`${relPath} missing contentState; new templates should set stable|mayChange|unfinished explicitly`);
+    }
+
+    if (Object.hasOwn(parsed.data, 'audienceWarnings')) {
+      const rawWarnings = parsed.data.audienceWarnings;
+      const rawScalar = typeof rawWarnings === 'string' ? rawWarnings.trim() : null;
+      if (rawScalar && rawScalar !== '[]' && !rawScalar.startsWith('[')) {
+        failures.push(`${relPath} audienceWarnings must be a YAML array, for example audienceWarnings: [] or audienceWarnings: [gmSpoilers]`);
+      }
+
+      const audienceWarnings = normalizeStringListValue(rawWarnings);
+      for (const warning of audienceWarnings) {
+        if (!AUDIENCE_WARNING_VALUES.includes(warning)) {
+          failures.push(`${relPath} invalid audienceWarnings value ${warning}`);
+        }
+      }
+    } else {
+      warnings.push(`${relPath} missing audienceWarnings; new templates should set audienceWarnings: [] unless gmSpoilers is warranted`);
     }
 
     if (validationCollection === 'contributors' && Object.hasOwn(parsed.data, 'profileMode')) {

@@ -14,6 +14,7 @@ import {
   pickCampaignEntryDate,
 } from '@utils/campaign-collections';
 import { getAllCampaignFamilyEntries, getCampaignFamilyCollectionEntries } from '@utils/campaign-content';
+import { getFilteredCollection } from '@utils/content-filter';
 import { createCampaignRequestAccessResolver } from '~/lib/campaign-request-access';
 
 export async function getStaticPaths() {
@@ -49,7 +50,7 @@ try {
     getCampaignFamilyCollectionEntries(familyConfig.collection),
   ]);
 
-  campaignEntry = campaignsCollection.find((entry) => extractCampaignSlugFromEntryId(entry.id) === campaign) ?? null;
+  campaignEntry = getFilteredCollection(campaignsCollection).find((entry) => extractCampaignSlugFromEntryId(entry.id) === campaign) ?? null;
   familyEntry =
     collectionEntries.find(
       (entry) => entry.data.campaign === campaign && extractCampaignFamilySlugFromEntryId(entry.id) === slug,

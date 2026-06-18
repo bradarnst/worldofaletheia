@@ -10,10 +10,11 @@ import {
   extractCampaignSlugFromEntryId,
   extractLeafSlugFromEntryId,
 } from '@utils/campaign-collections';
+import { getFilteredCollection } from '@utils/content-filter';
 import { createCampaignRequestAccessResolver } from '~/lib/campaign-request-access';
 
 export async function getStaticPaths() {
-  const sessionsCollection = await getCollection('sessions');
+  const sessionsCollection = getFilteredCollection(await getCollection('sessions'));
   const uniqueParams = new Set<string>();
   const paths: Array<{ params: { campaign: string; slug: string } }> = [];
 
@@ -47,17 +48,20 @@ try {
     getCollection('sessions'),
   ]);
 
-  campaignEntry = campaignsCollection.find((entry) => {
+  const campaigns = getFilteredCollection(campaignsCollection);
+  const sessions = getFilteredCollection(sessionsCollection);
+
+  campaignEntry = campaigns.find((entry) => {
     const campaignSlug = extractCampaignSlugFromEntryId(entry.id);
     return campaignSlug === campaign || entry.data.campaign === campaign;
   }) ?? null;
 
-  sessionEntry = sessionsCollection.find((entry) => {
+  sessionEntry = sessions.find((entry) => {
     const sessionSlug = extractLeafSlugFromEntryId(entry.id);
     return entry.data.campaign === campaign && sessionSlug === slug;
   }) ?? null;
 
-  allSessionEntries = sessionsCollection.filter((entry) => entry.data.campaign === campaign);
+  allSessionEntries = sessions.filter((entry) => entry.data.campaign === campaign);
 } catch (error) {
   console.error('campaign.session.detail_unavailable', {
     campaignSlug: campaign,

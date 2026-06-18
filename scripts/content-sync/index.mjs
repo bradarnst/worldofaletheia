@@ -44,7 +44,12 @@ function describeRecordPath(record, repoRoot) {
 }
 
 function printDiffReport(diff, repoRoot) {
-  info(`Dry-run report: ${diff.counts.new} new, ${diff.counts.updated} updated, ${diff.counts.stale} stale, ${diff.counts.unchanged} unchanged.`);
+  const excludedCount = diff.counts.excludedByPublication ?? 0;
+  info(
+    `Dry-run report: ${diff.counts.new} new, ${diff.counts.updated} updated, ${diff.counts.stale} stale, ${diff.counts.unchanged} unchanged${
+      excludedCount ? `, ${excludedCount} publication-excluded` : ''
+    }.`,
+  );
 
   const show = (label, rows) => {
     if (!rows.length) return;
@@ -62,6 +67,7 @@ ${label}:`);
   show('New files', diff.grouped.new);
   show('Updated files', diff.grouped.updated);
   show('Stale files', diff.grouped.stale);
+  show('Publication-excluded files', diff.grouped.excludedByPublication ?? []);
 }
 
 function reportValidationFailure(validation, action) {

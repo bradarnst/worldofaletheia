@@ -26,6 +26,9 @@ type PublicCollectionEntry = {
     subtype?: string;
     excerpt?: string;
     tags?: string[];
+    publication?: string;
+    contentState?: string;
+    audienceWarnings?: string[];
     status?: string;
     authors?: string[];
     contributors?: Array<{ id: string; roles?: string[] }>;
@@ -85,9 +88,7 @@ export async function getStaticPaths() {
 }
 
 const { slug } = Astro.params;
-const contributorEntry = (await getCollection('contributors')).find(
-  (entry) => entry.id === slug && ['publish', 'published'].includes(entry.data.status),
-);
+const contributorEntry = getFilteredCollection(await getCollection('contributors')).find((entry) => entry.id === slug);
 
 if (!contributorEntry) {
   throw new Error(`Contributor entry with slug '${slug}' not found`);

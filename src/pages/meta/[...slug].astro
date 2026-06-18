@@ -1,9 +1,10 @@
 ---
 import { getCollection, getEntry, render } from 'astro:content';
 import UsingAletheiaContentLayout from '@layouts/UsingAletheiaContentLayout.astro';
+import { getFilteredCollection } from '@utils/content-filter';
 
 export async function getStaticPaths() {
-  const metaCollection = await getCollection('meta');
+  const metaCollection = getFilteredCollection(await getCollection('meta'));
   return metaCollection.map((item) => ({
     params: { slug: item.id },
   }));
