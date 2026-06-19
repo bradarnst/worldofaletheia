@@ -1,5 +1,6 @@
 ---
 import ArticleContextHeader from '@components/site/ArticleContextHeader.astro';
+import PublicationMetadataNotice from '@components/PublicationMetadataNotice.astro';
 import { formatAuthors } from '@utils/contributors';
 
 interface Props {
@@ -10,10 +11,25 @@ interface Props {
   visibility?: 'public' | 'campaignMembers' | 'gm';
   excerpt?: string;
   tags?: string[];
+  publication?: string;
+  contentState?: string;
+  audienceWarnings?: string[];
   type?: string;
 }
 
-const { title, authors = [], created, campaign, visibility, excerpt, tags = [], type } = Astro.props;
+const {
+  title,
+  authors = [],
+  created,
+  campaign,
+  visibility,
+  excerpt,
+  tags = [],
+  publication,
+  contentState,
+  audienceWarnings = [],
+  type,
+} = Astro.props;
 const authorsLabel = formatAuthors(authors);
 
 const details = [
@@ -25,4 +41,6 @@ const details = [
 ].filter((item): item is { label: string; value: string } => item !== null);
 ---
 
-<ArticleContextHeader title={title} summary={excerpt} details={details} tags={tags} />
+<ArticleContextHeader title={title} summary={excerpt} details={details} tags={tags}>
+  <PublicationMetadataNotice slot="notices" publication={publication} contentState={contentState} audienceWarnings={audienceWarnings} />
+</ArticleContextHeader>

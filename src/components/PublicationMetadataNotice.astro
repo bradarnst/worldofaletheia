@@ -1,0 +1,56 @@
+---
+interface Props {
+  publication?: string;
+  contentState?: string;
+  audienceWarnings?: string[];
+}
+
+const { publication, contentState, audienceWarnings = [] } = Astro.props;
+
+const contentStateLabels: Record<string, string> = {
+  mayChange: 'May change',
+  unfinished: 'Unfinished',
+};
+
+const contentStateDescriptions: Record<string, string> = {
+  mayChange: 'This content is visible, but likely to change as the setting develops.',
+  unfinished: 'This content is intentionally visible, but incomplete.',
+};
+
+const audienceWarningMessages: Record<string, string> = {
+  gmSpoilers: 'May contain GM or campaign spoilers. This is reader guidance only, not an access-control boundary.',
+};
+
+const showPreviewBadge = publication === 'preview';
+const visibleContentState = typeof contentState === 'string' && contentState !== 'stable'
+  ? {
+      label: contentStateLabels[contentState] ?? contentState,
+      description: contentStateDescriptions[contentState],
+    }
+  : null;
+const visibleWarnings = audienceWarnings
+  .map((warning) => audienceWarningMessages[warning])
+  .filter((message): message is string => Boolean(message));
+const hasMetadata = showPreviewBadge || visibleContentState || visibleWarnings.length > 0;
+---
+
+{hasMetadata && (
+  <aside class="space-y-3" aria-label="Publication metadata">
+    {(showPreviewBadge || visibleContentState) && (
+      <div class="flex flex-wrap gap-2">
+        {showPreviewBadge && <span class="badge badge-info badge-outline">Preview</span>}
+        {visibleContentState && <span class="badge badge-warning badge-outline">{visibleContentState.label}</span>}
+      </div>
+    )}
+
+    {visibleContentState?.description && (
+      <p class="text-sm leading-6 text-ink-700">{visibleContentState.description}</p>
+    )}
+
+    {visibleWarnings.map((message) => (
+      <div class="alert alert-warning border-warning/30 bg-warning/10 py-3 text-sm text-base-content" role="note">
+        <span>{message}</span>
+      </div>
+    ))}
+  </aside>
+)}

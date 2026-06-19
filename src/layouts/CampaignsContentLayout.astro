@@ -28,6 +28,9 @@ const contentExcerpt = data.summary || data.excerpt || content.excerpt;
     visibility={data.visibility || content.visibility}
     excerpt={contentExcerpt}
     tags={data.tags || content.tags}
+    publication={data.publication || content.publication}
+    contentState={data.contentState || content.contentState}
+    audienceWarnings={data.audienceWarnings || content.audienceWarnings}
     type={data.type}
   />
   <div class="min-h-screen bg-base-100">
