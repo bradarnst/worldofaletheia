@@ -256,6 +256,12 @@ export function createR2MarkdownCollectionLoader(collection) {
           enrichedFrontmatter.campaign = entry.campaignSlug;
         }
 
+        if (enrichedFrontmatter.excerpt === null) {
+          console.warn(
+            `[r2-loader] ${collection}: blank excerpt for ${entry.id}; treating as omitted. Prefer excerpt: "" or remove the key.`,
+          );
+        }
+
         // Sanitize type field if it has invalid values
         const validTypes = COLLECTION_TYPES[collection];
         if (validTypes) {

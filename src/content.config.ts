@@ -38,6 +38,10 @@ const legacyStatusSchema = z.enum([
 const publicationSchema = z.enum(['preview', 'publish', 'archive']);
 const contentStateSchema = z.enum(['stable', 'mayChange', 'unfinished']);
 const audienceWarningSchema = z.enum(['gmSpoilers']);
+const optionalExcerptSchema = z.preprocess(
+  (value) => (value === null ? undefined : value),
+  z.string().optional(),
+);
 
 function createMarkdownLoader(collection: string, pattern: string, base: string) {
   if (resolveCollectionSource(collection) === 'cloud') {
@@ -119,7 +123,7 @@ const loreSchema = baseSchema.extend({
   collection: z.literal('lore'),
   title: z.string(),
   type: z.enum(LORE_TYPES),
-  excerpt: z.string().optional(),
+  excerpt: optionalExcerptSchema,
   aletheia_date: z.string().trim().min(1).optional(),
   aletheia_date_end: z.string().trim().min(1).optional(),
 }).superRefine((data, ctx) => {
@@ -185,7 +189,7 @@ const placesSchema = baseSchema.extend({
   collection: z.literal('places'),
   title: z.string(),
   type: z.enum(PLACES_TYPES),
-  excerpt: z.string().optional(),
+  excerpt: optionalExcerptSchema,
   coordinates: z.object({
     x: z.number(),
     y: z.number(),
@@ -196,7 +200,7 @@ const sentientsSchema = baseSchema.extend({
   collection: z.literal('sentients'),
   title: z.string(),
   type: z.enum(SENTIENTS_TYPES),
-  excerpt: z.string().optional(),
+  excerpt: optionalExcerptSchema,
   alignment: z.enum(['lawful', 'neutral', 'chaotic', 'good', 'evil', 'any']).optional(),
 });
 
@@ -204,7 +208,7 @@ const bestiarySchema = baseSchema.extend({
   collection: z.literal('bestiary'),
   title: z.string(),
   type: z.enum(BESTIARY_TYPES),
-  excerpt: z.string().optional(),
+  excerpt: optionalExcerptSchema,
   challengeRating: z.number().optional(),
 });
 
@@ -212,14 +216,14 @@ const floraSchema = baseSchema.extend({
   collection: z.literal('flora'),
   title: z.string(),
   type: z.enum(FLORA_TYPES),
-  excerpt: z.string().optional(),
+  excerpt: optionalExcerptSchema,
 });
 
 const factionsSchema = baseSchema.extend({
   collection: z.literal('factions'),
   title: z.string(),
   type: z.enum(FACTIONS_TYPES),
-  excerpt: z.string().optional(),
+  excerpt: optionalExcerptSchema,
   alignment: z.enum(['lawful', 'neutral', 'chaotic', 'good', 'evil', 'any']).optional(),
 });
 
@@ -228,14 +232,14 @@ const systemsSchema = baseSchema.extend({
   title: z.string(),
   type: z.enum(SYSTEMS_TYPES),
   subtype: z.enum(['magic', 'combat', 'skill', 'language', 'character', 'economy', 'social', 'equipment']),
-  excerpt: z.string().optional(),
+  excerpt: optionalExcerptSchema,
 });
 
 const metaSchema = baseSchema.extend({
   collection: z.literal('meta'),
   title: z.string(),
   type: z.enum(META_TYPES).default('info'),
-  excerpt: z.string().optional(),
+  excerpt: optionalExcerptSchema,
 });
 
 const campaignsSchema = baseSchema.extend({
@@ -245,7 +249,7 @@ const campaignsSchema = baseSchema.extend({
   // Legacy field retained for backward compatibility with pre-family campaign metadata.
   // Campaign family is now represented by explicit collections (campaignLore, campaignPlaces, etc.).
   subtype: z.string().trim().min(1).optional(),
-  excerpt: z.string().optional(),
+  excerpt: optionalExcerptSchema,
   visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('gm'),
   start: z.date().optional(),
   end: z.date().optional(),
@@ -255,7 +259,7 @@ const sessionsSchema = baseSchema.extend({
   collection: z.literal('sessions'),
   title: z.string(),
   type: z.enum(SESSIONS_TYPES),
-  excerpt: z.string().optional(),
+  excerpt: optionalExcerptSchema,
   campaign: z.string(),
   visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('campaignMembers'),
   date: z.date().optional(),
@@ -266,7 +270,7 @@ const campaignLoreSchema = baseSchema.extend({
   collection: z.literal('campaignLore'),
   title: z.string(),
   type: z.enum(LORE_TYPES),
-  excerpt: z.string().optional(),
+  excerpt: optionalExcerptSchema,
   campaign: z.string(),
   visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('campaignMembers'),
 });
@@ -324,7 +328,7 @@ const campaignScenesSchema = baseSchema.extend({
   collection: z.literal('campaignScenes'),
   title: z.string(),
   type: z.enum(CAMPAIGN_SCENES_TYPES),
-  excerpt: z.string().optional(),
+  excerpt: optionalExcerptSchema,
   campaign: z.string(),
   visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('campaignMembers'),
   date: z.date().optional(),
@@ -334,7 +338,7 @@ const campaignAdventuresSchema = baseSchema.extend({
   collection: z.literal('campaignAdventures'),
   title: z.string(),
   type: z.enum(CAMPAIGN_ADVENTURES_TYPES),
-  excerpt: z.string().optional(),
+  excerpt: optionalExcerptSchema,
   campaign: z.string(),
   visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('campaignMembers'),
   date: z.date().optional(),
@@ -344,7 +348,7 @@ const campaignHooksSchema = baseSchema.extend({
   collection: z.literal('campaignHooks'),
   title: z.string(),
   type: z.enum(CAMPAIGN_HOOKS_TYPES),
-  excerpt: z.string().optional(),
+  excerpt: optionalExcerptSchema,
   campaign: z.string(),
   visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('campaignMembers'),
 });
