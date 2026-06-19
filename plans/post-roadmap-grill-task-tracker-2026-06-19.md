@@ -101,7 +101,7 @@ Completed work:
 
 ### 1. Publication Schema, Sync, Index, Template, and UI Implementation
 
-Status: Repository closeout complete; pending any remote migration/sync application
+Status: Complete
 Priority: P0
 Source: `.kilo/plans/feature-roadmap-grill-2026-06-17.md`, Phase 2
 Detailed plan: `plans/publication-schema-sync-index-template-ui-implementation-plan-2026-06-19.md`
@@ -132,9 +132,18 @@ Closeout checks run on 2026-06-19:
 - `pnpm content:sync:prod:dry-run` completed and excluded the preview character content from the production lane.
 - `pnpm build` passed, with existing content-loader and dynamic-route warnings unrelated to publication metadata.
 
-Remaining operational note:
+Remote closeout checks run on 2026-06-19:
 
-- If remote D1 migrations/sync have not yet been applied in an environment, run the normal operator migration/sync process before treating that remote environment as fully updated.
+- Remote staging and production D1 both have `publication`, `content_state`, and `audience_warnings_json` columns from migration `0014_content_publication_metadata.sql`.
+- Remote staging D1 contains `104` publish rows and `1` preview row; all rows point at the staging R2 target prefix.
+- Remote production D1 contains `104` publish rows and `0` preview rows; all rows point at the production R2 target prefix.
+- `pnpm content:sync:staging` and `pnpm content:sync:prod` were applied after adding lane-specific R2 prefixes.
+- Final `pnpm content:sync:staging:dry-run` reported `0 new, 0 updated, 0 stale, 216 unchanged`.
+- Final `pnpm content:sync:prod:dry-run` reported `0 new, 0 updated, 0 stale, 215 unchanged, 1 publication-excluded` and listed the preview-only Benoit Laclisse file as excluded.
+
+Operational note:
+
+- The closeout found and fixed a staging/production R2 target collision: staging now writes under `content/staging/...`, while production writes under `content/...`. D1 `r2_key` values are the authoritative active lookup path; older no-prefix R2 objects are orphaned compatibility residue and are no longer part of active lookup.
 
 Detailed handoffs currently available:
 
@@ -143,7 +152,7 @@ Detailed handoffs currently available:
 
 ### 2. Contributors/Authorship MVP Completion Check
 
-Status: Near-term candidate; depends on current implementation state
+Status: Complete
 Priority: P1
 Sources: `.kilo/plans/1780050988617-happy-panda.md`, `plans/features/contributors-and-attribution-implementation-plan-2026-05-29.md`
 
@@ -162,11 +171,11 @@ Known completed prerequisite:
 
 Recommendation:
 
-- Run this as a verification pass after or alongside publication-schema work, because both touch frontmatter, schema, sync, and UI behavior.
+- Completed on 2026-06-19. Verification found schema, routes, footer/about links, cloud metadata, and detail-header author rendering already in place. Closeout fixes added consistent card-level author chips outside the campaign-chip gate and sync-time validation for `contributors[].roles[]` values.
 
 ### 3. Breadcrumb Restoration / Verification
 
-Status: Open
+Status: Complete
 Priority: P1/P2
 Source: `plans/todos/breadcrumb-restoration-navigation-ux-2026-05-08.md`
 
@@ -178,11 +187,11 @@ Scope:
 
 Recommendation:
 
-- Keep this as a small, separate UI verification/fix slice after the publication/authorship metadata work unless breadcrumbs are currently blocking authoring or review.
+- Completed as a small shared header/layout fix on 2026-06-19. Current vault content has no non-empty `parentChain` entries to screenshot-test, but World, Using Aletheia, and Campaign detail layout paths now all pass `parentChain` and `relationships` to the shared article header renderer.
 
 ### 4. Campaign Notes and Tenancy HLD
 
-Status: Planned architecture slice
+Status: HLD complete; implementation blocked pending follow-up LLD/approval
 Priority: P2
 Source: `.kilo/plans/feature-roadmap-grill-2026-06-17.md`, Phase 3
 
@@ -196,13 +205,15 @@ Scope:
 - Conflict avoidance by forbidding same-file bidirectional editing in v1.
 - Future path to per-campaign buckets, separate indexes/databases, PostgreSQL, or Campaigns service extraction.
 
-Recommendation:
+Closeout:
 
-- Do this after publication metadata and source-contract implementation work is underway, because live campaign notes reopen source-of-truth and write-authority questions.
+- Planning artifact completed on 2026-06-19 as `plans/features/campaign-notes-tenancy-hld-2026-06-19.md`.
+- Campaign live-note implementation is not started and remains blocked/delayed until a follow-up LLD is approved.
+- The HLD keeps live notes append-only, campaign-slug scoped, and export/import based; it does not authorize implementation by itself.
 
 ### 5. Main-Site UX/Test Plan
 
-Status: Planned follow-up
+Status: Test plan complete; route-level test execution pending
 Priority: P2
 Source: `.kilo/plans/feature-roadmap-grill-2026-06-17.md`, Phase 4
 
@@ -215,9 +226,11 @@ Scope:
 - Publication/content-state badges and spoiler warnings.
 - Preview vs production expectations.
 
-Recommendation:
+Closeout:
 
-- Run after publication fields and display behavior exist, so the tests can assert the new UX instead of legacy `status` behavior.
+- Planning artifact completed on 2026-06-19 as `plans/main-site-ux-route-test-plan-2026-06-19.md`, covering auth/password flows, contact/contribute forms, campaign management entry behavior, publication badges/warnings, breadcrumbs/relationships, and staging-vs-production publication expectations.
+- Route-level UX test execution is still pending.
+- Any implementation fixes discovered by executing that test plan are not yet known or implemented.
 
 ## Deferred / Future
 

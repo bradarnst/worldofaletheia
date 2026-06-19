@@ -15,6 +15,8 @@ const { content, title, description } = Astro.props;
 const data = content.data || content;
 const contentTitle = title || data.title || content.title;
 const contentExcerpt = data.summary || data.excerpt || content.excerpt;
+const parentChain = Array.isArray(data.parentChain) ? data.parentChain : [];
+const relationships = Array.isArray(data.relationships) ? data.relationships : [];
 ---
 
 <BaseLayout title={contentTitle} description={description}>
@@ -31,6 +33,8 @@ const contentExcerpt = data.summary || data.excerpt || content.excerpt;
     audienceWarnings={data.audienceWarnings || content.audienceWarnings}
     type={data.type}
     subtype={data.subtype}
+    parentChain={parentChain}
+    relationships={relationships}
   />
   <div class="min-h-screen bg-base-100">
     <article class="reading-prose py-8 md:py-12">

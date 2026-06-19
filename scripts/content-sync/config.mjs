@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { resolvePublicationSyncLane } from './publication-policy.mjs';
 import { fail, normalizePathForDisplay, support } from './utils.mjs';
 
 const CONFIG_PATH = path.resolve('config/content-sync.config.json');
@@ -7,6 +8,13 @@ const EXAMPLE_CONFIG_PATH = path.resolve('config/content-sync.config.example.jso
 
 function trimSlashes(value) {
   return value.replace(/^\/+|\/+$/g, '');
+}
+
+function joinCloudPathSegments(...segments) {
+  return segments
+    .map((segment) => trimSlashes(String(segment || '').trim().split('\\').join('/')))
+    .filter(Boolean)
+    .join('/');
 }
 
 function isSubPath(parent, candidate) {
@@ -116,6 +124,29 @@ function normalizeContentCloudConfig(rawConfig, { requireCredentials = true } = 
   };
 }
 
+function resolveContentCloudEnvironmentPrefix(env = process.env) {
+  return resolvePublicationSyncLane(env) === 'staging' ? 'staging' : '';
+}
+
+function applyContentCloudPrefixes(mappings, contentCloud, env = process.env) {
+  if (!contentCloud) {
+    return mappings;
+  }
+
+  const environmentPrefix = resolveContentCloudEnvironmentPrefix(env);
+
+  return mappings.map((mapping) => {
+    if (mapping.target !== 'cloud') {
+      return mapping;
+    }
+
+    return {
+      ...mapping,
+      cloudTo: joinCloudPathSegments(contentCloud.prefix, environmentPrefix, mapping.to),
+    };
+  });
+}
+
 export async function loadConfig(options = {}) {
   const requireCloudCredentials = options.requireCloudCredentials !== false;
   let raw;
@@ -178,7 +209,7 @@ export async function loadConfig(options = {}) {
     configPath: CONFIG_PATH,
     repoRoot,
     vaultRoot,
-    mappings,
+    mappings: applyContentCloudPrefixes(mappings, contentCloud),
     includeExtensions,
     backupRoot,
     resolvedBackupRoot,

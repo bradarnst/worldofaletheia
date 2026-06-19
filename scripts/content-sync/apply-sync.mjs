@@ -66,6 +66,10 @@ function resolveCloudMirrorDestination(config, mapping, relativePath) {
   return path.resolve(cleanupRoot, relativePath);
 }
 
+function getCloudTargetPrefix(mapping) {
+  return mapping.cloudTo || mapping.to;
+}
+
 async function uploadCloudRecord({ rec, config, wikiIndex, cloud }) {
   const sourceExt = path.extname(rec.sourceAbs).toLowerCase();
   const contentType = contentTypeForExtension(sourceExt);
@@ -81,7 +85,9 @@ async function uploadCloudRecord({ rec, config, wikiIndex, cloud }) {
     return [key];
   }
 
-  const uploadedKeys = [await cloud.uploadFile(rec.mapping.to, rec.relativePath, rec.sourceAbs, contentType)];
+  const uploadedKeys = [
+    await cloud.uploadFile(getCloudTargetPrefix(rec.mapping), rec.relativePath, rec.sourceAbs, contentType),
+  ];
   const variantPlan = getCampaignImageVariantPlan(rec.relativePath);
   if (!variantPlan) {
     return uploadedKeys;
@@ -89,7 +95,7 @@ async function uploadCloudRecord({ rec, config, wikiIndex, cloud }) {
 
   const variantUploads = await buildCampaignImageVariantUploads(rec.sourceAbs, variantPlan);
   for (const variantUpload of variantUploads) {
-    const key = cloud.buildKey(rec.mapping.to, variantUpload.relativePath);
+    const key = cloud.buildKey(getCloudTargetPrefix(rec.mapping), variantUpload.relativePath);
     await cloud.uploadBytes(key, variantUpload.body, variantUpload.contentType);
     uploadedKeys.push(key);
   }
@@ -98,14 +104,14 @@ async function uploadCloudRecord({ rec, config, wikiIndex, cloud }) {
 }
 
 async function deleteCloudRecord(mapping, relativePath, cloud) {
-  const deletedKeys = [await cloud.deleteObject(mapping.to, relativePath)];
+  const deletedKeys = [await cloud.deleteObject(getCloudTargetPrefix(mapping), relativePath)];
   const variantPlan = getCampaignImageVariantPlan(relativePath);
   if (!variantPlan) {
     return deletedKeys;
   }
 
   for (const variant of variantPlan.variants) {
-    deletedKeys.push(await cloud.deleteObject(mapping.to, variant.relativePath));
+    deletedKeys.push(await cloud.deleteObject(getCloudTargetPrefix(mapping), variant.relativePath));
   }
 
   return deletedKeys;
@@ -198,7 +204,7 @@ export async function applySync(diff, config, staleAction, services = {}) {
         rec.cloudKey || rec.relativePath,
       );
       await ensureParent(backupTarget);
-      await cloud.downloadObject(rec.mapping.to, rec.relativePath, backupTarget);
+      await cloud.downloadObject(getCloudTargetPrefix(rec.mapping), rec.relativePath, backupTarget);
       const deletedKeys = await deleteCloudRecord(rec.mapping, rec.relativePath, cloud);
       changedFiles.push(...deletedKeys.map((key) => `cloud:${key}`), backupTarget);
     }

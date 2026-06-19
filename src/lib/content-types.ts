@@ -1,3 +1,5 @@
+import { CONTRIBUTOR_ROLE_TYPES as CONTRIBUTOR_ROLE_TYPE_VALUES } from '~/lib/contributor-role-types.mjs';
+
 /**
  * Shared content type definitions.
  * This is the single source of truth for type enums used by both:
@@ -156,15 +158,7 @@ export const CAMPAIGN_HOOKS_TYPES = [
   'other',
 ] as const;
 
-export const CONTRIBUTOR_ROLE_TYPES = [
-  'artist',
-  'editor',
-  'researcher',
-  'consultant',
-  'cartographer',
-  'photographer',
-  'other',
-] as const;
+export const CONTRIBUTOR_ROLE_TYPES = CONTRIBUTOR_ROLE_TYPE_VALUES as readonly [string, ...string[]];
 
 /**
  * All collection type enums mapped by collection name.

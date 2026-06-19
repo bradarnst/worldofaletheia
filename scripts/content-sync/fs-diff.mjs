@@ -163,6 +163,56 @@ function buildRemoteKey(prefix, relativePath) {
   return trimmedRelative ? `${trimmedPrefix}/${trimmedRelative}` : trimmedPrefix;
 }
 
+function getCloudTargetPrefix(mapping) {
+  return mapping.cloudTo || mapping.to;
+}
+
+const CAMPAIGN_FAMILY_COLLECTIONS = {
+  lore: 'campaignLore',
+  places: 'campaignPlaces',
+  sentients: 'campaignSentients',
+  bestiary: 'campaignBestiary',
+  flora: 'campaignFlora',
+  factions: 'campaignFactions',
+  systems: 'campaignSystems',
+  meta: 'campaignMeta',
+  characters: 'campaignCharacters',
+  scenes: 'campaignScenes',
+  adventures: 'campaignAdventures',
+  hooks: 'campaignHooks',
+};
+
+const CAMPAIGN_FAMILY_SEGMENT_PATTERN = Object.keys(CAMPAIGN_FAMILY_COLLECTIONS).join('|');
+
+function getContentIndexCollectionForPath(mapping, relativePath) {
+  if (mapping.collection) {
+    return mapping.collection;
+  }
+
+  if (mapping.to !== 'campaigns') {
+    return mapping.to;
+  }
+
+  if (/^[^/]+\/sessions\/[^/]+\.md$/i.test(relativePath)) {
+    return 'sessions';
+  }
+
+  const familyMatch = new RegExp(`^[^/]+\/(${CAMPAIGN_FAMILY_SEGMENT_PATTERN})\/.+\.md$`, 'i').exec(relativePath);
+  if (familyMatch) {
+    return CAMPAIGN_FAMILY_COLLECTIONS[familyMatch[1].toLowerCase()];
+  }
+
+  return 'campaigns';
+}
+
+function getPreviousEtag(previousEtags, mapping, relativePath) {
+  if (!previousEtags) {
+    return null;
+  }
+
+  return previousEtags.get(buildContentIdKey(getContentIndexCollectionForPath(mapping, relativePath), relativePath)) ?? null;
+}
+
 function resolveVirtualDestForMapping(config, mapping, relativePath) {
   const cleanupRoot = mapping.localCleanupPath
     ? path.resolve(config.repoRoot, mapping.localCleanupPath)
@@ -261,7 +311,7 @@ export async function buildSyncDiff(config, services = {}, { previousEtags = nul
       throw new Error('Cloud mappings require content cloud configuration.');
     }
 
-    const remoteObjects = await cloud.listObjects(mapping.to, config.includeExtensions);
+    const remoteObjects = await cloud.listObjects(getCloudTargetPrefix(mapping), config.includeExtensions);
     const sourceRel = new Map(
       sourceFiles.map((abs) => [normalizePathForDisplay(path.relative(sourceRoot, abs)), abs]),
     );
@@ -271,7 +321,7 @@ export async function buildSyncDiff(config, services = {}, { previousEtags = nul
     for (const rel of allRel) {
       const sourceAbs = sourceRel.get(rel) || null;
       const remoteMeta = remoteRel.get(rel) || null;
-      const cloudKey = buildRemoteKey(mapping.to, rel);
+      const cloudKey = buildRemoteKey(getCloudTargetPrefix(mapping), rel);
 
       if (sourceAbs && !remoteMeta) {
         records.push({
@@ -294,8 +344,7 @@ export async function buildSyncDiff(config, services = {}, { previousEtags = nul
         // matches how cloud-content-metadata.mjs computes the etag, so the comparison
         // is stable and avoids false positives from comparing raw vs transformed content.
         if (previousEtags) {
-          const contentIdKey = buildContentIdKey(mapping.collection || mapping.to, rel);
-          const previousEtag = previousEtags.get(contentIdKey);
+          const previousEtag = getPreviousEtag(previousEtags, mapping, rel);
           if (previousEtag) {
             const transformedMd5 = await computeSourceEtag(sourceAbs, mapping, rel, config, wikiIndex);
             equal = transformedMd5 === previousEtag;
@@ -303,7 +352,7 @@ export async function buildSyncDiff(config, services = {}, { previousEtags = nul
         }
 
         // Fallback to R2 ETag comparison only when no D1 record exists (new content).
-        if (!equal && !previousEtags?.has(buildContentIdKey(mapping.collection || mapping.to, rel))) {
+        if (!equal && !getPreviousEtag(previousEtags, mapping, rel)) {
           if (isPlainMd5Hash(remoteHash)) {
             const localHash = await fileMd5Hex(sourceAbs);
             equal = localHash === remoteHash;

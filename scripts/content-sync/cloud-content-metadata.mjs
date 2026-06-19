@@ -336,6 +336,10 @@ function createContentIndexRow({
   };
 }
 
+function getCloudTargetPrefix(mapping) {
+  return mapping.cloudTo || mapping.to;
+}
+
 function createContentSearchRow({
   contentEntry,
   frontmatterRecord,
@@ -367,7 +371,7 @@ export async function deriveCollectionEntries(mapping, relativePath, transformed
   const bodyText = transformedMarkdown.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, '');
   const sourceEtag = buildSourceEtag(transformedMarkdown);
   const lastModified = sourceStats.mtime.toISOString();
-  const r2Key = cloud.buildKey(mapping.to, normalizedRelative);
+  const r2Key = cloud.buildKey(getCloudTargetPrefix(mapping), normalizedRelative);
   const visibility = toCampaignVisibility(frontmatterRecord.visibility);
 
   const buildEntry = ({ collection, id, slug, routePath, campaignSlug }) => {

@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { CONTRIBUTOR_ROLE_TYPES } from '../../src/lib/contributor-role-types.mjs';
 import {
   AUDIENCE_WARNING_VALUES,
   CONTENT_STATE_VALUES,
@@ -175,6 +176,57 @@ function extractContributorRoleIds(frontmatterLines = []) {
   }
 
   return ids;
+}
+
+function collectContributorRoleValidationFailures(frontmatterLines = [], relPath) {
+  const failures = [];
+  const contributorsStart = frontmatterLines.findIndex((line) => /^contributors\s*:\s*$/.test(line));
+  if (contributorsStart === -1) {
+    return failures;
+  }
+
+  for (let index = contributorsStart + 1; index < frontmatterLines.length; index += 1) {
+    const line = frontmatterLines[index];
+    if (/^\S/.test(line)) {
+      break;
+    }
+
+    const rolesMatch = /^(\s*)roles\s*:\s*(.*?)\s*$/.exec(line);
+    if (!rolesMatch) {
+      continue;
+    }
+
+    const rolesIndent = rolesMatch[1].length;
+    const inlineRoles = normalizeStringListValue(rolesMatch[2]);
+    const roles = [...inlineRoles];
+
+    if (inlineRoles.length === 0) {
+      for (let cursor = index + 1; cursor < frontmatterLines.length; cursor += 1) {
+        const candidate = frontmatterLines[cursor];
+        if (/^\S/.test(candidate)) {
+          break;
+        }
+
+        const candidateIndent = /^\s*/.exec(candidate)?.[0].length ?? 0;
+        if (candidateIndent <= rolesIndent) {
+          break;
+        }
+
+        const listMatch = /^\s*-\s*(.+?)\s*$/.exec(candidate);
+        if (listMatch) {
+          roles.push(...normalizeStringListValue(listMatch[1]));
+        }
+      }
+    }
+
+    for (const role of roles) {
+      if (!CONTRIBUTOR_ROLE_TYPES.includes(role)) {
+        failures.push(`${relPath} invalid contributors role value ${role}`);
+      }
+    }
+  }
+
+  return failures;
 }
 
 function collectContributorReferences(parsed) {
@@ -568,6 +620,8 @@ export async function validateContentTree(config) {
         failures.push(`${relPath} authors must contain at least one contributor id`);
       }
     }
+
+    failures.push(...collectContributorRoleValidationFailures(parsed.frontmatterLines, relPath));
 
     if (Object.hasOwn(parsed.data, 'status') && !ALLOWED_STATUS.includes(parsed.data.status.replace(/['"]/g, ''))) {
       failures.push(`${relPath} invalid status value ${parsed.data.status}`);

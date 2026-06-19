@@ -233,6 +233,57 @@ Currency text.`,
     );
   });
 
+  it('rejects unsupported contributor attribution roles', async () => {
+    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'content-sync-validate-'));
+    const loreRoot = path.join(tempRoot, 'src/content/lore');
+    const contributorRoot = path.join(tempRoot, 'src/content/contributors');
+    await fs.mkdir(loreRoot, { recursive: true });
+    await fs.mkdir(contributorRoot, { recursive: true });
+
+    await fs.writeFile(
+      path.join(contributorRoot, 'known-artist.md'),
+      `---
+title: Known Artist
+collection: contributors
+status: publish
+profileMode: standard
+---
+
+Contributor profile body.`,
+      'utf8',
+    );
+
+    await fs.writeFile(
+      path.join(loreRoot, 'Copper Bit.md'),
+      `---
+title: Copper Bit
+collection: lore
+type: economy
+status: draft
+authors:
+  - known-artist
+contributors:
+  - id: known-artist
+    roles:
+      - illustrator
+---
+
+Currency text.`,
+      'utf8',
+    );
+
+    const result = await validateContentTree({
+      repoRoot: tempRoot,
+      mappings: [
+        { to: 'src/content/lore', collection: 'lore' },
+        { to: 'src/content/contributors', collection: 'contributors' },
+      ],
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.failures).toContain('src/content/lore/Copper Bit.md invalid contributors role value illustrator');
+  });
+
   it('rejects markdown contributor links without contributor profiles', async () => {
     const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'content-sync-validate-'));
     const loreRoot = path.join(tempRoot, 'src/content/lore');

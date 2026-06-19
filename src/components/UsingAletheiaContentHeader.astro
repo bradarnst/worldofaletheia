@@ -15,6 +15,8 @@ interface Props {
   audienceWarnings?: string[];
   type?: string;
   subtype?: string;
+  parentChain?: Array<{ label: string; href: string }>;
+  relationships?: Array<{ label: string; href: string; kind?: 'partOf' | 'connectedTo' }>;
 }
 
 const {
@@ -29,6 +31,8 @@ const {
   audienceWarnings = [],
   type,
   subtype,
+  parentChain = [],
+  relationships = [],
 } = Astro.props;
 const authorsLabel = formatAuthors(authors);
 
@@ -41,6 +45,13 @@ const details = [
 ].filter((item): item is { label: string; value: string } => item !== null);
 ---
 
-<ArticleContextHeader title={title} summary={excerpt} details={details} tags={tags}>
+<ArticleContextHeader
+  title={title}
+  summary={excerpt}
+  breadcrumbs={parentChain}
+  details={details}
+  relationships={relationships}
+  tags={tags}
+>
   <PublicationMetadataNotice slot="notices" publication={publication} contentState={contentState} audienceWarnings={audienceWarnings} />
 </ArticleContextHeader>

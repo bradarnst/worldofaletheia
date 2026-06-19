@@ -180,7 +180,7 @@ const robots = effectiveVisibility === 'public' && canViewSession && !contentUna
   : 'noindex, nofollow';
 ---
 
-<CampaignsContentLayout content={layoutContent} title={title} robots={robots}>
+<CampaignsContentLayout content={layoutContent} title={title} robots={robots} showContextMetadata={canViewSession && !contentUnavailable}>
   <article class="reading-prose">
     <!-- Breadcrumb -->
     <nav class="mb-6 text-sm meta-muted not-prose">

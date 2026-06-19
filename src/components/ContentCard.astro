@@ -40,6 +40,7 @@ const authorsLabel = Array.isArray(data.authors) && data.authors.length > 0
   : typeof data.author === 'string' && data.author.trim().length > 0
     ? data.author
     : null;
+const shouldShowMetadataChips = (showCampaign && data.campaign) || authorsLabel;
 const createdDate = data.created instanceof Date
   ? data.created
   : data['created-date'] instanceof Date
@@ -70,9 +71,9 @@ const createdDate = data.created instanceof Date
 
   {showExcerpt && data.excerpt && <p class="text-sm leading-7 text-ink-800">{data.excerpt}</p>}
 
-  {showCampaign && data.campaign && (
+  {shouldShowMetadataChips && (
     <div class="mt-4 flex flex-wrap gap-2 text-xs text-ink-700">
-      <span class="rounded-full border border-base-300/80 bg-base-200/70 px-3 py-1">{data.campaign}</span>
+      {showCampaign && data.campaign && <span class="rounded-full border border-base-300/80 bg-base-200/70 px-3 py-1">{data.campaign}</span>}
       {authorsLabel && <span class="rounded-full border border-base-300/80 bg-base-200/70 px-3 py-1">{authorsLabel}</span>}
     </div>
   )}

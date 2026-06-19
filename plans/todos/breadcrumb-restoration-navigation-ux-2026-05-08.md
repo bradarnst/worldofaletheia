@@ -1,7 +1,7 @@
 ---
 title: Breadcrumb Restoration as Deferred Navigation UX Work
 dateAdded: 2026-05-08
-status: Open
+status: Complete
 priority: Medium
 relatedFiles:
   - plans/todos/index.md
@@ -34,3 +34,10 @@ Likely affected shared surfaces/components:
 - Breadcrumbs are visible again on supported article/detail pages.
 - The implementation is treated as a shared navigation UX fix, separate from Sorcerer Spells or admin-dashboard scope.
 - The restored behavior matches the documented article-header expectations closely enough to avoid future ambiguity.
+
+## Closeout — 2026-06-19
+
+- `ArticleContextHeader` already rendered breadcrumbs when given a non-empty `breadcrumbs` array.
+- World/Canon detail pages were already passing `parentChain` and `relationships` through the shared article header path.
+- Using Aletheia and Campaign detail pages now pass `parentChain` and `relationships` through the same shared article header path, so future non-empty metadata renders consistently across the content layout family.
+- Current vault verification found no real non-empty `parentChain` entries to screenshot-test; the active content only had empty/template `parentChain` values.

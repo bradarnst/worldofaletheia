@@ -167,7 +167,7 @@ const hasRestrictedSectionRecords = sectionCards.some((section) => section.restr
 const loginHref = `/login?next=${encodeURIComponent(Astro.url.pathname + Astro.url.search)}`;
 ---
 
-<CampaignsContentLayout content={layoutContent} robots={robots}>
+<CampaignsContentLayout content={layoutContent} robots={robots} showContextMetadata={canView && !contentUnavailable}>
   {canView && Content && !contentUnavailable ? (
     <article class="reading-prose">
       <Content />
