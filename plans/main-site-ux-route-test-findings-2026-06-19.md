@@ -83,6 +83,15 @@ Verification:
 | Staging route URL | Blocked | `https://staging.worldofaletheia.com` does not resolve from this environment; use the active Cloudflare Pages preview/staging URL for manual verification. |
 | Production preview-only direct URL | Fixed in source, deploy pending | Current deployed production returned HTTP 500 for guessed preview-only routes before the 404 fix. After deploy, this should verify as non-resolving HTTP 404/noindex content. |
 
+## Follow-up Verification on 2026-06-20
+
+- `pnpm content:sync:staging:dry-run` still passes: `0 new, 0 updated, 0 stale, 216 unchanged`.
+- `pnpm content:sync:prod:dry-run` still passes with the expected exclusion: `0 new, 0 updated, 0 stale, 215 unchanged, 1 publication-excluded`; excluded `cloud://barry/characters/Benoit Laclisse.md`.
+- Staging D1 still contains the preview-only row: `collection = campaignCharacters`, `campaign_slug = barry`, `slug = Benoit Laclisse`, `r2_key = content/staging/campaigns/barry/characters/Benoit Laclisse.md`.
+- Production D1 still contains only `publication = publish` rows (`104`) and no preview rows.
+- `pnpm build` passes with the existing content-loader missing-directory warnings and dynamic-route `getStaticPaths()` warnings.
+- Production route verification is still deploy-blocked/pending: `https://worldofaletheia.com/campaigns/barry/characters/Benoit%20Laclisse`, `https://worldofaletheia.com/campaigns/barry/characters/benoit-laclisse`, and `https://worldofaletheia.com/campaigns/barry/characters/not-a-real-entry` returned HTTP 500 from the deployed site at verification time. This means commit `349499a` is not yet observable on production or production is still serving behavior equivalent to the pre-fix route.
+
 ## Remaining Manual Lanes
 
 - Use real local `.dev.vars` or operator-provided staging env to complete email/password sign-up, sign-in, sign-out, and password reset flows.

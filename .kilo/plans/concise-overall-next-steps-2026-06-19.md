@@ -1,20 +1,24 @@
 # Concise Overall Next Steps and Handoff
 
 Date: 2026-06-19
-Status: Current concise tracker after publication/authorship/breadcrumb closeout
+Last updated: 2026-06-20
+Status: Current concise tracker after publication/authorship/breadcrumb closeout and first UX route-test pass
 Primary tracker: `plans/post-roadmap-grill-task-tracker-2026-06-19.md`
+First route-test findings: `plans/main-site-ux-route-test-findings-2026-06-19.md`
 
 ## How to Read This
 
-This file is the short handoff view for the next planning session. It separates completed work, planning artifacts, pending test execution, blocked implementation, and deferred/external items. “Complete” means coded/applied/verified or intentionally closed; it does not mean every related future idea is done.
+This file is the short handoff view for the next work session. It separates completed work, partial test execution, remaining manual verification, blocked implementation, and deferred/external items. "Complete" means coded/applied/verified or intentionally closed; it does not mean every related future idea is done.
 
 ## Current Priority Order
 
-1. Complete the remaining manual main-site UX route test lanes and record follow-up findings.
-2. Deploy/verify fixes discovered by the first route-level pass.
-3. Draft a Campaign Notes/Tenancy LLD only if live notes are chosen as the next implementation track.
+1. Verify the committed route-test fixes after deployment, especially that preview-only/missing campaign-family URLs return 404/noindex instead of HTTP 500 in production.
+2. Complete the remaining manual main-site UX route lanes with operator env/test accounts and record follow-up findings.
+3. If the manual lanes remain blocked by env/account access, draft the Campaign Notes/Tenancy LLD only if live notes are chosen as the next active implementation track.
 4. Decide whether deferred contributor/image enhancements deserve promotion into active work.
 5. Keep external and non-owned items out of this repo's implementation queue.
+
+Latest verification update, 2026-06-20: staging/prod content-sync dry runs and D1 publication checks still match expectations, and `pnpm build` passes. Production direct checks for the preview-only/missing campaign-family routes still returned HTTP 500 from the deployed site, so the source fix in commit `349499a` remains deploy-verification pending rather than closed.
 
 ## Phase and Workstream Summary
 
@@ -23,9 +27,9 @@ This file is the short handoff view for the next planning session. It separates 
 | Phase 1: Publication policy ADR set | Complete | ADRs define `publication`, `contentState`, and `audienceWarnings`; preview/staging, SEO/search exclusion, D1/R2 filtering, campaign auth boundaries, and ADR-0001 clarification are documented. | No known next step. | None known. |
 | Phase 2: Publication schema, sync, index, template, and UI | Complete | Schema/sync/filtering/D1 columns/UI wiring are in place; Obsidian templates emit publication metadata; remote staging/prod migrations and syncs were applied; production excludes `publication: preview`; staging uses `content/staging/...`, production uses `content/...`. | Optional cleanup only: remove obsolete legacy/no-prefix R2 objects if desired. | None known. |
 | Contributors/Authorship MVP completion check | Core complete; enhancements deferred | Canonical `authors` verified; contributor collection/routes/footer/about links exist; D1 attribution/search plumbing verified; card/header author display fixed; sync validates `contributors[].roles[]`. | Decide whether image attribution convention/docs, stronger image-credit validation, and site-wide lightbox/full-size image UX should enter active work. | Deferred enhancements need separate prioritization; not required for core authorship MVP. |
-| Breadcrumb restoration / verification | Complete | Shared article header already rendered breadcrumbs; World, Using Aletheia, and Campaign detail layouts now pass `parentChain` and `relationships`; todo closed. | Visually verify when real non-empty `parentChain` content exists. | Current vault has no non-empty `parentChain` examples. |
+| Breadcrumb restoration / verification | Complete | Shared article header already rendered breadcrumbs; World, Using Aletheia, and Campaign detail layouts pass `parentChain` and `relationships`; todo closed. | Visually verify when real non-empty `parentChain` content exists. | Current vault has no non-empty `parentChain` examples. |
 | Phase 3: Campaign Notes/Tenancy HLD | HLD complete; implementation blocked/delayed | HLD written at `plans/features/campaign-notes-tenancy-hld-2026-06-19.md`; append-only live notes, campaign-slug tenancy, export/import sync-back, and future separation path are defined at a high level. | Write an LLD before implementation; then plan data model, authz, append-only note storage, export/sync-back, and UI. | Blocked pending LLD/approval. No live-note implementation should start before that. |
-| Phase 4: Main-site UX route testing | Partial execution recorded; manual lanes remain | Test plan written at `plans/main-site-ux-route-test-plan-2026-06-19.md`; first findings logged at `plans/main-site-ux-route-test-findings-2026-06-19.md`; local route smoke and remote D1/R2 publication checks ran; local startup order and missing campaign-family entry 404 behavior were fixed. | Complete account/form success-path testing with operator env/test accounts; verify active staging URL; verify production after deploy. | Needs test accounts/env access, active staging/preview hostname, and production deploy verification. |
+| Phase 4: Main-site UX route testing | Partial execution recorded; source fixes committed | Test plan written at `plans/main-site-ux-route-test-plan-2026-06-19.md`; first findings logged at `plans/main-site-ux-route-test-findings-2026-06-19.md`; local route smoke and remote D1/R2 publication checks ran; local startup order and missing campaign-family entry 404 behavior were fixed and committed in `349499a`. | Complete account/form success-path testing with operator env/test accounts; verify active staging URL; verify production after deploy. | Needs test accounts/env access, active staging/preview hostname, and production deploy verification. |
 | Todo pipeline cleanup | Complete | Search S2 is done/good enough; sorcerer spell-list UX removed from active next-slice status; external ownership boundaries clarified; related-resource enrichment remains future. | No known next step. | None known. |
 
 ## Contributors/Authorship Phase Snapshot
@@ -50,28 +54,28 @@ This file is the short handoff view for the next planning session. It separates 
 | Campaign media image variants | Backlog | Not current sprint. |
 | Image attribution validation and lightbox | Deferred contributor follow-ups | Attribution validation should begin as warnings; lightbox should be site-wide, not contributor-specific. |
 
-## Active Next Planning Options
+## Active Next Options
 
-### Option A: Execute Main-Site UX Route Tests
+### Option A: Finish Main-Site UX Route Testing
 
-Recommended next planning target. The plan already exists and can produce concrete implementation fixes.
+Recommended next target when operator env/test accounts are available. The first pass already produced and committed concrete fixes; the remaining work is verification-heavy.
 
 Inputs:
 
 - `plans/main-site-ux-route-test-plan-2026-06-19.md`
+- `plans/main-site-ux-route-test-findings-2026-06-19.md`
 - Current publication and breadcrumb closeout state in `plans/post-roadmap-grill-task-tracker-2026-06-19.md`
-- First findings pass in `plans/main-site-ux-route-test-findings-2026-06-19.md`
 - Test account/env access for local Cloudflare parity, staging, and production
 
-Expected planning output:
+Expected output:
 
-- A test execution checklist with exact route/account/environment order.
-- A findings log format.
-- A fix-triage policy that separates production blockers, staging-only issues, copy/UX polish, and deferred work.
+- Follow-up findings appended or filed for remaining manual lanes.
+- Production verification that missing/preview-only campaign-family URLs no longer return HTTP 500 after deploy.
+- Clear triage for any account/form/campaign-role issues found during manual verification.
 
 ### Option B: Campaign Notes/Tenancy LLD
 
-Only choose this if live notes are intentionally promoted into active planning.
+Choose this only if live notes are intentionally promoted into active planning or if manual route-test lanes remain blocked.
 
 Inputs:
 
@@ -79,7 +83,7 @@ Inputs:
 - Better Auth plus exact `campaign_memberships.campaign_slug` and role boundaries
 - ADR-0001, ADR-0004, ADR-0024, and ADR-0025
 
-Expected planning output:
+Expected output:
 
 - Data model and migration strategy for append-only live-note events.
 - Authorization and tenancy checks for every route/query/object key.
@@ -95,7 +99,7 @@ Inputs:
 - `plans/features/contributors-and-attribution-implementation-plan-2026-05-29.md`
 - Current contributor validation and card/header display behavior
 
-Expected planning output:
+Expected output:
 
 - Decision on image-credit frontmatter convention.
 - Warning-first validation plan for image credit mismatches.
@@ -115,16 +119,17 @@ Do not pull these into the main-site implementation queue:
 
 ## Handoff Prompt for Next Session
 
-Use this prompt to start the next planning session:
+Use this prompt to start the next session:
 
 ```text
-You are planning the next World of Aletheia work session. Start in read-only planning mode. Read these files first:
+You are continuing the next World of Aletheia work session. Start by reading these files:
 
 1. AGENTS.md
 2. plans/post-roadmap-grill-task-tracker-2026-06-19.md
 3. .kilo/plans/concise-overall-next-steps-2026-06-19.md
 4. plans/main-site-ux-route-test-plan-2026-06-19.md
-5. plans/features/campaign-notes-tenancy-hld-2026-06-19.md
+5. plans/main-site-ux-route-test-findings-2026-06-19.md
+6. plans/features/campaign-notes-tenancy-hld-2026-06-19.md
 
 Current state:
 
@@ -132,11 +137,11 @@ Current state:
 - Contributors/Authorship MVP is core-complete; only image attribution convention/validation and lightbox UX remain deferred.
 - Breadcrumb restoration is complete in shared layout/header plumbing; visual verification waits for real non-empty parentChain content.
 - Campaign Notes/Tenancy has an HLD only; implementation is blocked until an LLD is approved.
-- Main-site UX route testing has a written test plan but execution is pending.
+- Main-site UX route testing has a first findings pass. Local route smoke and remote publication checks passed. Two fixes were committed in `349499a`: `dev:cf:auth` now prepares local content before build, and missing campaign-family entries return 404 fallback content instead of throwing HTTP 500.
 
-Recommended planning target:
+Recommended next target:
 
-Plan execution of `plans/main-site-ux-route-test-plan-2026-06-19.md` first. Produce a concise route/environment/account checklist, a findings log structure, and a fix-triage policy. Do not implement fixes during planning. If route testing is not the chosen next target, justify why Campaign Notes LLD or contributor/image enhancements should outrank it.
+Finish the remaining main-site UX route-test lanes if operator env/test accounts and an active staging/preview hostname are available. Verify post-deploy production behavior for preview-only/missing campaign-family URLs. If those lanes remain blocked, move to a Campaign Notes/Tenancy LLD planning session rather than implementing live notes.
 
 Hard constraints:
 
