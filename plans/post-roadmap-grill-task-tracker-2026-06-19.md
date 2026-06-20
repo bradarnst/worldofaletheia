@@ -213,7 +213,7 @@ Closeout:
 
 ### 5. Main-Site UX/Test Plan
 
-Status: Test plan complete; route-level test execution pending
+Status: Partial route-level execution recorded; manual lanes remain
 Priority: P2
 Source: `.kilo/plans/feature-roadmap-grill-2026-06-17.md`, Phase 4
 
@@ -226,11 +226,13 @@ Scope:
 - Publication/content-state badges and spoiler warnings.
 - Preview vs production expectations.
 
-Closeout:
+Closeout / current findings:
 
 - Planning artifact completed on 2026-06-19 as `plans/main-site-ux-route-test-plan-2026-06-19.md`, covering auth/password flows, contact/contribute forms, campaign management entry behavior, publication badges/warnings, breadcrumbs/relationships, and staging-vs-production publication expectations.
-- Route-level UX test execution is still pending.
-- Any implementation fixes discovered by executing that test plan are not yet known or implemented.
+- First execution findings were recorded on 2026-06-19 as `plans/main-site-ux-route-test-findings-2026-06-19.md`.
+- Local route smoke checks and remote publication D1/R2 checks passed for the covered lanes.
+- Fixes from the first pass: local `dev:cf:auth` now prepares local content before building, and missing campaign-family entries now return HTTP 404 fallback content instead of throwing a server error.
+- Remaining manual lanes need operator/test-account env: auth success paths, Mailjet sandbox success behavior, anonymous/non-member/member/GM campaign-management checks, active staging hostname verification, and post-deploy production verification.
 
 ## Deferred / Future
 

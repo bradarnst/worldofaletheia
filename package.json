@@ -11,7 +11,7 @@
     "preview": "astro preview",
     "dev:cf:build": "CONTENT_SOURCE_MODE=cloud CONTENT_LOADER_D1_MODE=local astro build",
     "dev:cf": "wrangler dev ./dist/server/entry.mjs --config ./dist/server/wrangler.json --local",
-    "dev:cf:auth": "pnpm dev:cf:build && pnpm db:migrate:plan:local && pnpm dev:cf",
+    "dev:cf:auth": "pnpm content:sync:local && pnpm dev:cf:build && pnpm dev:cf",
     "astro": "astro",
     "test": "vitest run",
     "db:migrate:plan:local": "node ./scripts/db-migrate-auth-plan.mjs --mode=local",

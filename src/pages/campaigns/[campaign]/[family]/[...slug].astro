@@ -66,12 +66,14 @@ try {
   contentUnavailable = true;
 }
 
-if (!campaignEntry && !contentUnavailable) {
-  throw new Error(`Campaign not found for slug "${campaign}"`);
-}
+const notFoundReason = !contentUnavailable && !campaignEntry
+  ? 'campaign'
+  : !contentUnavailable && !familyEntry
+    ? 'entry'
+    : null;
 
-if (!familyEntry && !contentUnavailable) {
-  throw new Error(`Campaign ${familyConfig.label} entry not found for campaign "${campaign}" and slug "${slug}"`);
+if (notFoundReason) {
+  Astro.response.status = 404;
 }
 
 let Content = null;
@@ -142,14 +144,19 @@ const canViewEntry =
       })
     : false;
 
-const entryTitle = familyEntry?.data.title ?? `Restricted ${familyConfig.label.toLowerCase()} entry`;
+const isNotFound = notFoundReason !== null;
+const entryTitle = isNotFound
+  ? `${familyConfig.label} entry not found`
+  : familyEntry?.data.title ?? `Restricted ${familyConfig.label.toLowerCase()} entry`;
 const campaignTitle = campaignEntry?.data.title ?? campaign ?? 'Campaign';
 const title = `${entryTitle} - ${campaignTitle}`;
 const layoutContent =
   familyEntry ??
   {
     title: entryTitle,
-    excerpt: `${familyConfig.label} content is temporarily unavailable or restricted.`,
+    excerpt: isNotFound
+      ? `${familyConfig.label} content was not found in this environment.`
+      : `${familyConfig.label} content is temporarily unavailable or restricted.`,
     authors: ['World of Aletheia'],
     visibility: 'gm',
     tags: [],
@@ -187,7 +194,16 @@ const robots = effectiveVisibility === 'public' && canViewEntry && !contentUnava
       )}
     </header>
 
-    {canViewEntry && Content && !contentUnavailable ? (
+    {isNotFound ? (
+      <section>
+        <h2>Campaign content not found</h2>
+        <p>
+          This {familyConfig.label.toLowerCase()} entry was not found for this campaign in the current publication
+          environment.
+        </p>
+        <p><a href={`/campaigns/${campaign}`} class="ui-button ui-button--secondary ui-button--sm">Back to campaign</a></p>
+      </section>
+    ) : canViewEntry && Content && !contentUnavailable ? (
       <Content />
     ) : (
       <section>
