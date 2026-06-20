@@ -81,7 +81,7 @@ Verification:
 | Production D1 publication rows | Pass: `publish = 104`; no preview rows. |
 | Production D1 R2 prefix | Pass: `0` rows using `content/staging/...`; `0` rows outside `content/...`. |
 | Staging route URL | Blocked | `https://staging.worldofaletheia.com` does not resolve from this environment; use the active Cloudflare Pages preview/staging URL for manual verification. |
-| Production preview-only direct URL | Fixed in source, deploy pending | Current deployed production returned HTTP 500 for guessed preview-only routes before the 404 fix. After deploy, this should verify as non-resolving HTTP 404/noindex content. |
+| Production preview-only direct URL | Fixed in source; deployed | Earlier deployed production returned HTTP 500 for guessed preview-only routes before the 404 fix. Owner reports the current deployment no longer has this active 500 thread; retain this row as historical context unless a fresh check reproduces the failure. |
 
 ## Follow-up Verification on 2026-06-20
 
@@ -91,6 +91,12 @@ Verification:
 - Production D1 still contains only `publication = publish` rows (`104`) and no preview rows.
 - `pnpm build` passes with the existing content-loader missing-directory warnings and dynamic-route `getStaticPaths()` warnings.
 - Production route verification is still deploy-blocked/pending: `https://worldofaletheia.com/campaigns/barry/characters/Benoit%20Laclisse`, `https://worldofaletheia.com/campaigns/barry/characters/benoit-laclisse`, and `https://worldofaletheia.com/campaigns/barry/characters/not-a-real-entry` returned HTTP 500 from the deployed site at verification time. This means commit `349499a` is not yet observable on production or production is still serving behavior equivalent to the pre-fix route.
+
+## Post-deploy Status on 2026-06-20
+
+- Owner reports the relevant migrations, build, and deployment have completed.
+- Owner reports the earlier production HTTP 500 route thread is not current. Treat the HTTP 500 notes above as historical verification context unless a fresh production check reproduces the failure.
+- Remaining main-site UX route lanes are manual/operator verification work, not active source implementation blockers.
 
 ## Remaining Manual Lanes
 

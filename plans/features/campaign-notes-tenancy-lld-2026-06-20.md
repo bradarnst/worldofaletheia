@@ -3,10 +3,36 @@
 ## Status
 
 - Date: 2026-06-20
-- Status: Draft requiring owner approval before runtime implementation
+- Status: Architecture accepted for foundation slice; R2-backed document foundation migrated, built, and deployed
 - Scope: Campaign session/note source-of-truth options, R2 Markdown persistence, D1 indexing, Obsidian/Markdown sync compatibility, member-authenticated editing, and live-editing technology boundary.
 - Replaces draft assumptions in: `plans/features/campaign-notes-tenancy-hld-2026-06-19.md`
 - Related ADRs: `0001`, `0004`, `0007`, `0009`, `0010`, `0016`, `0019`, `0021`, `0024`, `0025`
+
+## Implementation Update: 2026-06-20
+
+The first implementation slice for this LLD has been completed, migrated, built, and deployed.
+
+Implemented foundation:
+
+- D1 migration `migrations/0015_campaign_note_documents.sql` creates the `campaign_note_documents` index/coordination table.
+- `scripts/db-migrate-auth-plan.mjs` includes migration `0015` in the ordered migration plan and skips it when the table already exists.
+- `src/lib/campaign-note-documents.ts` provides R2 key construction, Markdown frontmatter validation, SHA-256 content hashing, and version-match helpers.
+- `src/lib/campaign-note-documents-repo.ts` provides D1 index access with exact `campaign_slug` predicates, `member | gm` visibility checks, and optimistic `content_hash` conflict detection.
+- Focused tests cover key safety, frontmatter validation, member/gm access predicates, public-only anonymous access, and stale-version conflict detection.
+
+Deployment state reported by owner:
+
+- D1 migration has been applied.
+- Build has passed.
+- Deployment has completed.
+
+Not yet implemented:
+
+- R2 object read/write API routes.
+- Campaign note document creation/update endpoints.
+- Astro Island Markdown editor.
+- Obsidian/R2 sync tooling.
+- Collaborative realtime editing.
 
 ## Correction From Prior Draft
 
@@ -262,6 +288,8 @@ Do not implement collaborative live editing accidentally as repeated R2 overwrit
 
 ### Phase 0: Decide source/write architecture
 
+Status: Complete for the foundation slice.
+
 Before runtime code, approve or amend this model:
 
 - R2 Markdown document is canonical for campaign sessions/notes.
@@ -270,6 +298,8 @@ Before runtime code, approve or amend this model:
 - V1 editor is not collaborative live editing.
 
 ### Phase 1: R2-backed Markdown document foundation
+
+Status: Foundation migrated, built, and deployed. API routes and R2 object writes remain follow-up work.
 
 Implement the storage/index contract without a rich editor:
 
@@ -441,6 +471,8 @@ This is not the same as shared multi-user realtime editing. V1 can be single-use
 
 ## Open Decisions Before Coding
 
+The foundation slice has been coded and deployed. The remaining decisions below apply before adding write APIs, the editor UI, or broader sync behavior.
+
 1. Confirm R2 Markdown documents are canonical for campaign sessions/notes.
 2. Confirm D1 is index/search/coordination, not canonical body storage.
 3. Confirm V1 is non-collaborative whole-document Markdown editing, not real-time shared editing.
@@ -453,4 +485,4 @@ This is not the same as shared multi-user realtime editing. V1 can be single-use
 
 ## Readiness Gate
 
-Do not implement live editing until the source/write architecture is approved. The next safe coding slice after approval is the R2-backed Markdown document foundation: D1 index table, R2 key builder, frontmatter validation, optimistic version checks, and API tests. The Astro Island editor should come after the storage/index/write contract is proven.
+The R2-backed Markdown document foundation is now in place. The next safe coding slice is the server-side R2 document API layer: authenticated read/create/update endpoints that use the deployed D1 index, R2 key builder, Markdown/frontmatter validation, and optimistic version checks. The Astro Island editor should still come after the API read/write contract is proven.

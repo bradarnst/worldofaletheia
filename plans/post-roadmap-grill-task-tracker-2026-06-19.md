@@ -189,9 +189,9 @@ Recommendation:
 
 - Completed as a small shared header/layout fix on 2026-06-19. Current vault content has no non-empty `parentChain` entries to screenshot-test, but World, Using Aletheia, and Campaign detail layout paths now all pass `parentChain` and `relationships` to the shared article header renderer.
 
-### 4. Campaign Notes and Tenancy HLD
+### 4. Campaign Notes Source and Live Editing
 
-Status: HLD complete; implementation blocked pending follow-up LLD/approval
+Status: R2-backed document foundation deployed
 Priority: P2
 Source: `.kilo/plans/feature-roadmap-grill-2026-06-17.md`, Phase 3
 
@@ -200,16 +200,20 @@ Scope:
 - Per-campaign vault mapping.
 - Logical tenant/campaign isolation in storage and indexes.
 - Markdown import/publish as a permanent path.
-- Append-only live notes as a cloud-first Campaigns exception.
-- Sync-back/export to campaign Obsidian vaults.
-- Conflict avoidance by forbidding same-file bidirectional editing in v1.
+- R2-backed Markdown documents as the likely source-of-truth exception for campaign sessions/notes.
+- D1 index/search/coordination rows for campaign note documents.
+- Campaign member plus GM access using exact `campaign_memberships.campaign_slug` and role checks.
+- Whole-document load/edit/save with optimistic version checks.
+- Obsidian/R2 sync compatibility as a follow-up path.
+- Realtime collaborative editing as a separate future technology decision.
 - Future path to per-campaign buckets, separate indexes/databases, PostgreSQL, or Campaigns service extraction.
 
-Closeout:
+Closeout / current state:
 
 - Planning artifact completed on 2026-06-19 as `plans/features/campaign-notes-tenancy-hld-2026-06-19.md`.
-- Campaign live-note implementation is not started and remains blocked/delayed until a follow-up LLD is approved.
-- The HLD keeps live notes append-only, campaign-slug scoped, and export/import based; it does not authorize implementation by itself.
+- Corrected LLD completed on 2026-06-20 as `plans/features/campaign-notes-tenancy-lld-2026-06-20.md`.
+- First implementation slice completed, migrated, built, and deployed on 2026-06-20: D1 `campaign_note_documents` migration, R2 key/frontmatter/version helpers, D1 index repository, and focused tests.
+- Next implementation slice: server-side R2 Markdown document read/create/update API routes with optimistic conflict handling.
 
 ### 5. Main-Site UX/Test Plan
 
@@ -232,7 +236,7 @@ Closeout / current findings:
 - First execution findings were recorded on 2026-06-19 as `plans/main-site-ux-route-test-findings-2026-06-19.md`.
 - Local route smoke checks and remote publication D1/R2 checks passed for the covered lanes.
 - Fixes from the first pass: local `dev:cf:auth` now prepares local content before building, and missing campaign-family entries now return HTTP 404 fallback content instead of throwing a server error.
-- Remaining manual lanes need operator/test-account env: auth success paths, Mailjet sandbox success behavior, anonymous/non-member/member/GM campaign-management checks, active staging hostname verification, and post-deploy production verification.
+- Remaining manual lanes need operator/test-account env: auth success paths, Mailjet sandbox success behavior, anonymous/non-member/member/GM campaign-management checks, and active staging hostname verification. Owner reports the earlier production HTTP 500 route thread is not current after deployment.
 
 ## Deferred / Future
 

@@ -1,19 +1,23 @@
 # Next Steps Plan and Implementation
 
 Date: 2026-06-20
-Status: Ready for implementation
+Status: Completed and superseded
 Source of truth: `.kilo/plans/concise-overall-next-steps-2026-06-19.md`
 
 ## Goal
 
 Move from planning-only verification into deployable repository output, without performing a production deploy.
 
+Update 2026-06-20: the implementation path moved beyond this no-deploy planning pass. The corrected Campaign Notes LLD exists, and the first R2-backed document foundation slice has been migrated, built, and deployed. Use `plans/features/campaign-notes-tenancy-lld-2026-06-20.md` and `.kilo/plans/concise-overall-next-steps-2026-06-19.md` for current next work.
+
 In this context, implementation means producing code, tests, or design artifacts that can be committed and later deployed through CI/CD or manually approved production release flow. It does not mean running `pnpm deploy:prod` from this session.
 
-## Current State
+## Historical Current State
+
+This section records the state when the plan was created. It is superseded by the update above and by `.kilo/plans/concise-overall-next-steps-2026-06-19.md`.
 
 - Commit `349499a Fix route-test blockers and record UX findings` already contains the source fix for missing campaign-family content returning HTTP 404 fallback instead of throwing HTTP 500.
-- Current production still returns HTTP 500 for missing/preview-only campaign-family URLs because the fix is not yet observable in production. That is a deploy/release verification issue, not evidence that more route code is required.
+- At creation time, production verification was unclear. Owner later reported the production HTTP 500 route thread is not current after deployment.
 - Staging/prod content-sync dry runs and D1 publication state match expectations.
 - `pnpm build` passes.
 - Remaining auth/form/campaign-role UX lanes require operator secrets, active staging hostname, and test accounts.

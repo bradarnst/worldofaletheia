@@ -1,19 +1,23 @@
 # Next Step: Campaign Notes/Tenancy LLD
 
 Date: 2026-06-20
-Status: Ready for implementation planning
+Status: Completed and superseded by deployed foundation
 
-## Decision
+Superseded by: `plans/features/campaign-notes-tenancy-lld-2026-06-20.md`
+
+## Historical Decision
 
 The next implementation step is to write the **Campaign Notes/Tenancy LLD**.
+
+Update 2026-06-20: this step is complete. The corrected LLD exists, and the first R2-backed document foundation slice has been migrated, built, and deployed.
 
 ## Why This Is Next
 
 - The route-test source fix from `349499a` has already been deployed.
 - The user reports production does not show the HTTP 500 issue, so do not treat that as the active next task.
 - Remaining main-site UX route-test lanes are mostly manual/operator verification work: auth accounts, Mailjet success paths, campaign role matrix, and active staging hostname.
-- The next in-repo implementation artifact that moves the roadmap forward is the Campaign Notes/Tenancy LLD.
-- Do not implement live-note runtime code until this LLD is approved.
+- The next in-repo implementation artifact at the time was the Campaign Notes/Tenancy LLD. *(Complete.)*
+- Do not implement realtime collaborative editing until a separate technology decision is approved.
 
 ## Implementation Target
 
