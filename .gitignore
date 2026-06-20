@@ -38,6 +38,9 @@ config/content-sync.config.json
 # private operator SQL artifacts (may contain real identity/assignment data)
 .wrangler/operators/
 
+# security audit artifacts
+piolium/
+
 # private monetization planning
 plans/monetize/
 
