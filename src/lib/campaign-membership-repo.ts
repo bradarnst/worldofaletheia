@@ -1,4 +1,4 @@
-import { type D1DatabaseLike, getD1BindingFromLocals } from './d1';
+import { type D1DatabaseLike, getD1BindingFromLocals, getMutationChangeCount } from './d1';
 
 interface MembershipRow {
   user_id: string;
@@ -77,20 +77,6 @@ function toIsoNow(): string {
 function createId(userId: string, campaignSlug: string): string {
   const normalized = `${userId}:${campaignSlug}:${Date.now()}`;
   return normalized.replace(/[^a-zA-Z0-9:_-]/g, '_');
-}
-
-function getMutationChangeCount(result: unknown): number | null {
-  if (!result || typeof result !== 'object') {
-    return null;
-  }
-
-  const meta = (result as { meta?: unknown }).meta;
-  if (!meta || typeof meta !== 'object') {
-    return null;
-  }
-
-  const changes = (meta as { changes?: unknown }).changes;
-  return typeof changes === 'number' ? changes : null;
 }
 
 export class CampaignMembershipRepo {

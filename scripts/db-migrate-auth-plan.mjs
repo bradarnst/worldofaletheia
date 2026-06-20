@@ -18,6 +18,7 @@ export const orderedMigrations = [
   './migrations/0012_contributors_and_attributions.sql',
   './migrations/0013_drop_email_canonical.sql',
   './migrations/0014_content_publication_metadata.sql',
+  './migrations/0015_campaign_note_documents.sql',
 ];
 
 export function parseArgs(argv) {
@@ -626,6 +627,7 @@ function printPlanSummary(baseArgs) {
   console.log('- Ensure content discovery index table + supporting indexes exist (idempotent create-if-missing).');
   console.log('- Normalize user.email values to trim(lower(email)) and enforce it as the sole identity email.');
   console.log('- Enforce strict unique user.email index and drop legacy email_canonical storage.');
+  console.log('- Ensure campaign note document index table exists for R2-backed Markdown editing.');
 
   const metrics = collectDryRunMetricsFromInspector(createSchemaInspector(baseArgs));
 
@@ -723,6 +725,11 @@ function runMigrationPlan(baseArgs) {
       console.log(`Skipping ${migrationFile} (content_index.publication already exists).`);
       continue;
     }
+
+    // 0015 is fully idempotent (CREATE TABLE/INDEX IF NOT EXISTS), so it is
+    // always re-applied. This lets a partial apply (table created but an index
+    // failed) self-repair on the next run instead of being masked by a
+    // coarse table-exists skip.
 
     console.log(`Applying ${migrationFile}...`);
     runWrangler(baseArgs, ['--file', migrationFile]);

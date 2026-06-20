@@ -113,12 +113,13 @@ describe('db-migrate-auth-plan wrangler parsing', () => {
   });
 
   it('includes final structural migrations in dependency order', () => {
-    expect(orderedMigrations.at(-6)).toBe('./migrations/0009_campaign_memberships_role_unification.sql');
-    expect(orderedMigrations.at(-5)).toBe('./migrations/0010_drop_campaign_gm_assignments.sql');
-    expect(orderedMigrations.at(-4)).toBe('./migrations/0011_content_search_fts.sql');
-    expect(orderedMigrations.at(-3)).toBe('./migrations/0012_contributors_and_attributions.sql');
-    expect(orderedMigrations.at(-2)).toBe('./migrations/0013_drop_email_canonical.sql');
-    expect(orderedMigrations.at(-1)).toBe('./migrations/0014_content_publication_metadata.sql');
+    expect(orderedMigrations.at(-7)).toBe('./migrations/0009_campaign_memberships_role_unification.sql');
+    expect(orderedMigrations.at(-6)).toBe('./migrations/0010_drop_campaign_gm_assignments.sql');
+    expect(orderedMigrations.at(-5)).toBe('./migrations/0011_content_search_fts.sql');
+    expect(orderedMigrations.at(-4)).toBe('./migrations/0012_contributors_and_attributions.sql');
+    expect(orderedMigrations.at(-3)).toBe('./migrations/0013_drop_email_canonical.sql');
+    expect(orderedMigrations.at(-2)).toBe('./migrations/0014_content_publication_metadata.sql');
+    expect(orderedMigrations.at(-1)).toBe('./migrations/0015_campaign_note_documents.sql');
   });
 
   it('reports invalid membership roles as a blocking conflict', () => {

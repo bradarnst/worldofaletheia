@@ -10,6 +10,27 @@ export interface D1DatabaseLike {
   batch?(statements: D1PreparedStatementLike[]): Promise<unknown[]>;
 }
 
+/**
+ * Extracts the `meta.changes` count from a D1 mutation result.
+ *
+ * Returns `null` when the result shape is unexpected (no object, no `meta`,
+ * or `changes` is not a number). Callers that rely on the count to detect
+ * conflicts must treat `null` as a failure (fail closed), never as success.
+ */
+export function getMutationChangeCount(result: unknown): number | null {
+  if (!result || typeof result !== 'object') {
+    return null;
+  }
+
+  const meta = (result as { meta?: unknown }).meta;
+  if (!meta || typeof meta !== 'object') {
+    return null;
+  }
+
+  const changes = (meta as { changes?: unknown }).changes;
+  return typeof changes === 'number' ? changes : null;
+}
+
 function isD1DatabaseLike(candidate: unknown): candidate is D1DatabaseLike {
   return (
     typeof candidate === 'object' &&
