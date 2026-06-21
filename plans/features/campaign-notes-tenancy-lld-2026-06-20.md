@@ -485,4 +485,6 @@ The foundation slice has been coded and deployed. The remaining decisions below 
 
 ## Readiness Gate
 
-The R2-backed Markdown document foundation is now in place. The next safe coding slice is the server-side R2 document API layer: authenticated read/create/update endpoints that use the deployed D1 index, R2 key builder, Markdown/frontmatter validation, and optimistic version checks. The Astro Island editor should still come after the API read/write contract is proven.
+The R2-backed Markdown document foundation is now in place, but the ownership boundary has been corrected after this LLD's initial implementation slice. The next safe work is **not** main-site server-side R2/D1 API implementation. `woa-admin` should first define and implement the authoritative Campaign Notes API/service contract, including runtime write sessions, deploy import sessions, R2 upload targets, D1/index/search/audit ownership, and conflict behavior. The main-site Astro Island editor should still come only after the approved `woa-admin` read/write contract is proven.
+
+Current handoff: `plans/features/woa-admin-campaign-notes-api-handoff-2026-06-21.md`.

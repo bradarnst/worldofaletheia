@@ -1,13 +1,17 @@
 # Campaign Notes R2 Document API Implementation Plan
 
 Date: 2026-06-20
-Status: Ready for implementation
+Status: Superseded on 2026-06-21
+
+> Superseded by `.kilo/plans/campaign-notes-option-c-write-session-boundary-2026-06-21.md` and `plans/features/woa-admin-campaign-notes-api-handoff-2026-06-21.md`.
+>
+> This plan assumed the main site would implement Campaign Notes API routes and directly coordinate D1/R2 writes. That is no longer the intended ownership boundary. `woa-admin` should define and implement the authoritative Campaign Notes API/contract first; the main site should later refactor to consume that approved contract and must not directly mutate Campaign Notes D1 state.
 
 ## Decision
 
-The next step is to implement the **server-side R2 document API layer** for Campaign Notes.
+Historical/superseded decision: this plan previously said the next step was to implement the **server-side R2 document API layer** for Campaign Notes inside the main site.
 
-Do **not** build the Astro Island editor yet. The editor should wait until the API read/create/update contract is implemented and tested.
+Current decision: do **not** implement this plan in the main site. `woa-admin` should define and implement the authoritative Campaign Notes API/service contract first, including runtime write sessions, deploy import sessions, R2 upload target policy, D1/index/search/audit ownership, and conflict behavior. The main site should later refactor to consume that approved contract.
 
 ## Why This Is Next
 
@@ -19,11 +23,13 @@ The deployed foundation already provides:
 - SHA-256 content hash/version helper.
 - D1 repository with campaign slug predicates, member/gm visibility checks, and optimistic conflict detection.
 
-What is missing is the runtime boundary that actually reads and writes Markdown documents in R2.
+What was missing under the old assumption was the runtime boundary that actually reads and writes Markdown documents in R2. That boundary is now assigned to `woa-admin`, not this main-site implementation plan.
 
 ## Implementation Target
 
-Add authenticated Campaign Notes document API routes under the Campaigns API namespace.
+Old superseded target: add authenticated Campaign Notes document API routes under the Campaigns API namespace in the main site.
+
+Do not implement this target unless a later ADR explicitly moves Campaign Notes API ownership back into this repository.
 
 Recommended route shape:
 

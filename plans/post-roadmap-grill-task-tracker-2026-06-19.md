@@ -191,7 +191,7 @@ Recommendation:
 
 ### 4. Campaign Notes Source and Live Editing
 
-Status: R2-backed document foundation deployed
+Status: Ownership boundary corrected; `woa-admin` API/service handoff prepared
 Priority: P2
 Source: `.kilo/plans/feature-roadmap-grill-2026-06-17.md`, Phase 3
 
@@ -212,8 +212,10 @@ Closeout / current state:
 
 - Planning artifact completed on 2026-06-19 as `plans/features/campaign-notes-tenancy-hld-2026-06-19.md`.
 - Corrected LLD completed on 2026-06-20 as `plans/features/campaign-notes-tenancy-lld-2026-06-20.md`.
-- First implementation slice completed, migrated, built, and deployed on 2026-06-20: D1 `campaign_note_documents` migration, R2 key/frontmatter/version helpers, D1 index repository, and focused tests.
-- Next implementation slice: server-side R2 Markdown document read/create/update API routes with optimistic conflict handling.
+- First implementation slice completed, migrated, built, and deployed on 2026-06-20: D1 `campaign_note_documents` migration, R2 key/frontmatter/version helpers, D1 index repository, and focused tests. This foundation should not be expanded as the authoritative implementation after the ownership-boundary correction.
+- Ownership correction recorded on 2026-06-21: `woa-admin` should own Campaign Notes authority, D1/index/search/audit state, R2 key policy, runtime write sessions, deploy import sessions, and conflict behavior. The main site should later consume the approved `woa-admin` contract.
+- Handoff package created for `woa-admin`: `plans/features/woa-admin-campaign-notes-api-handoff-2026-06-21.md`.
+- Superseded local implementation plan: `.kilo/plans/campaign-notes-r2-document-api-implementation-2026-06-20.md`.
 
 ### 5. Main-Site UX/Test Plan
 
