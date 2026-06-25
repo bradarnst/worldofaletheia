@@ -1,44 +1,16 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { Readable } from 'node:stream';
-import { pathToFileURL } from 'node:url';
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { parseFrontmatter } from '@astrojs/internal-helpers/frontmatter';
 import { loadCollectionLookupRows } from './content-index-loader.mjs';
 import { COLLECTION_TYPES } from './content-types';
 
 let cachedConfig = null;
 let cachedClient = null;
-let cachedParseFrontmatter = null;
 
 function trimSlashes(value) {
   return value.replace(/^\/+|\/+$/g, '');
-}
-
-async function getParseFrontmatter() {
-  if (cachedParseFrontmatter) {
-    return cachedParseFrontmatter;
-  }
-
-  const pnpmRoot = path.resolve(process.cwd(), 'node_modules/.pnpm');
-  const packageDir = fs
-    .readdirSync(pnpmRoot)
-    .find((entry) => entry.startsWith('@astrojs+markdown-remark@'));
-  if (!packageDir) {
-    throw new Error('Could not locate @astrojs/markdown-remark in pnpm store.');
-  }
-
-  const modulePath = path.join(
-    pnpmRoot,
-    packageDir,
-    'node_modules',
-    '@astrojs',
-    'markdown-remark',
-    'dist',
-    'frontmatter.js',
-  );
-  const module = await import(/* @vite-ignore */ pathToFileURL(modulePath).href);
-  cachedParseFrontmatter = module.parseFrontmatter;
-  return cachedParseFrontmatter;
 }
 
 function loadContentCloudConfig() {
@@ -230,7 +202,6 @@ export function createR2MarkdownCollectionLoader(collection) {
     async load(context) {
       context.store.clear();
       const entries = await loadCollectionLookupRows(collection);
-      const parseFrontmatter = await getParseFrontmatter();
 
       for (const entry of entries) {
         let markdown;

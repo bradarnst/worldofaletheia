@@ -1,8 +1,7 @@
 import { createHash } from 'node:crypto';
-import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { parseFrontmatter } from '@astrojs/internal-helpers/frontmatter';
 import { transformObsidianLinks } from './obsidian-links.mjs';
 import { normalizeObsidianTags } from './validate.mjs';
 import {
@@ -11,35 +10,7 @@ import {
   resolvePublicationSyncLane,
 } from './publication-policy.mjs';
 
-let cachedParseFrontmatter = null;
 const MAX_CONTENT_SEARCH_BODY_LENGTH = 32000;
-
-async function getParseFrontmatter() {
-  if (cachedParseFrontmatter) {
-    return cachedParseFrontmatter;
-  }
-
-  const pnpmRoot = path.resolve(process.cwd(), 'node_modules/.pnpm');
-  const packageDir = fs
-    .readdirSync(pnpmRoot)
-    .find((entry) => entry.startsWith('@astrojs+markdown-remark@'));
-  if (!packageDir) {
-    throw new Error('Could not locate @astrojs/markdown-remark in pnpm store.');
-  }
-
-  const modulePath = path.join(
-    pnpmRoot,
-    packageDir,
-    'node_modules',
-    '@astrojs',
-    'markdown-remark',
-    'dist',
-    'frontmatter.js',
-  );
-  const module = await import(/* @vite-ignore */ pathToFileURL(modulePath).href);
-  cachedParseFrontmatter = module.parseFrontmatter;
-  return cachedParseFrontmatter;
-}
 
 function normalizeDisplayPath(value) {
   return value.split(path.sep).join('/');
@@ -359,7 +330,6 @@ function createContentSearchRow({
 }
 
 export async function deriveCollectionEntries(mapping, relativePath, transformedMarkdown, sourceStats, cloud, generatedAt) {
-  const parseFrontmatter = await getParseFrontmatter();
   const normalizedRelative = normalizeDisplayPath(relativePath);
   if (!normalizedRelative.toLowerCase().endsWith('.md')) {
     return [];

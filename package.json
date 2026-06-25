@@ -44,10 +44,11 @@
     "campaign:rename": "node ./scripts/rename-campaign-slug.mjs"
   },
   "dependencies": {
-    "@astrojs/cloudflare": "13.2.1",
+    "@astrojs/cloudflare": "14.0.0",
+    "@astrojs/internal-helpers": "^0.10.0",
     "@aws-sdk/client-s3": "^3.1037.0",
     "@tailwindcss/vite": "^4.2.4",
-    "astro": "6.1.9",
+    "astro": "7.0.2",
     "astro-seo": "^1.1.0",
     "better-auth": "^1.6.9",
     "fuse.js": "^7.3.0",
@@ -57,6 +58,6 @@
     "miniflare": "4.20260424.0",
     "sharp": "^0.34.5",
     "vitest": "^4.1.5",
-    "wrangler": "^4.100.0"
+    "wrangler": "4.104.0"
   }
 }
