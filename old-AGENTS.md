@@ -171,10 +171,8 @@ Read these before making architectural changes. New significant decisions should
 | `status`       | `'draft' \| 'publish' \| 'published' \| 'archive' \| 'archived'` | Yes      | —          |
 | `author`       | `string`                                                     | Yes      | —          |
 | `secret`       | `boolean`                                                    | Yes      | —          |
-| `created`      | `coerce.date()`                                              | No       | —          |
-| `created-date` | `coerce.date()`                                              | No       | — (legacy) |
-| `modified`     | `coerce.date()`                                              | No       | —          |
-| `modified-date`| `coerce.date()`                                              | No       | — (legacy) |
+| `createdAt`    | strict RFC 3339 date-time string                             | Yes      | —          |
+| `updatedAt`    | strict RFC 3339 date-time string                             | Yes      | —          |
 | `tags`         | `string[]`                                                   | No       | `[]`       |
 | `campaign`     | `string`                                                     | No       | —          |
 | `permissions`  | `'public' \| 'player' \| 'gm' \| 'author'`                  | No       | `'public'` |

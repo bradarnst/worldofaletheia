@@ -66,6 +66,15 @@
 
 ## Project Specifics
 
+### Content and data naming conventions
+- Field naming conventions for Markdown frontmatter, TypeScript/JSON/OpenAPI, and D1/SQL are documented in `docs/content-field-naming-conventions.md`.
+- Before changing campaign-note Markdown frontmatter, content schemas, Zod schemas, OpenAPI fields, D1 columns, import/export/sync code, or frontmatter serializers/parsers, read that document first.
+- Preserve the layer-native naming policy unless an explicit architecture decision changes it:
+  - Markdown/frontmatter: camelCase
+  - TypeScript/JSON/OpenAPI: camelCase
+  - D1/SQL: snake_case
+  - filenames/slugs: kebab-case
+
 ### Project Identity
 
 World of Aletheia is a fantasy worldbuilding website and evolving campaign platform for a custom GURPS-based tabletop RPG setting. It is **not just a wiki** — the roadmap includes interactive campaign management tools, relationship-rich navigation, search/filter/sort/group capabilities, authenticated multi-user access, and real-time session features. The Campaigns domain is designed for eventual extraction as an independent service.

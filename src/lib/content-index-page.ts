@@ -27,10 +27,7 @@ interface LocalCollectionData {
   author?: string;
   contributors?: Array<{ id: string; roles?: string[] }>;
   campaign?: string;
-  created?: Date;
-  'created-date'?: Date;
-  modified?: Date;
-  'modified-date'?: Date;
+  createdAt?: Date;
 }
 
 interface LocalCollectionEntry {
@@ -46,16 +43,16 @@ export interface ContentCardEntry {
     title: string;
     type?: string;
     subtype?: string;
-      excerpt?: string;
-      tags: string[];
-      publication?: string;
-      contentState?: string;
-      audienceWarnings?: string[];
-      status?: string;
-      authors?: string[];
-      author?: string;
-      campaign?: string;
-      created: Date;
+    excerpt?: string;
+    tags: string[];
+    publication?: string;
+    contentState?: string;
+    audienceWarnings?: string[];
+    status?: string;
+    authors?: string[];
+    author?: string;
+    campaign?: string;
+    createdAt: Date;
   };
 }
 
@@ -97,7 +94,10 @@ export interface IndexBackedCollectionPageData {
 }
 
 function pickDisplayDate(data: LocalCollectionData): Date {
-  return data.created ?? data['created-date'] ?? data.modified ?? data['modified-date'] ?? new Date(0);
+  if (!data.createdAt) {
+    throw new Error('pickDisplayDate: entry is missing required createdAt frontmatter field.');
+  }
+  return data.createdAt;
 }
 
 function createPagination(totalItems: number, requestedPage: number, pageSize: number): ContentIndexPagination {
@@ -158,7 +158,7 @@ function mapLocalEntryToCard(entry: LocalCollectionEntry): ContentCardEntry {
       authors: entry.data.authors,
       author: formatAuthors(entry.data.authors, entry.data.author),
       campaign: entry.data.campaign,
-      created: pickDisplayDate(entry.data),
+      createdAt: pickDisplayDate(entry.data),
     },
   };
 }
@@ -179,7 +179,7 @@ function mapIndexRowToCard(row: ContentIndexRow): ContentCardEntry {
       status: row.status ?? undefined,
       author: row.author ?? undefined,
       campaign: row.campaignSlug ?? undefined,
-      created: new Date(row.createdAt ?? row.updatedAt ?? row.sourceLastModified),
+      createdAt: new Date(row.createdAt ?? row.updatedAt ?? row.sourceLastModified),
     },
   };
 }

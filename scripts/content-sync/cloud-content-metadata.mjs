@@ -29,6 +29,12 @@ function normalizeNullableString(value) {
   return trimmed ? trimmed : null;
 }
 
+// Strict RFC 3339 date-time validator. Accepts either UTC `Z` or explicit
+// numeric offset. Returns the ISO 8601 string, or null when the input is
+// missing/empty. Throws on invalid inputs that fail strict parsing so the
+// sync pipeline fails hard instead of silently coercing malformed dates.
+const RFC3339_OFFSET_PATTERN = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
+
 function normalizeDateValue(value) {
   if (value instanceof Date && !Number.isNaN(value.getTime())) {
     return value.toISOString();
@@ -43,8 +49,18 @@ function normalizeDateValue(value) {
     return null;
   }
 
+  if (!RFC3339_OFFSET_PATTERN.test(trimmed)) {
+    throw new Error(
+      `Expected strict RFC 3339 date-time with offset, received: ${trimmed}`,
+    );
+  }
+
   const parsed = new Date(trimmed);
-  return Number.isNaN(parsed.getTime()) ? trimmed : parsed.toISOString();
+  if (Number.isNaN(parsed.getTime())) {
+    throw new Error(`Could not parse RFC 3339 date-time: ${trimmed}`);
+  }
+
+  return parsed.toISOString();
 }
 
 function normalizeTags(frontmatterTags) {
@@ -276,11 +292,20 @@ function createContentIndexRow({
 }) {
   const authors = normalizeAuthors(frontmatterRecord.authors ?? frontmatterRecord.author);
   const publication = resolvePublicationFromFrontmatter(frontmatterRecord);
-  const createdAt = normalizeDateValue(frontmatterRecord.created ?? frontmatterRecord['created-date']);
-  const updatedAt =
-    normalizeDateValue(frontmatterRecord.modified ?? frontmatterRecord['modified-date']) ??
-    createdAt ??
-    contentEntry.lastModified;
+  // Strict RFC 3339 required. Legacy timestamp keys are no longer accepted.
+  // Missing or invalid timestamps fail hard.
+  const createdAt = normalizeDateValue(frontmatterRecord.createdAt);
+  const updatedAt = normalizeDateValue(frontmatterRecord.updatedAt);
+  if (!createdAt) {
+    throw new Error(
+      `${contentEntry.id} missing required RFC 3339 frontmatter field 'createdAt'.`,
+    );
+  }
+  if (!updatedAt) {
+    throw new Error(
+      `${contentEntry.id} missing required RFC 3339 frontmatter field 'updatedAt'.`,
+    );
+  }
 
   return {
     id: contentEntry.id,

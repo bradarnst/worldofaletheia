@@ -27,7 +27,7 @@ const authorsLabel = formatAuthors(data.authors || content.authors, data.author 
         <div class="meta-muted flex flex-wrap items-center gap-3 text-sm mb-4">
           {authorsLabel && <span>By {authorsLabel}</span>}
           {authorsLabel && <span>•</span>}
-          <span>{(data.created || content.created).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+          <span>{(data.createdAt || content.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
           {(data.campaign || content.campaign) && <span class="px-2 py-1 rounded bg-green-100 text-green-800">{data.campaign || content.campaign}</span>}
         </div>
         

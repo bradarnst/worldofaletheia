@@ -43,6 +43,14 @@ const optionalExcerptSchema = z.preprocess(
   z.string().optional(),
 );
 
+// Strict RFC 3339 date-time string. Accepts either UTC `Z` or explicit numeric
+// offset (e.g. `+02:00`). Transforms to a `Date` for downstream runtime use.
+// Authored source of truth lives in docs/content-field-naming-conventions.md.
+const requiredRfc3339DateTime = z
+  .string()
+  .datetime({ offset: true })
+  .transform((value) => new Date(value));
+
 function createMarkdownLoader(collection: string, pattern: string, base: string) {
   if (resolveCollectionSource(collection) === 'cloud') {
     return createR2MarkdownCollectionLoader(collection);
@@ -65,10 +73,8 @@ const baseSchema = z.object({
     id: z.string(),
     roles: z.array(z.enum(CONTRIBUTOR_ROLE_TYPES)).min(1),
   })).optional().default([]),
-  created: z.coerce.date().optional(),
-  'created-date': z.coerce.date().optional(),
-  modified: z.coerce.date().optional(),
-  'modified-date': z.coerce.date().optional(),
+  createdAt: requiredRfc3339DateTime,
+  updatedAt: requiredRfc3339DateTime,
   // Deprecated: retained only for backward compatibility with existing content files.
   // Access control enforcement must ignore this field.
   secret: z.boolean().optional().default(false),
@@ -106,6 +112,8 @@ const contributorsSchema = z.object({
   audienceWarnings: z.array(audienceWarningSchema).optional().default([]),
   // Legacy migration input only.
   status: legacyStatusSchema.optional(),
+  createdAt: requiredRfc3339DateTime,
+  updatedAt: requiredRfc3339DateTime,
   avatar: z.string().optional(),
   bioExcerpt: z.string().optional(),
   socials: z.array(z.object({

@@ -12,6 +12,17 @@ function createCloudMock() {
   };
 }
 
+const TIMESTAMP_FIELDS = `createdAt: '2026-04-06T10:00:00.000Z'
+updatedAt: '2026-04-06T12:00:00.000Z'
+`;
+
+function withTimestamps(frontmatter) {
+  if (!frontmatter.includes('createdAt:') && !frontmatter.includes('updatedAt:')) {
+    return `${frontmatter.trimEnd()}\n${TIMESTAMP_FIELDS}`;
+  }
+  return frontmatter;
+}
+
 describe('deriveCollectionEntries', () => {
   it('indexes legacy top-level campaign overview filenames as campaigns entries', async () => {
     const entries = await deriveCollectionEntries(
@@ -22,6 +33,8 @@ title: Campaign - Brad
 collection: campaigns
 slug: brad
 visibility: public
+createdAt: '2026-04-06T10:00:00.000Z'
+updatedAt: '2026-04-06T12:00:00.000Z'
 ---
 
 Legacy campaign overview body.
@@ -63,6 +76,8 @@ Legacy campaign overview body.
 title: Campaign - Barry
 collection: campaigns
 visibility: public
+createdAt: '2026-04-06T10:00:00.000Z'
+updatedAt: '2026-04-06T12:00:00.000Z'
 ---
 
 Preferred campaign overview body.
@@ -94,6 +109,8 @@ title: Long Entry
 collection: lore
 authors:
   - brad
+createdAt: '2026-04-06T10:00:00.000Z'
+updatedAt: '2026-04-06T12:00:00.000Z'
 ---
 
 ${'lorem ipsum '.repeat(5000)}
@@ -123,6 +140,8 @@ status: publish
 authors:
   - brad
   - barry
+createdAt: '2026-04-06T10:00:00.000Z'
+updatedAt: '2026-04-06T12:00:00.000Z'
 ---
 
 Joined author body.
@@ -152,6 +171,8 @@ audienceWarnings:
   - gmSpoilers
 authors:
   - brad
+createdAt: '2026-04-06T10:00:00.000Z'
+updatedAt: '2026-04-06T12:00:00.000Z'
 ---
 
 Spoiler body.
@@ -188,6 +209,8 @@ contributors:
   - id: alex
     roles:
       - artist
+createdAt: '2026-04-06T10:00:00.000Z'
+updatedAt: '2026-04-06T12:00:00.000Z'
 ---
 
 Attribution body.
@@ -247,6 +270,8 @@ status: publish
 profileMode: standard
 bioExcerpt: Makes maps.
 avatar: /assets/images/contributors/alex.jpg
+createdAt: '2026-04-06T10:00:00.000Z'
+updatedAt: '2026-04-06T12:00:00.000Z'
 ---
 
 Profile body.
@@ -283,6 +308,8 @@ type: history
 status: publish
 authors:
   - brad
+createdAt: '2026-04-06T10:00:00.000Z'
+updatedAt: '2026-04-06T12:00:00.000Z'
 ---
 
 Body.
@@ -306,6 +333,8 @@ type: history
 status: publish
 authors:
   - brad
+createdAt: '2026-04-06T10:00:00.000Z'
+updatedAt: '2026-04-06T12:00:00.000Z'
 ---
 
 Body.
@@ -332,6 +361,8 @@ status: publish
 profileMode: featured
 aliases:
   - Brad
+createdAt: '2026-04-06T10:00:00.000Z'
+updatedAt: '2026-04-06T12:00:00.000Z'
 ---
 
 Contributor profile.
@@ -347,6 +378,8 @@ type: history
 status: publish
 authors:
   - Brad
+createdAt: '2026-04-06T10:00:00.000Z'
+updatedAt: '2026-04-06T12:00:00.000Z'
 ---
 
 Example body.
@@ -394,6 +427,8 @@ displayName: Brad Arnst
 collection: contributors
 status: publish
 profileMode: featured
+createdAt: '2026-04-06T10:00:00.000Z'
+updatedAt: '2026-04-06T12:00:00.000Z'
 ---
 
 Contributor profile.
@@ -409,6 +444,8 @@ type: history
 status: publish
 authors:
   - Brad
+createdAt: '2026-04-06T10:00:00.000Z'
+updatedAt: '2026-04-06T12:00:00.000Z'
 ---
 
 Example body.
@@ -461,6 +498,8 @@ contentState: unfinished
 audienceWarnings: []
 authors:
   - brad
+createdAt: '2026-04-06T10:00:00.000Z'
+updatedAt: '2026-04-06T12:00:00.000Z'
 ---
 
 Preview body.
@@ -478,6 +517,8 @@ contentState: stable
 audienceWarnings: []
 authors:
   - brad
+createdAt: '2026-04-06T10:00:00.000Z'
+updatedAt: '2026-04-06T12:00:00.000Z'
 ---
 
 Published body.
@@ -511,5 +552,100 @@ Published body.
         process.env.CONTENT_INDEX_SYNC_ENV = previousEnv;
       }
     }
+  });
+
+  it('accepts createdAt/updatedAt as RFC 3339 with explicit numeric offset', async () => {
+    const entries = await deriveCollectionEntries(
+      { to: 'lore' },
+      'offset-date.md',
+      `---
+title: Offset Date
+collection: lore
+type: history
+authors:
+  - brad
+createdAt: '2026-04-06T12:00:00+02:00'
+updatedAt: '2026-04-06T14:30:00+02:00'
+---
+
+Offset body.
+`,
+      { mtime: new Date('2026-04-06T12:00:00.000Z') },
+      createCloudMock(),
+      '2026-04-06T12:30:00.000Z',
+    );
+
+    expect(entries[0].contentIndexRow.createdAt).toBe('2026-04-06T10:00:00.000Z');
+    expect(entries[0].contentIndexRow.updatedAt).toBe('2026-04-06T12:30:00.000Z');
+  });
+
+  it('rejects missing createdAt in frontmatter', async () => {
+    await expect(
+      deriveCollectionEntries(
+        { to: 'lore' },
+        'missing-created.md',
+        `---
+title: Missing Created
+collection: lore
+type: history
+authors:
+  - brad
+updatedAt: '2026-04-06T12:00:00.000Z'
+---
+
+Body.
+`,
+        { mtime: new Date('2026-04-06T12:00:00.000Z') },
+        createCloudMock(),
+        '2026-04-06T12:30:00.000Z',
+      ),
+    ).rejects.toThrow("missing-created missing required RFC 3339 frontmatter field 'createdAt'.");
+  });
+
+  it('rejects missing updatedAt in frontmatter', async () => {
+    await expect(
+      deriveCollectionEntries(
+        { to: 'lore' },
+        'missing-updated.md',
+        `---
+title: Missing Updated
+collection: lore
+type: history
+authors:
+  - brad
+createdAt: '2026-04-06T12:00:00.000Z'
+---
+
+Body.
+`,
+        { mtime: new Date('2026-04-06T12:00:00.000Z') },
+        createCloudMock(),
+        '2026-04-06T12:30:00.000Z',
+      ),
+    ).rejects.toThrow("missing-updated missing required RFC 3339 frontmatter field 'updatedAt'.");
+  });
+
+  it('rejects non-RFC-3339 createdAt values', async () => {
+    await expect(
+      deriveCollectionEntries(
+        { to: 'lore' },
+        'loose-date.md',
+        `---
+title: Loose Date
+collection: lore
+type: history
+authors:
+  - brad
+createdAt: '2026-04-06 12:00:00'
+updatedAt: '2026-04-06T12:00:00.000Z'
+---
+
+Body.
+`,
+        { mtime: new Date('2026-04-06T12:00:00.000Z') },
+        createCloudMock(),
+        '2026-04-06T12:30:00.000Z',
+      ),
+    ).rejects.toThrow(/Expected strict RFC 3339 date-time with offset, received: 2026-04-06 12:00:00/);
   });
 });

@@ -18,10 +18,8 @@ interface SitemapUrlEntry {
 }
 
 interface SitemapEntryDataLike {
-  created?: Date;
-  'created-date'?: Date;
-  modified?: Date;
-  'modified-date'?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
   start?: Date;
   end?: Date;
   date?: Date;
@@ -55,7 +53,7 @@ function createUrlEntry(pathname: string, lastmod?: string): SitemapUrlEntry {
 }
 
 function pickEntryDate(data: SitemapEntryDataLike): string | undefined {
-  return toIsoDate(data.modified ?? data['modified-date'] ?? data.created ?? data['created-date']);
+  return toIsoDate(data.updatedAt ?? data.createdAt);
 }
 
 function appendCollectionEntries<T extends SitemapCollectionEntryLike>(
@@ -69,11 +67,11 @@ function appendCollectionEntries<T extends SitemapCollectionEntryLike>(
 }
 
 function pickCampaignDate(data: SitemapEntryDataLike): string | undefined {
-  return toIsoDate(data.end ?? data.start ?? data.modified ?? data['modified-date'] ?? data.created ?? data['created-date']);
+  return toIsoDate(data.end ?? data.start ?? data.updatedAt ?? data.createdAt);
 }
 
 function pickDatedEntryDate(data: SitemapEntryDataLike): string | undefined {
-  return toIsoDate(data.date ?? data.modified ?? data['modified-date'] ?? data.created ?? data['created-date']);
+  return toIsoDate(data.date ?? data.updatedAt ?? data.createdAt);
 }
 
 export const GET: APIRoute = async ({ request }) => {

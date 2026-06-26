@@ -29,7 +29,7 @@ describe('loadIndexBackedCollectionPage', () => {
           type: 'monster',
           tags: ['fire'],
           status: 'published',
-          created: new Date('2026-03-10T00:00:00.000Z'),
+          createdAt: new Date('2026-03-10T00:00:00.000Z'),
         },
       },
       {
@@ -40,7 +40,7 @@ describe('loadIndexBackedCollectionPage', () => {
           type: 'undead',
           tags: ['storm'],
           status: 'publish',
-          created: new Date('2026-03-12T00:00:00.000Z'),
+          createdAt: new Date('2026-03-12T00:00:00.000Z'),
         },
       },
       {
@@ -51,7 +51,7 @@ describe('loadIndexBackedCollectionPage', () => {
           type: 'monster',
           tags: ['swamp'],
           status: 'draft',
-          created: new Date('2026-03-14T00:00:00.000Z'),
+          createdAt: new Date('2026-03-14T00:00:00.000Z'),
         },
       },
     ]);
@@ -82,7 +82,7 @@ describe('loadIndexBackedCollectionPage', () => {
           subtype: 'magic',
           tags: ['gurps'],
           status: 'published',
-          created: new Date('2026-03-10T00:00:00.000Z'),
+          createdAt: new Date('2026-03-10T00:00:00.000Z'),
         },
       },
       {
@@ -94,7 +94,7 @@ describe('loadIndexBackedCollectionPage', () => {
           subtype: 'combat',
           tags: ['gurps'],
           status: 'publish',
-          created: new Date('2026-03-12T00:00:00.000Z'),
+          createdAt: new Date('2026-03-12T00:00:00.000Z'),
         },
       },
       {
@@ -106,7 +106,7 @@ describe('loadIndexBackedCollectionPage', () => {
           subtype: 'magic',
           tags: ['gurps'],
           status: 'draft',
-          created: new Date('2026-03-14T00:00:00.000Z'),
+          createdAt: new Date('2026-03-14T00:00:00.000Z'),
         },
       },
       {
@@ -118,7 +118,7 @@ describe('loadIndexBackedCollectionPage', () => {
           subtype: 'social',
           tags: ['table'],
           status: 'published',
-          created: new Date('2026-03-16T00:00:00.000Z'),
+          createdAt: new Date('2026-03-16T00:00:00.000Z'),
         },
       },
     ]);

@@ -26,7 +26,7 @@ const relationships = showContextMetadata && Array.isArray(data.relationships) ?
   <CampaignsContentHeader
     title={contentTitle}
     authors={data.authors || content.authors}
-    created={data.created || content.created}
+    created={data.createdAt || content.createdAt}
     campaign={data.campaign || content.campaign}
     visibility={data.visibility || content.visibility}
     excerpt={contentExcerpt}

@@ -41,11 +41,9 @@ const authorsLabel = Array.isArray(data.authors) && data.authors.length > 0
     ? data.author
     : null;
 const shouldShowMetadataChips = (showCampaign && data.campaign) || authorsLabel;
-const createdDate = data.created instanceof Date
-  ? data.created
-  : data['created-date'] instanceof Date
-    ? data['created-date']
-    : null;
+const createdDate = data.createdAt instanceof Date
+  ? data.createdAt
+  : null;
 ---
 
 <a href={href} class="content-card group flex h-full flex-col rounded-[1.6rem] border border-base-300/80 bg-base-100 p-5 shadow-sm transition duration-200 hover:border-primary/35 hover:shadow-lg">

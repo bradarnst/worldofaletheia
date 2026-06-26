@@ -159,10 +159,17 @@ export function buildCampaignContentHref(
 
 export function pickCampaignEntryDate(data: {
   date?: Date;
-  modified?: Date;
-  'modified-date'?: Date;
-  created?: Date;
-  'created-date'?: Date;
+  updatedAt?: Date;
+  createdAt?: Date;
 }): Date {
-  return data.date ?? data.modified ?? data['modified-date'] ?? data.created ?? data['created-date'] ?? new Date(0);
+  if (data.date) {
+    return data.date;
+  }
+  if (data.updatedAt) {
+    return data.updatedAt;
+  }
+  if (data.createdAt) {
+    return data.createdAt;
+  }
+  throw new Error('pickCampaignEntryDate: entry missing required createdAt/updatedAt frontmatter field.');
 }

@@ -24,7 +24,7 @@ const relationships = Array.isArray(data.relationships) ? data.relationships : [
   <UsingAletheiaContentHeader
     title={contentTitle}
     authors={data.authors || content.authors}
-    created={data.created || content.created}
+    created={data.createdAt || content.createdAt}
     campaign={data.campaign || content.campaign}
     excerpt={contentExcerpt}
     tags={data.tags || content.tags}

@@ -32,10 +32,7 @@ type PublicCollectionEntry = {
     status?: string;
     authors?: string[];
     contributors?: Array<{ id: string; roles?: string[] }>;
-    created?: Date;
-    'created-date'?: Date;
-    modified?: Date;
-    'modified-date'?: Date;
+    createdAt?: Date;
   };
 };
 
@@ -51,7 +48,10 @@ const PUBLIC_COLLECTIONS: PublicContributorCollectionName[] = [
 ];
 
 function pickDisplayDate(entry: PublicCollectionEntry): Date {
-  return entry.data.created ?? entry.data['created-date'] ?? entry.data.modified ?? entry.data['modified-date'] ?? new Date(0);
+  if (!entry.data.createdAt) {
+    throw new Error(`Entry ${entry.id} is missing required createdAt frontmatter field.`);
+  }
+  return entry.data.createdAt;
 }
 
 function sortContributions(entries: PublicCollectionEntry[]): PublicCollectionEntry[] {
