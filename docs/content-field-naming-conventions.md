@@ -1,24 +1,32 @@
 # Content & Data Field-Naming Conventions
 
-This document defines the binding naming conventions for fields that appear across
-the Campaign Notes content system: authored Markdown frontmatter, TypeScript /
-JSON / OpenAPI payloads, and D1 / SQL storage. It is the canonical reference when
-adding or renaming a field that crosses more than one layer.
+This document defines field-naming conventions for World of Aletheia content
+and data surfaces: authored Markdown frontmatter, TypeScript / JSON / OpenAPI
+payloads, D1 / SQL storage, and route/file-system identifiers. It is the
+canonical reference when adding or renaming a field that crosses more than one
+layer.
 
 ## Scope
 
 These rules apply to:
 
 - **Authoring sources:** Markdown files in the Obsidian vault (frontmatter YAML),
-  note templates, and note generators.
-- **Application surface:** TypeScript models, Zod/OpenAPI request/response shapes,
-  admin and main-site route handlers, and any API producer or consumer that
-  touches the content schema.
-- **Storage:** D1 tables and column names owned by the campaign-notes pipeline.
+  repo-managed content examples, note templates, note generators, and content
+  sync/import/export code.
+- **Application surface:** Astro content schemas, TypeScript models, Zod/OpenAPI
+  request/response shapes, admin and main-site route handlers, and any API
+  producer or consumer that touches authored content fields.
+- **Storage and indexes:** D1 tables, D1 columns, content-index rows, and other
+  persisted metadata owned by the World of Aletheia / campaign-notes pipeline.
+- **Routing and identifiers:** Markdown file stems, URL slugs, campaign slugs,
+  session slugs, and other stable string identifiers derived from content.
 
-Other repos and domains (spells, accounts, public spell read API, etc.) are out
-of scope for this document, though the layer-native-casing rule stated below
-should be adopted broadly.
+This document is intentionally broader than the campaign-note admin API: it also
+covers the static worldbuilding collections in this repo (`lore`, `places`,
+`sentients`, `bestiary`, `flora`, `factions`, `systems`, `meta`, `campaigns`,
+`sessions`, and `contributors`). Other product domains (spells, accounts,
+public spell read API, etc.) are out of scope, though the layer-native-casing
+rule stated below should be adopted broadly.
 
 ## Conventions
 
@@ -39,7 +47,32 @@ enforce a frontmatter format, so `createdAt` / `updatedAt` are preferred in
 Markdown over traditional `created` / `modified` to keep the authored source
 aligned with the TypeScript layer.
 
-## Field-by-field reference (campaign notes)
+## Field-by-field reference (repo-owned authored content)
+
+For repo-owned Astro content collections, `src/content.config.ts` is the schema
+source of truth. The table below records common cross-layer fields used by the
+main site and content sync/indexing pipeline. Collection-specific fields still
+belong in `src/content.config.ts`; add rows here when a field crosses multiple
+layers or repos.
+
+| Concept | Frontmatter (YAML) | TypeScript / JSON | D1 / SQL column | Notes |
+| ------- | ------------------ | ----------------- | ---------------- | ----- |
+| content layer | `layer` | `layer` | `layer` | e.g. `canon`, `using`, `campaigns` where stored. |
+| collection | `collection` | `collection` | `collection` | Content collection identifier. |
+| title | `title` | `title` | `title` | Human-readable display title. |
+| content type | `type` | `type` | `type` | Collection-local enum used for grouping/filtering. |
+| content subtype | `subtype` | `subtype` | `subtype` | Optional narrower grouping/filtering value. |
+| authors | `authors` | `authors` | `authors_json` or mapping table | Authored content commonly uses display names; campaign-note APIs may use user ids. |
+| campaign slug | `campaign` | `campaign` or `campaignSlug` | `campaign_slug` | Frontmatter keeps the concise authored key; API boundaries may use `campaignSlug`. |
+| publication state | `publication` | `publication` | `publication` | Canonical authored state for publish/preview/draft-like behavior. |
+| content state | `contentState` | `contentState` | `content_state` | Editorial/content maturity state. |
+| visibility | `visibility` | `visibility` | `visibility` | Campaign content access surface. |
+| parent chain | `parentChain` | `parentChain` | `parent_chain_json` | Relationship/navigation metadata; keep camelCase in authored content. |
+| relationships | `relationships` | `relationships` | `relationships_json` | Cross-reference metadata; keep camelCase in authored content. |
+| created timestamp | `createdAt` | `createdAt` | `created_at` | Required RFC 3339 date-time for authored content. |
+| modified timestamp | `updatedAt` | `updatedAt` | `updated_at` | Required RFC 3339 date-time for authored content. |
+
+## Field-by-field reference (campaign notes API)
 
 For externally owned campaign-note APIs, the authoritative source is the
 contract under `docs/contracts/`; do not edit that contract from this repo.
