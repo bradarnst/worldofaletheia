@@ -13,7 +13,6 @@ import {
   FACTIONS_TYPES,
   SYSTEMS_TYPES,
   META_TYPES,
-  SESSIONS_TYPES,
   CAMPAIGN_CHARACTERS_TYPES,
   CAMPAIGN_SCENES_TYPES,
   CAMPAIGN_ADVENTURES_TYPES,
@@ -263,17 +262,6 @@ const campaignsSchema = baseSchema.extend({
   end: z.date().optional(),
 });
 
-const sessionsSchema = baseSchema.extend({
-  collection: z.literal('sessions'),
-  title: z.string(),
-  type: z.enum(SESSIONS_TYPES),
-  excerpt: optionalExcerptSchema,
-  campaign: z.string(),
-  visibility: z.enum(['public', 'campaignMembers', 'gm']).optional().default('campaignMembers'),
-  date: z.date().optional(),
-  duration: z.number().optional(),
-});
-
 const campaignLoreSchema = baseSchema.extend({
   collection: z.literal('campaignLore'),
   title: z.string(),
@@ -401,11 +389,6 @@ const campaigns = defineCollection({
   schema: campaignsSchema,
 });
 
-const sessions = defineCollection({
-  loader: createMarkdownLoader('sessions', '*/sessions/*.md', 'src/content/campaigns'),
-  schema: sessionsSchema,
-});
-
 const campaignLore = defineCollection({
   loader: createMarkdownLoader('campaignLore', '*/lore/**/*.md', 'src/content/campaigns'),
   schema: campaignLoreSchema,
@@ -486,7 +469,6 @@ export const collections = {
   factions,
   systems,
   campaigns,
-  sessions,
   campaignLore,
   campaignPlaces,
   campaignSentients,

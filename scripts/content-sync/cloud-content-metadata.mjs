@@ -408,20 +408,8 @@ export async function deriveCollectionEntries(mapping, relativePath, transformed
   };
 
   if (mapping.to === 'campaigns') {
-    const sessionMatch = /^([^/]+)\/sessions\/([^/]+)\.md$/i.exec(normalizedRelative);
-    if (sessionMatch) {
-      const campaignSlug = sessionMatch[1];
-      const sessionSlug = normalizeNullableString(frontmatterRecord.slug) ?? sessionMatch[2];
-      assertCollectionMatch(frontmatterCollection, 'sessions', normalizedRelative);
-      return [
-        buildEntry({
-          collection: frontmatterCollection,
-          id: stripMarkdownExtension(normalizedRelative),
-          slug: sessionSlug,
-          routePath: `${mapping.to}/${normalizedRelative}`,
-          campaignSlug,
-        }),
-      ];
+    if (/^[^/]+\/sessions\/[^/]+\.md$/i.test(normalizedRelative)) {
+      return [];
     }
 
     const familyMatch = new RegExp(`^([^/]+)\/(${CAMPAIGN_FAMILY_SEGMENT_PATTERN})\/(.+)\.md$`, 'i').exec(normalizedRelative);
@@ -559,6 +547,10 @@ export async function collectCloudContentMetadata(config, services, wikiIndex) {
   const includedPublications = getIncludedPublicationsForSyncLane(syncLane);
 
   for (const mapping of config.mappings.filter((candidate) => candidate.target === 'cloud')) {
+    if (mapping.to === 'campaigns') {
+      managedCollections.add('sessions');
+    }
+
     const { sourceRoot, files } = await gatherSourceFiles(config, mapping);
 
     for (const absolutePath of files) {

@@ -193,10 +193,6 @@ function getContentIndexCollectionForPath(mapping, relativePath) {
     return mapping.to;
   }
 
-  if (/^[^/]+\/sessions\/[^/]+\.md$/i.test(relativePath)) {
-    return 'sessions';
-  }
-
   const familyMatch = new RegExp(`^[^/]+\/(${CAMPAIGN_FAMILY_SEGMENT_PATTERN})\/.+\.md$`, 'i').exec(relativePath);
   if (familyMatch) {
     return CAMPAIGN_FAMILY_COLLECTIONS[familyMatch[1].toLowerCase()];
@@ -245,7 +241,12 @@ export async function buildSyncDiff(config, services = {}, { previousEtags = nul
     const publicationFiltered = mapping.target === 'cloud'
       ? await filterSourceFilesForPublication(unfilteredSourceFiles, sourceRoot)
       : { files: unfilteredSourceFiles, excluded: [] };
-    const sourceFiles = publicationFiltered.files;
+    const sourceFiles = mapping.to === 'campaigns'
+      ? publicationFiltered.files.filter((file) => {
+          const relativePath = normalizePathForDisplay(path.relative(sourceRoot, file));
+          return !/^[^/]+\/sessions\/[^/]+\.md$/i.test(relativePath);
+        })
+      : publicationFiltered.files;
     excludedByPublication.push(...publicationFiltered.excluded.map((file) => ({
       type: 'excluded',
       relativePath: normalizePathForDisplay(path.relative(sourceRoot, file)),

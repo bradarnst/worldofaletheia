@@ -1,0 +1,150 @@
+---
+import { getCollection } from 'astro:content';
+import type { CollectionEntry } from 'astro:content';
+import CampaignsContentLayout from '@layouts/CampaignsContentLayout.astro';
+import { getCampaignNote, isCampaignNotesApiError } from '@adapters/campaign-notes-api';
+import { extractCampaignSlugFromEntryId } from '@utils/campaign-collections';
+import { getFilteredCollection } from '@utils/content-filter';
+import { renderCampaignNoteMarkdownHtml } from '@utils/campaign-note-markdown';
+import { createCampaignRequestAccessResolver } from '~/lib/campaign-request-access';
+import { getRequestSession } from '~/lib/auth-session';
+import {
+  createCampaignNotesRuntimeActorAssertion,
+  resolveCampaignNotesRuntimeRole,
+} from '~/lib/campaign-notes-runtime-assertion';
+
+export const prerender = false;
+
+function formatDate(value: string | null | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+function labelNoteType(value: string): string {
+  return value
+    .split('-')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+const { campaign, documentId } = Astro.params;
+if (!campaign || !documentId) {
+  return new Response('Not Found', { status: 404 });
+}
+
+let campaignEntry: CollectionEntry<'campaigns'> | null = null;
+try {
+  const campaigns = getFilteredCollection(await getCollection('campaigns'));
+  campaignEntry = campaigns.find((entry) => extractCampaignSlugFromEntryId(entry.id) === campaign) ?? null;
+} catch (error) {
+  console.error('campaign.notes.detail_campaign_lookup_failed', {
+    campaignSlug: campaign,
+    documentId,
+    message: error instanceof Error ? error.message : 'unknown error',
+  });
+}
+
+if (!campaignEntry) {
+  return new Response('Not Found', { status: 404 });
+}
+
+const accessResolver = await createCampaignRequestAccessResolver({
+  request: Astro.request,
+  locals: Astro.locals,
+  hostname: Astro.url.hostname,
+});
+const [session, campaignAccess] = await Promise.all([
+  getRequestSession(Astro.request, Astro.locals),
+  accessResolver.hasCampaignAccess(campaign),
+]);
+const hasAuthenticatedCampaignAccess = Boolean(session && (campaignAccess.isMember || campaignAccess.isGm));
+const runtimeRole = resolveCampaignNotesRuntimeRole(campaignAccess);
+const assertion = session && runtimeRole
+  ? await createCampaignNotesRuntimeActorAssertion({
+      userId: session.user.id,
+      campaignSlug: campaign,
+      role: runtimeRole,
+    })
+  : null;
+
+let note;
+try {
+  note = await getCampaignNote(campaign, documentId, assertion);
+} catch (error) {
+  if (isCampaignNotesApiError(error) && (error.status === 401 || error.status === 403 || error.status === 404)) {
+    return new Response('Not Found', { status: 404 });
+  }
+
+  console.error('campaign.notes.detail_failed', {
+    campaignSlug: campaign,
+    documentId,
+    message: error instanceof Error ? error.message : 'unknown error',
+  });
+  return new Response('Campaign Notes are temporarily unavailable.', { status: 503 });
+}
+
+const noteHtml = renderCampaignNoteMarkdownHtml(note.body);
+const layoutContent = {
+  title: note.title,
+  excerpt: `Campaign note for ${campaignEntry.data.title}`,
+  authors: ['Campaign Notes'],
+  visibility: note.visibility,
+  tags: [],
+  campaign,
+  createdAt: new Date(note.createdAt),
+  updatedAt: new Date(note.updatedAt),
+  type: note.noteType,
+};
+const robots = note.visibility === 'public' && campaignEntry.data.visibility === 'public' ? undefined : 'noindex, nofollow';
+---
+
+<CampaignsContentLayout content={layoutContent} title={`${note.title} - ${campaignEntry.data.title}`} robots={robots}>
+  <article class="reading-prose">
+    <nav class="mb-6 text-sm meta-muted not-prose">
+      <a href="/campaigns" class="hover:text-primary">Campaigns</a>
+      <span class="mx-2">/</span>
+      <a href={`/campaigns/${campaign}`} class="hover:text-primary">{campaignEntry.data.title}</a>
+      <span class="mx-2">/</span>
+      <a href={`/campaigns/${campaign}/notes`} class="hover:text-primary">Notes</a>
+      <span class="mx-2">/</span>
+      <span class="font-medium text-ink-900">{note.title}</span>
+    </nav>
+
+    <header class="mb-8 not-prose">
+      <div class="mb-3 flex flex-wrap items-center gap-2">
+        <span class="ui-pill ui-pill--outline">{labelNoteType(note.noteType)}</span>
+        <span class="ui-pill ui-pill--ghost">{note.visibility === 'campaignMembers' ? 'Campaign members' : 'Public'}</span>
+        {note.sessionDate && <span class="ui-pill ui-pill--ghost">{formatDate(note.sessionDate)}</span>}
+      </div>
+      <h1 class="mb-3 text-3xl font-bold text-ink-950">{note.title}</h1>
+      <p class="meta-muted text-sm">
+        Updated {formatDate(note.updatedAt) ?? note.updatedAt}
+        {note.sessionSlug ? ` · Session ${note.sessionSlug}` : ''}
+      </p>
+      {hasAuthenticatedCampaignAccess && !assertion && note.visibility !== 'public' && (
+        <p class="mt-3 meta-muted text-sm">
+          Signed campaign-note access is temporarily unavailable, so this note was fetched with public-note access only.
+        </p>
+      )}
+    </header>
+
+    <section set:html={noteHtml} />
+
+    <nav class="mt-12 border-t border-base-300 pt-6 not-prose">
+      <a href={`/campaigns/${campaign}/notes`} class="inline-flex items-center gap-2 text-primary transition-colors hover:text-secondary">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Back to Notes
+      </a>
+    </nav>
+  </article>
+</CampaignsContentLayout>

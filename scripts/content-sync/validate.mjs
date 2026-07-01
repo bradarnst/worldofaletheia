@@ -19,7 +19,6 @@ const COLLECTION_VALIDATION_RULES = {
   systems: { requiredKeys: ARTICLE_REQUIRED_KEYS },
   meta: { requiredKeys: ARTICLE_REQUIRED_KEYS },
   campaigns: { requiredKeys: ARTICLE_REQUIRED_KEYS },
-  sessions: { requiredKeys: ARTICLE_REQUIRED_KEYS },
   campaignLore: { requiredKeys: ARTICLE_REQUIRED_KEYS },
   campaignPlaces: { requiredKeys: ARTICLE_REQUIRED_KEYS },
   campaignSentients: { requiredKeys: ARTICLE_REQUIRED_KEYS },
@@ -423,10 +422,6 @@ function inferCollectionFromMappingTo(mappingTo) {
 }
 
 function inferCampaignCollectionFromRelativePath(relativePath) {
-  if (/^[^/]+\/sessions\/[^/]+\.md$/i.test(relativePath)) {
-    return 'sessions';
-  }
-
   const familyMatch = new RegExp(`^[^/]+\/(${CAMPAIGN_FAMILY_SEGMENT_PATTERN})\/.+\.md$`, 'i').exec(relativePath);
   if (familyMatch) {
     return CAMPAIGN_FAMILY_COLLECTIONS[familyMatch[1].toLowerCase()];
@@ -449,6 +444,15 @@ function inferCampaignCollectionFromRelativePath(relativePath) {
   }
 
   return 'campaigns';
+}
+
+function isArchivedCampaignSessionPath(fileEntry) {
+  if (fileEntry.collection !== 'campaigns') {
+    return false;
+  }
+
+  const relativePath = path.relative(fileEntry.root, fileEntry.file).split(path.sep).join('/');
+  return /^[^/]+\/sessions\/[^/]+\.md$/i.test(relativePath);
 }
 
 function inferExpectedCollection(fileEntry) {
@@ -533,7 +537,10 @@ export async function validateContentTree(config) {
   for (const root of roots) {
     const files = await gatherMarkdownFiles(root.root);
     for (const file of files) {
-      fileEntries.push({ ...root, file });
+      const fileEntry = { ...root, file };
+      if (!isArchivedCampaignSessionPath(fileEntry)) {
+        fileEntries.push(fileEntry);
+      }
     }
   }
 

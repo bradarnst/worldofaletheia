@@ -29,18 +29,15 @@ interface CampaignSectionCard {
 
 const { slug } = Astro.params;
 let entry: CollectionEntry<'campaigns'> | null = null;
-let sessions: CollectionEntry<'sessions'>[] = [];
 let familyEntries: Awaited<ReturnType<typeof getAllCampaignFamilyEntries>> = [];
 let contentUnavailable = false;
 
 try {
-  const [campaigns, sessionsCollection, allFamilyEntries] = await Promise.all([
+  const [campaigns, allFamilyEntries] = await Promise.all([
     getCollection('campaigns'),
-    getCollection('sessions'),
     getAllCampaignFamilyEntries(),
   ]);
   entry = getFilteredCollection(campaigns).find((item) => extractCampaignSlugFromEntryId(item.id) === slug) ?? null;
-  sessions = getFilteredCollection(sessionsCollection);
   familyEntries = allFamilyEntries;
 } catch (error) {
   console.error('campaign.route.content_unavailable', {
@@ -90,11 +87,11 @@ const sectionCards: CampaignSectionCard[] = [];
 if (entry && canView && !contentUnavailable) {
   const sectionDefinitions = [
     {
-      segment: 'sessions',
-      label: 'Sessions',
-      description: 'Session logs, encounters, and play records tied to this campaign.',
-      href: `/campaigns/${campaignSlug}/sessions`,
-      entries: sessions.filter((sessionEntry) => sessionEntry.data.campaign === campaignSlug),
+      segment: 'notes',
+      label: 'Notes',
+      description: 'API-backed campaign notes and session records owned by the Campaign Notes service.',
+      href: `/campaigns/${campaignSlug}/notes`,
+      entries: [],
     },
     ...CAMPAIGN_FAMILY_SEGMENTS.map((segment) => {
       const family = getCampaignFamilyBySegment(segment);
@@ -178,8 +175,8 @@ const loginHref = `/login?next=${encodeURIComponent(Astro.url.pathname + Astro.u
             <div>
               <h2 class="text-2xl font-bold text-ink-950">Campaign Records</h2>
               <p class="meta-muted max-w-3xl">
-                Browse the campaign's session history and family-specific records. Record counts include protected entries
-                without exposing their titles.
+                Browse API-backed campaign notes and family-specific records. Protected family records are counted without
+                exposing their titles; note visibility is enforced by the Campaign Notes service.
               </p>
             </div>
             {canAdministerCampaign && (
@@ -202,20 +199,28 @@ const loginHref = `/login?next=${encodeURIComponent(Astro.url.pathname + Astro.u
               <div class="flex-1 space-y-3">
                 <div class="flex items-start justify-between gap-3">
                   <h3 class="text-xl font-semibold text-ink-950 transition-colors group-hover:text-primary">{section.label}</h3>
-                  <span class="ui-pill ui-pill--outline">{section.count} / {section.totalCount}</span>
+                  <span class="ui-pill ui-pill--outline">
+                    {section.segment === 'notes' ? 'Live' : `${section.count} / ${section.totalCount}`}
+                  </span>
                 </div>
                 <p class="text-sm text-ink-800">{section.description}</p>
                 <div class="flex flex-wrap items-center justify-between gap-2 text-sm meta-muted">
-                  <span>{section.count === 1 ? '1 visible entry' : `${section.count} visible entries`}</span>
+                  {section.segment === 'notes' ? (
+                    <span>Live API-backed notes</span>
+                  ) : (
+                    <span>{section.count === 1 ? '1 visible entry' : `${section.count} visible entries`}</span>
+                  )}
                   {section.restrictedCount > 0 && (
                     <span>{section.restrictedCount} protected</span>
                   )}
                   <span>
-                    {section.latestUpdated
-                      ? `Updated ${section.latestUpdated.toLocaleDateString('en-GB')}`
-                      : section.restrictedCount > 0
-                        ? 'Sign in to reveal entries'
-                        : 'No visible entries yet'}
+                    {section.segment === 'notes'
+                      ? 'Open notes list'
+                      : section.latestUpdated
+                        ? `Updated ${section.latestUpdated.toLocaleDateString('en-GB')}`
+                        : section.restrictedCount > 0
+                          ? 'Sign in to reveal entries'
+                          : 'No visible entries yet'}
                   </span>
                 </div>
               </div>

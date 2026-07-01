@@ -6,7 +6,6 @@ import { getAllCampaignFamilyEntries, type CampaignFamilyEntry } from '@utils/ca
 import {
   extractCampaignFamilySlugFromEntryId,
   extractCampaignSlugFromEntryId,
-  extractLeafSlugFromEntryId,
   getCampaignFamilySegmentByCollection,
 } from '@utils/campaign-collections';
 import { getFilteredCollection } from '@utils/content-filter';
@@ -93,7 +92,6 @@ export const GET: APIRoute = async ({ request }) => {
     systems,
     meta,
     campaigns,
-    sessions,
     familyEntries,
   ] = await Promise.all([
     getCollection('lore'),
@@ -105,14 +103,13 @@ export const GET: APIRoute = async ({ request }) => {
     getCollection('systems'),
     getCollection('meta'),
     getCollection('campaigns'),
-    getCollection('sessions'),
     getAllCampaignFamilyEntries(),
   ]);
 
   // Spell paths come from a runtime API that can be transiently unavailable
   // (429, 503, network errors). A flaky spell API must NOT take the entire
-  // sitemap offline — that would degrade SEO for all the lore/places/sessions/
-  // campaign content too. On failure we log and emit the sitemap without
+  // sitemap offline — that would degrade SEO for all the lore/places/campaign
+  // content too. On failure we log and emit the sitemap without
   // spell paths; the next regeneration will pick them back up.
   let spellListPageCount = 1;
   try {
@@ -175,16 +172,6 @@ export const GET: APIRoute = async ({ request }) => {
     entries.push(
       createUrlEntry(`/campaigns/${slug}`, pickCampaignDate(entry.data)),
     );
-  }
-
-  const publicSessions = sessions.filter((entry) => publicCampaignSlugs.has(entry.data.campaign) && entry.data.visibility === 'public');
-  const sessionCampaigns = new Set(publicSessions.map((entry) => entry.data.campaign));
-  for (const campaignSlug of sessionCampaigns) {
-    entries.push(createUrlEntry(`/campaigns/${campaignSlug}/sessions`));
-  }
-  for (const entry of publicSessions) {
-    const slug = extractLeafSlugFromEntryId(entry.id) || entry.id;
-    entries.push(createUrlEntry(`/campaigns/${entry.data.campaign}/sessions/${slug}`, pickDatedEntryDate(entry.data)));
   }
 
   const familyIndexPaths = new Set<string>();

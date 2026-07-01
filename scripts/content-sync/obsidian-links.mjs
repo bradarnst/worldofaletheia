@@ -75,12 +75,7 @@ function computeRouteFromMarkdownPath(absolutePath, repoRoot) {
     }
 
     if (campaignContentSegments[0] === 'sessions') {
-      const sessionSegments = campaignContentSegments.slice(1);
-      if (sessionSegments.length === 0 || (sessionSegments.length === 1 && sessionSegments[0] === 'index')) {
-        return `/campaigns/${campaignFolder}/sessions`;
-      }
-
-      return `/campaigns/${campaignFolder}/sessions/${sessionSegments.join('/')}`;
+      return `/campaigns/${campaignFolder}/notes`;
     }
 
     if (campaignContentSegments.length === 1) {

@@ -21,7 +21,7 @@ function normalizeTags(searchParams: URLSearchParams): string[] | undefined {
 }
 
 function buildHref(item: ContentIndexRow): string {
-  if (item.collection === 'campaigns' || item.collection === 'sessions' || item.collection.startsWith('campaign')) {
+  if (item.collection === 'campaigns' || item.collection.startsWith('campaign')) {
     return buildCampaignContentHref(item.collection, item.slug, item.campaignSlug);
   }
 

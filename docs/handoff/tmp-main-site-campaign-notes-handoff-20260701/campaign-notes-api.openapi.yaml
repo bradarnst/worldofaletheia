@@ -1,0 +1,580 @@
+openapi: 3.1.2
+info:
+  title: World of Aletheia Campaign Notes API
+  version: 0.2.0
+  summary: Source-of-truth contract for campaign-scoped note documents owned by woa-admin.
+  description: >-
+    Campaign Notes V1 owns a split canonical model: D1 owns document identity, campaign tenancy,
+    visibility, edit policy/ownership, current version/hash/etag, the current source R2 path,
+    searchable/listable metadata, and audit/reconciliation state. R2 owns the current Markdown body
+    and a portable frontmatter representation. Frontmatter is authoritative for note metadata on the
+    Obsidian/R2-sync lane; main-site UX writes must emit the same frontmatter contract before
+    writing R2.
+
+    Two lanes write into the same canonical Markdown object model:
+
+      Main-site UX lane: user writes in browser -> woa-admin authorizes -> woa-admin validates
+      frontmatter and collision rules -> woa-admin writes the Markdown object to the stable R2
+      source path -> woa-admin updates the D1 index/current state. The GM can later sync/see that
+      file in Obsidian.
+
+      Obsidian/R2-sync lane: a GM edits Markdown in Obsidian or a generic Markdown folder -> an
+      existing sync plugin/folder sync writes the file to R2 -> a woa-admin scheduled scanner
+      validates frontmatter/path/body and updates the D1 index/current state -> the main site reads
+      the indexed note.
+
+    The scanner is operational behavior (Cron Trigger or operator-triggered task), not part of
+    this HTTP contract. It soft-archives (hides, recoverable) previously indexed notes when their
+    R2 source object disappears, and records validation errors for invalid files without indexing
+    them as visible. A scanner-trigger HTTP endpoint is not exposed in V1.
+
+    Runtime calls are campaign-scoped and use a short-lived signed actor assertion from the main
+    site. Public reads require no credential but only expose unarchived public notes. Markdown
+    bodies reach R2 only through woa-admin-approved upload targets issued by write-session checkout.
+servers:
+  - url: https://admin.worldofaletheia.com
+    description: woa-admin origin.
+tags:
+  - name: Campaign Notes Documents
+  - name: Campaign Notes Write Sessions
+  - name: Campaign Notes Uploads
+paths:
+  /api/v1/campaigns/{campaignSlug}/notes/documents:
+    get:
+      operationId: listCampaignNoteDocuments
+      tags: [Campaign Notes Documents]
+      summary: List campaign note metadata
+      description: >-
+        Returns metadata only. Anonymous callers see only unarchived public notes. Authenticated
+        campaign members see unarchived public and campaignMembers notes. includeArchived=true is
+        honored only for a note's authors and campaign GMs. Filters by noteType, sessionSlug, and
+        sessionDate narrow the result set.
+      security:
+        - {}
+        - RuntimeActorAssertion: []
+      parameters:
+        - $ref: '#/components/parameters/CampaignSlug'
+        - $ref: '#/components/parameters/NoteTypeQuery'
+        - $ref: '#/components/parameters/SessionSlugQuery'
+        - $ref: '#/components/parameters/SessionDateQuery'
+        - $ref: '#/components/parameters/IncludeArchivedQuery'
+        - $ref: '#/components/parameters/LimitQuery'
+        - $ref: '#/components/parameters/CursorQuery'
+      responses:
+        '200':
+          description: Note metadata page.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentPage'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+  /api/v1/campaigns/{campaignSlug}/notes/documents/{documentId}:
+    get:
+      operationId: getCampaignNoteDocument
+      tags: [Campaign Notes Documents]
+      summary: Read one note with Markdown body
+      description: >-
+        Reads the canonical Markdown body from the document's stable R2 source path via the D1
+        current state. The returned body includes the authoritative frontmatter.
+      security:
+        - {}
+        - RuntimeActorAssertion: []
+      parameters:
+        - $ref: '#/components/parameters/CampaignSlug'
+        - $ref: '#/components/parameters/DocumentId'
+        - $ref: '#/components/parameters/IncludeArchivedQuery'
+      responses:
+        '200':
+          description: Current note document and Markdown body.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentDetail'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+    patch:
+      operationId: patchCampaignNoteMetadata
+      tags: [Campaign Notes Documents]
+      summary: Patch note index state (archive/restore)
+      description: >-
+        Updates D1-only index state without changing the Markdown body or current revision. In the
+        corrected model frontmatter is authoritative for title, visibility, noteType, sessionSlug,
+        sessionDate, and authorUserIds; changing any of those requires rewriting the R2 Markdown
+        through a write-session (create/update) so R2 stays authoritative and D1 stays derived. This
+        endpoint therefore only toggles soft-archive state: archived (set or clear) and archivedReason.
+        The actor must be a note author or a campaign GM and must provide the expected metadata version.
+        Soft-archive is reversible; restoring the file from R2 clears archived state.
+      security:
+        - RuntimeActorAssertion: []
+      parameters:
+        - $ref: '#/components/parameters/CampaignSlug'
+        - $ref: '#/components/parameters/DocumentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MetadataPatchRequest'
+      responses:
+        '200':
+          description: Updated note metadata.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentMetadata'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+  /api/v1/campaigns/{campaignSlug}/notes/write-sessions:
+    post:
+      operationId: createCampaignNoteWriteSession
+      tags: [Campaign Notes Write Sessions]
+      summary: Check out a note body for create or update
+      description: >-
+        Allocates a soft checkout, a revision id, and a woa-admin-approved Markdown upload target
+        whose R2 key is the stable source path campaigns/{campaignSlug}/{documentId}.md. On create,
+        documentId is either caller-supplied (must follow the documentId convention and must not
+        collide with an existing document in the same campaign/type/date/title) or woa-admin-generated.
+        The eventual finalize verifies R2 drift against the D1 current state.
+      security:
+        - RuntimeActorAssertion: []
+      parameters:
+        - $ref: '#/components/parameters/CampaignSlug'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWriteSessionRequest'
+      responses:
+        '201':
+          description: Checked out write session.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WriteSession'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+  /api/v1/campaigns/{campaignSlug}/notes/write-sessions/{writeSessionId}:
+    get:
+      operationId: getCampaignNoteWriteSession
+      tags: [Campaign Notes Write Sessions]
+      summary: Recover write session state
+      security:
+        - RuntimeActorAssertion: []
+      parameters:
+        - $ref: '#/components/parameters/CampaignSlug'
+        - $ref: '#/components/parameters/WriteSessionId'
+      responses:
+        '200':
+          description: Current write session state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WriteSession'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/v1/campaigns/{campaignSlug}/notes/write-sessions/{writeSessionId}/finalize:
+    post:
+      operationId: finalizeCampaignNoteWriteSession
+      tags: [Campaign Notes Write Sessions]
+      summary: Finalize an uploaded runtime Markdown body
+      description: >-
+        Verifies the uploaded Markdown object at the stable source path, validates its frontmatter,
+        computes the content hash, and detects R2 drift: if the R2 object's etag/version changed since
+        D1 was last indexed (for example because an Obsidian sync wrote a newer file before the
+        scanner ran), finalize rejects with 409 r2_drift and the caller must reload/reindex. On
+        success it inserts a revision, advances the D1 current state, and records audit. No blind
+        overwrite of newer R2 content.
+      security:
+        - RuntimeActorAssertion: []
+      parameters:
+        - $ref: '#/components/parameters/CampaignSlug'
+        - $ref: '#/components/parameters/WriteSessionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FinalizeWriteSessionRequest'
+      responses:
+        '200':
+          description: Canonical document after finalization.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentDetail'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '410': { $ref: '#/components/responses/Gone' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+  /api/v1/campaigns/{campaignSlug}/notes/write-sessions/{writeSessionId}/abort:
+    post:
+      operationId: abortCampaignNoteWriteSession
+      tags: [Campaign Notes Write Sessions]
+      summary: Abort a checked-out runtime write session
+      security:
+        - RuntimeActorAssertion: []
+      parameters:
+        - $ref: '#/components/parameters/CampaignSlug'
+        - $ref: '#/components/parameters/WriteSessionId'
+      responses:
+        '200':
+          description: Aborted write session.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WriteSession'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/campaigns/{campaignSlug}/notes/uploads/{uploadId}:
+    put:
+      operationId: uploadCampaignNoteMarkdown
+      tags: [Campaign Notes Uploads]
+      summary: Relay Markdown body to an approved R2 target
+      description: >-
+        Runtime-only upload relay. The uploadId is issued only by a write-session checkout response
+        and maps to the approved stable source path R2 key. The caller must present the matching
+        runtime actor assertion. The response contentHash (and etag) are used when finalizing. The
+        uploaded Markdown must include valid frontmatter per the frontmatter contract.
+      security:
+        - RuntimeActorAssertion: []
+      parameters:
+        - $ref: '#/components/parameters/CampaignSlug'
+        - $ref: '#/components/parameters/UploadId'
+      requestBody:
+        required: true
+        content:
+          text/markdown:
+            schema:
+              type: string
+      responses:
+        '200':
+          description: Object was stored at the approved target.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadResult'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+components:
+  securitySchemes:
+    RuntimeActorAssertion:
+      type: apiKey
+      in: header
+      name: x-woa-runtime-actor
+      description: Base64url JSON actor assertion signed by x-woa-runtime-signature.
+  parameters:
+    CampaignSlug:
+      name: campaignSlug
+      in: path
+      required: true
+      schema: { type: string, pattern: '^[a-z0-9][a-z0-9-]*[a-z0-9]$' }
+    DocumentId:
+      name: documentId
+      in: path
+      required: true
+      description: >-
+        Immutable document id, equal to the R2 source filename stem. Convention:
+        {campaignSlug}-{noteType}-{YYYYMMDD}-{titleSlug}; no time component, no random suffix, YYYYMMDD
+        is the creation date, titleSlug is a URL-safe slug of the title. Renaming a file is not a
+        supported note-rename operation.
+      schema: { type: string, minLength: 1, maxLength: 128, pattern: '^[A-Za-z0-9][A-Za-z0-9-]*$' }
+    WriteSessionId:
+      name: writeSessionId
+      in: path
+      required: true
+      schema: { type: string, minLength: 1, maxLength: 128 }
+    UploadId:
+      name: uploadId
+      in: path
+      required: true
+      schema: { type: string, minLength: 1, maxLength: 256 }
+    NoteTypeQuery:
+      name: noteType
+      in: query
+      schema: { $ref: '#/components/schemas/NoteType' }
+    SessionSlugQuery:
+      name: sessionSlug
+      in: query
+      schema: { type: string, minLength: 1, maxLength: 80 }
+    SessionDateQuery:
+      name: sessionDate
+      in: query
+      schema: { type: string, format: date }
+    IncludeArchivedQuery:
+      name: includeArchived
+      in: query
+      schema: { type: boolean, default: false }
+    LimitQuery:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+    CursorQuery:
+      name: cursor
+      in: query
+      schema: { type: string, maxLength: 512 }
+  schemas:
+    NoteType:
+      type: string
+      enum: [session-note, campaign-note, gm-note, recap, downtime-note]
+      description: >-
+        V1 note types. session-note is the default when a default is needed. gm-note means a note
+        authored by the GM, not GM-only access; it does not imply a gm visibility.
+    Visibility:
+      type: string
+      enum: [public, campaignMembers]
+    ArchivedReason:
+      type: string
+      enum: [manual, r2_missing]
+      description: >-
+        Why a note is soft-archived. manual is an author/GM archive action; r2_missing is set by the
+        scanner when the R2 source object disappeared. Both are reversible.
+    SyncState:
+      type: string
+      enum: [indexed, missing, validation_error]
+      description: >-
+        Scanner reconciliation state. indexed means D1 current state matches a validated R2 object.
+        missing means the R2 source object is gone. validation_error means the last scan rejected the
+        file (recorded as an error; the note is not indexed as visible).
+    ContentHash:
+      type: string
+      pattern: '^[a-f0-9]{64}$'
+    AuthorUserIds:
+      type: array
+      minItems: 1
+      maxItems: 50
+      uniqueItems: true
+      items: { type: string, minLength: 1 }
+      description: >-
+        Unordered set of canonical Better Auth user ids identifying the authors of a campaign
+        note. Order is NOT semantically significant: requests MAY submit ids in any order, the
+        server canonicalizes the set (deduplicated, sorted) before persistence and response, and
+        clients MUST NOT depend on a particular order. Frontmatter and request bodies are
+        compared as sets when validating writes. Every entry must be a member of the exact
+        campaign at the time of the operation.
+    UploadTarget:
+      type: object
+      required: [uploadId, uploadUrl, method, contentType, maxBodySizeBytes, expiresAt]
+      properties:
+        uploadId: { type: string }
+        uploadUrl: { type: string }
+        method: { type: string, const: PUT }
+        contentType: { type: string, const: text/markdown; charset=utf-8 }
+        maxBodySizeBytes: { type: integer, minimum: 1 }
+        expiresAt: { type: string, format: date-time }
+    FrontmatterContract:
+      type: object
+      description: >-
+        Authoritative Markdown frontmatter shape, parsed from the leading YAML block of the R2
+        Markdown object. This is NOT a JSON request body; it is documented here as the binding
+        contract for both lanes. Required fields are validated by the scanner and emitted by
+        main-site writes. campaign must match the exact campaign slug and the path campaign.
+        documentId must match the filename stem. authorUserIds must be canonical Better Auth user
+        ids and every entry must be a member of the exact campaign. sessionSlug/sessionDate are
+        optional (sessionSlug is expected when type is session-note). version is an optional
+        optimistic-concurrency marker (r2 etag or content hash). createdAt/updatedAt are ISO
+        timestamps and are the canonical frontmatter timestamp field names; Obsidian-style
+        `created`/`modified` keys are NOT accepted as aliases, even though Obsidian itself does
+        not require those names. Unknown keys are tolerated and stripped by the parser, so a note
+        that supplies only `created`/`modified` without the canonical `createdAt`/`updatedAt`
+        fails validation. The filename (documentId) is immutable after creation; changing the note
+        title updates frontmatter title only and does not rename the file.
+      required: [collection, campaign, documentId, type, title, visibility, authorUserIds, createdAt, updatedAt]
+      properties:
+        collection: { type: string, const: campaignSessions }
+        campaign: { type: string }
+        documentId: { type: string }
+        type: { $ref: '#/components/schemas/NoteType' }
+        title: { type: string, minLength: 1, maxLength: 200 }
+        visibility: { $ref: '#/components/schemas/Visibility' }
+        authorUserIds: { $ref: '#/components/schemas/AuthorUserIds' }
+        sessionSlug: { type: string, minLength: 1, maxLength: 80 }
+        sessionDate: { type: string, format: date }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        version: { type: string }
+      additionalProperties: true
+    DocumentMetadata:
+      type: object
+      required: [documentId, campaignSlug, noteType, title, visibility, authorUserIds, sourcePath, createdAt, updatedAt, archived, metadataVersion, currentRevisionId, currentContentHash, currentR2Etag, sourceKind, lastWriteLane]
+      properties:
+        documentId: { type: string }
+        campaignSlug: { type: string }
+        noteType: { $ref: '#/components/schemas/NoteType' }
+        title: { type: string }
+        visibility: { $ref: '#/components/schemas/Visibility' }
+        authorUserIds: { $ref: '#/components/schemas/AuthorUserIds' }
+        sourcePath:
+          type: string
+          description: Stable R2 source path campaigns/{campaignSlug}/{documentId}.md.
+        sessionSlug: { type: [string, 'null'] }
+        sessionDate: { type: [string, 'null'], format: date }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        archived: { type: boolean }
+        archivedAt: { type: [string, 'null'], format: date-time }
+        archivedReason: { oneOf: [{ $ref: '#/components/schemas/ArchivedReason' }, { type: 'null' }] }
+        metadataVersion: { type: integer, minimum: 1 }
+        currentRevisionId: { type: [string, 'null'] }
+        currentContentHash: { oneOf: [{ $ref: '#/components/schemas/ContentHash' }, { type: 'null' }] }
+        currentR2Etag: { type: [string, 'null'], description: R2 object etag of the indexed source object, used for drift detection. }
+        currentR2Version: { type: [string, 'null'], description: R2 object version of the indexed source object, used for drift detection. }
+        sourceKind: { type: string, enum: [runtimeEditor, r2Sync, mixed] }
+        lastWriteLane: { type: [string, 'null'], enum: [runtime, r2Sync, null] }
+        lastScannedAt: { type: [string, 'null'], format: date-time }
+        syncState: { oneOf: [{ $ref: '#/components/schemas/SyncState' }, { type: 'null' }] }
+    DocumentPage:
+      type: object
+      required: [campaignSlug, items, nextCursor]
+      properties:
+        campaignSlug: { type: string }
+        items: { type: array, items: { $ref: '#/components/schemas/DocumentMetadata' } }
+        nextCursor: { type: [string, 'null'] }
+    DocumentDetail:
+      allOf:
+        - $ref: '#/components/schemas/DocumentMetadata'
+        - type: object
+          required: [body]
+          properties:
+            body: { type: string, description: Canonical Markdown body including the authoritative frontmatter. }
+    MetadataPatchRequest:
+      type: object
+      required: [expectedMetadataVersion]
+      properties:
+        expectedMetadataVersion: { type: integer, minimum: 1 }
+        archived: { type: boolean, description: Set true to soft-archive (hide, reversible) or false to restore. }
+        archivedReason: { $ref: '#/components/schemas/ArchivedReason' }
+      additionalProperties: false
+      description: >-
+        At least one of archived or archivedReason must be provided. archivedReason is ignored unless
+        archived is true. Frontmatter-authoritative fields (title, visibility, noteType, sessionSlug,
+        sessionDate, authorUserIds) are not patchable here; change them via a write-session that
+        rewrites R2.
+    CreateWriteSessionRequest:
+      type: object
+      required: [operation, noteType, title, visibility, authorUserIds]
+      properties:
+        operation: { type: string, enum: [create, update] }
+        documentId:
+          type: string
+          description: >-
+            Required for update. Optional for create; if omitted, woa-admin generates one following
+            the documentId convention. On create it must not collide with an existing document in the
+            same campaign/type/date/title; the caller then chooses a different title.
+        noteType: { $ref: '#/components/schemas/NoteType' }
+        title: { type: string, minLength: 1, maxLength: 200 }
+        visibility: { $ref: '#/components/schemas/Visibility' }
+        authorUserIds: { $ref: '#/components/schemas/AuthorUserIds' }
+        sessionSlug: { type: [string, 'null'] }
+        sessionDate: { type: [string, 'null'], format: date }
+        expectedRevisionId: { type: [string, 'null'], description: Required for update. }
+        expectedContentHash: { oneOf: [{ $ref: '#/components/schemas/ContentHash' }, { type: 'null' }], description: Required for update. }
+      additionalProperties: false
+    FinalizeWriteSessionRequest:
+      type: object
+      required: [contentHash]
+      properties:
+        contentHash: { $ref: '#/components/schemas/ContentHash' }
+        expectedR2Etag:
+          type: [string, 'null']
+          description: >-
+            Optional. The R2 etag the caller last observed for the source path. When provided,
+            finalize rejects with 409 r2_drift if the current R2 object etag differs (R2 changed since
+            D1 was last indexed). When omitted, drift is detected against D1 current_r2_etag.
+      additionalProperties: false
+    WriteSession:
+      type: object
+      required: [writeSessionId, campaignSlug, documentId, revisionId, operation, noteType, title, visibility, authorUserIds, status, actorUserId, expectedRevisionId, expectedContentHash, uploadTarget, createdAt, expiresAt]
+      properties:
+        writeSessionId: { type: string }
+        campaignSlug: { type: string }
+        documentId: { type: string }
+        revisionId: { type: string }
+        operation: { type: string, enum: [create, update] }
+        noteType: { $ref: '#/components/schemas/NoteType' }
+        title: { type: string }
+        visibility: { $ref: '#/components/schemas/Visibility' }
+        authorUserIds: { $ref: '#/components/schemas/AuthorUserIds' }
+        sessionSlug: { type: [string, 'null'] }
+        sessionDate: { type: [string, 'null'], format: date }
+        status: { type: string, enum: [checkedOut, finalized, aborted, expired, stale] }
+        actorUserId: { type: string }
+        expectedRevisionId: { type: [string, 'null'] }
+        expectedContentHash: { oneOf: [{ $ref: '#/components/schemas/ContentHash' }, { type: 'null' }] }
+        uploadTarget: { oneOf: [{ $ref: '#/components/schemas/UploadTarget' }, { type: 'null' }] }
+        createdAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time }
+        finalizedAt: { type: [string, 'null'], format: date-time }
+        abortedAt: { type: [string, 'null'], format: date-time }
+    UploadResult:
+      type: object
+      required: [uploadId, contentHash, bodySizeBytes, etag]
+      properties:
+        uploadId: { type: string }
+        contentHash: { $ref: '#/components/schemas/ContentHash' }
+        bodySizeBytes: { type: integer, minimum: 0 }
+        etag: { type: string, description: R2 object etag of the stored source object; supply to finalize as expectedR2Etag to detect drift. }
+    Error:
+      type: object
+      required: [error, message]
+      properties:
+        error: { type: string }
+        message: { type: string }
+        requestId: { type: string }
+  responses:
+    BadRequest:
+      description: Invalid request.
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    Unauthorized:
+      description: Missing or invalid assertion.
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    Forbidden:
+      description: Authenticated actor is not allowed.
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    NotFound:
+      description: Resource not found or not readable.
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    Conflict:
+      description: >-
+        Checked-out, stale, metadata-conflict, document-id collision, or R2-drift state. The error
+        field is one of: checked_out, stale_revision, metadata_conflict, document_id_collision,
+        r2_drift.
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    Gone:
+      description: Session expired.
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    PayloadTooLarge:
+      description: Markdown body exceeds approved size policy.
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    TooManyRequests:
+      description: Rate limited.
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    ServiceUnavailable:
+      description: D1, R2, or dependent service unavailable.
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }

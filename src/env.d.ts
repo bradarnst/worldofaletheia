@@ -17,6 +17,9 @@ interface ImportMetaEnv {
   readonly MAILJET_SECRET_KEY?: string;
   readonly MAILJET_SANDBOX_MODE?: 'on' | 'off';
   readonly CF_PAGES_URL?: string;
+  readonly WOA_ADMIN_API_BASE?: string;
+  readonly CAMPAIGN_NOTES_ENVIRONMENT?: 'staging' | 'production';
+  readonly CAMPAIGN_NOTES_RUNTIME_ASSERTION_SECRET?: string;
 }
 
 interface ImportMeta {

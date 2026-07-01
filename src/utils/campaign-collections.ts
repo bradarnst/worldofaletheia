@@ -75,7 +75,6 @@ export const CAMPAIGN_FAMILY_COLLECTIONS = CAMPAIGN_FAMILY_SEGMENTS.map(
 
 export const CAMPAIGN_DOMAIN_COLLECTIONS = [
   'campaigns',
-  'sessions',
   ...CAMPAIGN_FAMILY_COLLECTIONS,
 ] as const;
 
@@ -116,7 +115,7 @@ export function getCampaignFamilySegmentByCollection(
 }
 
 export function isCampaignDomainCollection(collection: string): collection is CampaignDomainCollection {
-  return collection === 'campaigns' || collection === 'sessions' || collection.startsWith('campaign');
+  return collection === 'campaigns' || collection.startsWith('campaign');
 }
 
 export function extractCampaignSlugFromEntryId(id: string): string {
@@ -143,10 +142,6 @@ export function buildCampaignContentHref(
 ): string {
   if (collection === 'campaigns') {
     return `/campaigns/${slug}`;
-  }
-
-  if (collection === 'sessions') {
-    return campaignSlug ? `/campaigns/${campaignSlug}/sessions/${slug}` : `/sessions/${slug}`;
   }
 
   const familySegment = getCampaignFamilySegmentByCollection(collection);
