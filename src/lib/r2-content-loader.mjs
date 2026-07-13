@@ -195,6 +195,19 @@ function preprocessMarkdownImages(markdown, markdownR2Key) {
   });
 }
 
+function normalizeFrontmatterDateValues(frontmatter) {
+  const normalized = { ...frontmatter };
+
+  for (const field of ['createdAt', 'updatedAt']) {
+    const value = normalized[field];
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+      normalized[field] = value.toISOString();
+    }
+  }
+
+  return normalized;
+}
+
 
 export function createR2MarkdownCollectionLoader(collection) {
   return {
@@ -222,7 +235,7 @@ export function createR2MarkdownCollectionLoader(collection) {
         const { frontmatter, content } = parsed;
 
         // Inject campaign field from D1 lookup data for campaign family collections
-        const enrichedFrontmatter = { ...frontmatter };
+        const enrichedFrontmatter = normalizeFrontmatterDateValues(frontmatter);
         if (entry.campaignSlug && !enrichedFrontmatter.campaign) {
           enrichedFrontmatter.campaign = entry.campaignSlug;
         }

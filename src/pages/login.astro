@@ -118,12 +118,6 @@ const callbackURL = new URL(next, Astro.url.origin).toString();
         }
       }
 
-      // Fallback: follow redirect if the handler redirected automatically
-      if (response.url && response.url !== window.location.href) {
-        window.location.href = response.url;
-        return;
-      }
-
       const error = data?.error ?? 'sign_in_failed';
       alert(`Sign-in failed: ${error}. Please try again.`);
     } catch {
