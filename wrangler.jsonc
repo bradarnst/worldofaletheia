@@ -16,8 +16,7 @@
     "MAILJET_SANDBOX_MODE": "off",
     "EMAIL_FROM": "gm@worldofaletheia.com",
     "EMAIL_REPLY_TO": "gm@worldofaletheia.com",
-    "CONTACT_TO_EMAIL": "brad@worldofaletheia.com,barry@worldofaletheia.com",
-    "CAMPAIGN_NOTES_ENVIRONMENT": "production"
+    "CONTACT_TO_EMAIL": "brad@worldofaletheia.com,barry@worldofaletheia.com"
   },
   "route": {
     "pattern": "worldofaletheia.com/*",
@@ -38,8 +37,7 @@
         "MAILJET_SANDBOX_MODE": "on",
         "EMAIL_FROM": "gm@worldofaletheia.com",
         "EMAIL_REPLY_TO": "gm@worldofaletheia.com",
-        "CONTACT_TO_EMAIL": "brad@worldofaletheia.com,barry@worldofaletheia.com",
-        "CAMPAIGN_NOTES_ENVIRONMENT": "staging"
+        "CONTACT_TO_EMAIL": "brad@worldofaletheia.com,barry@worldofaletheia.com"
       },
       "d1_databases": [
         {

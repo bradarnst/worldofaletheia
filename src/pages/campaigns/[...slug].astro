@@ -85,27 +85,18 @@ const canAdministerCampaign = campaignAccess.isGm;
 
 const sectionCards: CampaignSectionCard[] = [];
 if (entry && canView && !contentUnavailable) {
-  const sectionDefinitions = [
-    {
-      segment: 'notes',
-      label: 'Notes',
-      description: 'API-backed campaign notes and session records owned by the Campaign Notes service.',
-      href: `/campaigns/${campaignSlug}/notes`,
-      entries: [],
-    },
-    ...CAMPAIGN_FAMILY_SEGMENTS.map((segment) => {
-      const family = getCampaignFamilyBySegment(segment);
-      return {
-        segment,
-        label: family?.label ?? segment,
-        description: family?.description ?? 'Campaign content.',
-        href: `/campaigns/${campaignSlug}/${segment}`,
-        entries: familyEntries.filter(
-          (familyEntry) => familyEntry.collection === family?.collection && familyEntry.data.campaign === campaignSlug,
-        ),
-      };
-    }),
-  ];
+  const sectionDefinitions = CAMPAIGN_FAMILY_SEGMENTS.map((segment) => {
+    const family = getCampaignFamilyBySegment(segment);
+    return {
+      segment,
+      label: family?.label ?? segment,
+      description: family?.description ?? 'Campaign content.',
+      href: `/campaigns/${campaignSlug}/${segment}`,
+      entries: familyEntries.filter(
+        (familyEntry) => familyEntry.collection === family?.collection && familyEntry.data.campaign === campaignSlug,
+      ),
+    };
+  });
 
   for (const section of sectionDefinitions) {
     let visibleCount = 0;
@@ -175,8 +166,7 @@ const loginHref = `/login?next=${encodeURIComponent(Astro.url.pathname + Astro.u
             <div>
               <h2 class="text-2xl font-bold text-ink-950">Campaign Records</h2>
               <p class="meta-muted max-w-3xl">
-                Browse API-backed campaign notes and family-specific records. Protected family records are counted without
-                exposing their titles; note visibility is enforced by the Campaign Notes service.
+                Browse family-specific campaign records. Protected records are counted without exposing their titles.
               </p>
             </div>
             {canAdministerCampaign && (
@@ -199,28 +189,20 @@ const loginHref = `/login?next=${encodeURIComponent(Astro.url.pathname + Astro.u
               <div class="flex-1 space-y-3">
                 <div class="flex items-start justify-between gap-3">
                   <h3 class="text-xl font-semibold text-ink-950 transition-colors group-hover:text-primary">{section.label}</h3>
-                  <span class="ui-pill ui-pill--outline">
-                    {section.segment === 'notes' ? 'Live' : `${section.count} / ${section.totalCount}`}
-                  </span>
+                  <span class="ui-pill ui-pill--outline">{section.count} / {section.totalCount}</span>
                 </div>
                 <p class="text-sm text-ink-800">{section.description}</p>
                 <div class="flex flex-wrap items-center justify-between gap-2 text-sm meta-muted">
-                  {section.segment === 'notes' ? (
-                    <span>Live API-backed notes</span>
-                  ) : (
-                    <span>{section.count === 1 ? '1 visible entry' : `${section.count} visible entries`}</span>
-                  )}
+                  <span>{section.count === 1 ? '1 visible entry' : `${section.count} visible entries`}</span>
                   {section.restrictedCount > 0 && (
                     <span>{section.restrictedCount} protected</span>
                   )}
                   <span>
-                    {section.segment === 'notes'
-                      ? 'Open notes list'
-                      : section.latestUpdated
-                        ? `Updated ${section.latestUpdated.toLocaleDateString('en-GB')}`
-                        : section.restrictedCount > 0
-                          ? 'Sign in to reveal entries'
-                          : 'No visible entries yet'}
+                    {section.latestUpdated
+                      ? `Updated ${section.latestUpdated.toLocaleDateString('en-GB')}`
+                      : section.restrictedCount > 0
+                        ? 'Sign in to reveal entries'
+                        : 'No visible entries yet'}
                   </span>
                 </div>
               </div>

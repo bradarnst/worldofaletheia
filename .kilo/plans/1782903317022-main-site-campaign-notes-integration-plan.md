@@ -1,316 +1,421 @@
-# Main-Site Campaign Notes Integration Plan
+# Main-Site Campaign Notes Integration Plan — Superseded by 2026-07-12 Contract
 
-## Goal
+## Status
 
-Integrate `woa-admin` Campaign Notes into `worldofaletheia.com` as a separate, API-backed read surface that replaces the old published session-note path.
+- **Status:** Approved / implementation-ready
+- **Updated:** 2026-07-13T10:39:47+02:00
+- **Approval:** User approved the recommendation to delay `/notes`, perform the containment pass, and wait for the broader `woa-admin` Campaign Content API before unified implementation.
+- **Supersedes:** Earlier Campaign Notes plan based on the pre-2026-07-12 `campaign-notes-api.openapi.yaml`
+- **Binding contract:** `docs/contracts/campaign-notes-api.openapi.yaml` version `0.3.1`
+- **Consumer guide:** `docs/handoff/tmp-main-site-campaign-notes-handoff-20260712/campaign-notes-main-site-handoff.md`
 
-This plan treats:
-- `docs/contracts/campaign-notes-api.openapi.yaml` as the binding contract
-- the handoff bundle in `docs/handoff/tmp-main-site-campaign-notes-handoff-20260701/` as implementation guidance
-- accepted ADRs as binding architecture decisions
-- older import-session assumptions as superseded and out of scope
+## Executive Recommendation
 
-## Locked Decisions
+**Recommendation: choose Option 3 — delay production implementation of the new Campaign Notes routes until the broader Campaign Content API/routing cutover is ready, while doing a small safety/alignment pass now.**
 
-1. Campaign Notes are separate from broader Campaign Content.
-2. `woa-admin` owns Campaign Notes read/write API behavior and canonical note state.
-3. Main-site Campaign Notes routes are SSR runtime routes from the start.
-4. The published note surface changes from `/campaigns/{campaign}/sessions` to:
-   - `/campaigns/{campaignSlug}/notes`
-   - `/campaigns/{campaignSlug}/notes/{documentId}`
-5. Do not preserve old session-note URLs or add legacy aliases.
-6. Render Campaign Notes Markdown as website pages only, not public raw Markdown downloads.
-7. Slice 1 is read-only; website create/edit UX and write-session integration are deferred.
-8. Old session-note ingestion/publication is disabled in the same slice that adds `/notes`.
+The small pass should:
 
-## Current Repo Reality
+1. Treat all earlier Campaign Notes code/plans based on the older spec as superseded.
+2. Prevent the current old-contract `/campaigns/{campaign}/notes` surface from being treated as production-ready.
+3. Update implementation planning and tests to the new v0.3.1 contract before any further Campaign Notes route work.
+4. Avoid adding a feature flag unless the wait for the broader campaign cutover expands beyond “a few days.”
 
-Old note publication path still exists in the main site:
-- `src/content.config.ts` defines the `sessions` collection from old campaign content files
-- `src/pages/campaigns/[campaign]/sessions/index.astro`
-- `src/pages/campaigns/[campaign]/sessions/[...slug].astro`
-- `src/pages/campaigns/[...slug].astro` links to `Sessions`
-- `src/pages/sitemap.xml.ts` emits `/campaigns/{campaign}/sessions*`
-- `scripts/content-sync/cloud-content-metadata.mjs`, `validate.mjs`, `fs-diff.mjs`, `obsidian-links.mjs` still classify/index campaign `sessions`
+Rationale:
 
-Superseded in-repo Campaign Notes foundation also exists and must not become authoritative:
-- `migrations/0015_campaign_note_documents.sql`
-- `src/lib/campaign-note-documents.ts`
-- `src/lib/campaign-note-documents-repo.ts`
-- `src/lib/campaign-note-documents.test.ts`
-- `src/lib/campaign-note-documents-repo.test.ts`
-- `scripts/db-migrate-auth-plan.mjs` still references `0015_campaign_note_documents.sql`
+- The current Campaign Notes implementation in this repo is already out of contract with v0.3.1.
+- The project has very little campaign content right now, so the product benefit of shipping a split-routing Notes-only integration is low.
+- The split model would create short-lived routing and IA complexity: Notes from `woa-admin`, other campaign content from current Astro collections/content-index paths.
+- The sister-site expects the broader campaign article cutover very soon; waiting avoids work that may be immediately replaced.
+- The overriding risk is main-site breakage, not delayed campaign content availability.
 
-Existing main-site capabilities that should be reused:
-- Better Auth session lookup in `src/lib/auth-session.ts`
-- campaign membership / GM authorization in `src/utils/campaign-access.ts` and `src/lib/campaign-request-access.ts`
-- SSR runtime execution via `astro.config.mjs` (`output: 'server'`)
+## Source-of-Truth Inputs
 
-## Staged Implementation Plan
+### New OpenAPI Contract
 
-### Stage 1. Freeze and remove the old Campaign Notes publication path
+`docs/contracts/campaign-notes-api.openapi.yaml` is externally owned and must not be edited from this repo.
 
-1. Stop treating old `sessions` content as a published Campaign Notes source.
-2. Remove the website note publication surface under:
-   - `src/pages/campaigns/[campaign]/sessions/index.astro`
-   - `src/pages/campaigns/[campaign]/sessions/[...slug].astro`
-3. Replace campaign landing-page links/cards that currently point to `Sessions` with `Notes`.
-4. Remove old session-note sitemap entries from `src/pages/sitemap.xml.ts`.
-5. Disable old `sessions` ingestion/classification for Campaign Notes in the content-sync path.
-6. Treat remaining old vault session-note files as archive or migration source only, not live publication input.
+Important v0.3.1 contract facts:
 
-Implementation notes:
-- Broader campaign family content stays in the existing main-site content model for now.
-- This cut only removes old session-note publication, not all campaign content ingestion.
+- API is **read-only** for Campaign Notes.
+- Base endpoints remain:
+  - `GET /api/v1/campaigns/{campaignSlug}/notes/documents`
+  - `GET /api/v1/campaigns/{campaignSlug}/notes/documents/{documentId}`
+- Notes are indexed from per-campaign Campaign Content Buckets; main site must not invent bucket names, R2 keys, or storage paths.
+- `DocumentMetadata` is intentionally minimal:
+  - `documentId`
+  - `title`
+  - `type`
+  - `authors`
+  - `sessionSlug`
+  - `sessionDate`
+  - `createdAt`
+  - `updatedAt`
+- Detail adds `body`.
+- List query params are now:
+  - `title`
+  - `author`
+  - `type`
+  - `sessionSlug`
+  - `sessionDate`
+  - `limit`
+  - `cursor`
+- `DocumentId` convention is now `{YYYYMMDDHHmmss}-{titleSlug}`.
+- Visibility values include `public`, `campaignMembers`, and `gm`.
+- Production reads expose `publication: publish` only; preview/staging reads may expose `publication: preview` and `publication: publish`.
 
-### Stage 2. Add a dedicated `woa-admin` Campaign Notes read client
+### New Runtime Actor Assertion Contract
 
-Create a dedicated adapter/client for Campaign Notes reads, separate from broader campaign content and separate from the superseded in-repo D1 repo approach.
+The previous saved plan used an obsolete repo-local assertion payload with `environment`, `issuedAt`, and `expiresAt`. That is superseded.
 
-Responsibilities:
-1. Call:
-   - `GET /api/v1/campaigns/{campaignSlug}/notes/documents`
-   - `GET /api/v1/campaigns/{campaignSlug}/notes/documents/{documentId}`
-2. Parse contract response types for:
-   - `DocumentMetadata`
-   - `DocumentPage`
-   - `DocumentDetail`
-   - error payloads
-3. Build outbound request headers for anonymous versus authenticated reads.
-4. Reuse existing main-site session and campaign authorization checks to determine whether an authenticated request should be attempted.
-5. Fail closed for protected notes when authenticated bridging is unavailable or invalid.
+The v0.3.1 payload is:
 
-Recommended file shape:
-- new adapter under `src/adapters/` for external API consumption, matching ADR-0021 external-boundary intent
-- keep it narrowly scoped to Campaign Notes reads only
+```json
+{
+  "aud": "woa-admin:campaign-notes:v1",
+  "exp": 1780000000,
+  "campaignSlug": "the-weight-of-sun-and-soil",
+  "userId": "better-auth-user-id",
+  "role": "member",
+  "operation": "notes:read"
+}
+```
 
-Do not:
-- reuse `src/lib/campaign-note-documents-repo.ts`
-- read Campaign Notes from main-site D1
-- rebuild note indexing/storage inside this repo
+Rules:
 
-### Stage 3. Add the outbound auth/header bridge to `woa-admin`
+- `x-woa-runtime-actor = base64url(JSON.stringify(payload))`
+- `x-woa-runtime-signature = base64url(HMAC-SHA-256(secret, x-woa-runtime-actor))`
+- HMAC input is the exact encoded actor header value.
+- `aud` must be exactly `woa-admin:campaign-notes:v1`.
+- `operation` must be exactly `notes:read` for these endpoints.
+- `exp` is a Unix timestamp in seconds and must be in the future.
+- `campaignSlug` must exactly match the path parameter.
+- `role` is `member` or `gm` and must still match `campaign_memberships` in `woa-admin`.
+- Anonymous reads send neither runtime actor header.
+- Signed-in but unauthorized users should be downgraded to anonymous by omitting both headers.
+- Never send only one of the two runtime actor headers.
 
-Use existing main-site auth/authz to produce the outbound headers expected by the Campaign Notes API.
+## Current Repo Assessment
 
-Required behavior:
-1. Anonymous request:
-   - call `woa-admin` with no actor headers
-   - only public notes should be returned
-2. Authenticated and authorized request:
-   - resolve Better Auth session user
-   - resolve campaign membership / GM status for the exact `campaignSlug`
-   - when the user is authorized for the exact campaign, attach `x-woa-runtime-actor` and `x-woa-runtime-signature`
-3. Authenticated but unauthorized request:
-   - do not send `x-woa-runtime-actor`
-   - do not send `x-woa-runtime-signature`
-   - treat the outbound call as anonymous
-4. Missing or invalid signing material:
-   - if the main site cannot produce a valid unexpired assertion, omit both headers and fail closed to anonymous behavior
+### Existing Older-Contract Work
 
-Implementation contract for this repo:
-1. Environment buckets:
-   - use `staging` and `production` only
-   - do not use the older handoff `preview` naming in main-site implementation
-2. Secret and environment inputs:
-   - secret name: `CAMPAIGN_NOTES_RUNTIME_ASSERTION_SECRET`
-   - non-secret environment marker must resolve to exactly `staging` or `production`
-   - the selected secret and environment marker must match the current Wrangler deployment environment for this repo
-3. Authorization-to-role mapping:
-   - `gm` campaign access signs `role: "gm"`
-   - member-only campaign access signs `role: "member"`
-   - do not sign broader or inferred roles
-4. Assertion payload shape:
-   - the JSON payload must contain exactly:
-     - `userId`
-     - `campaignSlug`
-     - `role`
-     - `environment`
-     - `issuedAt`
-     - `expiresAt`
-   - no extra claims should be added in this slice
-5. Timestamp rules:
-   - `issuedAt` and `expiresAt` must be RFC 3339 UTC timestamps
-   - `expiresAt = issuedAt + 5 minutes`
-   - the assertion must not be sent if it is already expired or cannot be created with a full valid window
-6. Header encoding:
-   - `x-woa-runtime-actor = base64url(JSON.stringify(payload))`
-7. Signature rule:
-   - `x-woa-runtime-signature = base64url(HMAC-SHA-256(secret, x-woa-runtime-actor))`
-   - the HMAC input is the encoded actor header value itself, not the raw JSON string
-8. Failure handling:
-   - signed-in but unauthorized users must be downgraded to anonymous
-   - missing secret, invalid environment marker, signature generation failure, or expired assertion must not produce partial actor headers
-   - never send one of the two headers without the other
+The repo currently contains Campaign Notes work that appears to be based on the older spec:
 
-Out of scope for this slice:
-- adding broader identity claims
-- using campaign metadata as a substitute for signed membership assertions
-- introducing a second signing format or compatibility mode
-
-### Stage 4. Add SSR read-only Campaign Notes routes
-
-Add:
+- `src/adapters/campaign-notes-api.ts`
+  - uses old fields such as `noteType`, `authorUserIds`, archive/revision metadata, `sourceKind`, and `lastWriteLane`
+  - sends `noteType` query instead of the v0.3.1 `type` query
+- `src/lib/campaign-notes-runtime-assertion.ts`
+  - signs an obsolete payload using `environment`, `issuedAt`, and `expiresAt`
+  - does not include `aud`, `exp`, or `operation`
 - `src/pages/campaigns/[campaign]/notes/index.astro`
 - `src/pages/campaigns/[campaign]/notes/[documentId].astro`
+  - render metadata using old `noteType` semantics
+- `src/pages/campaigns/[...slug].astro` and/or `src/pages/campaigns/index.astro` if they link campaign users to `/notes`
 
-Route requirements:
-1. SSR only; do not use `getStaticPaths()`.
-2. Read note data live from the `woa-admin` client.
-3. Keep routes scoped under campaign pages, but distinct from broader campaign family content.
-4. Use exact `campaignSlug` route scoping from the contract.
+This means any `/notes` work should be considered **new-route contract drift**, not a stable base.
 
-List route requirements:
-1. Render note metadata from `DocumentPage.items`.
-2. Support the contract’s filtering inputs only when intentionally exposed in UI.
-3. Preserve pagination/cursor behavior from the API, even if the first UI iteration is minimal.
-4. Show only notes visible to the current caller.
+Legacy `/campaigns/{campaign}/sessions` is a separate question:
 
-Detail route requirements:
-1. Read one `DocumentDetail` by exact `documentId`.
-2. Use note metadata from the API as the page source of truth.
-3. Treat `404` as unreadable-or-missing per contract; do not leak whether a protected note exists.
+- If the legacy `/sessions` route still exists and works in the current branch/deployment, it can safely remain as the temporary campaign-session surface while the new `/notes` API integration is delayed.
+- Do not replace a working `/sessions` surface with `/notes` until `/notes` is rewritten to v0.3.1 or the broader Campaign Content API cutover is ready.
+- If `/sessions` has already been removed in the current implementation branch, do not restore it unless there is a concrete production need.
 
-### Stage 5. Render Campaign Notes Markdown as website pages
+### Current Git/Working Tree Reality at Review Time
 
-1. Render returned Markdown into normal website content pages.
-2. Do not expose the raw returned Markdown as a public download surface.
-3. Preserve the existing Campaigns visual/layout language where appropriate, but distinguish `Notes` from other campaign content.
-4. Use note metadata from the contract for visible labels such as:
-   - title
-   - visibility
-   - note type
-   - session date or session slug when present
-5. Preserve website-owned link resolution for root-relative links in Markdown.
+At the time of this assessment, only the new contract and handoff directory are uncommitted:
 
-Implementation note:
-- The contract returns `body` as canonical Markdown including frontmatter.
-- The renderer should strip or ignore frontmatter for display and render the Markdown content as HTML.
-- Frontmatter remains authoritative metadata, but not public presentation.
+- `docs/contracts/campaign-notes-api.openapi.yaml`
+- `docs/handoff/tmp-main-site-campaign-notes-handoff-20260712/`
 
-### Stage 6. Preserve visibility semantics
+The older Campaign Notes source files are already present in the repo state and must be revised or neutralized before any production rollout that depends on the v0.3.1 `woa-admin` behavior.
 
-Required semantics from the contract:
-1. Anonymous callers can see only unarchived public notes.
-2. Authenticated campaign members can see unarchived public and `campaignMembers` notes.
-3. Campaign GMs and authors can access behavior allowed by the contract.
-4. Archived note behavior must remain contract-driven.
+## Architectural Context
 
-Slice guidance:
-- Public-only initial delivery is acceptable if needed for the first deployable slice.
-- Protected note reads should then follow by completing the outbound auth/header bridge, not by inventing local visibility shortcuts.
-- The main site should not override `woa-admin` visibility decisions with its own independent note-access model.
+Relevant existing decisions:
 
-### Stage 7. Keep Campaign Notes separate from broader Campaign Content
+- ADR-0001: Obsidian remains the preferred source-to-publish authoring flow.
+- ADR-0004: avoid service/repository layers unless a concrete trigger exists; a real external API boundary justifies a narrow adapter.
+- ADR-0009: private campaign content belongs outside the public Git repo and should be fetched from protected cloud storage after authz.
+- ADR-0013: Campaign content families are explicit campaign-domain collections under `/campaigns/**`.
+- ADR-0016: D1 is canonical lookup/index, R2 is blob storage only.
+- ADR-0021: privileged/admin ownership belongs to `woa-admin`; this repo consumes approved APIs.
+- ADR-0024: `publication` is separate from `visibility` and controls publication lane.
+- ADR-0025: frontmatter is authoritative; folder hierarchy is derived/validated placement.
 
-Do not merge Campaign Notes into:
-- `sessions`
-- campaign family collections
-- generic campaign content loaders
-- broader Campaign Content vault assumptions
+The new v0.3.1 Campaign Notes model is consistent with these decisions as an external API consumer model, but only if the main site keeps the adapter narrow and avoids building a temporary second campaign routing architecture around a single collection.
 
-Instead:
-- Campaign Notes = API-backed note documents from `woa-admin`
-- broader Campaign Content = existing main-site-managed campaign pages and family collections for now
+## Options Assessment
 
-Practical UI consequence:
-- campaign landing pages should present `Notes` as a distinct section/card, not as a relabeled `Sessions` collection
-- broader campaign navigation should remain intact for non-note content
+### Option 1 — Implement Campaign Notes now while leaving other campaign collections on existing routes
 
-## Removal / Quarantine / Leave-Unused Decisions
+**Description:**
 
-### Remove or replace in this slice
+Update the existing `/campaigns/{campaign}/notes` and detail routes to the v0.3.1 contract immediately. Keep all other campaign family collections on current Astro/content-index routes.
 
-1. Old published note pages:
+**Work involved:**
+
+- Replace old adapter types and validators with v0.3.1 shapes.
+- Replace `noteType` query handling with `type`, plus optional `title` and `author` filters if exposed.
+- Replace runtime assertion payload with `aud`/`exp`/`operation` contract.
+- Update list/detail pages to use `type`, `authors`, and minimal metadata.
+- Adjust campaign landing-page “Notes” card to avoid implying local counts unless API counts are fetched.
+- Re-test anonymous/member/GM reads against `woa-admin`.
+- Remove or quarantine obsolete old-contract tests.
+
+**Gains:**
+
+- Real-life test of the new Campaign Content Bucket read path.
+- Earlier validation of signed runtime assertions.
+- Enables Notes sooner if needed.
+
+**Costs / risks:**
+
+- Split routing and mental model: Notes are API-backed, other campaign content is still current main-site content collections.
+- Likely near-term rework when all campaign content moves to the same API/bucket model.
+- More code churn for little user-visible gain because campaign content volume is currently tiny.
+- If counts/navigation try to unify Notes and existing family content, complexity grows quickly.
+
+**Assessment:** feasible but not recommended unless immediate real-world API testing is worth the churn.
+
+### Option 2 — Cut all campaign content over now, but only Notes work
+
+**Description:**
+
+Move the Campaigns domain conceptually to the new per-campaign API/bucket model now, accepting that only Notes are available until the sister-site finishes broader campaign content endpoints.
+
+**Gains:**
+
+- Avoids split model in code.
+- Forces the main site toward the intended future architecture.
+
+**Costs / risks:**
+
+- Other campaign article types would disappear or become unavailable.
+- Campaign landing and family routes would need temporary empty/unavailable states.
+- There are only a few campaign articles, but this still changes user-visible behavior.
+- This cuts over before the full external contract exists, which increases uncertainty.
+
+**Assessment:** not recommended. It has the disruption of a cutover without the complete target API.
+
+### Option 3 — Delay production implementation until the broader campaign routing/endpoints are finished
+
+**Description:**
+
+Do not ship or expand the Notes-only API integration now. Wait for `woa-admin` to finish the broader Campaign Content API/routing set, then integrate Campaign Notes as the first or one of many campaign content families under a consistent API-backed model.
+
+**Immediate safety work still needed:**
+
+- Mark the previous `/notes` implementation as superseded by v0.3.1.
+- Do not rely on the current old-contract `/notes` route in production.
+- Hide/remove Notes links until implementation resumes, or update the existing `/notes` route to a safe unavailable state if links must remain.
+- Leave a working legacy `/sessions` route alone as the temporary surface; if it has already been removed, do not restore it unless there is a concrete production need.
+
+**Gains:**
+
+- Lowest rework.
+- Avoids temporary split-routing architecture.
+- Best fit with “nothing breaks on the main site.”
+- Defers complexity until the actual target shape is known.
+
+**Costs / risks:**
+
+- No early production test of the new Campaign Notes endpoint.
+- Campaign Notes content waits a few days.
+- Existing old-contract code must not accidentally ship as if it were current.
+
+**Assessment:** recommended.
+
+### Option 4 — Add a feature flag for Campaign Notes
+
+**Description:**
+
+Implement v0.3.1 Campaign Notes now, but guard route links/rendering behind a flag.
+
+**Gains:**
+
+- Can test in staging or for selected campaigns.
+- Easy rollback if the flag is operationally simple.
+
+**Costs / risks:**
+
+- Adds feature-flag complexity for a short-lived gap.
+- Still requires immediate adapter/signature rewrite.
+- Does not avoid split-routing code; it only hides it.
+- The project does not currently need a broader feature-flag platform for this short window.
+
+**Assessment:** not recommended unless the broader campaign API is delayed longer than expected or real-world endpoint testing becomes urgent.
+
+## Recommended Plan
+
+### Phase 0 — Immediate Safety / No-Breakage Pass
+
+Goal: prevent old-contract Campaign Notes behavior from being mistaken for current production behavior while avoiding a real Notes implementation until the broader Campaign Content API is ready.
+
+This is deliberately **not** a Campaign Notes feature implementation. It is a containment pass.
+
+What “small” means:
+
+- no new feature flag framework;
+- no new generic Campaign Content abstraction;
+- no attempt to make Notes fully work against v0.3.1 yet;
+- no attempt to migrate all campaign family routes;
+- no local visibility model for notes;
+- no new R2/D1 ownership in this repo.
+
+What “safety/alignment” means:
+
+1. The main site should not call `woa-admin` using the old-contract adapter/signature payload.
+2. The main site should not link ordinary users into a new `/notes` route that appears live but is contract-drifted.
+3. Existing working `/sessions` behavior should not be disturbed just because `/notes` is deferred.
+4. Future agents should see that the old Notes implementation is superseded by v0.3.1 before editing it.
+5. Existing non-campaign and current campaign article surfaces should continue to build and render.
+
+Recommended concrete implementation posture:
+
+1. **Disable production-facing Notes links for now.**
+   - Remove or hide the `Notes` card/link from campaign landing pages until v0.3.1 implementation resumes.
+   - If a working `Sessions` card/link already exists, keep using it as the temporary legacy surface.
+   - Do not add `/notes` routes to sitemap/search/discovery.
+2. **Neutralize the current old-contract `/notes` route if it exists.** Choose one of:
+   - preferred: remove the `/campaigns/[campaign]/notes` route files entirely until implementation resumes; or
+   - acceptable: keep the route files but make them render a stable unavailable/noindex page and perform no `woa-admin` fetch.
+   - This does not require removing or changing a working `/campaigns/[campaign]/sessions` route.
+3. **Mark old-contract code as superseded.**
+   - Add comments or TODOs around `src/adapters/campaign-notes-api.ts` and `src/lib/campaign-notes-runtime-assertion.ts`, or remove them if no current code imports them after routes are disabled.
+   - Do not keep tests that assert the old `issuedAt`/`expiresAt` assertion payload as if it were valid.
+4. **Preserve legacy sessions only if already working.**
+   - If `/campaigns/{campaign}/sessions` exists and works, leave it alone during the delay.
+   - If `/campaigns/{campaign}/sessions` has already been removed, do not restore it just to fill the temporary gap unless there is a concrete production need.
+5. **Run normal validation.**
+   - `pnpm test`
+   - `pnpm build`
+   - Confirm no broken imports remain after disabling/removing the old-contract Notes route.
+
+Actions:
+
+1. Treat the current `src/adapters/campaign-notes-api.ts` and `src/lib/campaign-notes-runtime-assertion.ts` as superseded by v0.3.1.
+2. Do not expand the current `/campaigns/{campaign}/notes` implementation until it is rewritten to v0.3.1.
+3. Prefer hiding or removing campaign landing-page links to `/notes` until the broader cutover is ready.
+4. If a working `/sessions` link/surface exists, it may remain as the temporary legacy campaign-session surface.
+5. If `/notes` route files remain, they must render a stable noindex “Campaign Notes temporarily unavailable” page and must not call `woa-admin`.
+6. Ensure sitemap/search do not include broken `/notes` detail URLs. Do not remove working `/sessions` sitemap/search behavior unless the sessions publication path has already been intentionally removed.
+7. Keep current Canon/Using/Reference surfaces untouched.
+
+### Phase 1 — Wait for Broader Campaign Content Contract
+
+Goal: avoid short-lived split-routing work.
+
+Actions:
+
+1. Monitor `woa-admin` completion of broader campaign article endpoints/routing.
+2. Request/confirm whether the broader Campaign Content API will reuse:
+   - the same runtime actor assertion shape,
+   - the same list/detail page envelope,
+   - the same publication/visibility semantics,
+   - per-family route mapping under `/campaigns/{campaign}/{family}`.
+3. Avoid designing a main-site-only abstraction for Notes that will not generalize to the imminent broader contract.
+
+### Phase 2 — Implement Unified Campaign Content API Consumption
+
+Goal: implement the future model once enough endpoint surface exists.
+
+Actions:
+
+1. Build or revise a narrow server-side adapter for Campaign Content reads.
+2. Keep the adapter as small as ADR-0004 permits:
+   - external API boundary only;
+   - no local repo/service model unless duplicated logic or auth complexity demands it.
+3. Implement runtime actor assertion once, using the v0.3.1 shape:
+   - `aud`
+   - `exp`
+   - `campaignSlug`
+   - `userId`
+   - `role`
+   - `operation`
+4. Use the same auth/session/membership resolver already present in:
+   - `src/lib/auth-session.ts`
+   - `src/lib/campaign-request-access.ts`
+   - `src/utils/campaign-access.ts`
+5. Route Notes to `/campaigns/{campaign}/notes` and non-note campaign families to their existing public route shape only once their API-backed source exists.
+
+### Phase 3 — Clean Up Legacy Campaign Notes / Sessions Remnants
+
+Goal: remove dual-source confusion.
+
+Actions:
+
+1. Remove or quarantine old session-note publication routes if not already removed:
    - `src/pages/campaigns/[campaign]/sessions/index.astro`
    - `src/pages/campaigns/[campaign]/sessions/[...slug].astro`
-2. Old sitemap/session-note publication references in `src/pages/sitemap.xml.ts`
-3. Campaign landing-page `Sessions` publication references in `src/pages/campaigns/[...slug].astro`
-4. Old session-note ingestion/classification from content-sync code where it exists specifically as a Campaign Notes publication path
+2. Ensure `sessions` is not treated as the live Campaign Notes source in:
+   - `src/content.config.ts`
+   - `scripts/content-sync/cloud-content-metadata.mjs`
+   - `scripts/content-sync/validate.mjs`
+   - `scripts/content-sync/fs-diff.mjs`
+   - `scripts/content-sync/obsidian-links.mjs`
+3. Remove old local D1 Campaign Notes remnants only in a coordinated cleanup:
+   - `src/lib/campaign-note-documents.ts`
+   - `src/lib/campaign-note-documents-repo.ts`
+   - related tests
+   - `migrations/0015_campaign_note_documents.sql`
+4. Do not delete historical migrations blindly if an environment may still have the old experimental table.
 
-### Quarantine / leave unused for now
+## If We Do Implement Notes Immediately Despite the Recommendation
 
-Do not build on these files:
-- `src/lib/campaign-note-documents.ts`
-- `src/lib/campaign-note-documents-repo.ts`
-- related tests
-- `migrations/0015_campaign_note_documents.sql`
+If real-world testing of the new endpoint becomes important enough to justify Option 1, the implementation must first replace all old-contract assumptions.
 
-Plan status for them:
-- leave unused in the main-site implementation slice unless explicitly removing them is low-risk and coordinated
-- document them as superseded remnants from the direct-storage plan
-- do not expand them to support the new API-backed design
+Required v0.3.1 code changes:
 
-### Separate remediation follow-up
+1. Adapter types:
+   - rename `noteType` to `type`
+   - rename `authorUserIds` to `authors`
+   - remove archive/revision/source-lane fields from required metadata validation
+   - allow `visibility` to be absent from metadata responses because v0.3.1 metadata does not expose it
+2. List params:
+   - use `type`, not `noteType`
+   - optionally support `title` and `author`
+3. Assertion payload:
+   - replace `environment`, `issuedAt`, `expiresAt` with `aud`, `exp`, and `operation`
+   - keep HMAC over encoded actor header value
+4. Rendering:
+   - do not assume detail metadata exposes visibility/publication
+   - set conservative `noindex` unless route-level/publication semantics are confirmed through API response behavior
+5. Tests:
+   - update payload/signature tests to v0.3.1
+   - update adapter response-shape tests to minimal metadata
+6. UI:
+   - avoid count badges unless the API provides counts or the route fetches the first page
+   - avoid combining Notes counts with local campaign-family counts
 
-A later cleanup pass should decide whether to:
-1. remove `0015_campaign_note_documents.sql` from main-site migration planning entirely
-2. keep it as historical dead code until a safe cleanup window
-3. add operator remediation for environments where the empty legacy table still exists
+## Decision Matrix
 
-This remediation is secondary to the main Campaign Notes route cutover.
+| Option | Main-site breakage risk | Rework risk | Product benefit now | Complexity | Recommendation |
+| --- | --- | --- | --- | --- | --- |
+| 1. Implement Notes now, split routing | Medium | Medium/High | Low/Medium | Medium | Not preferred |
+| 2. Cut all campaigns now, Notes only | Medium/High | Medium | Low | Medium | No |
+| 3. Delay until broader campaign API | Low | Low | Delayed | Low | **Yes** |
+| 4. Feature flag Notes | Low/Medium | Medium | Medium for testing | Medium | Only if delay grows |
 
-## Validation Plan
+## Validation Criteria for the Recommended Path
 
-### Contract and integration validation
+Before implementation resumes:
 
-1. Confirm the handoff copy of `campaign-notes-api.openapi.yaml` matches `docs/contracts/campaign-notes-api.openapi.yaml`.
-2. Validate the adapter against contract success and error shapes.
-3. Validate anonymous list/detail reads for public notes.
-4. Validate authenticated reads once outbound header bridging is implemented, including both `member` and `gm` roles.
-5. Validate `404` / `403` / `401` handling does not leak protected-note existence.
-6. Validate header bridge specifics:
-   - no actor headers on anonymous requests
-   - no actor headers for signed-in but unauthorized users
-   - `x-woa-runtime-actor` payload fields exactly match the repo-local Stage 3 contract
-   - `x-woa-runtime-signature` is computed as `base64url(HMAC-SHA-256(secret, x-woa-runtime-actor))`
-   - expired assertions are never sent
-   - `staging` uses staging signing inputs and `production` uses production signing inputs
+1. `docs/contracts/campaign-notes-api.openapi.yaml` v0.3.1 is treated as the only Campaign Notes contract.
+2. No code path depends on old `noteType`/`authorUserIds`/revision/archive metadata as required response fields.
+3. No production-facing UI promises working `/notes` until the v0.3.1 adapter is in place.
+4. Existing non-campaign site surfaces continue to build and render.
+5. Campaign landing pages do not link users into broken old-contract `/notes` routes.
+6. A working legacy `/sessions` route, if present, remains undisturbed during the delay.
 
-### Route and rendering validation
+When unified campaign API implementation begins:
 
-1. `/campaigns/{campaignSlug}/notes` renders with live API data.
-2. `/campaigns/{campaignSlug}/notes/{documentId}` renders Markdown as HTML pages.
-3. No public raw Markdown download surface exists.
-4. Existing campaign pages link to `Notes`, not `Sessions`.
-5. Campaign Notes pages set indexing behavior consistent with visibility.
+1. Anonymous public-note reads work with no runtime actor headers.
+2. Authenticated member/GM reads use the v0.3.1 actor payload and signature.
+3. Signed-in unauthorized users send no actor headers and receive anonymous behavior.
+4. `404` remains unreadable-or-missing and does not leak protected note existence.
+5. Production/staging publication behavior is contract-driven by `woa-admin`, not locally inferred from main-site campaign metadata.
 
-### Cutover validation
+## Final Recommendation
 
-1. Old `/campaigns/{campaign}/sessions*` note pages are no longer the published note surface.
-2. Old session-note sitemap entries are gone.
-3. Old content-sync no longer publishes session notes into the website.
-4. Broader campaign content still works after note-path removal.
+Do **not** invest in a full Notes-only implementation right now unless endpoint testing is urgently needed.
 
-## Risks
-
-1. Hidden dual-source behavior if old `sessions` ingestion is only partially removed.
-2. Contract drift if the main site guesses outbound auth header semantics instead of confirming them.
-3. UI confusion if `Notes` and broader campaign content are not clearly separated in navigation and labeling.
-4. SEO/indexing mistakes if protected-note routes are crawlable.
-5. Rendering edge cases if returned Markdown frontmatter is not stripped cleanly before display.
-
-## Explicit Out of Scope
-
-1. Website create/edit UX for Campaign Notes.
-2. `woa-admin` write-session integration.
-3. Public raw Markdown exports/downloads.
-4. Reworking broader Campaign Content architecture.
-5. Reintroducing any old import-session or direct main-site storage assumptions.
-
-## Recommended Execution Order
-
-1. Remove old note publication and ingestion path.
-2. Add the external Campaign Notes read adapter.
-3. Implement anonymous public-note list/detail SSR routes.
-4. Add campaign landing-page/navigation updates from `Sessions` to `Notes`.
-5. Add authenticated outbound header bridging for protected reads.
-6. Complete cleanup/quarantine documentation for superseded in-repo Campaign Notes code.
-
-## Open Follow-Up For `woa-admin` Only If Needed
-
-Only raise a `woa-admin` follow-up if implementation discovers a contradiction between:
-- the Stage 3 repo-local signing contract above, and
-- actual `woa-admin` verifier behavior in integration testing.
-
-Do not change the OpenAPI contract from the main-site side; raise any verifier mismatch explicitly.
+Do perform a small safety/alignment pass so the old implementation does not break the main site or mislead future agents. Then wait for the broader `woa-admin` Campaign Content API and implement Campaign Notes as part of the unified campaign-content cutover.
