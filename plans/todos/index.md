@@ -17,6 +17,8 @@ This folder is the canonical place for deferred implementation todos that need e
 
 | Title | Date Added | Status | Notes |
 | --- | --- | --- | --- |
+| [Campaigns Index Public Metadata Contract Request](./campaigns-index-public-metadata-contract-request-2026-07-21.md) | 2026-07-21 | Open / External | Request a future `woa-admin` API/OpenAPI capability for public Campaigns Index metadata such as titles and optional GM-configured excerpts or summaries. |
+| [Campaign Gate Endpoint Contract Request](./campaign-gate-endpoint-contract-request-2026-07-21.md) | 2026-07-21 | Open / External | Request a future `campaignGate` capability from `woa-admin` and add it to the Campaign Content OpenAPI specs in a bundled contract revision. |
 | [External Admin Taxonomy Management Requirement](./admin-console-and-taxonomy-management-2026-04-25.md) | 2026-04-25 | Open / External | Tracks taxonomy management as a 100% external-admin requirement with workflow guidance and safeguards; not an in-repo admin console task. |
 | [Future Related Resource Enrichment and Spell Discovery](./related-resource-enrichment-and-spell-discovery-2026-04-27.md) | 2026-04-27 | Open / Future | Tracks future promoted-resource UX/enrichment ideas; not next work, and spell data/API authority remains external. |
 

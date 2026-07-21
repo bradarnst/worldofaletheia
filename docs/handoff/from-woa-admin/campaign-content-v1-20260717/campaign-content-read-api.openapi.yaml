@@ -1,0 +1,521 @@
+openapi: 3.1.2
+info:
+  title: World of Aletheia Campaign Content Source API
+  version: 0.1.0
+  summary: Server-to-server source contract for campaign-owned content consumed by worldofaletheia.com.
+  description: >-
+    This API is the binding read contract for Campaign Content served by woa-admin to
+    worldofaletheia.com. It is not browser-facing. Browsers receive rendered pages and assets
+    from worldofaletheia.com, which owns authentication, authorization, routing, rendering,
+    caching, static-vs-runtime mode, and browser asset URLs. woa-admin owns source storage
+    abstraction, validation, derived indexing, publication/visibility metadata, and this source
+    contract.
+
+    Reads without runtime assertion headers are public-only. Reads with both runtime assertion
+    headers use allowedVisibility from the signed assertion; woa-admin verifies the assertion
+    envelope and filters indexed content but does not evaluate Better Auth cookies or campaign
+    membership. Source responses default to Cache-Control: no-store. The API deliberately has no
+    403 response: not found, not readable, unpublished, or stale detail reads are hidden behind
+    404 not_found.
+servers:
+  - url: https://admin.worldofaletheia.com
+    description: woa-admin origin.
+tags:
+  - name: Campaign Content Documents
+  - name: Campaign Content Assets
+paths:
+  /api/v1/campaigns/{campaignSlug}/documents:
+    get:
+      operationId: listCampaignContentDocuments
+      tags: [Campaign Content Documents]
+      summary: List readable campaign content across collections
+      description: >-
+        Returns metadata-only Campaign Content API Entries across supported collections. Results
+        are filtered by publication state, requested campaign, optional collection/type/facet
+        filters, and the public-only or signed allowedVisibility read scope. The response does
+        not include Markdown bodies, rendered HTML, source paths, or total counts.
+      security:
+        - {}
+        - RuntimeActorAssertion: []
+          RuntimeActorSignature: []
+      parameters:
+        - $ref: '#/components/parameters/CampaignSlug'
+        - $ref: '#/components/parameters/CollectionFilter'
+        - $ref: '#/components/parameters/TypeFilter'
+        - $ref: '#/components/parameters/SubtypeFilter'
+        - $ref: '#/components/parameters/TagFilter'
+        - $ref: '#/components/parameters/AuthorFilter'
+        - $ref: '#/components/parameters/ContributorFilter'
+        - $ref: '#/components/parameters/TitleFilter'
+        - $ref: '#/components/parameters/UpdatedSinceFilter'
+        - $ref: '#/components/parameters/LimitQuery'
+        - $ref: '#/components/parameters/CursorQuery'
+      responses:
+        '200': { $ref: '#/components/responses/DocumentList' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+  /api/v1/campaigns/{campaignSlug}/collections/{collection}/documents:
+    get:
+      operationId: listCampaignContentCollectionDocuments
+      tags: [Campaign Content Documents]
+      summary: List readable campaign content in one collection
+      security:
+        - {}
+        - RuntimeActorAssertion: []
+          RuntimeActorSignature: []
+      parameters:
+        - $ref: '#/components/parameters/CampaignSlug'
+        - $ref: '#/components/parameters/CollectionKey'
+        - $ref: '#/components/parameters/TypeFilter'
+        - $ref: '#/components/parameters/SubtypeFilter'
+        - $ref: '#/components/parameters/TagFilter'
+        - $ref: '#/components/parameters/AuthorFilter'
+        - $ref: '#/components/parameters/ContributorFilter'
+        - $ref: '#/components/parameters/TitleFilter'
+        - $ref: '#/components/parameters/UpdatedSinceFilter'
+        - $ref: '#/components/parameters/LimitQuery'
+        - $ref: '#/components/parameters/CursorQuery'
+      responses:
+        '200': { $ref: '#/components/responses/DocumentList' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+  /api/v1/campaigns/{campaignSlug}/collections/{collection}/documents/{id}:
+    get:
+      operationId: getCampaignContentDocument
+      tags: [Campaign Content Documents]
+      summary: Read one campaign content document
+      description: >-
+        Returns one readable, indexed Campaign Content API Entry with frontmatter-stripped
+        Markdown. The response never includes raw Markdown frontmatter or rendered HTML. woa-admin
+        verifies the indexed R2 object's drift marker before returning content; missing,
+        unreadable, unpublished, stale, or visibility-disallowed content returns 404 not_found.
+      security:
+        - {}
+        - RuntimeActorAssertion: []
+          RuntimeActorSignature: []
+      parameters:
+        - $ref: '#/components/parameters/CampaignSlug'
+        - $ref: '#/components/parameters/CollectionKey'
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: Readable document detail.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CampaignContentEntryDetail' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+  /api/v1/campaigns/{campaignSlug}/assets:
+    get:
+      operationId: getCampaignContentAsset
+      tags: [Campaign Content Assets]
+      summary: Read a referenced campaign content asset
+      description: >-
+        Returns a source asset when path is a traversal-safe bucket-relative path under assets/
+        and at least one currently readable indexed document references it. Asset reads use the
+        same runtime assertion semantics as document reads. Browser-facing asset URLs remain a
+        worldofaletheia.com concern; rendered HTML must not point directly at this endpoint.
+      security:
+        - {}
+        - RuntimeActorAssertion: []
+          RuntimeActorSignature: []
+      parameters:
+        - $ref: '#/components/parameters/CampaignSlug'
+        - name: path
+          in: query
+          required: true
+          description: Bucket-relative asset path beginning with assets/. Markdown files, traversal, backslashes, and empty segments are invalid.
+          schema: { type: string, minLength: 8, maxLength: 512, pattern: '^assets/(?!.*(?:^|/)\.\.?(?:/|$))(?!.*//)(?!.*\\\\)(?!.*\.md$).+' }
+      responses:
+        '200':
+          description: Referenced readable asset bytes.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+            Content-Type:
+              schema: { type: string }
+              description: Stored asset media type when known, otherwise application/octet-stream.
+            ETag:
+              schema: { type: string }
+              description: Source object entity tag when available.
+          content:
+            '*/*':
+              schema: { type: string, format: binary }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+components:
+  securitySchemes:
+    RuntimeActorAssertion:
+      type: apiKey
+      in: header
+      name: x-woa-runtime-actor
+      description: Base64url JSON Campaign Content runtime assertion. Required with x-woa-runtime-signature for non-public visibility reads.
+    RuntimeActorSignature:
+      type: apiKey
+      in: header
+      name: x-woa-runtime-signature
+      description: Base64url HMAC-SHA256 signature over the exact x-woa-runtime-actor value using CAMPAIGN_CONTENT_RUNTIME_ASSERTION_SECRET.
+  headers:
+    NoStore:
+      schema: { type: string, const: no-store }
+      description: >-
+        Source API responses default to Cache-Control: no-store.
+  parameters:
+    CampaignSlug:
+      name: campaignSlug
+      in: path
+      required: true
+      schema: { type: string, pattern: '^[a-z0-9][a-z0-9-]*[a-z0-9]$' }
+    CollectionKey:
+      name: collection
+      in: path
+      required: true
+      schema: { $ref: '#/components/schemas/CollectionKey' }
+    CollectionFilter:
+      name: collection
+      in: query
+      description: Optional single collection key filter for cross-collection lists.
+      schema: { $ref: '#/components/schemas/CollectionKey' }
+    DocumentId:
+      name: id
+      in: path
+      required: true
+      description: Public Campaign Content id. V1 ids are slash-free and path-segment-safe.
+      schema: { type: string, minLength: 1, maxLength: 160, pattern: '^[a-z0-9][a-z0-9-]*$' }
+    TypeFilter:
+      name: type
+      in: query
+      description: Exact type filter. Cross-collection type filtering matches the string exactly across collections.
+      schema: { type: string, minLength: 1, maxLength: 80 }
+    SubtypeFilter:
+      name: subtype
+      in: query
+      schema: { type: string, minLength: 1, maxLength: 80 }
+    TagFilter:
+      name: tag
+      in: query
+      schema: { type: string, minLength: 1, maxLength: 80 }
+    AuthorFilter:
+      name: author
+      in: query
+      schema: { type: string, minLength: 1, maxLength: 120 }
+    ContributorFilter:
+      name: contributor
+      in: query
+      schema: { type: string, minLength: 1, maxLength: 120 }
+    TitleFilter:
+      name: title
+      in: query
+      description: Case-insensitive title substring filter. Full-text q search is out of scope for V1.
+      schema: { type: string, minLength: 1, maxLength: 200 }
+    UpdatedSinceFilter:
+      name: updatedSince
+      in: query
+      schema: { type: string, format: date-time }
+    LimitQuery:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+    CursorQuery:
+      name: cursor
+      in: query
+      schema: { type: string, maxLength: 512 }
+  responses:
+    DocumentList:
+      description: Cursor page of readable metadata-only entries.
+      headers:
+        Cache-Control: { $ref: '#/components/headers/NoStore' }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/CampaignContentEntryPage' }
+    BadRequest:
+      description: Invalid request, including repeated single-value filters.
+      headers:
+        Cache-Control: { $ref: '#/components/headers/NoStore' }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+          examples:
+            repeatedFilter:
+              value: { error: { code: invalid_request, message: Repeated single-value filter is not allowed. } }
+    Unauthorized:
+      description: Missing paired assertion header, invalid signature, expired assertion, wrong audience, wrong operation, or campaign mismatch.
+      headers:
+        Cache-Control: { $ref: '#/components/headers/NoStore' }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    NotFound:
+      description: Not found. Also used for not readable, unpublished, archived, or stale detail/asset reads.
+      headers:
+        Cache-Control: { $ref: '#/components/headers/NoStore' }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+          examples:
+            notFound:
+              value: { error: { code: not_found, message: Campaign content was not found. } }
+    TooManyRequests:
+      description: Rate limit exceeded.
+      headers:
+        Cache-Control: { $ref: '#/components/headers/NoStore' }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    ServiceUnavailable:
+      description: Storage or index dependency unavailable.
+      headers:
+        Cache-Control: { $ref: '#/components/headers/NoStore' }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+  schemas:
+    RuntimeActorAssertionPayload:
+      type: object
+      required: [aud, operation, campaignSlug, exp, allowedVisibility]
+      properties:
+        aud: { type: string, const: woa-admin:campaign-content:v1 }
+        operation: { type: string, const: content:read }
+        campaignSlug: { type: string, pattern: '^[a-z0-9][a-z0-9-]*[a-z0-9]$' }
+        exp: { type: integer, minimum: 1, description: Unix timestamp in seconds. }
+        allowedVisibility:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: { $ref: '#/components/schemas/Visibility' }
+        subject: { type: string, minLength: 1, maxLength: 160, description: Optional trace metadata only. }
+      additionalProperties: false
+    CollectionKey:
+      type: string
+      enum: [pages, notes, lore, places, sentients, bestiary, flora, factions, systems, meta, characters, scenes, adventures, hooks]
+    CampaignContentCollection:
+      type: string
+      enum: [campaignPages, campaignNotes, campaignLore, campaignPlaces, campaignSentients, campaignBestiary, campaignFlora, campaignFactions, campaignSystems, campaignMeta, campaignCharacters, campaignScenes, campaignAdventures, campaignHooks]
+    Publication: { type: string, enum: [preview, publish, archive] }
+    Visibility: { type: string, enum: [public, campaignMembers, gm] }
+    ContentState: { type: string, enum: [stable, mayChange, unfinished], default: stable }
+    AudienceWarning: { type: string, enum: [gmSpoilers] }
+    CampaignContentData:
+      oneOf:
+        - $ref: '#/components/schemas/CampaignPagesData'
+        - $ref: '#/components/schemas/CampaignNotesData'
+        - $ref: '#/components/schemas/CampaignLoreData'
+        - $ref: '#/components/schemas/CampaignPlacesData'
+        - $ref: '#/components/schemas/CampaignSentientsData'
+        - $ref: '#/components/schemas/CampaignBestiaryData'
+        - $ref: '#/components/schemas/CampaignFloraData'
+        - $ref: '#/components/schemas/CampaignFactionsData'
+        - $ref: '#/components/schemas/CampaignSystemsData'
+        - $ref: '#/components/schemas/CampaignMetaData'
+        - $ref: '#/components/schemas/CampaignCharactersData'
+        - $ref: '#/components/schemas/CampaignScenesData'
+        - $ref: '#/components/schemas/CampaignAdventuresData'
+        - $ref: '#/components/schemas/CampaignHooksData'
+      discriminator:
+        propertyName: collection
+    BaseCampaignContentData:
+      type: object
+      required: [campaign, collection, title, type, publication, visibility, authors, createdAt, updatedAt, contentState, audienceWarnings]
+      properties:
+        campaign: { type: string, pattern: '^[a-z0-9][a-z0-9-]*[a-z0-9]$' }
+        collection: { $ref: '#/components/schemas/CampaignContentCollection' }
+        title: { type: string, minLength: 1, maxLength: 240 }
+        type: { type: string, minLength: 1, maxLength: 80 }
+        subtype: { type: string, minLength: 1, maxLength: 80 }
+        publication: { $ref: '#/components/schemas/Publication' }
+        visibility: { $ref: '#/components/schemas/Visibility' }
+        contentState: { $ref: '#/components/schemas/ContentState' }
+        audienceWarnings:
+          type: array
+          items: { $ref: '#/components/schemas/AudienceWarning' }
+          default: []
+        excerpt: { type: string, maxLength: 1000 }
+        tags:
+          type: array
+          uniqueItems: true
+          items: { type: string, minLength: 1, maxLength: 80 }
+          default: []
+        authors:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: { type: string, minLength: 1, maxLength: 120 }
+        contributors:
+          type: array
+          uniqueItems: true
+          items: { type: string, minLength: 1, maxLength: 120 }
+          default: []
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        coordinates:
+          type: object
+          required: [x, y]
+          properties:
+            x: { type: number }
+            y: { type: number }
+          additionalProperties: false
+        alignment: { type: string, enum: [lawful, neutral, chaotic, good, evil, any] }
+        challengeRating: { type: number }
+        aletheiaDate: { type: string, minLength: 1 }
+        aletheiaDateEnd: { type: string, minLength: 1 }
+        start: { type: string, format: date-time }
+        end: { type: string, format: date-time }
+        date: { type: string, format: date-time }
+      additionalProperties: false
+    CampaignPagesData:
+      allOf:
+        - $ref: '#/components/schemas/BaseCampaignContentData'
+        - type: object
+          properties:
+            collection: { type: string, const: campaignPages }
+            type: { type: string, const: campaign }
+    CampaignNotesData:
+      allOf:
+        - $ref: '#/components/schemas/BaseCampaignContentData'
+        - type: object
+          properties:
+            collection: { type: string, const: campaignNotes }
+            type: { type: string, enum: [session-note, campaign-note, gm-note, recap, downtime-note] }
+    CampaignLoreData:
+      allOf:
+        - $ref: '#/components/schemas/BaseCampaignContentData'
+        - type: object
+          properties:
+            collection: { type: string, const: campaignLore }
+            type: { type: string, enum: [cosmology, religion, economy, history, geography, food-drink, culture, language, warfare, domestication, magic, technology, structure, other, event] }
+    CampaignPlacesData:
+      allOf:
+        - $ref: '#/components/schemas/BaseCampaignContentData'
+        - type: object
+          properties:
+            collection: { type: string, const: campaignPlaces }
+            type: { type: string, enum: [location, landmark, dungeon, settlement, region, country, territory, water, biome, dimension, world] }
+    CampaignSentientsData:
+      allOf:
+        - $ref: '#/components/schemas/BaseCampaignContentData'
+        - type: object
+          properties:
+            collection: { type: string, const: campaignSentients }
+            type: { type: string, enum: [race, species, culture, organization, deity] }
+    CampaignBestiaryData:
+      allOf:
+        - $ref: '#/components/schemas/BaseCampaignContentData'
+        - type: object
+          properties:
+            collection: { type: string, const: campaignBestiary }
+            type: { type: string, enum: [monster, animal, undead, spirit, construct, elemental] }
+    CampaignFloraData:
+      allOf:
+        - $ref: '#/components/schemas/BaseCampaignContentData'
+        - type: object
+          properties:
+            collection: { type: string, const: campaignFlora }
+            type: { type: string, enum: [tree, flower, fungus, herb, fruit, plant, crop] }
+    CampaignFactionsData:
+      allOf:
+        - $ref: '#/components/schemas/BaseCampaignContentData'
+        - type: object
+          properties:
+            collection: { type: string, const: campaignFactions }
+            type: { type: string, enum: [political, guild, criminal, government, religion, military, police, school, order] }
+    CampaignSystemsData:
+      allOf:
+        - $ref: '#/components/schemas/BaseCampaignContentData'
+        - type: object
+          required: [subtype]
+          properties:
+            collection: { type: string, const: campaignSystems }
+            type: { type: string, enum: [general, gurps] }
+            subtype: { type: string, enum: [magic, combat, skill, language, character, economy, social, equipment] }
+    CampaignMetaData:
+      allOf:
+        - $ref: '#/components/schemas/BaseCampaignContentData'
+        - type: object
+          properties:
+            collection: { type: string, const: campaignMeta }
+            type: { type: string, enum: [info, technical, content, reference, governance, characterCreation] }
+    CampaignCharactersData:
+      allOf:
+        - $ref: '#/components/schemas/BaseCampaignContentData'
+        - type: object
+          properties:
+            collection: { type: string, const: campaignCharacters }
+            type: { type: string, enum: [pc, npc, ally, adversary, patron, creature, group, other, relationship] }
+    CampaignScenesData:
+      allOf:
+        - $ref: '#/components/schemas/BaseCampaignContentData'
+        - type: object
+          properties:
+            collection: { type: string, const: campaignScenes }
+            type: { type: string, enum: [scene, combat, social, travel, downtime, investigation, flashback, other] }
+    CampaignAdventuresData:
+      allOf:
+        - $ref: '#/components/schemas/BaseCampaignContentData'
+        - type: object
+          properties:
+            collection: { type: string, const: campaignAdventures }
+            type: { type: string, enum: [arc, mission, quest, contract, dungeon, journey, heist, other] }
+    CampaignHooksData:
+      allOf:
+        - $ref: '#/components/schemas/BaseCampaignContentData'
+        - type: object
+          properties:
+            collection: { type: string, const: campaignHooks }
+            type: { type: string, enum: [rumor, lead, job, threat, mystery, opportunity, other] }
+    CampaignContentEntrySummary:
+      type: object
+      required: [id, collectionKey, collection, campaignSlug, data]
+      properties:
+        id: { type: string, minLength: 1 }
+        collectionKey: { $ref: '#/components/schemas/CollectionKey' }
+        collection: { $ref: '#/components/schemas/CampaignContentCollection' }
+        campaignSlug: { type: string }
+        data: { $ref: '#/components/schemas/CampaignContentData' }
+      additionalProperties: false
+    CampaignContentEntryDetail:
+      type: object
+      required: [id, collectionKey, collection, campaignSlug, data, markdown]
+      properties:
+        id: { type: string, minLength: 1 }
+        collectionKey: { $ref: '#/components/schemas/CollectionKey' }
+        collection: { $ref: '#/components/schemas/CampaignContentCollection' }
+        campaignSlug: { type: string }
+        data: { $ref: '#/components/schemas/CampaignContentData' }
+        markdown:
+          type: string
+          description: Frontmatter-stripped Markdown. woa-admin does not render HTML or rewrite asset references.
+      additionalProperties: false
+    CampaignContentEntryPage:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/CampaignContentEntrySummary' }
+        nextCursor:
+          type: [string, 'null']
+      additionalProperties: false
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string, enum: [invalid_request, unauthorized, not_found, rate_limited, service_unavailable] }
+            message: { type: string }
+          additionalProperties: false
+      additionalProperties: false
