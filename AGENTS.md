@@ -19,6 +19,19 @@
     *   This repo does not own or implement endpoints defined by contracts in `docs/contracts/`; it only implements front-end consumers of those endpoints and approved Better Auth integration needed to access them.
     *   If this repo authors its own OpenAPI/spec artifacts, place them outside `docs/contracts/` unless ownership has been explicitly transferred and documented.
 
+## Production Setup Guide Requirement
+
+Any change that requires setup outside the code itself before it can run correctly in production must include a setup guide as part of the delivery.
+
+This includes infrastructure, database, environment, secret, third-party service, deployment, data, or operator setup changes.
+
+The task is not done until the guide explains:
+- what setup is required
+- where it must be applied
+- the exact steps or commands
+- how to verify it worked
+- rollback or recovery notes, when relevant
+
 ## 🎭 DYNAMIC ROLES
 *Adopt the mindset below that matches the user's current request. If ambiguous, default to **Code Mode**.*
 
