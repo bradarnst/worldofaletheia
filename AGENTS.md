@@ -77,6 +77,20 @@ The task is not done until the guide explains:
 2.  **Ambiguity:** If a requirement has >10% ambiguity or relies on a hidden business rule, **STOP AND ASK**.
 3.  **Output:** When showing code, include filename/path as a comment at the top: `// src/components/Button.tsx`.
 
+## Agent skills
+
+### Issue tracker
+
+Issues and specs are tracked in GitHub Issues for `bradarnst/worldofaletheia`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The canonical triage labels use the default Matt Pocock skill vocabulary. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+This is a single-context repo with root `CONTEXT.md` and ADRs under `plans/adrs/`. See `docs/agents/domain.md`.
+
 ## Project Specifics
 
 ### Content and data naming conventions
