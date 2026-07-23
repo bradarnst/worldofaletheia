@@ -18,9 +18,11 @@ pnpm-debug.log*
 
 
 # environment variables
-.env
+*.env
+.envrc
 .env.production
 config/content-sync.config.json
+.sops.yaml
 
 # macOS-specific files
 .DS_Store
