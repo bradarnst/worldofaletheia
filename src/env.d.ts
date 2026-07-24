@@ -16,6 +16,9 @@ interface ImportMetaEnv {
   readonly MAILJET_API_KEY?: string;
   readonly MAILJET_SECRET_KEY?: string;
   readonly MAILJET_SANDBOX_MODE?: 'on' | 'off';
+  readonly CAMPAIGN_CONTENT_SOURCE_BASE_URL?: string;
+  readonly CAMPAIGN_CONTENT_RUNTIME_ASSERTION_SECRET?: string;
+  readonly CAMPAIGN_CONTENT_RUNTIME_ASSERTION_AUDIENCE?: string;
   readonly CF_PAGES_URL?: string;
 }
 
