@@ -135,4 +135,27 @@ describe('campaign gate policy', () => {
       reason: 'campaign_member_allowed',
     });
   });
+
+  it('does not expose mutable module state in returned visibility arrays', () => {
+    // Get the allowed visibilities for a member role twice
+    const firstResult = deriveAllowedContentVisibilities({ gate: 'public', campaignAccessRole: 'member' });
+    const secondResultBeforeMutation = deriveAllowedContentVisibilities({ gate: 'public', campaignAccessRole: 'member' });
+
+    // Verify the initial state
+    expect(firstResult).toEqual(['public', 'campaignMembers']);
+    expect(secondResultBeforeMutation).toEqual(['public', 'campaignMembers']);
+
+    // Mutate the first result by pushing a bogus value
+    firstResult.push('gm' as any);
+
+    // Get the result again after mutation
+    const secondResultAfterMutation = deriveAllowedContentVisibilities({ gate: 'public', campaignAccessRole: 'member' });
+
+    // The second result should NOT contain the bogus value from the first result's mutation
+    expect(secondResultAfterMutation).toEqual(['public', 'campaignMembers']);
+    expect(secondResultAfterMutation).not.toContain('gm');
+
+    // Verify the mutation only affected the first result
+    expect(firstResult).toEqual(['public', 'campaignMembers', 'gm']);
+  });
 });

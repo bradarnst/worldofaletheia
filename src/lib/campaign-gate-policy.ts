@@ -126,7 +126,7 @@ export function deriveAllowedContentVisibilities(input: {
     return [];
   }
 
-  return allowedVisibilitiesByAccessRole[input.campaignAccessRole];
+  return [...allowedVisibilitiesByAccessRole[input.campaignAccessRole]];
 }
 
 function getDecisionReason(input: {
