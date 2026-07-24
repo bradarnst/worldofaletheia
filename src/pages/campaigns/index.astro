@@ -1,104 +1,68 @@
 ---
-import { getCollection } from 'astro:content';
+import { getLiveCollection } from 'astro:content';
 import CampaignsLayout from '@layouts/CampaignsLayout.astro';
 import CollectionHeroShell from '@components/site/CollectionHeroShell.astro';
-import TagCloud from '@components/TagCloud.astro';
 import rideOnTheBeach from '@images/ride-on-the-beach.png';
-import { getAllCampaignFamilyEntries } from '@utils/campaign-content';
-import { extractCampaignSlugFromEntryId } from '@utils/campaign-collections';
-import { getFilteredCollection } from '@utils/content-filter';
 import {
-  resolveCampaignContentVisibility,
-  type CampaignVisibility,
-} from '@utils/campaign-access';
+  buildCampaignIndexModel,
+  type CampaignIndexViewer,
+  type CampaignIndexMetadataLoader,
+} from '~/lib/campaign-index';
+import { getRequestSession } from '~/lib/auth-session';
 
-type CampaignRecordCounter = {
-  total: number;
-  publicCount: number;
-  protectedCount: number;
+const loadCampaignMetadata: CampaignIndexMetadataLoader = async ({ campaignSlug, accessScope }) => {
+  try {
+    const result = await getLiveCollection('campaignContent', {
+      campaignSlug,
+      collectionKey: 'pages',
+      accessScope,
+      type: 'campaign',
+      limit: 10,
+    });
+
+    if (!Array.isArray(result.entries)) {
+      const liveError = result.error;
+      const reason = liveError && typeof liveError === 'object' && 'code' in liveError
+        ? String(liveError.code)
+        : 'liveCollectionError';
+
+      return { ok: false, reason };
+    }
+
+    const rootEntry =
+      result.entries.find((entry) => entry.data.documentId === 'index')
+      ?? result.entries.find((entry) => entry.data.type === 'campaign');
+
+    return rootEntry
+      ? { ok: true, title: rootEntry.data.title }
+      : { ok: false, reason: 'missingCampaignRoot' };
+  } catch (error) {
+    console.error('campaign.index.live_collection_failed', {
+      campaignSlug,
+      message: error instanceof Error ? error.message : 'unknown error',
+    });
+    return { ok: false, reason: 'liveCollectionFailed' };
+  }
 };
 
-const [campaigns, familyEntries] = await Promise.all([
-  getFilteredCollection(await getCollection('campaigns')),
-  getAllCampaignFamilyEntries(),
-]);
+const session = await getRequestSession(Astro.request, Astro.locals);
+const viewer: CampaignIndexViewer = session
+  ? { kind: 'authenticated', userId: session.user.id, traceId: session.session.id }
+  : { kind: 'anonymous' };
 
-const campaignVisibilityBySlug = new Map<string, CampaignVisibility>();
-for (const campaign of campaigns) {
-  const slug = extractCampaignSlugFromEntryId(campaign.id) || campaign.id;
-  campaignVisibilityBySlug.set(slug, campaign.data.visibility);
-}
-
-const campaignRecordCounts = new Map<string, CampaignRecordCounter>();
-for (const campaign of campaigns) {
-  const slug = extractCampaignSlugFromEntryId(campaign.id) || campaign.id;
-  campaignRecordCounts.set(slug, {
-    total: 0,
-    publicCount: 0,
-    protectedCount: 0,
-  });
-}
-
-for (const entry of familyEntries) {
-  const campaignSlug = entry.data.campaign;
-  if (!campaignSlug) {
-    continue;
-  }
-
-  const counts = campaignRecordCounts.get(campaignSlug);
-  if (!counts) {
-    continue;
-  }
-
-  const campaignVisibility = campaignVisibilityBySlug.get(campaignSlug) ?? 'gm';
-  const effectiveVisibility = resolveCampaignContentVisibility({
-    campaignSlug,
-    contentVisibility: entry.data.visibility,
-    campaignVisibility,
-  });
-
-  counts.total += 1;
-  if (effectiveVisibility === 'public') {
-    counts.publicCount += 1;
-  } else {
-    counts.protectedCount += 1;
-  }
-}
-
-const campaignSummaries = campaigns.map((entry) => {
-  const slug = extractCampaignSlugFromEntryId(entry.id) || entry.id;
-  const recordCounts = campaignRecordCounts.get(slug) ?? {
-    total: 0,
-    publicCount: 0,
-    protectedCount: 0,
-  };
-
-  return {
-    id: slug,
-    slug,
-    title: entry.data.title,
-    excerpt: entry.data.excerpt,
-    tags: entry.data.tags,
-    visibility: entry.data.visibility,
-    totalRecordCount: recordCounts.total,
-    publicRecordCount: recordCounts.publicCount,
-    protectedRecordCount: recordCounts.protectedCount,
-  };
+const campaignIndex = await buildCampaignIndexModel({
+  viewer,
+  loadCampaignMetadata,
 });
 
-const publicCampaigns = campaignSummaries.filter((item) => item.visibility === 'public');
-const campaignsWithProtectedContent = publicCampaigns.filter((item) => item.protectedRecordCount > 0).length;
-const totalProtectedRecords = publicCampaigns.reduce((sum, item) => sum + item.protectedRecordCount, 0);
-
-const allTags = [...new Set(publicCampaigns.flatMap((item) => item.tags))];
 const next = encodeURIComponent(`${Astro.url.pathname}${Astro.url.search}`);
 const loginHref = `/login?next=${next}`;
 ---
 
-<CampaignsLayout title="Campaigns - World of Aletheia" description="Explore public campaigns in Aletheia">
+<CampaignsLayout title="Campaigns - World of Aletheia" description="Explore public campaign listings in Aletheia">
   <CollectionHeroShell
     title="Campaigns"
-    description="Public campaign records, API-backed notes, and play-facing archives that reveal Aletheia through actual table history."
+    description="Public campaign listings and campaign-gated play archives that reveal Aletheia through actual table history."
     image={rideOnTheBeach}
     icon="Campaigns"
     eyebrow="Campaigns"
@@ -110,72 +74,42 @@ const loginHref = `/login?next=${next}`;
         <div class="space-y-2">
           <h2 class="text-2xl font-bold text-ink-950">Campaign Access</h2>
           <p class="text-ink-800 max-w-3xl">
-            Campaign pages intentionally hide protected record titles. Sign in to reveal member and GM records where you
-            have access.
+            Campaign titles are public discovery information. Individual campaign areas may require Campaign Membership,
+            and this index intentionally omits protected item titles, counts, excerpts, tags, and other details.
           </p>
-          {totalProtectedRecords > 0 && (
+          {campaignIndex.unavailableCampaignCount > 0 && (
             <p class="meta-muted text-sm">
-              Public campaigns currently include {totalProtectedRecords} protected records across
+              {campaignIndex.unavailableCampaignCount}
               {' '}
-              {campaignsWithProtectedContent}
-              {' '}
-              campaigns.
+              {campaignIndex.unavailableCampaignCount === 1 ? 'campaign title is' : 'campaign titles are'} temporarily unavailable.
             </p>
           )}
         </div>
         <div class="flex items-center gap-3">
-          <a href={loginHref} class="ui-button ui-button--primary">Sign in to reveal protected records</a>
+          <a href={loginHref} class="ui-button ui-button--primary">Sign in for campaign access</a>
           <a href="/account" class="ui-button ui-button--secondary">Account</a>
         </div>
       </div>
     </section>
 
     <section>
-      <h2 class="text-2xl font-bold text-ink-950 mb-6">Latest Campaigns</h2>
+      <h2 class="text-2xl font-bold text-ink-950 mb-6">Available Campaigns</h2>
 
-      {publicCampaigns.length === 0 ? (
-        <p class="text-ink-800">No public campaign entries found.</p>
+      {campaignIndex.campaigns.length === 0 ? (
+        <p class="text-ink-800">No campaign listings are available right now.</p>
       ) : (
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {publicCampaigns.map((item) => (
-            <a href={`/campaigns/${item.slug}`} class="group flex h-full flex-col rounded-[1.5rem] border border-base-300/80 bg-base-100 p-5 shadow-sm transition duration-200 hover:border-primary/35 hover:shadow-lg">
+          {campaignIndex.campaigns.map((item) => (
+            <a href={item.href} class="group flex h-full flex-col rounded-[1.5rem] border border-base-300/80 bg-base-100 p-5 shadow-sm transition duration-200 hover:border-primary/35 hover:shadow-lg">
               <div class="flex-1 space-y-3">
                 <h3 class="text-xl font-semibold text-ink-950 transition-colors group-hover:text-primary">{item.title}</h3>
-                <p class="text-ink-800">{item.excerpt || 'No description available'}</p>
-                <div class="flex flex-wrap gap-2">
-                  <span class="ui-pill ui-pill--ghost">{item.publicRecordCount} public records</span>
-                  {item.protectedRecordCount > 0 && (
-                    <span class="ui-pill ui-pill--outline">+{item.protectedRecordCount} protected</span>
-                  )}
-                </div>
-                {item.protectedRecordCount > 0 && (
-                  <p class="text-sm meta-muted">Sign in to reveal additional records for this campaign.</p>
-                )}
+                {!item.isAvailable && <span class="ui-pill ui-pill--outline">Temporarily unavailable</span>}
+                {item.unavailableMessage && <p class="text-sm meta-muted">{item.unavailableMessage}</p>}
               </div>
             </a>
           ))}
         </div>
       )}
-    </section>
-
-    <section>
-      <h2 class="text-2xl font-bold text-ink-950 mb-6">Campaign Tools</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <a href="/campaigns/sample-campaign" class="group flex h-full flex-col rounded-[1.5rem] border border-base-300/80 bg-base-100 p-5 shadow-sm transition duration-200 hover:border-primary/35 hover:shadow-lg">
-          <div class="flex-1 space-y-4">
-            <h3 class="text-xl font-semibold text-ink-950 transition-colors group-hover:text-primary">Campaign Records</h3>
-            <p class="text-ink-800">Browse currently available campaign records by campaign.</p>
-            <div class="flex justify-end">
-              <span class="ui-button ui-button--primary ui-button--sm">Explore</span>
-            </div>
-          </div>
-        </a>
-      </div>
-    </section>
-
-    <section>
-      <h2 class="text-2xl font-bold text-ink-950 mb-6">Popular Tags</h2>
-      <TagCloud tags={allTags} />
     </section>
   </div>
 </CampaignsLayout>
