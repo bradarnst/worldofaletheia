@@ -31,6 +31,7 @@ Apply these values in each Cloudflare Workers environment that will read Campaig
 ## Verification
 
 - Run `pnpm test src/lib/campaign-content-source-boundary.test.ts` to verify assertion payloads, headers, validation, and error mapping.
+- Run `pnpm test src/lib/campaign-content-live-loader.test.ts` to verify the `campaignContent` live-loader list/detail filter mapping and access-scope propagation.
 - In an environment wired to `woa-admin`, perform a campaign content read and verify `woa-admin` receives both `x-woa-runtime-assertion` and `x-woa-runtime-signature` headers.
 - Decode the assertion payload only in a trusted operator context and confirm `exp - iat` is `60`, `campaignSlug` matches the requested campaign, and no email, display name, cookie, or session token appears in the payload.
 
