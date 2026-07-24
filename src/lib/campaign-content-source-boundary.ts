@@ -151,7 +151,7 @@ function toBase64Url(bytes: Uint8Array): string {
 
   for (let offset = 0; offset < bytes.length; offset += chunkSize) {
     const chunk = bytes.subarray(offset, offset + chunkSize);
-    chunks.push(String.fromCharCode(...chunk));
+    chunks.push(chunk.reduce((binary, byte) => binary + String.fromCharCode(byte), ''));
   }
 
   return btoa(chunks.join('')).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
