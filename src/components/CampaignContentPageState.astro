@@ -1,0 +1,59 @@
+---
+import type { CampaignContentPageReason } from '~/lib/campaign-content-page';
+
+interface Props {
+  reason: CampaignContentPageReason;
+  loginHref: string;
+  notFoundHeading: string;
+  notFoundBody: string;
+  notFoundBackHref: string;
+  notFoundBackLabel: string;
+  unavailableBackHref: string;
+  unavailableBackLabel: string;
+}
+
+const {
+  reason,
+  loginHref,
+  notFoundHeading,
+  notFoundBody,
+  notFoundBackHref,
+  notFoundBackLabel,
+  unavailableBackHref,
+  unavailableBackLabel,
+} = Astro.props;
+
+const isRestricted = reason === 'gate_blocked';
+const isNotFound = reason === 'not_found' || reason === 'visibility_mismatch';
+---
+
+{
+  isRestricted ? (
+    <article class="reading-prose">
+      <h2>Restricted campaign content</h2>
+      <p>
+        This campaign is restricted to campaign members. Sign in with your account and ensure you have
+        the required campaign access level.
+      </p>
+      <p>
+        <a href={loginHref} class="ui-button ui-button--primary ui-button--sm">Sign in to continue</a>
+      </p>
+    </article>
+  ) : isNotFound ? (
+    <article class="reading-prose">
+      <h2>{notFoundHeading}</h2>
+      <p>{notFoundBody}</p>
+      <p>
+        <a href={notFoundBackHref} class="ui-button ui-button--secondary ui-button--sm">{notFoundBackLabel}</a>
+      </p>
+    </article>
+  ) : (
+    <article class="reading-prose">
+      <h2>Campaign temporarily unavailable</h2>
+      <p>Campaign content is temporarily unavailable. Please try again later.</p>
+      <p>
+        <a href={unavailableBackHref} class="ui-button ui-button--secondary ui-button--sm">{unavailableBackLabel}</a>
+      </p>
+    </article>
+  )
+}

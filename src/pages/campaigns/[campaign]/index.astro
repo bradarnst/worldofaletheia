@@ -1,0 +1,92 @@
+---
+import { getLiveEntry } from 'astro:content';
+import type { CampaignContentLiveEntryData } from '~/lib/campaign-content-live-loader';
+import CampaignsContentLayout from '@layouts/CampaignsContentLayout.astro';
+import CampaignContentPageState from '@components/CampaignContentPageState.astro';
+import { buildCampaignContentPageModel } from '~/lib/campaign-content-page';
+import { createCampaignPageRequestContext } from '~/lib/campaign-page-request-context';
+import {
+  CAMPAIGN_FAMILY_SEGMENTS,
+  getCampaignFamilyBySegment,
+} from '@utils/campaign-collections';
+
+// Campaign Root Entry Point: rendered from the `pages/index` Campaign Content item.
+const ROOT_DOCUMENT_ID = 'index';
+
+const { campaign } = Astro.params;
+const campaignSlug = campaign ?? '';
+
+const ctx = await createCampaignPageRequestContext({
+  request: Astro.request,
+  locals: Astro.locals,
+  hostname: Astro.url.hostname,
+});
+
+const model = await buildCampaignContentPageModel({
+  campaignSlug,
+  documentId: ROOT_DOCUMENT_ID,
+  viewer: ctx.viewer,
+  getCampaignAccessRole: ctx.getCampaignAccessRole,
+  getLiveEntry,
+});
+
+Astro.response.status = model.httpStatus;
+
+const entryData = (model.entry?.data ?? null) as CampaignContentLiveEntryData | null;
+const layoutContent = entryData ?? {
+  title: 'Campaign',
+  excerpt: 'Campaign content is temporarily unavailable or restricted.',
+  authors: ['World of Aletheia'],
+  visibility: 'gm',
+  tags: [],
+  campaign: campaignSlug,
+};
+
+const title = entryData?.title ?? 'Campaign';
+const loginHref = `/login?next=${encodeURIComponent(Astro.url.pathname + Astro.url.search)}`;
+const familyLinks = CAMPAIGN_FAMILY_SEGMENTS.map((segment) => ({
+  segment,
+  label: getCampaignFamilyBySegment(segment)?.label ?? segment,
+  description: getCampaignFamilyBySegment(segment)?.description ?? 'Campaign content.',
+  href: `/campaigns/${campaignSlug}/${segment}`,
+}));
+---
+
+<CampaignsContentLayout content={layoutContent} title={title} robots={model.robots} showContextMetadata={model.canView}>
+  {model.canView && model.entry ? (
+    <article class="reading-prose">
+      <Fragment set:html={model.entry.rendered?.html ?? ''} />
+
+      <section class="not-prose mt-12 border-t border-base-300 pt-8">
+        <h2 class="text-2xl font-bold text-ink-950">Campaign Sections</h2>
+        <p class="meta-muted max-w-3xl">
+          Browse family-specific campaign records. Protected records require campaign membership.
+        </p>
+        <div class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {familyLinks.map((section) => (
+            <a
+              href={section.href}
+              class="group flex h-full flex-col rounded-[1.45rem] border border-base-300/80 bg-base-100 p-5 shadow-sm transition duration-200 hover:border-primary/35 hover:shadow-lg"
+            >
+              <div class="flex-1 space-y-3">
+                <h3 class="text-xl font-semibold text-ink-950 transition-colors group-hover:text-primary">{section.label}</h3>
+                <p class="text-sm text-ink-800">{section.description}</p>
+              </div>
+            </a>
+          ))}
+        </div>
+      </section>
+    </article>
+  ) : (
+    <CampaignContentPageState
+      reason={model.reason}
+      loginHref={loginHref}
+      notFoundHeading="Campaign not found"
+      notFoundBody="This campaign root was not found in the current publication environment."
+      notFoundBackHref="/campaigns"
+      notFoundBackLabel="Back to campaigns"
+      unavailableBackHref="/campaigns"
+      unavailableBackLabel="Back to campaigns"
+    />
+  )}
+</CampaignsContentLayout>

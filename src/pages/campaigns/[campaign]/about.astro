@@ -1,0 +1,69 @@
+---
+import { getLiveEntry } from 'astro:content';
+import type { CampaignContentLiveEntryData } from '~/lib/campaign-content-live-loader';
+import CampaignsContentLayout from '@layouts/CampaignsContentLayout.astro';
+import CampaignContentPageState from '@components/CampaignContentPageState.astro';
+import { buildCampaignContentPageModel } from '~/lib/campaign-content-page';
+import { createCampaignPageRequestContext } from '~/lib/campaign-page-request-context';
+
+// Campaign About: rendered as a normal Campaign Content Item (not a second gate/settings doc).
+const ABOUT_DOCUMENT_ID = 'about';
+
+const { campaign } = Astro.params;
+const campaignSlug = campaign ?? '';
+
+const ctx = await createCampaignPageRequestContext({
+  request: Astro.request,
+  locals: Astro.locals,
+  hostname: Astro.url.hostname,
+});
+
+const model = await buildCampaignContentPageModel({
+  campaignSlug,
+  documentId: ABOUT_DOCUMENT_ID,
+  viewer: ctx.viewer,
+  getCampaignAccessRole: ctx.getCampaignAccessRole,
+  getLiveEntry,
+});
+
+Astro.response.status = model.httpStatus;
+
+const entryData = (model.entry?.data ?? null) as CampaignContentLiveEntryData | null;
+const layoutContent = entryData ?? {
+  title: 'About this campaign',
+  excerpt: 'Campaign about content is temporarily unavailable or restricted.',
+  authors: ['World of Aletheia'],
+  visibility: 'gm',
+  tags: [],
+  campaign: campaignSlug,
+};
+
+const title = entryData?.title ?? 'About this campaign';
+const loginHref = `/login?next=${encodeURIComponent(Astro.url.pathname + Astro.url.search)}`;
+---
+
+<CampaignsContentLayout content={layoutContent} title={title} robots={model.robots} showContextMetadata={model.canView}>
+  {model.canView && model.entry ? (
+    <article class="reading-prose">
+      <nav class="not-prose mb-6 text-sm meta-muted">
+        <a href="/campaigns" class="hover:text-primary">Campaigns</a>
+        <span class="mx-2">/</span>
+        <a href={`/campaigns/${campaignSlug}`} class="hover:text-primary">{campaignSlug}</a>
+        <span class="mx-2">/</span>
+        <span class="font-medium text-ink-900">About</span>
+      </nav>
+      <Fragment set:html={model.entry.rendered?.html ?? ''} />
+    </article>
+  ) : (
+    <CampaignContentPageState
+      reason={model.reason}
+      loginHref={loginHref}
+      notFoundHeading="About page not found"
+      notFoundBody="This campaign does not have an about page in the current publication environment."
+      notFoundBackHref={`/campaigns/${campaignSlug}`}
+      notFoundBackLabel="Back to campaign"
+      unavailableBackHref={`/campaigns/${campaignSlug}`}
+      unavailableBackLabel="Back to campaign"
+    />
+  )}
+</CampaignsContentLayout>
