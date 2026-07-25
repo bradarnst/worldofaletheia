@@ -1,11 +1,143 @@
 ---
+import { getLiveCollection } from 'astro:content';
+import type {
+  CampaignContentLiveCollectionFilter,
+  CampaignContentLiveEntryData,
+} from '~/lib/campaign-content-live-loader';
+import CampaignsLayout from '@layouts/CampaignsLayout.astro';
+import {
+  buildCampaignNotesListModel,
+  type CampaignNotesListLiveGetter,
+  type CampaignNotesPageEntry,
+} from '~/lib/campaign-notes';
+import { createCampaignPageRequestContext } from '~/lib/campaign-page-request-context';
+
+// Campaign Notes Index: rendered from the `notes` Campaign Content collection (issue #10).
 export const prerender = false;
 
 const { campaign } = Astro.params;
+const campaignSlug = campaign ?? '';
+const loginHref = `/login?next=${encodeURIComponent(Astro.url.pathname + Astro.url.search)}`;
 
-if (!campaign) {
-  return Astro.redirect('/campaigns', 302);
-}
+const ctx = await createCampaignPageRequestContext({
+  request: Astro.request,
+  locals: Astro.locals,
+  hostname: Astro.url.hostname,
+});
 
-return Astro.redirect(`/campaigns/${campaign}`, 302);
+const getLiveNotesCollection: CampaignNotesListLiveGetter = async (collection, filter) => {
+  const result = await getLiveCollection(collection, filter);
+  if ('error' in result) {
+    return { error: result.error };
+  }
+  return { entries: result.entries as CampaignNotesPageEntry[] };
+};
+
+const model = await buildCampaignNotesListModel({
+  campaignSlug,
+  viewer: ctx.viewer,
+  getCampaignAccessRole: ctx.getCampaignAccessRole,
+  getLiveCollection: getLiveNotesCollection,
+});
+
+Astro.response.status = model.httpStatus;
+
+const pageTitle = `${campaignSlug} - Notes`;
+const isRestricted = model.reason === 'gate_blocked';
+const isUnavailable = model.reason === 'unavailable' || model.reason === 'source_error';
+const visibleNotes = model.entries;
+const updatedAt = (value: string | null) => (value ? new Date(value).toLocaleDateString('en-GB') : '');
 ---
+
+<CampaignsLayout title={pageTitle} description={`Campaign notes for ${campaignSlug}`} robots={model.robots}>
+  <div class="mx-auto max-w-6xl px-4 py-8">
+    <nav class="mb-6 text-sm meta-muted">
+      <a href="/campaigns" class="hover:text-primary">Campaigns</a>
+      <span class="mx-2">/</span>
+      <a href={`/campaigns/${campaignSlug}`} class="hover:text-primary">{campaignSlug}</a>
+      <span class="mx-2">/</span>
+      <span class="font-medium text-ink-900">Notes</span>
+    </nav>
+
+    <div class="mb-10 space-y-4">
+      <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <div class="space-y-2">
+          <h1 class="text-3xl font-bold text-ink-950">Notes</h1>
+          <p class="max-w-3xl text-ink-800">
+            Session notes, recaps, and campaign-facing notes for this campaign.
+          </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="ui-pill ui-pill--outline">{visibleNotes.length} visible</span>
+        </div>
+      </div>
+
+      {
+        isRestricted && (
+          <section class="ui-surface ui-surface--muted p-6 text-sm text-ink-800">
+            <p>These notes are restricted to campaign members. Sign in with your account to view them.</p>
+            <p class="mt-3">
+              <a href={loginHref} class="ui-button ui-button--primary ui-button--sm">Sign in to continue</a>
+            </p>
+          </section>
+        )
+      }
+
+      {
+        isUnavailable && (
+          <section class="ui-surface ui-surface--muted p-6 text-sm text-ink-800">
+            <p>
+              Campaign notes are temporarily unavailable. Protected campaign content stays fail-closed until the
+              source is healthy again.
+            </p>
+          </section>
+        )
+      }
+    </div>
+
+    {
+      !isRestricted && !isUnavailable && (
+        <div class="mb-12">
+          {visibleNotes.length === 0 ? (
+            <div class="rounded-xl border border-base-300 bg-base-100 p-8 text-center text-ink-800">
+              No visible notes found for this campaign yet.
+            </div>
+          ) : (
+            <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {visibleNotes.map((note) => (
+                <a
+                  href={note.href}
+                  class="group flex h-full flex-col rounded-[1.45rem] border border-base-300/80 bg-base-100 p-5 shadow-sm transition duration-200 hover:border-primary/35 hover:shadow-lg"
+                >
+                  <div class="flex-1 space-y-3">
+                    <div class="flex items-start justify-between gap-3">
+                      <h2 class="text-xl font-semibold text-ink-950 transition-colors group-hover:text-primary">{note.title}</h2>
+                      <span class="ui-pill ui-pill--outline uppercase">{note.type}</span>
+                    </div>
+
+                    {note.excerpt && <p class="text-sm text-ink-800">{note.excerpt}</p>}
+
+                    <div class="flex flex-wrap gap-2">
+                      <span class="ui-pill ui-pill--ghost">{note.visibility}</span>
+                      {updatedAt(note.updatedAt) && (
+                        <span class="ui-pill ui-pill--ghost">{updatedAt(note.updatedAt)}</span>
+                      )}
+                    </div>
+
+                    {note.tags.length > 0 && (
+                      <div class="flex flex-wrap gap-2">
+                        {note.tags.slice(0, 4).map((tag) => (
+                          <span class="tag-chip">{tag}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+      )
+    }
+  </div>
+</CampaignsLayout>
