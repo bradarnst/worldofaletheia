@@ -1,0 +1,85 @@
+---
+import { getLiveEntry } from 'astro:content';
+import CampaignsContentLayout from '@layouts/CampaignsContentLayout.astro';
+import CampaignContentPageState from '@components/CampaignContentPageState.astro';
+import { buildCampaignContentPageModel } from '~/lib/campaign-content-page';
+import { createCampaignPageRequestContext } from '~/lib/campaign-page-request-context';
+
+// Campaign Note Detail: rendered as a Campaign Content Item in the `notes` collection (issue #10).
+// V1 detail routes accept one-segment document IDs only. Multi-segment paths (e.g. /notes/a/b)
+// don't match this single-segment route; Astro falls through to the legacy [family]/[...slug].astro
+// catch-all, which currently throws for the `notes` family (pre-existing behavior, not a generic 404).
+export const prerender = false;
+
+const { campaign, documentId } = Astro.params;
+const campaignSlug = campaign ?? '';
+const loginHref = `/login?next=${encodeURIComponent(Astro.url.pathname + Astro.url.search)}`;
+
+const ctx = await createCampaignPageRequestContext({
+  request: Astro.request,
+  locals: Astro.locals,
+  hostname: Astro.url.hostname,
+});
+
+const isValidDocumentId = typeof documentId === 'string' && !documentId.includes('/');
+
+const model = isValidDocumentId
+  ? await buildCampaignContentPageModel({
+      campaignSlug,
+      documentId,
+      collectionKey: 'notes',
+      viewer: ctx.viewer,
+      getCampaignAccessRole: ctx.getCampaignAccessRole,
+      getLiveEntry,
+    })
+  : null;
+
+Astro.response.status = model?.httpStatus ?? 404;
+
+const entryData = model?.entry?.data ?? null;
+const layoutContent = entryData ?? {
+  title: 'Note not found',
+  excerpt: 'This note was not found or is not readable in the current publication environment.',
+  authors: ['World of Aletheia'],
+  visibility: 'gm',
+  tags: [],
+  campaign: campaignSlug,
+};
+
+const title = entryData?.title ?? 'Note not found';
+const noteTitle = entryData?.title ?? 'Note';
+const canView = model?.canView ?? false;
+---
+
+<CampaignsContentLayout
+  content={layoutContent}
+  title={title}
+  robots={model?.robots ?? 'noindex, nofollow'}
+  showContextMetadata={canView}
+>
+  {canView && model?.entry ? (
+    <article class="reading-prose">
+      <nav class="not-prose mb-6 text-sm meta-muted">
+        <a href="/campaigns" class="hover:text-primary">Campaigns</a>
+        <span class="mx-2">/</span>
+        <a href={`/campaigns/${campaignSlug}`} class="hover:text-primary">{campaignSlug}</a>
+        <span class="mx-2">/</span>
+        <a href={`/campaigns/${campaignSlug}/notes`} class="hover:text-primary">Notes</a>
+        <span class="mx-2">/</span>
+        <span class="font-medium text-ink-900">{noteTitle}</span>
+      </nav>
+      <Fragment set:html={model.entry.rendered?.html ?? ''} />
+    </article>
+  ) : (
+    <CampaignContentPageState
+      reason={model?.reason ?? 'not_found'}
+      loginHref={loginHref}
+      notFoundHeading="Note not found"
+      notFoundBody="This note was not found or is not readable in the current publication environment."
+      notFoundBackHref={`/campaigns/${campaignSlug}/notes`}
+      notFoundBackLabel="Back to notes"
+      unavailableBackHref={`/campaigns/${campaignSlug}/notes`}
+      unavailableBackLabel="Back to notes"
+    />
+  )}
+</CampaignsContentLayout>
