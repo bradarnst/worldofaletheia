@@ -12,16 +12,17 @@
 // The main-site route keeps the `assets/` prefix implicit: a source path
 // `assets/hero.png` maps to `/campaigns/{campaign}/assets/hero.png`.
 
-const ASSET_ENDPOINT_RE = /\/api\/v1\/campaigns\/[^/]+\/assets$/;
+const ASSET_ENDPOINT_RE = /\/api\/v1\/campaigns\/([^/]+)\/assets$/;
 const MAIN_SITE_ASSET_PREFIX = '/campaigns';
 
 /**
  * Validates a bucket-relative Campaign Content asset path. Mirrors the contract
- * pattern: must begin with `assets/`, contain no traversal (`..` / `.` segments),
- * no empty segments (`//`), no backslashes, and must not reference Markdown.
+ * pattern: must begin with `assets/`, be 8–512 characters, contain no traversal
+ * (`..` / `.` segments), no empty segments (`//`), no backslashes, and must not
+ * reference Markdown.
  */
 export function isValidCampaignContentAssetPath(path: string): boolean {
-  if (typeof path !== 'string' || !path.startsWith('assets/')) {
+  if (!path.startsWith('assets/') || path.length < 8 || path.length > 512) {
     return false;
   }
 
@@ -61,13 +62,15 @@ function buildMainSiteAssetUrl(campaignSlug: string, assetPath: string): string 
  *
  * Recognized forms:
  *  - `woa-admin` asset endpoint: `/api/v1/campaigns/{slug}/assets?path=assets/...`
- *    (with or without an origin)
+ *    (with or without an origin). The campaign slug embedded in the URL is
+ *    preserved so cross-campaign references are not silently reassigned.
  *  - bucket-relative references: `assets/...`, `./assets/...`, `/assets/...`
+ *    (no slug in the reference, so the caller's campaign slug is used)
  *
  * Non-asset URLs (doc links, external images, etc.) return `null` and are left
  * unchanged by the caller.
  */
-export function mapWoaAdminAssetUrlToMainSite(rawUrl: string, campaignSlug: string): string | null {
+export function mapCampaignAssetReferenceToMainSite(rawUrl: string, campaignSlug: string): string | null {
   let parsed: URL;
   try {
     parsed = new URL(rawUrl, 'http://_relative_.invalid');
@@ -75,10 +78,13 @@ export function mapWoaAdminAssetUrlToMainSite(rawUrl: string, campaignSlug: stri
     return null;
   }
 
-  if (ASSET_ENDPOINT_RE.test(parsed.pathname)) {
+  const endpointMatch = ASSET_ENDPOINT_RE.exec(parsed.pathname);
+  if (endpointMatch) {
+    const urlCampaignSlug = endpointMatch[1];
     const assetPath = parsed.searchParams.get('path');
+    const targetSlug = urlCampaignSlug || campaignSlug;
     if (assetPath && isValidCampaignContentAssetPath(assetPath)) {
-      return buildMainSiteAssetUrl(campaignSlug, assetPath);
+      return buildMainSiteAssetUrl(targetSlug, assetPath);
     }
     return null;
   }
@@ -110,12 +116,12 @@ export function rewriteCampaignContentAssetReferences(input: string, context: { 
   const campaignSlug = context.campaignSlug.trim();
 
   let result = input.replace(MARKDOWN_LINK_RE, (_match, pre: string, url: string, post: string) => {
-    const mapped = mapWoaAdminAssetUrlToMainSite(url, campaignSlug);
+    const mapped = mapCampaignAssetReferenceToMainSite(url, campaignSlug);
     return mapped ? `${pre}${mapped}${post}` : _match;
   });
 
   result = result.replace(HTML_ASSET_ATTR_RE, (_match, attr: string, url: string) => {
-    const mapped = mapWoaAdminAssetUrlToMainSite(url, campaignSlug);
+    const mapped = mapCampaignAssetReferenceToMainSite(url, campaignSlug);
     return mapped ? `${attr}="${mapped}"` : _match;
   });
 

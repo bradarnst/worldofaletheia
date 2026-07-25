@@ -20,6 +20,19 @@ export type CampaignContentSourceActor =
   | { kind: 'anonymous' }
   | { kind: 'authenticated'; userId: string; traceId: string };
 
+/** A request viewer, mirroring `CampaignContentPageViewer` from the page model. */
+export type CampaignContentViewer =
+  | { kind: 'anonymous' }
+  | { kind: 'authenticated'; userId: string; traceId: string };
+
+/** Maps a request viewer to the non-PII `actor` claim used in runtime assertions. */
+export function toCampaignContentSourceActor(viewer: CampaignContentViewer): CampaignContentSourceActor {
+  if (viewer.kind === 'anonymous') {
+    return { kind: 'anonymous' };
+  }
+  return { kind: 'authenticated', userId: viewer.userId, traceId: viewer.traceId };
+}
+
 export interface CampaignContentRuntimeAssertionPayload {
   aud: string;
   iat: number;

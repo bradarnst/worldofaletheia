@@ -15,7 +15,7 @@
 import {
   createCampaignContentSourceClient,
   resolveCampaignContentSourceConfigForRuntime,
-  type CampaignContentSourceActor,
+  toCampaignContentSourceActor,
   type CampaignContentSourceClient,
 } from '~/lib/campaign-content-source-boundary';
 import { campaignGateManifest, decideCampaignGateAccess, type CampaignGateLogger } from '~/lib/campaign-gate-policy';
@@ -38,13 +38,6 @@ export const CAMPAIGN_CONTENT_ASSET_NOINDEX_HEADERS: Record<string, string> = {
 
 function noIndexHeaders(): Headers {
   return new Headers(CAMPAIGN_CONTENT_ASSET_NOINDEX_HEADERS);
-}
-
-function toSourceActor(viewer: { kind: 'anonymous' } | { kind: 'authenticated'; userId: string; traceId: string }): CampaignContentSourceActor {
-  if (viewer.kind === 'anonymous') {
-    return { kind: 'anonymous' };
-  }
-  return { kind: 'authenticated', userId: viewer.userId, traceId: viewer.traceId };
 }
 
 /**
@@ -111,7 +104,7 @@ export async function handleCampaignContentAssetRequest(
     campaignSlug,
     assetPath: sourceAssetPath,
     allowedVisibilities: decision.allowedVisibilities,
-    actor: toSourceActor(ctx.viewer),
+    actor: toCampaignContentSourceActor(ctx.viewer),
   });
 
   if (!result.ok) {
@@ -121,11 +114,15 @@ export async function handleCampaignContentAssetRequest(
   const headers = noIndexHeaders();
   if (result.value.contentType) {
     headers.set('content-type', result.value.contentType);
+  } else {
+    // The contract defaults the stored asset media type to application/octet-stream
+    // when unknown, so mirror that default for proxied assets.
+    headers.set('content-type', 'application/octet-stream');
   }
   if (result.value.etag) {
     headers.set('etag', result.value.etag);
   }
-  // Source responses default to no-store; preserve that for proxied assets.
+  // The source defaults responses to no-store; mirror that for proxied assets.
   headers.set('cache-control', 'no-store');
 
   return new Response(result.value.bytes, { status: 200, headers });

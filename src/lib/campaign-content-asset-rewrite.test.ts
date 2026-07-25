@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   isValidCampaignContentAssetPath,
-  mapWoaAdminAssetUrlToMainSite,
+  mapCampaignAssetReferenceToMainSite,
   rewriteCampaignContentAssetReferences,
 } from '~/lib/campaign-content-asset-rewrite';
 
@@ -19,6 +19,12 @@ describe('isValidCampaignContentAssetPath', () => {
     expect(isValidCampaignContentAssetPath('/assets/hero.png')).toBe(false);
   });
 
+  it('enforces the contract length bounds (8-512 characters)', () => {
+    expect(isValidCampaignContentAssetPath('assets/')).toBe(false);
+    expect(isValidCampaignContentAssetPath('assets/a')).toBe(true);
+    expect(isValidCampaignContentAssetPath(`assets/${'x'.repeat(600)}`)).toBe(false);
+  });
+
   it('rejects traversal, empty segments, backslashes, and markdown', () => {
     expect(isValidCampaignContentAssetPath('assets/../secret.png')).toBe(false);
     expect(isValidCampaignContentAssetPath('assets//double.png')).toBe(false);
@@ -29,35 +35,41 @@ describe('isValidCampaignContentAssetPath', () => {
   });
 });
 
-describe('mapWoaAdminAssetUrlToMainSite', () => {
+describe('mapCampaignAssetReferenceToMainSite', () => {
   it('maps the woa-admin asset endpoint query form to a main-site URL', () => {
-    expect(mapWoaAdminAssetUrlToMainSite(`${WOA_ADMIN}/api/v1/campaigns/brad/assets?path=assets/hero.png`, 'brad')).toBe(
+    expect(mapCampaignAssetReferenceToMainSite(`${WOA_ADMIN}/api/v1/campaigns/brad/assets?path=assets/hero.png`, 'brad')).toBe(
       '/campaigns/brad/assets/hero.png',
     );
   });
 
   it('maps a relative woa-admin asset endpoint path', () => {
-    expect(mapWoaAdminAssetUrlToMainSite('/api/v1/campaigns/brad/assets?path=assets/maps/region.png', 'brad')).toBe(
+    expect(mapCampaignAssetReferenceToMainSite('/api/v1/campaigns/brad/assets?path=assets/maps/region.png', 'brad')).toBe(
       '/campaigns/brad/assets/maps/region.png',
     );
   });
 
   it('maps bucket-relative asset references', () => {
-    expect(mapWoaAdminAssetUrlToMainSite('assets/hero.png', 'brad')).toBe('/campaigns/brad/assets/hero.png');
-    expect(mapWoaAdminAssetUrlToMainSite('./assets/hero.png', 'brad')).toBe('/campaigns/brad/assets/hero.png');
-    expect(mapWoaAdminAssetUrlToMainSite('/assets/hero.png', 'brad')).toBe('/campaigns/brad/assets/hero.png');
+    expect(mapCampaignAssetReferenceToMainSite('assets/hero.png', 'brad')).toBe('/campaigns/brad/assets/hero.png');
+    expect(mapCampaignAssetReferenceToMainSite('./assets/hero.png', 'brad')).toBe('/campaigns/brad/assets/hero.png');
+    expect(mapCampaignAssetReferenceToMainSite('/assets/hero.png', 'brad')).toBe('/campaigns/brad/assets/hero.png');
   });
 
   it('preserves percent-encoded segments when mapping', () => {
-    expect(mapWoaAdminAssetUrlToMainSite(`${WOA_ADMIN}/api/v1/campaigns/brad/assets?path=assets/my%20map.png`, 'brad')).toBe(
+    expect(mapCampaignAssetReferenceToMainSite(`${WOA_ADMIN}/api/v1/campaigns/brad/assets?path=assets/my%20map.png`, 'brad')).toBe(
       '/campaigns/brad/assets/my%20map.png',
     );
   });
 
+  it('preserves the campaign slug embedded in a cross-campaign asset endpoint URL', () => {
+    expect(mapCampaignAssetReferenceToMainSite(`${WOA_ADMIN}/api/v1/campaigns/barry/assets?path=assets/hero.png`, 'brad')).toBe(
+      '/campaigns/barry/assets/hero.png',
+    );
+  });
+
   it('returns null for non-asset URLs', () => {
-    expect(mapWoaAdminAssetUrlToMainSite('https://example.com/foo.png', 'brad')).toBeNull();
-    expect(mapWoaAdminAssetUrlToMainSite(`${WOA_ADMIN}/api/v1/campaigns/brad/campaign-content`, 'brad')).toBeNull();
-    expect(mapWoaAdminAssetUrlToMainSite(`${WOA_ADMIN}/api/v1/campaigns/brad/assets?path=assets/notes.md`, 'brad')).toBeNull();
+    expect(mapCampaignAssetReferenceToMainSite('https://example.com/foo.png', 'brad')).toBeNull();
+    expect(mapCampaignAssetReferenceToMainSite(`${WOA_ADMIN}/api/v1/campaigns/brad/campaign-content`, 'brad')).toBeNull();
+    expect(mapCampaignAssetReferenceToMainSite(`${WOA_ADMIN}/api/v1/campaigns/brad/assets?path=assets/notes.md`, 'brad')).toBeNull();
   });
 });
 
