@@ -209,3 +209,84 @@ describe('campaign content source boundary', () => {
     });
   });
 });
+
+describe('campaign content asset source reads', () => {
+  function assetBytes(bytes: number[]): Response {
+    return new Response(new Uint8Array(bytes).buffer, {
+      status: 200,
+      headers: { 'content-type': 'image/png', etag: '"asset-etag"' },
+    });
+  }
+
+  it('builds the asset endpoint URL with a path query and signs assertions', async () => {
+    const fetchMock = vi.fn(async () => assetBytes([1, 2, 3]));
+    const client = createCampaignContentSourceClient({ config: sourceConfig, fetch: fetchMock });
+
+    const result = await client.getCampaignContentAsset({
+      campaignSlug: 'brad',
+      assetPath: 'assets/hero.png',
+      allowedVisibilities: ['public', 'campaignMembers'],
+      actor: { kind: 'authenticated', userId: 'user_123', traceId: 'session_123' },
+    });
+
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(fetchMock.mock.calls[0]?.[0]).toBe(
+      'https://woa-admin.example.invalid/api/v1/campaigns/brad/assets?path=assets%2Fhero.png',
+    );
+    expect(fetchMock.mock.calls[0]?.[1]?.headers).toMatchObject({
+      [RUNTIME_ASSERTION_HEADER]: expect.any(String),
+      [RUNTIME_ASSERTION_SIGNATURE_HEADER]: expect.any(String),
+    });
+    expect(result).toMatchObject({
+      ok: true,
+      value: { contentType: 'image/png', etag: '"asset-etag"' },
+    });
+    if (result.ok) {
+      expect(new Uint8Array(result.value.bytes)).toEqual(new Uint8Array([1, 2, 3]));
+    }
+  });
+
+  it('maps a missing or unreadable asset to a generic 404', async () => {
+    const fetchMock = vi.fn(async () => new Response('not found', { status: 404 }));
+    const client = createCampaignContentSourceClient({ config: sourceConfig, fetch: fetchMock });
+
+    const result = await client.getCampaignContentAsset({
+      campaignSlug: 'brad',
+      assetPath: 'assets/missing.png',
+      allowedVisibilities: ['public'],
+      actor: { kind: 'anonymous' },
+    });
+
+    expect(result).toMatchObject({ ok: false, reason: 'notFoundOrNotReadable', mainSiteStatus: 404 });
+  });
+
+  it('maps source errors to fail-closed unavailable behavior', async () => {
+    const fetchMock = vi.fn(async () => new Response('unavailable', { status: 503 }));
+    const client = createCampaignContentSourceClient({ config: sourceConfig, fetch: fetchMock });
+
+    const result = await client.getCampaignContentAsset({
+      campaignSlug: 'brad',
+      assetPath: 'assets/hero.png',
+      allowedVisibilities: ['public', 'campaignMembers'],
+      actor: { kind: 'authenticated', userId: 'user_123', traceId: 'session_123' },
+    });
+
+    expect(result).toMatchObject({ ok: false, reason: 'sourceUnavailable', mainSiteStatus: 503 });
+  });
+
+  it('maps network failures to fail-closed unavailable behavior', async () => {
+    const fetchMock = vi.fn(async () => {
+      throw new TypeError('connection refused');
+    });
+    const client = createCampaignContentSourceClient({ config: sourceConfig, fetch: fetchMock });
+
+    const result = await client.getCampaignContentAsset({
+      campaignSlug: 'brad',
+      assetPath: 'assets/hero.png',
+      allowedVisibilities: ['public'],
+      actor: { kind: 'anonymous' },
+    });
+
+    expect(result).toMatchObject({ ok: false, reason: 'networkFailure', mainSiteStatus: 503 });
+  });
+});
