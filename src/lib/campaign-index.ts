@@ -55,9 +55,13 @@ function normalizeCampaignSlug(slug: string): string {
   return slug.trim();
 }
 
-function normalizeCampaignTitle(title: string): string | null {
+function normalizeCampaignTitle(title: unknown): { ok: true; title: string } | { ok: false; reason: 'missingTitle' | 'malformedTitle' } {
+  if (typeof title !== 'string') {
+    return { ok: false, reason: 'malformedTitle' };
+  }
+
   const normalized = title.trim();
-  return normalized.length > 0 ? normalized : null;
+  return normalized.length > 0 ? { ok: true, title: normalized } : { ok: false, reason: 'missingTitle' };
 }
 
 function createUnavailableCampaign(input: {
@@ -108,35 +112,45 @@ export async function buildCampaignIndexModel(input: {
       return [
         (async (): Promise<CampaignIndexCampaign> => {
           const gate = getCampaignGate(campaignSlug, gateManifest, { logger });
-          const metadataResult = await input.loadCampaignMetadata({ campaignSlug, accessScope });
+          try {
+            const metadataResult = await input.loadCampaignMetadata({ campaignSlug, accessScope });
 
-          if (!metadataResult.ok) {
+            if (!metadataResult.ok) {
+              logger.error('campaign.index.metadata_unavailable', {
+                campaignSlug,
+                reason: metadataResult.reason,
+              });
+
+              return createUnavailableCampaign({ campaignSlug, gate: gate.gate, gateSource: gate.source });
+            }
+
+            const titleResult = normalizeCampaignTitle(metadataResult.title);
+            if (!titleResult.ok) {
+              logger.error('campaign.index.metadata_unavailable', {
+                campaignSlug,
+                reason: titleResult.reason,
+              });
+
+              return createUnavailableCampaign({ campaignSlug, gate: gate.gate, gateSource: gate.source });
+            }
+
+            return {
+              slug: campaignSlug,
+              href: `/campaigns/${campaignSlug}`,
+              title: titleResult.title,
+              gate: gate.gate,
+              gateSource: gate.source,
+              isAvailable: true,
+            };
+          } catch (error) {
             logger.error('campaign.index.metadata_unavailable', {
               campaignSlug,
-              reason: metadataResult.reason,
+              reason: 'loaderRejected',
+              message: error instanceof Error ? error.message : 'unknown error',
             });
 
             return createUnavailableCampaign({ campaignSlug, gate: gate.gate, gateSource: gate.source });
           }
-
-          const title = normalizeCampaignTitle(metadataResult.title);
-          if (!title) {
-            logger.error('campaign.index.metadata_unavailable', {
-              campaignSlug,
-              reason: 'missingTitle',
-            });
-
-            return createUnavailableCampaign({ campaignSlug, gate: gate.gate, gateSource: gate.source });
-          }
-
-          return {
-            slug: campaignSlug,
-            href: `/campaigns/${campaignSlug}`,
-            title,
-            gate: gate.gate,
-            gateSource: gate.source,
-            isAvailable: true,
-          };
         })(),
       ];
     }),

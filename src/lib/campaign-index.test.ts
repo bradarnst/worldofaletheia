@@ -113,4 +113,58 @@ describe('campaign index model', () => {
       reason: 'sourceUnavailable',
     });
   });
+
+  it('keeps rendering other campaigns when one metadata load rejects', async () => {
+    const logger = { warn: vi.fn(), error: vi.fn() };
+    const model = await buildCampaignIndexModel({
+      campaigns: [{ slug: 'brad' }, { slug: 'barry' }],
+      viewer: { kind: 'anonymous' },
+      gateManifest: parseCampaignGateManifest({ brad: 'public', barry: 'public' }, { logger }),
+      logger,
+      loadCampaignMetadata: vi.fn(async ({ campaignSlug }) => {
+        if (campaignSlug === 'brad') {
+          throw new Error('source timed out');
+        }
+
+        return { ok: true as const, title: 'Ashes Under Moonlight' };
+      }),
+    });
+
+    expect(model.campaigns).toEqual([
+      expect.objectContaining({ slug: 'brad', title: 'Campaign temporarily unavailable', isAvailable: false }),
+      expect.objectContaining({ slug: 'barry', title: 'Ashes Under Moonlight', isAvailable: true }),
+    ]);
+    expect(logger.error).toHaveBeenCalledWith('campaign.index.metadata_unavailable', {
+      campaignSlug: 'brad',
+      reason: 'loaderRejected',
+      message: 'source timed out',
+    });
+  });
+
+  it('keeps rendering other campaigns when metadata returns malformed title data', async () => {
+    const logger = { warn: vi.fn(), error: vi.fn() };
+    const malformedTitleResult = JSON.parse('{"ok":true,"title":123}');
+    const model = await buildCampaignIndexModel({
+      campaigns: [{ slug: 'brad' }, { slug: 'barry' }],
+      viewer: { kind: 'anonymous' },
+      gateManifest: parseCampaignGateManifest({ brad: 'public', barry: 'public' }, { logger }),
+      logger,
+      loadCampaignMetadata: vi.fn(async ({ campaignSlug }) => {
+        if (campaignSlug === 'brad') {
+          return malformedTitleResult;
+        }
+
+        return { ok: true as const, title: 'Ashes Under Moonlight' };
+      }),
+    });
+
+    expect(model.campaigns).toEqual([
+      expect.objectContaining({ slug: 'brad', title: 'Campaign temporarily unavailable', isAvailable: false }),
+      expect.objectContaining({ slug: 'barry', title: 'Ashes Under Moonlight', isAvailable: true }),
+    ]);
+    expect(logger.error).toHaveBeenCalledWith('campaign.index.metadata_unavailable', {
+      campaignSlug: 'brad',
+      reason: 'malformedTitle',
+    });
+  });
 });
