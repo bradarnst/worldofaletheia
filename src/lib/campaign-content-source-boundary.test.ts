@@ -219,7 +219,7 @@ describe('campaign content asset source reads', () => {
   }
 
   it('builds the asset endpoint URL with a path query and signs assertions', async () => {
-    const fetchMock = vi.fn(async () => assetBytes([1, 2, 3]));
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => assetBytes([1, 2, 3]));
     const client = createCampaignContentSourceClient({ config: sourceConfig, fetch: fetchMock });
 
     const result = await client.getCampaignContentAsset({
@@ -247,7 +247,7 @@ describe('campaign content asset source reads', () => {
   });
 
   it('maps a missing or unreadable asset to a generic 404', async () => {
-    const fetchMock = vi.fn(async () => new Response('not found', { status: 404 }));
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response('not found', { status: 404 }));
     const client = createCampaignContentSourceClient({ config: sourceConfig, fetch: fetchMock });
 
     const result = await client.getCampaignContentAsset({
@@ -261,7 +261,7 @@ describe('campaign content asset source reads', () => {
   });
 
   it('maps source errors to fail-closed unavailable behavior', async () => {
-    const fetchMock = vi.fn(async () => new Response('unavailable', { status: 503 }));
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response('unavailable', { status: 503 }));
     const client = createCampaignContentSourceClient({ config: sourceConfig, fetch: fetchMock });
 
     const result = await client.getCampaignContentAsset({
