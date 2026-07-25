@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   buildCampaignIndexModel,
+  createCampaignIndexLiveMetadataLoader,
   createCampaignIndexDiscoveryAccessScope,
+  type CampaignIndexLiveEntryGetter,
   type CampaignIndexMetadataLoader,
 } from '~/lib/campaign-index';
 import { parseCampaignGateManifest } from '~/lib/campaign-gate-policy';
@@ -78,12 +80,46 @@ describe('campaign index model', () => {
     });
 
     expect(model.campaigns).toEqual([
-      expect.objectContaining({ slug: 'source-only-campaign', title: 'Source Only Campaign', gateSource: 'missing-default' }),
+      expect.objectContaining({
+        slug: 'source-only-campaign',
+        title: 'Source Only Campaign',
+        gate: 'campaignMembers',
+        gateSource: 'missing-default',
+      }),
     ]);
     expect(logger.warn).toHaveBeenCalledWith('campaign.gate_manifest.missing_entry', {
       campaignSlug: 'source-only-campaign',
       fallbackGate: 'campaignMembers',
     });
+  });
+
+  it('builds page-safe render data for anonymous and signed-in visitors without operator diagnostic leakage', async () => {
+    // Full .astro page rendering is not wired into this Vitest setup; this seam covers the model fields rendered by
+    // src/pages/campaigns/index.astro for both viewer states.
+    const viewers = [
+      { kind: 'anonymous' as const },
+      { kind: 'authenticated' as const, userId: 'user_123', traceId: 'request_123' },
+    ];
+
+    for (const viewer of viewers) {
+      const model = await buildCampaignIndexModel({
+        campaigns: [{ slug: 'brad' }],
+        viewer,
+        gateManifest: parseCampaignGateManifest({ brad: 'public' }),
+        loadCampaignMetadata: vi.fn(async () => ({ ok: false as const, reason: 'sourceUnavailable' })),
+      });
+
+      expect(model.campaigns).toEqual([
+        expect.objectContaining({
+          slug: 'brad',
+          title: 'Campaign temporarily unavailable',
+          isAvailable: false,
+          unavailableMessage: 'Campaign discovery is temporarily unavailable.',
+        }),
+      ]);
+      expect(JSON.stringify(model)).not.toContain('woa-admin');
+      expect(JSON.stringify(model)).not.toContain('runtime assertion');
+    }
   });
 
   it('keeps source failures generic for visitors and logs operator diagnostics', async () => {
@@ -165,6 +201,87 @@ describe('campaign index model', () => {
     expect(logger.error).toHaveBeenCalledWith('campaign.index.metadata_unavailable', {
       campaignSlug: 'brad',
       reason: 'malformedTitle',
+    });
+  });
+});
+
+describe('campaign index live metadata loader', () => {
+  it('loads the campaign root document deterministically', async () => {
+    const getLiveEntry = vi.fn(async () => ({
+      entry: { data: { title: 'The Weight of Sun and Soil' } },
+    })) satisfies CampaignIndexLiveEntryGetter;
+    const accessScope = createCampaignIndexDiscoveryAccessScope({ kind: 'anonymous' });
+    const loadCampaignMetadata = createCampaignIndexLiveMetadataLoader({ getLiveEntry });
+
+    await expect(loadCampaignMetadata({ campaignSlug: 'brad', accessScope })).resolves.toEqual({
+      ok: true,
+      title: 'The Weight of Sun and Soil',
+    });
+    expect(getLiveEntry).toHaveBeenCalledWith('campaignContent', {
+      campaignSlug: 'brad',
+      collectionKey: 'pages',
+      documentId: 'index',
+      accessScope,
+    });
+  });
+
+  it('preserves missing campaign root behavior for not-found live entries', async () => {
+    const logger = { error: vi.fn() };
+    const getLiveEntry = vi.fn(async () => ({
+      error: { name: 'LiveEntryNotFoundError', message: 'Entry campaignContent → brad/pages/index was not found.' },
+    })) satisfies CampaignIndexLiveEntryGetter;
+    const loadCampaignMetadata = createCampaignIndexLiveMetadataLoader({ getLiveEntry, logger });
+
+    await expect(
+      loadCampaignMetadata({
+        campaignSlug: 'brad',
+        accessScope: createCampaignIndexDiscoveryAccessScope({ kind: 'anonymous' }),
+      }),
+    ).resolves.toEqual({ ok: false, reason: 'missingCampaignRoot' });
+    expect(logger.error).not.toHaveBeenCalled();
+  });
+
+  it('extracts live error diagnostics while keeping returned render data generic', async () => {
+    const logger = { error: vi.fn() };
+    const getLiveEntry = vi.fn(async () => ({
+      error: {
+        name: 'CampaignContentLiveLoaderError',
+        message: 'woa-admin runtime assertion failed',
+        sourceFailure: {
+          ok: false,
+          reason: 'sourceUnavailable',
+          mainSiteStatus: 503,
+          retryable: true,
+          safeMessage: 'Campaign content unavailable.',
+        },
+      },
+    })) satisfies CampaignIndexLiveEntryGetter;
+    const accessScope = createCampaignIndexDiscoveryAccessScope({ kind: 'anonymous' });
+    const loadCampaignMetadata = createCampaignIndexLiveMetadataLoader({ getLiveEntry, logger });
+    const model = await buildCampaignIndexModel({
+      campaigns: [{ slug: 'brad' }],
+      viewer: { kind: 'anonymous' },
+      gateManifest: parseCampaignGateManifest({ brad: 'public' }),
+      logger: { warn: vi.fn(), error: vi.fn() },
+      loadCampaignMetadata,
+    });
+
+    expect(model.campaigns).toEqual([
+      expect.objectContaining({
+        slug: 'brad',
+        title: 'Campaign temporarily unavailable',
+        isAvailable: false,
+        unavailableMessage: 'Campaign discovery is temporarily unavailable.',
+      }),
+    ]);
+    expect(JSON.stringify(model)).not.toContain('woa-admin');
+    expect(JSON.stringify(model)).not.toContain('runtime assertion');
+    expect(logger.error).toHaveBeenCalledWith('campaign.index.live_entry_error', {
+      campaignSlug: 'brad',
+      reason: 'sourceUnavailable',
+      name: 'CampaignContentLiveLoaderError',
+      message: 'woa-admin runtime assertion failed',
+      sourceFailureReason: 'sourceUnavailable',
     });
   });
 });

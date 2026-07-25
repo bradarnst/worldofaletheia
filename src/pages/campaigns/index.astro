@@ -1,49 +1,16 @@
 ---
-import { getLiveCollection } from 'astro:content';
+import { getLiveEntry } from 'astro:content';
 import CampaignsLayout from '@layouts/CampaignsLayout.astro';
 import CollectionHeroShell from '@components/site/CollectionHeroShell.astro';
 import rideOnTheBeach from '@images/ride-on-the-beach.png';
 import {
   buildCampaignIndexModel,
+  createCampaignIndexLiveMetadataLoader,
   type CampaignIndexViewer,
-  type CampaignIndexMetadataLoader,
 } from '~/lib/campaign-index';
 import { getRequestSession } from '~/lib/auth-session';
 
-const loadCampaignMetadata: CampaignIndexMetadataLoader = async ({ campaignSlug, accessScope }) => {
-  try {
-    const result = await getLiveCollection('campaignContent', {
-      campaignSlug,
-      collectionKey: 'pages',
-      accessScope,
-      type: 'campaign',
-      limit: 10,
-    });
-
-    if (!Array.isArray(result.entries)) {
-      const liveError = result.error;
-      const reason = liveError && typeof liveError === 'object' && 'code' in liveError
-        ? String(liveError.code)
-        : 'liveCollectionError';
-
-      return { ok: false, reason };
-    }
-
-    const rootEntry =
-      result.entries.find((entry) => entry.data.documentId === 'index')
-      ?? result.entries.find((entry) => entry.data.type === 'campaign');
-
-    return rootEntry
-      ? { ok: true, title: rootEntry.data.title }
-      : { ok: false, reason: 'missingCampaignRoot' };
-  } catch (error) {
-    console.error('campaign.index.live_collection_failed', {
-      campaignSlug,
-      message: error instanceof Error ? error.message : 'unknown error',
-    });
-    return { ok: false, reason: 'liveCollectionFailed' };
-  }
-};
+const loadCampaignMetadata = createCampaignIndexLiveMetadataLoader({ getLiveEntry });
 
 const session = await getRequestSession(Astro.request, Astro.locals);
 const viewer: CampaignIndexViewer = session

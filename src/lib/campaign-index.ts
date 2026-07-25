@@ -25,6 +25,31 @@ export type CampaignIndexMetadataLoader = (input: {
   accessScope: CampaignContentLiveAccessScope;
 }) => Promise<CampaignIndexMetadataResult>;
 
+export interface CampaignIndexLiveEntry {
+  data: {
+    title: string;
+  };
+}
+
+export type CampaignIndexLiveEntryResult =
+  | { entry: CampaignIndexLiveEntry }
+  | { error: unknown };
+
+export type CampaignIndexLiveEntryGetter = (
+  collection: 'campaignContent',
+  filter: {
+    campaignSlug: string;
+    collectionKey: 'pages';
+    documentId: 'index';
+    accessScope: CampaignContentLiveAccessScope;
+  },
+) => Promise<CampaignIndexLiveEntryResult>;
+
+export interface CampaignIndexLiveMetadataLoaderOptions {
+  getLiveEntry: CampaignIndexLiveEntryGetter;
+  logger?: Pick<CampaignGateLogger, 'error'>;
+}
+
 export interface CampaignIndexCampaign {
   slug: string;
   href: string;
@@ -50,6 +75,68 @@ export const CAMPAIGN_INDEX_CAMPAIGNS = [
 
 const genericUnavailableTitle = 'Campaign temporarily unavailable';
 const genericUnavailableMessage = 'Campaign discovery is temporarily unavailable.';
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function getStringProperty(value: unknown, property: string): string | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const propertyValue = value[property];
+  return typeof propertyValue === 'string' && propertyValue.length > 0 ? propertyValue : undefined;
+}
+
+function getRecordProperty(value: unknown, property: string): Record<string, unknown> | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const propertyValue = value[property];
+  return isRecord(propertyValue) ? propertyValue : undefined;
+}
+
+function getSourceFailureReason(error: unknown): string | undefined {
+  const sourceFailure = getRecordProperty(error, 'sourceFailure') ?? getRecordProperty(getRecordProperty(error, 'cause'), 'sourceFailure');
+  return getStringProperty(sourceFailure, 'reason');
+}
+
+function getLiveErrorDiagnostics(error: unknown, fallbackReason: string): { reason: string; details: Record<string, string> } {
+  const cause = getRecordProperty(error, 'cause');
+  const name = getStringProperty(error, 'name');
+  const message = getStringProperty(error, 'message');
+  const causeName = getStringProperty(cause, 'name');
+  const causeMessage = getStringProperty(cause, 'message');
+  const sourceFailureReason = getSourceFailureReason(error);
+  const details: Record<string, string> = {};
+
+  if (name) {
+    details.name = name;
+  }
+  if (message) {
+    details.message = message;
+  }
+  if (causeName) {
+    details.causeName = causeName;
+  }
+  if (causeMessage) {
+    details.causeMessage = causeMessage;
+  }
+  if (sourceFailureReason) {
+    details.sourceFailureReason = sourceFailureReason;
+  }
+
+  return {
+    reason: sourceFailureReason ?? name ?? causeName ?? fallbackReason,
+    details,
+  };
+}
+
+function isMissingLiveEntry(error: unknown): boolean {
+  return getStringProperty(error, 'name') === 'LiveEntryNotFoundError';
+}
 
 function normalizeCampaignSlug(slug: string): string {
   return slug.trim();
@@ -80,6 +167,47 @@ function createUnavailableCampaign(input: {
   };
 }
 
+export function createCampaignIndexLiveMetadataLoader(options: CampaignIndexLiveMetadataLoaderOptions): CampaignIndexMetadataLoader {
+  const logger = options.logger ?? console;
+
+  return async ({ campaignSlug, accessScope }) => {
+    try {
+      const result = await options.getLiveEntry('campaignContent', {
+        campaignSlug,
+        collectionKey: 'pages',
+        documentId: 'index',
+        accessScope,
+      });
+
+      if ('error' in result) {
+        if (isMissingLiveEntry(result.error)) {
+          return { ok: false, reason: 'missingCampaignRoot' };
+        }
+
+        const diagnostics = getLiveErrorDiagnostics(result.error, 'liveEntryError');
+        logger.error('campaign.index.live_entry_error', {
+          campaignSlug,
+          reason: diagnostics.reason,
+          ...diagnostics.details,
+        });
+
+        return { ok: false, reason: diagnostics.reason };
+      }
+
+      return { ok: true, title: result.entry.data.title };
+    } catch (error) {
+      const diagnostics = getLiveErrorDiagnostics(error, 'liveEntryFailed');
+      logger.error('campaign.index.live_entry_failed', {
+        campaignSlug,
+        reason: diagnostics.reason,
+        ...diagnostics.details,
+      });
+
+      return { ok: false, reason: diagnostics.reason };
+    }
+  };
+}
+
 export function createCampaignIndexDiscoveryAccessScope(viewer: CampaignIndexViewer): CampaignContentLiveAccessScope {
   return {
     // Campaign Index reads stay public-only. Campaign Gate may still require membership for entering the campaign,
@@ -101,60 +229,62 @@ export async function buildCampaignIndexModel(input: {
   const logger = input.logger ?? console;
   const accessScope = createCampaignIndexDiscoveryAccessScope(input.viewer);
 
-  const campaignModels = await Promise.all(
-    campaigns.flatMap((campaign) => {
-      const campaignSlug = normalizeCampaignSlug(campaign.slug);
-      if (!campaignSlug) {
-        logger.error('campaign.index.invalid_slug', { campaignSlug: campaign.slug });
-        return [];
-      }
+  const campaignMetadataTasks: Promise<CampaignIndexCampaign>[] = [];
 
-      return [
-        (async (): Promise<CampaignIndexCampaign> => {
-          const gate = getCampaignGate(campaignSlug, gateManifest, { logger });
-          try {
-            const metadataResult = await input.loadCampaignMetadata({ campaignSlug, accessScope });
+  for (const campaign of campaigns) {
+    const campaignSlug = normalizeCampaignSlug(campaign.slug);
+    if (!campaignSlug) {
+      logger.error('campaign.index.invalid_slug', { campaignSlug: campaign.slug });
+      continue;
+    }
 
-            if (!metadataResult.ok) {
-              logger.error('campaign.index.metadata_unavailable', {
-                campaignSlug,
-                reason: metadataResult.reason,
-              });
+    campaignMetadataTasks.push(
+      (async (): Promise<CampaignIndexCampaign> => {
+        const gate = getCampaignGate(campaignSlug, gateManifest, { logger });
+        try {
+          const metadataResult = await input.loadCampaignMetadata({ campaignSlug, accessScope });
 
-              return createUnavailableCampaign({ campaignSlug, gate: gate.gate, gateSource: gate.source });
-            }
-
-            const titleResult = normalizeCampaignTitle(metadataResult.title);
-            if (!titleResult.ok) {
-              logger.error('campaign.index.metadata_unavailable', {
-                campaignSlug,
-                reason: titleResult.reason,
-              });
-
-              return createUnavailableCampaign({ campaignSlug, gate: gate.gate, gateSource: gate.source });
-            }
-
-            return {
-              slug: campaignSlug,
-              href: `/campaigns/${campaignSlug}`,
-              title: titleResult.title,
-              gate: gate.gate,
-              gateSource: gate.source,
-              isAvailable: true,
-            };
-          } catch (error) {
+          if (!metadataResult.ok) {
             logger.error('campaign.index.metadata_unavailable', {
               campaignSlug,
-              reason: 'loaderRejected',
-              message: error instanceof Error ? error.message : 'unknown error',
+              reason: metadataResult.reason,
             });
 
             return createUnavailableCampaign({ campaignSlug, gate: gate.gate, gateSource: gate.source });
           }
-        })(),
-      ];
-    }),
-  );
+
+          const titleResult = normalizeCampaignTitle(metadataResult.title);
+          if (!titleResult.ok) {
+            logger.error('campaign.index.metadata_unavailable', {
+              campaignSlug,
+              reason: titleResult.reason,
+            });
+
+            return createUnavailableCampaign({ campaignSlug, gate: gate.gate, gateSource: gate.source });
+          }
+
+          return {
+            slug: campaignSlug,
+            href: `/campaigns/${campaignSlug}`,
+            title: titleResult.title,
+            gate: gate.gate,
+            gateSource: gate.source,
+            isAvailable: true,
+          };
+        } catch (error) {
+          logger.error('campaign.index.metadata_unavailable', {
+            campaignSlug,
+            reason: 'loaderRejected',
+            message: error instanceof Error ? error.message : 'unknown error',
+          });
+
+          return createUnavailableCampaign({ campaignSlug, gate: gate.gate, gateSource: gate.source });
+        }
+      })(),
+    );
+  }
+
+  const campaignModels = await Promise.all(campaignMetadataTasks);
 
   return {
     campaigns: campaignModels,
