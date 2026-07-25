@@ -1,4 +1,5 @@
 import type { ContentVisibility } from '~/lib/campaign-gate-policy';
+import { getCloudflareRuntimeEnv } from '~/utils/cloudflare-env';
 
 export const ASSERTION_EXPIRY_SECONDS = 60;
 export const CAMPAIGN_CONTENT_READ_OPERATION = 'campaignContent:read';
@@ -81,6 +82,26 @@ export interface CampaignContentListPage {
   nextCursor: string | null;
 }
 
+/**
+ * Bucket-relative Campaign Content asset path, e.g. `assets/hero.png` or
+ * `assets/maps/region.png`. Mirrors the `path` query parameter accepted by the
+ * `woa-admin` asset endpoint. The main-site asset route reconstructs this from
+ * the trailing path segments after `/campaigns/{campaign}/assets/`.
+ */
+export interface CampaignContentAssetOptions extends CampaignContentSourceRequestScope {
+  assetPath: string;
+}
+
+export interface CampaignContentAssetBytes {
+  bytes: ArrayBuffer;
+  contentType: string | null;
+  etag: string | null;
+}
+
+export type CampaignContentAssetReadResult =
+  | { ok: true; value: CampaignContentAssetBytes }
+  | CampaignContentSourceFailure;
+
 export type CampaignContentSourceFailureReason =
   | 'notFoundOrNotReadable'
   | 'integrationRejected'
@@ -104,6 +125,7 @@ export type CampaignContentSourceResult<T> = { ok: true; value: T } | CampaignCo
 export interface CampaignContentSourceClient {
   listCampaignContent(options: CampaignContentListOptions): Promise<CampaignContentSourceResult<CampaignContentListPage>>;
   getCampaignContentItem(options: CampaignContentDetailOptions): Promise<CampaignContentSourceResult<CampaignContentItemDetail>>;
+  getCampaignContentAsset(options: CampaignContentAssetOptions): Promise<CampaignContentAssetReadResult>;
 }
 
 interface CreateCampaignContentSourceClientOptions {
@@ -136,6 +158,32 @@ export function resolveCampaignContentSourceConfig(env: EnvLike = getDefaultEnv(
     ),
     assertionAudience: env.CAMPAIGN_CONTENT_RUNTIME_ASSERTION_AUDIENCE?.trim() || DEFAULT_ASSERTION_AUDIENCE,
   };
+}
+
+function getStringEnvValue(env: Record<string, unknown> | undefined, key: string): string | undefined {
+  const value = env?.[key];
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+/**
+ * Resolves the source config for a server runtime, preferring Cloudflare Worker
+ * environment bindings (including `wrangler secret put` secrets) and falling back
+ * to build-time `import.meta.env` values. Used by on-demand server routes such as
+ * the Campaign Content asset proxy.
+ */
+export async function resolveCampaignContentSourceConfigForRuntime(): Promise<CampaignContentSourceConfig> {
+  const runtimeEnv = await getCloudflareRuntimeEnv();
+  const fallbackEnv = import.meta.env as EnvLike;
+  const merged: EnvLike = {
+    CAMPAIGN_CONTENT_SOURCE_BASE_URL:
+      getStringEnvValue(runtimeEnv, 'CAMPAIGN_CONTENT_SOURCE_BASE_URL') ?? fallbackEnv.CAMPAIGN_CONTENT_SOURCE_BASE_URL,
+    CAMPAIGN_CONTENT_RUNTIME_ASSERTION_SECRET:
+      getStringEnvValue(runtimeEnv, 'CAMPAIGN_CONTENT_RUNTIME_ASSERTION_SECRET') ?? fallbackEnv.CAMPAIGN_CONTENT_RUNTIME_ASSERTION_SECRET,
+    CAMPAIGN_CONTENT_RUNTIME_ASSERTION_AUDIENCE:
+      getStringEnvValue(runtimeEnv, 'CAMPAIGN_CONTENT_RUNTIME_ASSERTION_AUDIENCE') ??
+      fallbackEnv.CAMPAIGN_CONTENT_RUNTIME_ASSERTION_AUDIENCE,
+  };
+  return resolveCampaignContentSourceConfig(merged);
 }
 
 function ensureCrypto(): Crypto {
@@ -503,6 +551,15 @@ function buildDetailUrl(config: CampaignContentSourceConfig, options: CampaignCo
   ).toString();
 }
 
+function buildAssetUrl(config: CampaignContentSourceConfig, options: CampaignContentAssetOptions): string {
+  const url = new URL(
+    `/api/v1/campaigns/${encodeURIComponent(options.campaignSlug)}/assets`,
+    trimTrailingSlashes(config.baseUrl),
+  );
+  url.searchParams.set('path', options.assetPath);
+  return url.toString();
+}
+
 async function readJsonResponse(response: Response): Promise<unknown> {
   try {
     return await response.json();
@@ -560,6 +617,59 @@ export function createCampaignContentSourceClient(options: CreateCampaignContent
     }
   }
 
+  /**
+   * Streams source asset bytes. Unlike document reads, assets are binary, so the
+   * response is read as an `ArrayBuffer` and the source `content-type`/`etag`
+   * headers are surfaced for the main-site asset route to forward. Failure mapping
+   * is identical to document reads (fail closed, no private-existence leakage).
+   */
+  async function fetchSourceAsset(input: {
+    url: string;
+    scope: CampaignContentSourceRequestScope;
+  }): Promise<CampaignContentAssetReadResult> {
+    let assertionHeaders: RuntimeAssertionHeaders;
+    try {
+      assertionHeaders = await createRuntimeAssertionHeaders({
+        config,
+        campaignSlug: input.scope.campaignSlug,
+        allowedVisibilities: input.scope.allowedVisibilities,
+        actor: input.scope.actor,
+      });
+    } catch {
+      return createFailure({ reason: 'integrationRejected', mainSiteStatus: 503, retryable: false });
+    }
+
+    let response: Response;
+    try {
+      response = await fetchImpl(input.url, {
+        method: 'GET',
+        headers: {
+          ...assertionHeaders,
+        },
+      });
+    } catch {
+      return mapCampaignContentSourceFailure({ reason: 'networkFailure' });
+    }
+
+    if (!response.ok) {
+      return mapCampaignContentSourceFailure({ status: response.status });
+    }
+
+    try {
+      const bytes = await response.arrayBuffer();
+      return {
+        ok: true,
+        value: {
+          bytes,
+          contentType: response.headers.get('content-type'),
+          etag: response.headers.get('etag'),
+        },
+      };
+    } catch {
+      return mapCampaignContentSourceFailure({ reason: 'validationFailure' });
+    }
+  }
+
   return {
     listCampaignContent(listOptions) {
       return fetchSourceJson({
@@ -586,6 +696,12 @@ export function createCampaignContentSourceClient(options: CreateCampaignContent
             documentId: detailOptions.documentId,
             allowedVisibilities: detailOptions.allowedVisibilities,
           }),
+      });
+    },
+    getCampaignContentAsset(assetOptions) {
+      return fetchSourceAsset({
+        url: buildAssetUrl(config, assetOptions),
+        scope: assetOptions,
       });
     },
   };

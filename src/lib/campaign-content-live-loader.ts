@@ -12,6 +12,7 @@ import {
 } from '~/lib/campaign-content-source-boundary';
 import { type ContentVisibility } from '~/lib/campaign-gate-policy';
 import { getCloudflareRuntimeEnv } from '~/utils/cloudflare-env';
+import { rewriteCampaignContentAssetReferences } from '~/lib/campaign-content-asset-rewrite';
 
 export type CampaignContentCollectionKey = 'pages' | 'notes';
 
@@ -364,6 +365,33 @@ function slugifyHeading(value: string): string {
   return slug || 'section';
 }
 
+function renderInlineMarkdown(text: string): string {
+  const IMAGE_OR_LINK_RE = /(!\[[^\]]*\]\([^)\s]+\))|(\[[^\]]+\]\([^)\s]+\))/g;
+  let result = '';
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = IMAGE_OR_LINK_RE.exec(text)) !== null) {
+    result += escapeHtml(text.slice(lastIndex, match.index));
+    const token = match[0];
+    if (token.startsWith('!')) {
+      const image = /^!\[([^\]]*)\]\(([^)\s]+)\)$/.exec(token);
+      if (image) {
+        result += `<img src="${escapeHtml(image[2])}" alt="${escapeHtml(image[1])}">`;
+      }
+    } else {
+      const link = /^\[([^\]]+)\]\(([^)\s]+)\)$/.exec(token);
+      if (link) {
+        result += `<a href="${escapeHtml(link[2])}">${escapeHtml(link[1])}</a>`;
+      }
+    }
+    lastIndex = IMAGE_OR_LINK_RE.lastIndex;
+  }
+
+  result += escapeHtml(text.slice(lastIndex));
+  return result.replace(/\n/g, '<br>');
+}
+
 function renderCampaignContentMarkdown(markdown: string): string {
   return markdown
     .trim()
@@ -376,7 +404,7 @@ function renderCampaignContentMarkdown(markdown: string): string {
         return `<h${level} id="${slugifyHeading(text)}">${escapeHtml(text)}</h${level}>`;
       }
 
-      return `<p>${escapeHtml(block.trim()).replace(/\n/g, '<br>')}</p>`;
+      return `<p>${renderInlineMarkdown(block.trim())}</p>`;
     })
     .join('\n');
 }
@@ -467,7 +495,14 @@ export function createCampaignContentLiveLoader(
           return result.reason === 'notFoundOrNotReadable' ? undefined : { error: createSourceFailureError(result) };
         }
 
-        return toRenderableLiveEntry({ item: result.value, renderMarkdown });
+        // Rewrite Campaign Content asset references to main-site asset URLs before
+        // rendering (issue #11). The rendered HTML must never point at `woa-admin`.
+        const entryWithMainSiteAssets: CampaignContentItemDetail = {
+          ...result.value,
+          body: rewriteCampaignContentAssetReferences(result.value.body, { campaignSlug: result.value.campaignSlug }),
+        };
+
+        return toRenderableLiveEntry({ item: entryWithMainSiteAssets, renderMarkdown });
       } catch (error) {
         return {
           error:
