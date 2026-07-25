@@ -36,6 +36,8 @@ export interface CampaignContentPageEntry {
   cacheHint?: unknown;
 }
 
+export const CAMPAIGN_CONTENT_PAGE_NOINDEX = 'noindex, nofollow';
+
 export type CampaignContentPageLiveEntryGetter = (
   collection: 'campaignContent',
   filter: {
@@ -44,7 +46,7 @@ export type CampaignContentPageLiveEntryGetter = (
     documentId: string;
     accessScope: CampaignContentLiveAccessScope;
   },
-) => Promise<{ entry: CampaignContentPageEntry } | { error: unknown }>;
+) => Promise<{ entry: CampaignContentPageEntry; cacheHint?: unknown } | { error: unknown }>;
 
 export type CampaignContentPageViewer =
   | { kind: 'anonymous' }
@@ -162,7 +164,7 @@ export async function buildCampaignContentPageModel(
       canView: false,
       entry: null,
       visibility: null,
-      robots: 'noindex, nofollow',
+      robots: CAMPAIGN_CONTENT_PAGE_NOINDEX,
       httpStatus: 200,
       reason: 'gate_blocked',
     };
@@ -196,7 +198,7 @@ export async function buildCampaignContentPageModel(
       canView: false,
       entry: null,
       visibility: null,
-      robots: 'noindex, nofollow',
+      robots: CAMPAIGN_CONTENT_PAGE_NOINDEX,
       httpStatus: 503,
       reason: 'source_error',
     };
@@ -212,7 +214,7 @@ export async function buildCampaignContentPageModel(
         canView: false,
         entry: null,
         visibility: null,
-        robots: 'noindex, nofollow',
+        robots: CAMPAIGN_CONTENT_PAGE_NOINDEX,
         httpStatus: 404,
         reason: 'not_found',
       };
@@ -232,7 +234,7 @@ export async function buildCampaignContentPageModel(
       canView: false,
       entry: null,
       visibility: null,
-      robots: 'noindex, nofollow',
+      robots: CAMPAIGN_CONTENT_PAGE_NOINDEX,
       httpStatus: 503,
       reason: 'unavailable',
     };
@@ -252,14 +254,14 @@ export async function buildCampaignContentPageModel(
       canView: false,
       entry: null,
       visibility,
-      robots: 'noindex, nofollow',
+      robots: CAMPAIGN_CONTENT_PAGE_NOINDEX,
       httpStatus: 404,
       reason: 'visibility_mismatch',
     };
   }
 
   // Indexable only when both the gate and the content are public.
-  const robots = decision.gate === 'public' && visibility === 'public' ? null : 'noindex, nofollow';
+  const robots = decision.gate === 'public' && visibility === 'public' ? null : CAMPAIGN_CONTENT_PAGE_NOINDEX;
 
   return {
     ...shared,

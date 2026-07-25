@@ -48,14 +48,14 @@ function liveEntryUnknownError() {
 
 describe('buildCampaignContentPageModel (issue #9)', () => {
   it('renders a public campaign root for anonymous viewers and is indexable', async () => {
-    const getLiveEntry = vi.fn(async () => liveEntryResult(makeEntry({ visibility: 'public' })));
+    const getLiveEntry = vi.fn<CampaignContentPageLiveEntryGetter>(async () => liveEntryResult(makeEntry({ visibility: 'public' })));
     const model = await buildCampaignContentPageModel({
       campaignSlug: 'sample-campaign',
       documentId: 'index',
       viewer: { kind: 'anonymous' },
       getCampaignAccessRole: async () => 'anonymous',
-      getLiveEntry: getLiveEntry as unknown as CampaignContentPageLiveEntryGetter,
-    });
+  getLiveEntry,
+});
 
     expect(getLiveEntry).toHaveBeenCalledTimes(1);
     expect(model.gate).toBe('public');
@@ -70,7 +70,7 @@ describe('buildCampaignContentPageModel (issue #9)', () => {
   });
 
   it('blocks anonymous users from a campaignMembers-gated root BEFORE any source fetch', async () => {
-    const getLiveEntry = vi.fn(async () =>
+    const getLiveEntry = vi.fn<CampaignContentPageLiveEntryGetter>(async () =>
       liveEntryResult(makeEntry({ campaignSlug: 'brad', documentId: 'index', visibility: 'public' })),
     );
     const model = await buildCampaignContentPageModel({
@@ -78,8 +78,8 @@ describe('buildCampaignContentPageModel (issue #9)', () => {
       documentId: 'index',
       viewer: { kind: 'anonymous' },
       getCampaignAccessRole: async () => 'anonymous',
-      getLiveEntry: getLiveEntry as unknown as CampaignContentPageLiveEntryGetter,
-    });
+  getLiveEntry,
+});
 
     expect(model.gate).toBe('campaignMembers');
     expect(model.gateAllowsRequest).toBe(false);
@@ -91,7 +91,7 @@ describe('buildCampaignContentPageModel (issue #9)', () => {
   });
 
   it('allows a campaign member to read a campaignMembers-gated root', async () => {
-    const getLiveEntry = vi.fn(async () =>
+    const getLiveEntry = vi.fn<CampaignContentPageLiveEntryGetter>(async () =>
       liveEntryResult(makeEntry({ campaignSlug: 'brad', documentId: 'index', visibility: 'campaignMembers' })),
     );
     const model = await buildCampaignContentPageModel({
@@ -99,8 +99,8 @@ describe('buildCampaignContentPageModel (issue #9)', () => {
       documentId: 'index',
       viewer: { kind: 'authenticated', userId: 'user-1', traceId: 'trace-1' },
       getCampaignAccessRole: async () => 'member',
-      getLiveEntry: getLiveEntry as unknown as CampaignContentPageLiveEntryGetter,
-    });
+  getLiveEntry,
+});
 
     expect(model.gateAllowsRequest).toBe(true);
     expect(model.canView).toBe(true);
@@ -115,7 +115,7 @@ describe('buildCampaignContentPageModel (issue #9)', () => {
   });
 
   it('allows a GM to read a gm-visibility root item', async () => {
-    const getLiveEntry = vi.fn(async () =>
+    const getLiveEntry = vi.fn<CampaignContentPageLiveEntryGetter>(async () =>
       liveEntryResult(makeEntry({ campaignSlug: 'brad', documentId: 'index', visibility: 'gm' })),
     );
     const model = await buildCampaignContentPageModel({
@@ -123,8 +123,8 @@ describe('buildCampaignContentPageModel (issue #9)', () => {
       documentId: 'index',
       viewer: { kind: 'authenticated', userId: 'user-1', traceId: 'trace-1' },
       getCampaignAccessRole: async () => 'gm' as CampaignAccessRole,
-      getLiveEntry: getLiveEntry as unknown as CampaignContentPageLiveEntryGetter,
-    });
+  getLiveEntry,
+});
 
     expect(model.canView).toBe(true);
     expect(model.visibility).toBe('gm');
@@ -137,14 +137,14 @@ describe('buildCampaignContentPageModel (issue #9)', () => {
   });
 
   it('treats a missing source item as not found (404, noindex) for a passed gate', async () => {
-    const getLiveEntry = vi.fn(async () => liveEntryNotFoundError());
+    const getLiveEntry = vi.fn<CampaignContentPageLiveEntryGetter>(async () => liveEntryNotFoundError());
     const model = await buildCampaignContentPageModel({
       campaignSlug: 'sample-campaign',
       documentId: 'index',
       viewer: { kind: 'anonymous' },
       getCampaignAccessRole: async () => 'anonymous',
-      getLiveEntry: getLiveEntry as unknown as CampaignContentPageLiveEntryGetter,
-    });
+  getLiveEntry,
+});
 
     expect(model.isAvailable).toBe(false);
     expect(model.canView).toBe(false);
@@ -154,14 +154,14 @@ describe('buildCampaignContentPageModel (issue #9)', () => {
   });
 
   it('treats an unavailable source as 503 (noindex)', async () => {
-    const getLiveEntry = vi.fn(async () => liveEntryUnknownError());
+    const getLiveEntry = vi.fn<CampaignContentPageLiveEntryGetter>(async () => liveEntryUnknownError());
     const model = await buildCampaignContentPageModel({
       campaignSlug: 'sample-campaign',
       documentId: 'index',
       viewer: { kind: 'anonymous' },
       getCampaignAccessRole: async () => 'anonymous',
-      getLiveEntry: getLiveEntry as unknown as CampaignContentPageLiveEntryGetter,
-    });
+  getLiveEntry,
+});
 
     expect(model.canView).toBe(false);
     expect(model.httpStatus).toBe(503);
@@ -170,7 +170,7 @@ describe('buildCampaignContentPageModel (issue #9)', () => {
   });
 
   it('falls back to campaignMembers for a campaign missing from the manifest, blocking anonymous', async () => {
-    const getLiveEntry = vi.fn(async () => liveEntryResult(makeEntry({ campaignSlug: 'ghost', documentId: 'index' })));
+    const getLiveEntry = vi.fn<CampaignContentPageLiveEntryGetter>(async () => liveEntryResult(makeEntry({ campaignSlug: 'ghost', documentId: 'index' })));
     const model = await buildCampaignContentPageModel({
       campaignSlug: 'ghost',
       documentId: 'index',
@@ -189,14 +189,14 @@ describe('buildCampaignContentPageModel (issue #9)', () => {
   it('constrains the about page by Content Visibility after a public gate passes', async () => {
     // Public gate allows anonymous, but the about item is campaignMembers-only, so the
     // source will not return it (allowedVisibilities = ['public']).
-    const getLiveEntry = vi.fn(async () => liveEntryNotFoundError());
+    const getLiveEntry = vi.fn<CampaignContentPageLiveEntryGetter>(async () => liveEntryNotFoundError());
     const model = await buildCampaignContentPageModel({
       campaignSlug: 'sample-campaign',
       documentId: 'about',
       viewer: { kind: 'anonymous' },
       getCampaignAccessRole: async () => 'anonymous',
-      getLiveEntry: getLiveEntry as unknown as CampaignContentPageLiveEntryGetter,
-    });
+  getLiveEntry,
+});
 
     expect(model.gateAllowsRequest).toBe(true);
     expect(model.sourceFetched).toBe(true);
@@ -206,7 +206,7 @@ describe('buildCampaignContentPageModel (issue #9)', () => {
   });
 
   it('renders a public about page for anonymous viewers and is indexable', async () => {
-    const getLiveEntry = vi.fn(async () =>
+    const getLiveEntry = vi.fn<CampaignContentPageLiveEntryGetter>(async () =>
       liveEntryResult(makeEntry({ documentId: 'about', title: 'About Sample', visibility: 'public' })),
     );
     const model = await buildCampaignContentPageModel({
@@ -214,8 +214,8 @@ describe('buildCampaignContentPageModel (issue #9)', () => {
       documentId: 'about',
       viewer: { kind: 'anonymous' },
       getCampaignAccessRole: async () => 'anonymous',
-      getLiveEntry: getLiveEntry as unknown as CampaignContentPageLiveEntryGetter,
-    });
+  getLiveEntry,
+});
 
     expect(model.canView).toBe(true);
     expect(model.visibility).toBe('public');

@@ -1,14 +1,9 @@
 ---
-import { getLiveEntry, render } from 'astro:content';
+import { getLiveEntry } from 'astro:content';
 import type { CampaignContentLiveEntryData } from '~/lib/campaign-content-live-loader';
 import CampaignsContentLayout from '@layouts/CampaignsContentLayout.astro';
-import {
-  buildCampaignContentPageModel,
-  type CampaignContentPageLiveEntryGetter,
-  type CampaignContentPageViewer,
-} from '~/lib/campaign-content-page';
-import { getRequestSession } from '~/lib/auth-session';
-import { createCampaignRequestAccessResolver } from '~/lib/campaign-request-access';
+import { buildCampaignContentPageModel } from '~/lib/campaign-content-page';
+import { createCampaignPageRequestContext } from '~/lib/campaign-page-request-context';
 
 // Campaign About: rendered as a normal Campaign Content Item (not a second gate/settings doc).
 const ABOUT_DOCUMENT_ID = 'about';
@@ -16,42 +11,21 @@ const ABOUT_DOCUMENT_ID = 'about';
 const { campaign } = Astro.params;
 const campaignSlug = campaign ?? '';
 
-const session = await getRequestSession(Astro.request, Astro.locals);
-const viewer: CampaignContentPageViewer = session
-  ? { kind: 'authenticated', userId: session.user.id, traceId: session.session.id }
-  : { kind: 'anonymous' };
-
-const accessResolver = await createCampaignRequestAccessResolver({
+const ctx = await createCampaignPageRequestContext({
   request: Astro.request,
   locals: Astro.locals,
   hostname: Astro.url.hostname,
 });
-const getCampaignAccessRole = async (slug: string) => {
-  const { isMember, isGm } = await accessResolver.hasCampaignAccess(slug);
-  return isGm ? 'gm' : isMember ? 'member' : 'anonymous';
-};
 
 const model = await buildCampaignContentPageModel({
   campaignSlug,
   documentId: ABOUT_DOCUMENT_ID,
-  viewer,
-  getCampaignAccessRole,
-  getLiveEntry: getLiveEntry as unknown as CampaignContentPageLiveEntryGetter,
+  viewer: ctx.viewer,
+  getCampaignAccessRole: ctx.getCampaignAccessRole,
+  getLiveEntry,
 });
 
 Astro.response.status = model.httpStatus;
-
-let Content: any = null;
-if (model.entry && model.canView) {
-  try {
-    ({ Content } = await render(model.entry as any));
-  } catch (error) {
-    console.error('campaign.about.render_unavailable', {
-      campaignSlug,
-      message: error instanceof Error ? error.message : 'unknown error',
-    });
-  }
-}
 
 const entryData = (model.entry?.data ?? null) as CampaignContentLiveEntryData | null;
 const layoutContent = entryData ?? {
@@ -68,11 +42,10 @@ const loginHref = `/login?next=${encodeURIComponent(Astro.url.pathname + Astro.u
 
 const isRestricted = model.reason === 'gate_blocked';
 const isNotFound = model.reason === 'not_found' || model.reason === 'visibility_mismatch';
-const isUnavailable = model.reason === 'unavailable' || model.reason === 'source_error';
 ---
 
 <CampaignsContentLayout content={layoutContent} title={title} robots={model.robots} showContextMetadata={model.canView}>
-  {model.canView && Content ? (
+  {model.canView && model.entry ? (
     <article class="reading-prose">
       <nav class="not-prose mb-6 text-sm meta-muted">
         <a href="/campaigns" class="hover:text-primary">Campaigns</a>
@@ -81,7 +54,7 @@ const isUnavailable = model.reason === 'unavailable' || model.reason === 'source
         <span class="mx-2">/</span>
         <span class="font-medium text-ink-900">About</span>
       </nav>
-      <Content />
+      <Fragment set:html={model.entry.rendered?.html ?? ''} />
     </article>
   ) : isRestricted ? (
     <article class="reading-prose">
