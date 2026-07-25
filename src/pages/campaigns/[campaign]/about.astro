@@ -2,6 +2,7 @@
 import { getLiveEntry } from 'astro:content';
 import type { CampaignContentLiveEntryData } from '~/lib/campaign-content-live-loader';
 import CampaignsContentLayout from '@layouts/CampaignsContentLayout.astro';
+import CampaignContentPageState from '@components/CampaignContentPageState.astro';
 import { buildCampaignContentPageModel } from '~/lib/campaign-content-page';
 import { createCampaignPageRequestContext } from '~/lib/campaign-page-request-context';
 
@@ -39,9 +40,6 @@ const layoutContent = entryData ?? {
 
 const title = entryData?.title ?? 'About this campaign';
 const loginHref = `/login?next=${encodeURIComponent(Astro.url.pathname + Astro.url.search)}`;
-
-const isRestricted = model.reason === 'gate_blocked';
-const isNotFound = model.reason === 'not_found' || model.reason === 'visibility_mismatch';
 ---
 
 <CampaignsContentLayout content={layoutContent} title={title} robots={model.robots} showContextMetadata={model.canView}>
@@ -56,26 +54,16 @@ const isNotFound = model.reason === 'not_found' || model.reason === 'visibility_
       </nav>
       <Fragment set:html={model.entry.rendered?.html ?? ''} />
     </article>
-  ) : isRestricted ? (
-    <article class="reading-prose">
-      <h2>Restricted campaign content</h2>
-      <p>
-        This campaign is restricted to campaign members. Sign in with your account and ensure you have
-        the required campaign access level.
-      </p>
-      <p><a href={loginHref} class="ui-button ui-button--primary ui-button--sm">Sign in to continue</a></p>
-    </article>
-  ) : isNotFound ? (
-    <article class="reading-prose">
-      <h2>About page not found</h2>
-      <p>This campaign does not have an about page in the current publication environment.</p>
-      <p><a href={`/campaigns/${campaignSlug}`} class="ui-button ui-button--secondary ui-button--sm">Back to campaign</a></p>
-    </article>
   ) : (
-    <article class="reading-prose">
-      <h2>Campaign temporarily unavailable</h2>
-      <p>Campaign content is temporarily unavailable. Please try again later.</p>
-      <p><a href={`/campaigns/${campaignSlug}`} class="ui-button ui-button--secondary ui-button--sm">Back to campaign</a></p>
-    </article>
+    <CampaignContentPageState
+      reason={model.reason}
+      loginHref={loginHref}
+      notFoundHeading="About page not found"
+      notFoundBody="This campaign does not have an about page in the current publication environment."
+      notFoundBackHref={`/campaigns/${campaignSlug}`}
+      notFoundBackLabel="Back to campaign"
+      unavailableBackHref={`/campaigns/${campaignSlug}`}
+      unavailableBackLabel="Back to campaign"
+    />
   )}
 </CampaignsContentLayout>

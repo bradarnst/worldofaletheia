@@ -23,10 +23,10 @@ import {
 } from '~/lib/campaign-gate-policy';
 import type {
   CampaignContentCollectionKey,
+  CampaignContentLiveEntryData,
   CampaignContentLiveAccessScope,
 } from '~/lib/campaign-content-live-loader';
 import type { CampaignContentSourceActor } from '~/lib/campaign-content-source-boundary';
-import type { CampaignContentLiveEntryData } from '~/lib/campaign-content-live-loader';
 
 /** Minimal structural view of a live entry; avoids a hard dependency on Astro's `LiveDataEntry` export. */
 export interface CampaignContentPageEntry {
@@ -89,7 +89,7 @@ export interface BuildCampaignContentPageModelInput {
   getCampaignAccessRole: (campaignSlug: string) => Promise<CampaignAccessRole>;
   getLiveEntry: CampaignContentPageLiveEntryGetter;
   gateManifest?: ParsedCampaignGateManifest;
-  logger?: Pick<CampaignGateLogger, 'error'>;
+  logger?: CampaignGateLogger;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -97,20 +97,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function isLiveEntryNotFoundError(error: unknown): boolean {
-  if (!isRecord(error)) {
-    return false;
-  }
-
-  const name = typeof error.name === 'string' ? error.name : undefined;
-  if (name === 'LiveEntryNotFoundError') {
-    return true;
-  }
-
-  const constructorName =
-    typeof error.constructor === 'object' && error.constructor !== null && 'name' in error.constructor
-      ? (error.constructor as { name?: unknown }).name
-      : undefined;
-  return constructorName === 'LiveEntryNotFoundError';
+  return isRecord(error) && error.name === 'LiveEntryNotFoundError';
 }
 
 function toActor(viewer: CampaignContentPageViewer): CampaignContentSourceActor {

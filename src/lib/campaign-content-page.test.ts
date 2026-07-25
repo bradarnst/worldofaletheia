@@ -169,6 +169,24 @@ describe('buildCampaignContentPageModel (issue #9)', () => {
     expect(model.reason).toBe('unavailable');
   });
 
+  it('treats a thrown source failure as source_error (503, noindex)', async () => {
+    const getLiveEntry = vi.fn<CampaignContentPageLiveEntryGetter>(() =>
+      Promise.reject(new Error('source exploded')),
+    );
+    const model = await buildCampaignContentPageModel({
+      campaignSlug: 'sample-campaign',
+      documentId: 'index',
+      viewer: { kind: 'anonymous' },
+      getCampaignAccessRole: async () => 'anonymous',
+      getLiveEntry,
+    });
+
+    expect(model.canView).toBe(false);
+    expect(model.httpStatus).toBe(503);
+    expect(model.robots).toBe('noindex, nofollow');
+    expect(model.reason).toBe('source_error');
+  });
+
   it('falls back to campaignMembers for a campaign missing from the manifest, blocking anonymous', async () => {
     const getLiveEntry = vi.fn<CampaignContentPageLiveEntryGetter>(async () => liveEntryResult(makeEntry({ campaignSlug: 'ghost', documentId: 'index' })));
     const model = await buildCampaignContentPageModel({
@@ -176,7 +194,7 @@ describe('buildCampaignContentPageModel (issue #9)', () => {
       documentId: 'index',
       viewer: { kind: 'anonymous' },
       getCampaignAccessRole: async () => 'anonymous',
-      getLiveEntry: getLiveEntry as unknown as CampaignContentPageLiveEntryGetter,
+      getLiveEntry,
       gateManifest: parseCampaignGateManifest({}),
     });
 
@@ -203,6 +221,26 @@ describe('buildCampaignContentPageModel (issue #9)', () => {
     // Visibility constraint is enforced by the source: anonymous readers never receive it.
     expect(model.canView).toBe(false);
     expect(model.reason).toBe('not_found');
+  });
+
+  it('treats a visibility mismatch as not found (404, noindex)', async () => {
+    // Defensive: the source should never return an entry outside allowedVisibilities, but the
+    // model must still treat it as a visibility_mismatch if it does.
+    const getLiveEntry = vi.fn<CampaignContentPageLiveEntryGetter>(async () =>
+      liveEntryResult(makeEntry({ visibility: 'campaignMembers' })),
+    );
+    const model = await buildCampaignContentPageModel({
+      campaignSlug: 'sample-campaign',
+      documentId: 'index',
+      viewer: { kind: 'anonymous' },
+      getCampaignAccessRole: async () => 'anonymous',
+      getLiveEntry,
+    });
+
+    expect(model.canView).toBe(false);
+    expect(model.httpStatus).toBe(404);
+    expect(model.robots).toBe('noindex, nofollow');
+    expect(model.reason).toBe('visibility_mismatch');
   });
 
   it('renders a public about page for anonymous viewers and is indexable', async () => {
