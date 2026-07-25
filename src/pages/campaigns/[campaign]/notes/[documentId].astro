@@ -1,14 +1,14 @@
 ---
 import { getLiveEntry } from 'astro:content';
-import type { CampaignContentLiveEntryData } from '~/lib/campaign-content-live-loader';
 import CampaignsContentLayout from '@layouts/CampaignsContentLayout.astro';
 import CampaignContentPageState from '@components/CampaignContentPageState.astro';
 import { buildCampaignContentPageModel } from '~/lib/campaign-content-page';
 import { createCampaignPageRequestContext } from '~/lib/campaign-page-request-context';
 
 // Campaign Note Detail: rendered as a Campaign Content Item in the `notes` collection (issue #10).
-// V1 detail routes accept one-segment document IDs only; multi-segment paths never reach this
-// single-segment route param and instead fall through to a generic 404.
+// V1 detail routes accept one-segment document IDs only. Multi-segment paths (e.g. /notes/a/b)
+// don't match this single-segment route; Astro falls through to the legacy [family]/[...slug].astro
+// catch-all, which currently throws for the `notes` family (pre-existing behavior, not a generic 404).
 export const prerender = false;
 
 const { campaign, documentId } = Astro.params;
@@ -21,7 +21,7 @@ const ctx = await createCampaignPageRequestContext({
   hostname: Astro.url.hostname,
 });
 
-const isValidDocumentId = Boolean(documentId) && !documentId.includes('/');
+const isValidDocumentId = typeof documentId === 'string' && !documentId.includes('/');
 
 const model = isValidDocumentId
   ? await buildCampaignContentPageModel({
@@ -36,7 +36,7 @@ const model = isValidDocumentId
 
 Astro.response.status = model?.httpStatus ?? 404;
 
-const entryData = (model?.entry?.data ?? null) as CampaignContentLiveEntryData | null;
+const entryData = model?.entry?.data ?? null;
 const layoutContent = entryData ?? {
   title: 'Note not found',
   excerpt: 'This note was not found or is not readable in the current publication environment.',

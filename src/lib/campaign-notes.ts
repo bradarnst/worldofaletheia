@@ -207,7 +207,11 @@ export async function buildCampaignNotesListModel(
     };
   }
 
-  const entries = result.entries.map((entry) => mapNoteEntry(entry, campaignSlug));
+  // Defensive: the source should already have enforced visibility, but filter again
+  // to match the detail model's hardening (campaign-content-page.ts:232-248).
+  const entries = result.entries
+    .filter((entry) => decision.allowedVisibilities.includes(entry.data.visibility))
+    .map((entry) => mapNoteEntry(entry, campaignSlug));
 
   // Indexable only when the gate is public. Individual non-public notes carry their own
   // robots directive on their detail pages; the list itself is personalized otherwise.
