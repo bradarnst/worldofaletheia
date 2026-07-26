@@ -135,8 +135,9 @@ describe('buildCampaignNotesListModel (issue #10)', () => {
     expect(model.gateAllowsRequest).toBe(false);
     expect(model.sourceFetched).toBe(false);
     expect(model.entries).toHaveLength(0);
-    expect(model.httpStatus).toBe(200);
+    expect(model.httpStatus).toBe(404);
     expect(model.robots).toBe('noindex, nofollow');
+    expect(model.reason).toBe('not_found');
     expect(getLiveCollection).not.toHaveBeenCalled();
   });
 
@@ -288,6 +289,8 @@ describe('campaign note detail via buildCampaignContentPageModel (issue #10)', (
     expect(model.sourceFetched).toBe(false);
     expect(model.canView).toBe(false);
     expect(model.entry).toBeNull();
+    expect(model.httpStatus).toBe(404);
+    expect(model.reason).toBe('not_found');
     expect(getLiveEntry).not.toHaveBeenCalled();
   });
 

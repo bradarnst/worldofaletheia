@@ -247,7 +247,7 @@ async function signBase64Url(value: string, secret: string): Promise<string> {
   return toBase64Url(new Uint8Array(signature));
 }
 
-async function createSubjectTrace(actor: CampaignContentSourceActor, secret: string): Promise<string> {
+async function createRuntimeAssertionSubject(actor: CampaignContentSourceActor, secret: string): Promise<string> {
   if (actor.kind === 'anonymous') {
     return 'anonymous';
   }
@@ -271,7 +271,7 @@ export async function createRuntimeAssertionHeaders(input: {
     campaignSlug: input.campaignSlug,
     operation: CAMPAIGN_CONTENT_READ_OPERATION,
     allowedVisibility: [...input.allowedVisibilities],
-    subject: await createSubjectTrace(input.actor, assertionSecret),
+    subject: await createRuntimeAssertionSubject(input.actor, assertionSecret),
   };
   const assertion = encodeJsonPayload(payload);
 

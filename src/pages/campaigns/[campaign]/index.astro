@@ -39,7 +39,6 @@ const layoutContent = entryData ?? {
 };
 
 const title = entryData?.title ?? 'Campaign';
-const loginHref = `/login?next=${encodeURIComponent(Astro.url.pathname + Astro.url.search)}`;
 const campaignLinks = [
   {
     label: 'About',
@@ -82,7 +81,6 @@ const campaignLinks = [
   ) : (
     <CampaignContentPageState
       reason={model.reason}
-      loginHref={loginHref}
       notFoundHeading="Campaign not found"
       notFoundBody="This campaign root was not found in the current publication environment."
       notFoundBackHref="/campaigns"

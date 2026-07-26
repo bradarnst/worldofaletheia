@@ -3,7 +3,6 @@ import type { CampaignContentPageReason } from '~/lib/campaign-content-page';
 
 interface Props {
   reason: CampaignContentPageReason;
-  loginHref: string;
   notFoundHeading: string;
   notFoundBody: string;
   notFoundBackHref: string;
@@ -14,7 +13,6 @@ interface Props {
 
 const {
   reason,
-  loginHref,
   notFoundHeading,
   notFoundBody,
   notFoundBackHref,
@@ -23,23 +21,11 @@ const {
   unavailableBackLabel,
 } = Astro.props;
 
-const isRestricted = reason === 'gate_blocked';
 const isNotFound = reason === 'not_found' || reason === 'visibility_mismatch';
 ---
 
 {
-  isRestricted ? (
-    <article class="reading-prose">
-      <h2>Restricted campaign content</h2>
-      <p>
-        This campaign is restricted to campaign members. Sign in with your account and ensure you have
-        the required campaign access level.
-      </p>
-      <p>
-        <a href={loginHref} class="ui-button ui-button--primary ui-button--sm">Sign in to continue</a>
-      </p>
-    </article>
-  ) : isNotFound ? (
+  isNotFound ? (
     <article class="reading-prose">
       <h2>{notFoundHeading}</h2>
       <p>{notFoundBody}</p>

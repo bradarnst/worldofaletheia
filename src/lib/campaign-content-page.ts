@@ -57,7 +57,6 @@ export type CampaignContentPageViewer = CampaignContentViewer;
 
 export type CampaignContentPageReason =
   | 'ok'
-  | 'gate_blocked'
   | 'not_found'
   | 'unavailable'
   | 'source_error'
@@ -143,8 +142,8 @@ export async function buildCampaignContentPageModel(
       entry: null,
       visibility: null,
       robots: CAMPAIGN_CONTENT_PAGE_NOINDEX,
-      httpStatus: 200,
-      reason: 'gate_blocked',
+      httpStatus: 404,
+      reason: 'not_found',
     };
   }
 

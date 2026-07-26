@@ -47,7 +47,7 @@ export type CampaignNotesListLiveGetter = (
   filter: CampaignContentLiveCollectionFilter,
 ) => Promise<{ entries: CampaignNotesPageEntry[] } | { error: unknown }>;
 
-export type CampaignNotesListReason = 'ok' | 'gate_blocked' | 'not_found' | 'unavailable' | 'source_error';
+export type CampaignNotesListReason = 'ok' | 'not_found' | 'unavailable' | 'source_error';
 
 export interface CampaignNotesListEntry {
   documentId: string;
@@ -154,8 +154,8 @@ export async function buildCampaignNotesListModel(
       isAvailable: false,
       entries: [],
       robots: CAMPAIGN_NOTES_NOINDEX,
-      httpStatus: 200,
-      reason: 'gate_blocked',
+      httpStatus: 404,
+      reason: 'not_found',
     };
   }
 

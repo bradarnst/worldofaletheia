@@ -98,6 +98,8 @@ describe('buildCampaignContentPageModel (issue #9)', () => {
     expect(model.canView).toBe(false);
     expect(model.entry).toBeNull();
     expect(model.robots).toBe('noindex, nofollow');
+    expect(model.httpStatus).toBe(404);
+    expect(model.reason).toBe('not_found');
     expect(getLiveEntry).not.toHaveBeenCalled();
   });
 
@@ -226,6 +228,8 @@ describe('buildCampaignContentPageModel (issue #9)', () => {
     expect(model.gate).toBe('campaignMembers');
     expect(model.gateSource).toBe('missing-default');
     expect(model.gateAllowsRequest).toBe(false);
+    expect(model.httpStatus).toBe(404);
+    expect(model.reason).toBe('not_found');
     expect(getLiveEntry).not.toHaveBeenCalled();
   });
 
