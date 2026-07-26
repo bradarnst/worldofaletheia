@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { resolvePublicationSyncLane } from './publication-policy.mjs';
+import { assertActiveContentMapping } from './retired-campaign-content.mjs';
 import { fail, normalizePathForDisplay, support } from './utils.mjs';
 
 const CONFIG_PATH = path.resolve('config/content-sync.config.json');
@@ -48,16 +49,7 @@ function normalizeMapping(mapping, index) {
     throw new Error(`Mapping #${index + 1} requires both "from" and "to".`);
   }
 
-  const normalizedCollection = typeof mapping.collection === 'string' ? mapping.collection.trim().toLowerCase() : '';
-  const normalizedDestination = to.trim().split('\\').join('/').replace(/\/+$/, '').toLowerCase();
-  if (
-    normalizedDestination === 'campaigns' ||
-    normalizedDestination.endsWith('/campaigns') ||
-    normalizedCollection === 'sessions' ||
-    normalizedCollection.startsWith('campaign')
-  ) {
-    return null;
-  }
+  assertActiveContentMapping({ ...mapping, from, to });
 
   if (target === 'repo') {
     const normalizedTo = normalizeRepoPath(to, index, 'destination');
@@ -187,7 +179,7 @@ export async function loadConfig(options = {}) {
   }
 
   const mappings = Array.isArray(parsed.mappings)
-    ? parsed.mappings.map((m, i) => normalizeMapping(m, i)).filter(Boolean)
+    ? parsed.mappings.map((m, i) => normalizeMapping(m, i))
     : [];
 
   if (!mappings.length) {

@@ -6,29 +6,37 @@ import { describe, expect, it } from 'vitest';
 import { buildSyncDiff } from './fs-diff.mjs';
 
 describe('buildSyncDiff', () => {
-  it('does not emit records for legacy campaign mappings', async () => {
+  it('rejects every retired campaign and session mapping form', async () => {
     const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'content-sync-diff-'));
     const vaultRoot = path.join(tempRoot, 'vault');
     const repoRoot = path.join(tempRoot, 'repo');
-    await fs.mkdir(path.join(vaultRoot, 'campaigns', 'brad'), { recursive: true });
-    await fs.writeFile(path.join(vaultRoot, 'campaigns', 'brad', 'index.md'), '# Legacy campaign\n', 'utf8');
+    const retiredMappings = [
+      { from: 'campaigns', to: 'campaigns', target: 'cloud' },
+      { from: 'sessions', to: 'sessions', target: 'cloud' },
+      { from: 'notes', to: 'content/sessions', target: 'cloud' },
+      { from: 'notes', to: 'notes', collection: 'sessions', target: 'cloud' },
+      { from: 'lore', to: 'lore', collection: 'campaignLore', target: 'cloud' },
+      { from: 'campaigns', to: 'lore', target: 'cloud' },
+      { from: 'World/Sessions', to: 'lore', target: 'cloud' },
+    ];
 
-    const diff = await buildSyncDiff(
-      {
-        vaultRoot,
-        repoRoot,
-        includeExtensions: ['.md'],
-        mappings: [{ from: 'campaigns', to: 'campaigns', target: 'cloud' }],
-      },
-      {
-        cloud: {
-          listObjects: async () => new Map(),
-        },
-      },
-    );
-
-    expect(diff.records).toEqual([]);
-    expect(diff.grouped.excludedByPublication).toEqual([]);
+    for (const mapping of retiredMappings) {
+      await expect(
+        buildSyncDiff(
+          {
+            vaultRoot,
+            repoRoot,
+            includeExtensions: ['.md'],
+            mappings: [mapping],
+          },
+          {
+            cloud: {
+              listObjects: async () => new Map(),
+            },
+          },
+        ),
+      ).rejects.toThrow('Retired Campaign Content mapping');
+    }
   });
 
   it('includes local cleanup files as stale for cloud mappings', async () => {

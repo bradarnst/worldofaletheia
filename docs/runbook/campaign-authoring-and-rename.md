@@ -35,6 +35,53 @@ The website evaluates the Campaign Gate before fetching protected content. It th
 
 Repo `pnpm content:sync` commands do not publish these records.
 
+## Retired main-site Campaign Notes table cleanup
+
+The main-site `campaign_note_documents` table is retired and must remain empty. Migration `0015_campaign_note_documents.sql` is retained only as historical and recovery documentation; active migration plans skip it. Migration `0016_drop_legacy_campaign_note_documents.sql` removes the table from databases where an earlier plan created it.
+
+Apply this setup in every World of Aletheia D1 environment after deploying this change.
+
+1. Check whether the table exists:
+
+   ```bash
+   pnpm wrangler d1 execute DB --local --command "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'campaign_note_documents';"
+   pnpm wrangler d1 execute DB --remote --env staging --command "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'campaign_note_documents';"
+   pnpm wrangler d1 execute DB --remote --command "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'campaign_note_documents';"
+   ```
+
+2. If any command returns the table name, confirm it has no rows before continuing:
+
+   ```bash
+   pnpm wrangler d1 execute DB --local --command "SELECT COUNT(*) AS legacy_note_count FROM campaign_note_documents;"
+   pnpm wrangler d1 execute DB --remote --env staging --command "SELECT COUNT(*) AS legacy_note_count FROM campaign_note_documents;"
+   pnpm wrangler d1 execute DB --remote --command "SELECT COUNT(*) AS legacy_note_count FROM campaign_note_documents;"
+   ```
+
+   The expected count is `0`. Stop and export unexpected rows before applying the cleanup; this ticket intentionally provides no data migration into live Campaign Content.
+
+3. Preview and apply the ordered migration plan:
+
+   ```bash
+   pnpm db:migrate:plan:local:dry-run
+   pnpm db:migrate:plan:local
+   pnpm db:migrate:plan:staging:dry-run
+   pnpm db:migrate:plan:staging
+   pnpm db:migrate:plan:prod:dry-run
+   pnpm db:migrate:plan:prod
+   ```
+
+4. Repeat the table-existence commands from step 1. Successful cleanup returns no rows.
+
+No application rollback is required because active code does not read this table. If operator recovery is necessary, recreate the empty historical schema in the affected environment:
+
+```bash
+pnpm wrangler d1 execute DB --local --file ./migrations/0015_campaign_note_documents.sql
+pnpm wrangler d1 execute DB --remote --env staging --file ./migrations/0015_campaign_note_documents.sql
+pnpm wrangler d1 execute DB --remote --file ./migrations/0015_campaign_note_documents.sql
+```
+
+Restore exported rows only for investigation; do not reconnect application behavior to this table.
+
 ## Changing a campaign slug
 
 A campaign slug change is a coordinated service and data migration. This repo has no supported campaign rename command for live Campaign Content.

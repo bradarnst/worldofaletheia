@@ -12,14 +12,17 @@ vi.mock('~/lib/campaign-membership-repo', async (importOriginal) => {
   };
 });
 
-import { createCampaignAccessResolverFromRequest } from '@utils/campaign-access';
+import {
+  createCampaignAccessResolverFromRequest,
+  type CampaignAccessDecision,
+} from '@utils/campaign-access';
 import { getRequestSession } from '~/lib/auth-session';
 import { CampaignMembershipRepo, createCampaignMembershipRepoFromLocals } from '~/lib/campaign-membership-repo';
 
 const getRequestSessionMock = vi.mocked(getRequestSession);
 const createRepoMock = vi.mocked(createCampaignMembershipRepoFromLocals);
 
-function createMembershipRepoMock(input: { isMember: boolean; isGm: boolean }) {
+function createMembershipRepoMock(input: CampaignAccessDecision) {
   const repo = new CampaignMembershipRepo({
     prepare() {
       throw new Error('Unexpected database access in campaign access unit test.');

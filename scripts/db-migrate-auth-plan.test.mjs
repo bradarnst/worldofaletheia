@@ -119,7 +119,8 @@ describe('db-migrate-auth-plan wrangler parsing', () => {
     expect(orderedMigrations.at(-4)).toBe('./migrations/0012_contributors_and_attributions.sql');
     expect(orderedMigrations.at(-3)).toBe('./migrations/0013_drop_email_canonical.sql');
     expect(orderedMigrations.at(-2)).toBe('./migrations/0014_content_publication_metadata.sql');
-    expect(orderedMigrations.at(-1)).toBe('./migrations/0015_campaign_note_documents.sql');
+    expect(orderedMigrations).not.toContain('./migrations/0015_campaign_note_documents.sql');
+    expect(orderedMigrations.at(-1)).toBe('./migrations/0016_drop_legacy_campaign_note_documents.sql');
   });
 
   it('reports invalid membership roles as a blocking conflict', () => {

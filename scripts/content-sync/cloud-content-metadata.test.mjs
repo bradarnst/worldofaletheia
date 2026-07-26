@@ -24,27 +24,19 @@ function withTimestamps(frontmatter) {
 }
 
 describe('deriveCollectionEntries', () => {
-  it('does not derive rows from legacy campaign mappings', async () => {
-    const entries = await deriveCollectionEntries(
-      { to: 'campaigns' },
-      'brad/Campaign - Brad.md',
-      `---
-title: Campaign - Brad
-collection: campaigns
-slug: brad
-visibility: public
-createdAt: '2026-04-06T10:00:00.000Z'
-updatedAt: '2026-04-06T12:00:00.000Z'
----
-
-Legacy campaign overview body.
-`,
-      { mtime: new Date('2026-04-06T12:00:00.000Z') },
-      createCloudMock(),
-      '2026-04-06T12:30:00.000Z',
-    );
-
-    expect(entries).toEqual([]);
+  it('rejects metadata derivation for retired campaign and session mappings', async () => {
+    for (const mapping of [{ to: 'campaigns' }, { to: 'sessions' }, { to: 'notes', collection: 'campaignNotes' }]) {
+      await expect(
+        deriveCollectionEntries(
+          mapping,
+          'legacy.md',
+          '---\ntitle: Legacy\ncollection: lore\n---\n',
+          { mtime: new Date('2026-04-06T12:00:00.000Z') },
+          createCloudMock(),
+          '2026-04-06T12:30:00.000Z',
+        ),
+      ).rejects.toThrow('Retired Campaign Content mapping');
+    }
   });
 
   it('derives Using Aletheia rows from non-campaign mappings', async () => {

@@ -3,6 +3,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { normalizePathForDisplay } from './utils.mjs';
 import { transformObsidianLinks } from './obsidian-links.mjs';
+import { assertActiveContentMapping } from './retired-campaign-content.mjs';
 import {
   getIncludedPublicationsForSyncLane,
   resolvePublicationFromFrontmatter,
@@ -206,10 +207,7 @@ export async function buildSyncDiff(config, services = {}, { previousEtags = nul
   const excludedByPublication = [];
 
   for (const mapping of config.mappings) {
-    const collection = String(mapping.collection || '').toLowerCase();
-    if (mapping.to === 'campaigns' || collection === 'sessions' || collection.startsWith('campaign')) {
-      continue;
-    }
+    assertActiveContentMapping(mapping);
 
     const sourceRoot = path.resolve(config.vaultRoot, mapping.from);
     const unfilteredSourceFiles = await walkFiles(sourceRoot, config.includeExtensions);

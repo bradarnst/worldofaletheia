@@ -7,8 +7,13 @@ import {
 
 const DEFAULT_SESSION_COOKIE = 'aletheia-dev-session';
 
+export interface CampaignAccessDecision {
+  isMember: boolean;
+  isGm: boolean;
+}
+
 export interface CampaignAccessResolver {
-  hasCampaignAccess(campaignSlug: string): Promise<{ isMember: boolean; isGm: boolean }>;
+  hasCampaignAccess(campaignSlug: string): Promise<CampaignAccessDecision>;
 }
 
 function parseMembershipConfig(rawConfig: string | undefined): Map<string, Map<string, CampaignMembershipRole>> {
@@ -64,7 +69,7 @@ function getLocalMembership(options: {
   cookieHeader: string | null;
   membershipConfigRaw: string | undefined;
   campaignSlug: string;
-}): { isMember: boolean; isGm: boolean } {
+}): CampaignAccessDecision {
   const sessionId = readCookieValue(options.cookieHeader, DEFAULT_SESSION_COOKIE);
   const role = sessionId
     ? parseMembershipConfig(options.membershipConfigRaw).get(sessionId)?.get(options.campaignSlug)
@@ -85,7 +90,7 @@ export function createCampaignAccessResolverFromRequest(options: {
   const { request, locals, membershipConfigRaw, allowLegacyEnvFallback = false } = options;
   let resolvedSessionPromise: Promise<RequestSession | null> | null = null;
   let repoPromise: Promise<CampaignMembershipRepo> | null = null;
-  const membershipByCampaign = new Map<string, Promise<{ isMember: boolean; isGm: boolean }>>();
+  const membershipByCampaign = new Map<string, Promise<CampaignAccessDecision>>();
 
   const getFallback = (campaignSlug: string) => getLocalMembership({
     cookieHeader: request.headers.get('cookie'),
@@ -94,7 +99,7 @@ export function createCampaignAccessResolverFromRequest(options: {
   });
 
   return {
-    async hasCampaignAccess(campaignSlug: string): Promise<{ isMember: boolean; isGm: boolean }> {
+    async hasCampaignAccess(campaignSlug: string): Promise<CampaignAccessDecision> {
       const cachedDecision = membershipByCampaign.get(campaignSlug);
       if (cachedDecision) {
         return cachedDecision;

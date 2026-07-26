@@ -4,6 +4,7 @@ import path from 'node:path';
 import { parseFrontmatter } from '@astrojs/internal-helpers/frontmatter';
 import { transformObsidianLinks } from './obsidian-links.mjs';
 import { normalizeObsidianTags } from './validate.mjs';
+import { assertActiveContentMapping } from './retired-campaign-content.mjs';
 import {
   getIncludedPublicationsForSyncLane,
   resolvePublicationFromFrontmatter,
@@ -335,13 +336,15 @@ function createContentSearchRow({
 
 export async function deriveCollectionEntries(mapping, relativePath, transformedMarkdown, sourceStats, cloud, generatedAt) {
   const normalizedRelative = normalizeDisplayPath(relativePath);
-  if (mapping.to === 'campaigns' || !normalizedRelative.toLowerCase().endsWith('.md')) {
+  assertActiveContentMapping(mapping);
+  if (!normalizedRelative.toLowerCase().endsWith('.md')) {
     return [];
   }
 
   const { frontmatter } = parseFrontmatter(transformedMarkdown);
   const frontmatterRecord = frontmatter && typeof frontmatter === 'object' ? frontmatter : {};
   const frontmatterCollection = requireFrontmatterCollection(frontmatterRecord, normalizedRelative);
+  assertActiveContentMapping({ ...mapping, collection: frontmatterCollection });
   const bodyText = transformedMarkdown.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, '');
   const sourceEtag = buildSourceEtag(transformedMarkdown);
   const lastModified = sourceStats.mtime.toISOString();

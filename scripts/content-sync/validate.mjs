@@ -7,6 +7,7 @@ import {
   PUBLICATION_VALUES,
   normalizeScalar,
 } from './publication-policy.mjs';
+import { assertActiveContentMapping } from './retired-campaign-content.mjs';
 
 const ARTICLE_REQUIRED_KEYS = ['title', 'collection', 'type', 'authors'];
 const COLLECTION_VALIDATION_RULES = {
@@ -442,16 +443,7 @@ async function gatherMarkdownFiles(root) {
 
 function determineValidationRoots(config) {
   return config.mappings.flatMap((mapping) => {
-    const collection = String(mapping.collection || '').toLowerCase();
-    const destination = String(mapping.to || '').split('\\').join('/').replace(/\/+$/, '').toLowerCase();
-    if (
-      destination === 'campaigns' ||
-      destination.endsWith('/campaigns') ||
-      collection === 'sessions' ||
-      collection.startsWith('campaign')
-    ) {
-      return [];
-    }
+    assertActiveContentMapping(mapping);
 
     if (mapping.target === 'repo' || !config.vaultRoot || !mapping.from) {
       return [{
