@@ -31,9 +31,11 @@ export interface CampaignIndexLiveEntry {
   };
 }
 
-export type CampaignIndexLiveEntryResult =
-  | { entry: CampaignIndexLiveEntry }
-  | { error: unknown };
+export interface CampaignIndexLiveEntryResult {
+  // Astro's LiveDataEntryResult uses optional fields so an absent entry is a valid not-found result.
+  entry?: CampaignIndexLiveEntry;
+  error?: unknown;
+}
 
 export type CampaignIndexLiveEntryGetter = (
   collection: 'campaignContent',
@@ -179,7 +181,7 @@ export function createCampaignIndexLiveMetadataLoader(options: CampaignIndexLive
         accessScope,
       });
 
-      if ('error' in result) {
+      if (result.error) {
         if (isMissingLiveEntry(result.error)) {
           return { ok: false, reason: 'missingCampaignRoot' };
         }
@@ -192,6 +194,10 @@ export function createCampaignIndexLiveMetadataLoader(options: CampaignIndexLive
         });
 
         return { ok: false, reason: diagnostics.reason };
+      }
+
+      if (!result.entry) {
+        return { ok: false, reason: 'missingCampaignRoot' };
       }
 
       return { ok: true, title: result.entry.data.title };

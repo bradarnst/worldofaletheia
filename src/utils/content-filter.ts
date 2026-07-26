@@ -87,7 +87,8 @@ export function shouldIncludeContent<TData extends ContentDataLike>(
     return false;
   }
 
-  return getIncludedPublications(environment).includes(resolvePublication(data));
+  const publication = resolvePublication(data);
+  return publication !== null && getIncludedPublications(environment).includes(publication);
 }
 
 /**

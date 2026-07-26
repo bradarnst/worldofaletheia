@@ -10,11 +10,8 @@ interface SimpleContentData {
   tldr?: string;
 }
 
-interface SimpleContentEntry {
+interface SimpleContentEntry extends SimpleContentData {
   data?: SimpleContentData;
-  title?: string;
-  excerpt?: string;
-  tldr?: string;
 }
 
 interface Props {
@@ -25,8 +22,8 @@ interface Props {
 
 const { content, title, description } = Astro.props;
 
-const data = content.data || content;
-const contentTitle = title || data.title || content.title;
+const data: SimpleContentData = content.data || content;
+const contentTitle = title || data.title || content.title || 'World of Aletheia';
 const contentDescription = description || data.description || data.excerpt || content.excerpt;
 const tldr = data.tldr || content.tldr;
 ---

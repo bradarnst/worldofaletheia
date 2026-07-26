@@ -138,8 +138,8 @@ describe('buildCampaignNotesListModel (issue #10)', () => {
   });
 
   it('lets a campaign member read campaignMembers notes but not GM-only notes in the list', async () => {
-    const getLiveCollection = vi.fn<CampaignNotesListLiveGetter>(async (collection, filter) => {
-      const accessScope = (filter as { accessScope: { allowedVisibilities: string[] } }).accessScope;
+    const getLiveCollection = vi.fn<CampaignNotesListLiveGetter>(async (_collection, filter) => {
+      const accessScope = filter.accessScope;
       expect(accessScope.allowedVisibilities).toEqual(['public', 'campaignMembers']);
       // Source enforcement: a member may not receive a gm-visibility note.
       return liveNotes([makeNoteEntry({ campaignSlug: 'brad', documentId: 'session-two', visibility: 'campaignMembers' })]);
@@ -159,8 +159,8 @@ describe('buildCampaignNotesListModel (issue #10)', () => {
   });
 
   it('lets a GM read GM-only notes in the list', async () => {
-    const getLiveCollection = vi.fn<CampaignNotesListLiveGetter>(async (collection, filter) => {
-      const accessScope = (filter as { accessScope: { allowedVisibilities: string[] } }).accessScope;
+    const getLiveCollection = vi.fn<CampaignNotesListLiveGetter>(async (_collection, filter) => {
+      const accessScope = filter.accessScope;
       expect(accessScope.allowedVisibilities).toEqual(['public', 'campaignMembers', 'gm']);
       return liveNotes([
         makeNoteEntry({ campaignSlug: 'brad', documentId: 'a', visibility: 'public' }),

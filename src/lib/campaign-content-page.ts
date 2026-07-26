@@ -46,7 +46,12 @@ export type CampaignContentPageLiveEntryGetter = (
     documentId: string;
     accessScope: CampaignContentLiveAccessScope;
   },
-) => Promise<{ entry: CampaignContentPageEntry; cacheHint?: unknown } | { error: unknown }>;
+) => Promise<{
+  // Astro's LiveDataEntryResult represents missing entries by omitting both entry and error.
+  entry?: CampaignContentPageEntry;
+  error?: unknown;
+  cacheHint?: unknown;
+}>;
 
 export type CampaignContentPageViewer = CampaignContentViewer;
 
@@ -148,7 +153,7 @@ export async function buildCampaignContentPageModel(
     actor: toCampaignContentSourceActor(input.viewer),
   };
 
-  let result: { entry: CampaignContentPageEntry } | { error: unknown };
+  let result: { entry?: CampaignContentPageEntry; error?: unknown };
   try {
     result = await input.getLiveEntry('campaignContent', {
       campaignSlug,
@@ -177,22 +182,7 @@ export async function buildCampaignContentPageModel(
     };
   }
 
-  if ('error' in result) {
-    if (isLiveEntryNotFoundError(result.error)) {
-      return {
-        ...shared,
-        gateAllowsRequest: true,
-        sourceFetched: true,
-        isAvailable: false,
-        canView: false,
-        entry: null,
-        visibility: null,
-        robots: CAMPAIGN_CONTENT_PAGE_NOINDEX,
-        httpStatus: 404,
-        reason: 'not_found',
-      };
-    }
-
+  if (result.error && !isLiveEntryNotFoundError(result.error)) {
     logger.error('campaign.content_page.source_unavailable', {
       campaignSlug,
       documentId,
@@ -210,6 +200,21 @@ export async function buildCampaignContentPageModel(
       robots: CAMPAIGN_CONTENT_PAGE_NOINDEX,
       httpStatus: 503,
       reason: 'unavailable',
+    };
+  }
+
+  if (!result.entry) {
+    return {
+      ...shared,
+      gateAllowsRequest: true,
+      sourceFetched: true,
+      isAvailable: false,
+      canView: false,
+      entry: null,
+      visibility: null,
+      robots: CAMPAIGN_CONTENT_PAGE_NOINDEX,
+      httpStatus: 404,
+      reason: 'not_found',
     };
   }
 
