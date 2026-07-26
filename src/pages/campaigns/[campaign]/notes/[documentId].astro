@@ -7,8 +7,7 @@ import { createCampaignPageRequestContext } from '~/lib/campaign-page-request-co
 
 // Campaign Note Detail: rendered as a Campaign Content Item in the `notes` collection (issue #10).
 // V1 detail routes accept one-segment document IDs only. Multi-segment paths (e.g. /notes/a/b)
-// don't match this single-segment route; Astro falls through to the legacy [family]/[...slug].astro
-// catch-all, which currently throws for the `notes` family (pre-existing behavior, not a generic 404).
+// do not match this single-segment route and receive Astro's generic 404 response.
 export const prerender = false;
 
 const { campaign, documentId } = Astro.params;

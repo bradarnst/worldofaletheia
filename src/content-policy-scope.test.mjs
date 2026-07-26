@@ -25,8 +25,8 @@ describe('Campaign Content ownership boundary', () => {
       'src/pages/api/campaign-media/[campaign]/images/[variant]/[...asset].ts',
     ];
 
-    await expect(Promise.all(legacyRoutePaths.map(async (routePath) => {
-      await fs.access(path.join(process.cwd(), routePath));
-    }))).rejects.toThrow();
+    for (const routePath of legacyRoutePaths) {
+      await expect(fs.access(path.join(process.cwd(), routePath))).rejects.toThrow();
+    }
   });
 });
