@@ -32,7 +32,7 @@ Recommended initial thresholds:
 - `/api/contact`
   - 10 requests per minute per IP
   - action: block
-- `/api/campaign-media/*`
+- `/campaigns/*/assets/*`
   - 120 requests per minute per IP
   - action: managed challenge
 - `/campaigns/*`

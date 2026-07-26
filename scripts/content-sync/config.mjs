@@ -48,6 +48,17 @@ function normalizeMapping(mapping, index) {
     throw new Error(`Mapping #${index + 1} requires both "from" and "to".`);
   }
 
+  const normalizedCollection = typeof mapping.collection === 'string' ? mapping.collection.trim().toLowerCase() : '';
+  const normalizedDestination = to.trim().split('\\').join('/').replace(/\/+$/, '').toLowerCase();
+  if (
+    normalizedDestination === 'campaigns' ||
+    normalizedDestination.endsWith('/campaigns') ||
+    normalizedCollection === 'sessions' ||
+    normalizedCollection.startsWith('campaign')
+  ) {
+    return null;
+  }
+
   if (target === 'repo') {
     const normalizedTo = normalizeRepoPath(to, index, 'destination');
     const allowedPrefixes = ['src/content/', 'src/assets/'];
@@ -176,7 +187,7 @@ export async function loadConfig(options = {}) {
   }
 
   const mappings = Array.isArray(parsed.mappings)
-    ? parsed.mappings.map((m, i) => normalizeMapping(m, i))
+    ? parsed.mappings.map((m, i) => normalizeMapping(m, i)).filter(Boolean)
     : [];
 
   if (!mappings.length) {
@@ -185,7 +196,7 @@ export async function loadConfig(options = {}) {
 
   const hasCloudMappings = mappings.some((m) => m.target === 'cloud');
   const contentCloud = hasCloudMappings
-    ? normalizeContentCloudConfig(parsed.contentCloud || parsed.campaignCloud, { requireCredentials: requireCloudCredentials })
+    ? normalizeContentCloudConfig(parsed.contentCloud, { requireCredentials: requireCloudCredentials })
     : null;
 
   const includeExtensions = Array.isArray(parsed.includeExtensions) && parsed.includeExtensions.length
@@ -218,6 +229,5 @@ export async function loadConfig(options = {}) {
     requireCleanWorkingTreeBeforePull,
     hasCloudMappings,
     contentCloud,
-    campaignCloud: contentCloud,
   };
 }

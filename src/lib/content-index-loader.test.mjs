@@ -40,19 +40,19 @@ describe('content index loader helpers', () => {
   it('normalizes D1 lookup rows for the R2 loader', () => {
     expect(parseContentLookupRows([
       {
-        id: 'brad/lore/omens',
+        id: 'history/omens',
         slug: 'omens',
-        r2_key: 'content/campaigns/brad/lore/omens.md',
-        visibility: 'campaignMembers',
-        campaign_slug: 'brad',
+        r2_key: 'content/lore/history/omens.md',
+        visibility: null,
+        campaign_slug: null,
       },
-    ], 'campaignLore')).toEqual([
+    ], 'lore')).toEqual([
       {
-        id: 'brad/lore/omens',
+        id: 'history/omens',
         slug: 'omens',
-        r2Key: 'content/campaigns/brad/lore/omens.md',
-        visibility: 'campaignMembers',
-        campaignSlug: 'brad',
+        r2Key: 'content/lore/history/omens.md',
+        visibility: undefined,
+        campaignSlug: null,
       },
     ]);
   });

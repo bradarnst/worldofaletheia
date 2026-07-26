@@ -18,19 +18,6 @@ const COLLECTION_VALIDATION_RULES = {
   factions: { requiredKeys: ARTICLE_REQUIRED_KEYS },
   systems: { requiredKeys: ARTICLE_REQUIRED_KEYS },
   meta: { requiredKeys: ARTICLE_REQUIRED_KEYS },
-  campaigns: { requiredKeys: ARTICLE_REQUIRED_KEYS },
-  campaignLore: { requiredKeys: ARTICLE_REQUIRED_KEYS },
-  campaignPlaces: { requiredKeys: ARTICLE_REQUIRED_KEYS },
-  campaignSentients: { requiredKeys: ARTICLE_REQUIRED_KEYS },
-  campaignBestiary: { requiredKeys: ARTICLE_REQUIRED_KEYS },
-  campaignFlora: { requiredKeys: ARTICLE_REQUIRED_KEYS },
-  campaignFactions: { requiredKeys: ARTICLE_REQUIRED_KEYS },
-  campaignSystems: { requiredKeys: ARTICLE_REQUIRED_KEYS },
-  campaignMeta: { requiredKeys: ARTICLE_REQUIRED_KEYS },
-  campaignCharacters: { requiredKeys: ARTICLE_REQUIRED_KEYS },
-  campaignScenes: { requiredKeys: ARTICLE_REQUIRED_KEYS },
-  campaignAdventures: { requiredKeys: ARTICLE_REQUIRED_KEYS },
-  campaignHooks: { requiredKeys: ARTICLE_REQUIRED_KEYS },
   contributors: { requiredKeys: ['title', 'collection', 'profileMode'] },
 };
 const CONTRIBUTOR_PROFILE_MODES = ['standard', 'featured'];
@@ -394,23 +381,6 @@ function getValidationRuleForCollection(collection) {
   return collection ? COLLECTION_VALIDATION_RULES[collection] ?? null : null;
 }
 
-const CAMPAIGN_FAMILY_COLLECTIONS = {
-  lore: 'campaignLore',
-  places: 'campaignPlaces',
-  sentients: 'campaignSentients',
-  bestiary: 'campaignBestiary',
-  flora: 'campaignFlora',
-  factions: 'campaignFactions',
-  systems: 'campaignSystems',
-  meta: 'campaignMeta',
-  characters: 'campaignCharacters',
-  scenes: 'campaignScenes',
-  adventures: 'campaignAdventures',
-  hooks: 'campaignHooks',
-};
-
-const CAMPAIGN_FAMILY_SEGMENT_PATTERN = Object.keys(CAMPAIGN_FAMILY_COLLECTIONS).join('|');
-
 function inferCollectionFromMappingTo(mappingTo) {
   const normalized = String(mappingTo || '').trim().split('\\').join('/').replace(/\/+$/, '');
   const contentMatch = /^src\/content\/([^/]+)$/.exec(normalized);
@@ -421,46 +391,7 @@ function inferCollectionFromMappingTo(mappingTo) {
   return normalized.split('/').pop() || normalized;
 }
 
-function inferCampaignCollectionFromRelativePath(relativePath) {
-  const familyMatch = new RegExp(`^[^/]+\/(${CAMPAIGN_FAMILY_SEGMENT_PATTERN})\/.+\.md$`, 'i').exec(relativePath);
-  if (familyMatch) {
-    return CAMPAIGN_FAMILY_COLLECTIONS[familyMatch[1].toLowerCase()];
-  }
-
-  if (/^[^/]+\/index\.md$/i.test(relativePath)) {
-    return 'campaigns';
-  }
-
-  const legacyCampaignMatch = /^[^/]+\/([^/]+)\.md$/i.exec(relativePath);
-  if (legacyCampaignMatch) {
-    const topLevelFileName = legacyCampaignMatch[1].toLowerCase();
-    if (
-      topLevelFileName !== 'index' &&
-      topLevelFileName !== 'sessions' &&
-      !Object.prototype.hasOwnProperty.call(CAMPAIGN_FAMILY_COLLECTIONS, topLevelFileName)
-    ) {
-      return 'campaigns';
-    }
-  }
-
-  return 'campaigns';
-}
-
-function isArchivedCampaignSessionPath(fileEntry) {
-  if (fileEntry.collection !== 'campaigns') {
-    return false;
-  }
-
-  const relativePath = path.relative(fileEntry.root, fileEntry.file).split(path.sep).join('/');
-  return /^[^/]+\/sessions\/[^/]+\.md$/i.test(relativePath);
-}
-
 function inferExpectedCollection(fileEntry) {
-  const relativePath = path.relative(fileEntry.root, fileEntry.file).split(path.sep).join('/');
-  if (fileEntry.collection === 'campaigns') {
-    return inferCampaignCollectionFromRelativePath(relativePath);
-  }
-
   return fileEntry.collection;
 }
 
@@ -510,22 +441,33 @@ async function gatherMarkdownFiles(root) {
 }
 
 function determineValidationRoots(config) {
-  return config.mappings.map((mapping) => {
+  return config.mappings.flatMap((mapping) => {
+    const collection = String(mapping.collection || '').toLowerCase();
+    const destination = String(mapping.to || '').split('\\').join('/').replace(/\/+$/, '').toLowerCase();
+    if (
+      destination === 'campaigns' ||
+      destination.endsWith('/campaigns') ||
+      collection === 'sessions' ||
+      collection.startsWith('campaign')
+    ) {
+      return [];
+    }
+
     if (mapping.target === 'repo' || !config.vaultRoot || !mapping.from) {
-      return {
+      return [{
         root: path.resolve(config.repoRoot, mapping.to),
         labelRoot: config.repoRoot,
         labelPrefix: '',
         collection: mapping.collection || inferCollectionFromMappingTo(mapping.to),
-      };
+      }];
     }
 
-    return {
+    return [{
       root: path.resolve(config.vaultRoot, mapping.from),
       labelRoot: config.vaultRoot,
       labelPrefix: 'vault/',
       collection: mapping.collection || inferCollectionFromMappingTo(mapping.to),
-    };
+    }];
   });
 }
 
@@ -537,10 +479,7 @@ export async function validateContentTree(config) {
   for (const root of roots) {
     const files = await gatherMarkdownFiles(root.root);
     for (const file of files) {
-      const fileEntry = { ...root, file };
-      if (!isArchivedCampaignSessionPath(fileEntry)) {
-        fileEntries.push(fileEntry);
-      }
+      fileEntries.push({ ...root, file });
     }
   }
 

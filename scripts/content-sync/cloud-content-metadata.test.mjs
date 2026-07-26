@@ -24,7 +24,7 @@ function withTimestamps(frontmatter) {
 }
 
 describe('deriveCollectionEntries', () => {
-  it('indexes legacy top-level campaign overview filenames as campaigns entries', async () => {
+  it('does not derive rows from legacy campaign mappings', async () => {
     const entries = await deriveCollectionEntries(
       { to: 'campaigns' },
       'brad/Campaign - Brad.md',
@@ -44,43 +44,22 @@ Legacy campaign overview body.
       '2026-04-06T12:30:00.000Z',
     );
 
-    expect(entries).toHaveLength(1);
-    expect(entries[0].contentEntry).toMatchObject({
-      collection: 'campaigns',
-      id: 'brad/Campaign - Brad',
-      slug: 'brad',
-      campaignSlug: 'brad',
-      r2Key: 'campaigns/brad/Campaign - Brad.md',
-    });
-    expect(entries[0].contentIndexRow).toMatchObject({
-      collection: 'campaigns',
-      id: 'brad/Campaign - Brad',
-      slug: 'brad',
-      visibility: 'public',
-      r2Key: 'campaigns/brad/Campaign - Brad.md',
-    });
-    expect(entries[0].contentSearchRow).toMatchObject({
-      collection: 'campaigns',
-      id: 'brad/Campaign - Brad',
-      slug: 'brad',
-      title: 'Campaign - Brad',
-      bodyText: 'Legacy campaign overview body.',
-    });
+    expect(entries).toEqual([]);
   });
 
-  it('continues to prefer index.md campaign overviews', async () => {
+  it('derives Using Aletheia rows from non-campaign mappings', async () => {
     const entries = await deriveCollectionEntries(
-      { to: 'campaigns' },
-      'barry/index.md',
+      { to: 'systems' },
+      'gurps/combat.md',
       `---
-title: Campaign - Barry
-collection: campaigns
-visibility: public
+title: GURPS Combat
+collection: systems
+type: rules
 createdAt: '2026-04-06T10:00:00.000Z'
 updatedAt: '2026-04-06T12:00:00.000Z'
 ---
 
-Preferred campaign overview body.
+Combat rules body.
 `,
       { mtime: new Date('2026-04-06T12:00:00.000Z') },
       createCloudMock(),
@@ -89,17 +68,17 @@ Preferred campaign overview body.
 
     expect(entries).toHaveLength(1);
     expect(entries[0].contentEntry).toMatchObject({
-      collection: 'campaigns',
-      id: 'barry/index',
-      slug: 'barry',
-      campaignSlug: 'barry',
-      r2Key: 'campaigns/barry/index.md',
+      collection: 'systems',
+      id: 'gurps/combat',
+      slug: 'gurps/combat',
+      campaignSlug: null,
+      r2Key: 'systems/gurps/combat.md',
     });
     expect(entries[0].contentSearchRow).toMatchObject({
-      collection: 'campaigns',
-      id: 'barry/index',
-      slug: 'barry',
-      bodyText: 'Preferred campaign overview body.',
+      collection: 'systems',
+      id: 'gurps/combat',
+      slug: 'gurps/combat',
+      bodyText: 'Combat rules body.',
     });
   });
 

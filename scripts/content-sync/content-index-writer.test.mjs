@@ -33,7 +33,7 @@ function createRow(overrides = {}) {
 }
 
 describe('content index writer', () => {
-  it('keeps protected campaign-domain rows so D1 remains the object lookup source', () => {
+  it('omits legacy campaign-domain rows and managed collections', () => {
     const publicLore = createRow();
     const protectedCampaign = createRow({
       id: 'campaigns/brad/index',
@@ -65,12 +65,8 @@ describe('content index writer', () => {
       managedCollections: ['sessions', 'campaignLore', 'campaigns', 'lore'],
     });
 
-    expect(plan.rows.map((row) => `${row.collection}:${row.id}`)).toEqual([
-      'campaignLore:brad/lore/river-omens',
-      'campaigns:campaigns/brad/index',
-      'lore:lore/example',
-      'sessions:brad/sessions/intro',
-    ]);
+    expect(plan.rows.map((row) => `${row.collection}:${row.id}`)).toEqual(['lore:lore/example']);
+    expect(plan.managedCollections).toEqual(['lore']);
   });
 
   it('builds upsert and reconciliation SQL for managed collections', () => {
@@ -127,11 +123,11 @@ describe('content index writer', () => {
 
   it('retains managed collection ordering without dedupe loss', () => {
     const plan = buildContentIndexSyncPlan({
-      rows: [createRow({ collection: 'campaignHooks', id: 'brad/hooks/missing-heir' }), createRow()],
-      managedCollections: ['lore', 'campaignHooks', 'lore'],
+      rows: [createRow({ collection: 'systems', id: 'gurps/combat' }), createRow()],
+      managedCollections: ['lore', 'systems', 'lore'],
     });
 
-    expect(plan.managedCollections).toEqual(['campaignHooks', 'lore']);
+    expect(plan.managedCollections).toEqual(['lore', 'systems']);
   });
 
   it('does not overwrite r2_key with an empty value during upsert', () => {

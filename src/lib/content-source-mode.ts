@@ -1,5 +1,3 @@
-import { isCampaignDomainCollection } from '@utils/campaign-collections';
-
 export type ContentSourceMode = 'local' | 'cloud';
 type EnvLike = Record<string, string | undefined>;
 
@@ -50,10 +48,6 @@ export function resolveCollectionSource(
   const directOverride = resolved.overrides.get(collection);
   if (directOverride) {
     return directOverride;
-  }
-
-  if (isCampaignDomainCollection(collection)) {
-    return resolved.overrides.get('campaigns') ?? resolved.mode;
   }
 
   return resolved.mode;

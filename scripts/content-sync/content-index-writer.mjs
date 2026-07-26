@@ -32,11 +32,19 @@ function parseEnabledFlag(value) {
 }
 
 export function buildContentIndexSyncPlan({ rows, managedCollections }) {
+  const isLegacyCampaignCollection = (collection) => {
+    const normalized = String(collection || '').toLowerCase();
+    return normalized === 'sessions' || normalized.startsWith('campaign');
+  };
+
   return {
     rows: rows
+      .filter((row) => !isLegacyCampaignCollection(row.collection))
       .slice()
       .sort((left, right) => left.collection.localeCompare(right.collection) || left.id.localeCompare(right.id)),
-    managedCollections: [...new Set(managedCollections)].sort((left, right) => left.localeCompare(right)),
+    managedCollections: [...new Set(managedCollections)]
+      .filter((collection) => !isLegacyCampaignCollection(collection))
+      .sort((left, right) => left.localeCompare(right)),
   };
 }
 

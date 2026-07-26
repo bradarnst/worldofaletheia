@@ -9,7 +9,7 @@ import { CONTRIBUTOR_ROLE_TYPES as CONTRIBUTOR_ROLE_TYPE_VALUES } from '~/lib/co
  * When adding new types, update this file first, then import in both places.
  */
 
-// Lore types (shared between lore and campaignLore)
+// Lore types
 export const LORE_TYPES = [
   'cosmology',
   'religion',
@@ -28,7 +28,7 @@ export const LORE_TYPES = [
   'event',
 ] as const;
 
-// Place types (shared between places and campaignPlaces)
+// Place types
 export const PLACES_TYPES = [
   'location',
   'landmark',
@@ -43,7 +43,7 @@ export const PLACES_TYPES = [
   'world'
 ] as const;
 
-// Sentient types (shared between sentients and campaignSentients)
+// Sentient types
 export const SENTIENTS_TYPES = [
   'race',
   'species',
@@ -52,7 +52,7 @@ export const SENTIENTS_TYPES = [
   'deity',
 ] as const;
 
-// Bestiary types (shared between bestiary and campaignBestiary)
+// Bestiary types
 export const BESTIARY_TYPES = [
   'monster',
   'animal',
@@ -62,7 +62,7 @@ export const BESTIARY_TYPES = [
   'elemental',
 ] as const;
 
-// Flora types (shared between flora and campaignFlora)
+// Flora types
 export const FLORA_TYPES = [
   'tree',
   'flower',
@@ -73,7 +73,7 @@ export const FLORA_TYPES = [
   'crop',
 ] as const;
 
-// Faction types (shared between factions and campaignFactions)
+// Faction types
 export const FACTIONS_TYPES = [
   'political',
   'guild',
@@ -86,13 +86,13 @@ export const FACTIONS_TYPES = [
   'order',
 ] as const;
 
-// Systems types (shared between systems and campaignSystems)
+// Systems types
 export const SYSTEMS_TYPES = [
   'general',
   'gurps',
 ] as const;
 
-// Meta types (shared between meta and campaignMeta)
+// Meta types
 export const META_TYPES = [
   'info',
   'technical',
@@ -100,62 +100,6 @@ export const META_TYPES = [
   'reference',
   'governance',
   'characterCreation',
-] as const;
-
-// Session types
-export const SESSIONS_TYPES = [
-  'session',
-  'encounter',
-  'battle',
-  'note',
-] as const;
-
-// Campaign character types
-export const CAMPAIGN_CHARACTERS_TYPES = [
-  'pc',
-  'npc',
-  'ally',
-  'adversary',
-  'patron',
-  'creature',
-  'group',
-  'other',
-  'relationship'
-] as const;
-
-// Campaign scene types
-export const CAMPAIGN_SCENES_TYPES = [
-  'scene',
-  'combat',
-  'social',
-  'travel',
-  'downtime',
-  'investigation',
-  'flashback',
-  'other',
-] as const;
-
-// Campaign adventure types
-export const CAMPAIGN_ADVENTURES_TYPES = [
-  'arc',
-  'mission',
-  'quest',
-  'contract',
-  'dungeon',
-  'journey',
-  'heist',
-  'other',
-] as const;
-
-// Campaign hook types
-export const CAMPAIGN_HOOKS_TYPES = [
-  'rumor',
-  'lead',
-  'job',
-  'threat',
-  'mystery',
-  'opportunity',
-  'other',
 ] as const;
 
 export const CONTRIBUTOR_ROLE_TYPES = CONTRIBUTOR_ROLE_TYPE_VALUES as readonly [string, ...string[]];
@@ -173,17 +117,4 @@ export const COLLECTION_TYPES = {
   factions: FACTIONS_TYPES,
   systems: SYSTEMS_TYPES,
   meta: META_TYPES,
-  sessions: SESSIONS_TYPES,
-  campaignLore: LORE_TYPES,
-  campaignPlaces: PLACES_TYPES,
-  campaignSentients: SENTIENTS_TYPES,
-  campaignBestiary: BESTIARY_TYPES,
-  campaignFlora: FLORA_TYPES,
-  campaignFactions: FACTIONS_TYPES,
-  campaignSystems: SYSTEMS_TYPES,
-  campaignMeta: META_TYPES,
-  campaignCharacters: CAMPAIGN_CHARACTERS_TYPES,
-  campaignScenes: CAMPAIGN_SCENES_TYPES,
-  campaignAdventures: CAMPAIGN_ADVENTURES_TYPES,
-  campaignHooks: CAMPAIGN_HOOKS_TYPES,
 } as const;

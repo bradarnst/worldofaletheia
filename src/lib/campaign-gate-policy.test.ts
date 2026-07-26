@@ -16,7 +16,6 @@ describe('campaign gate policy', () => {
     expect(CAMPAIGN_GATE_MANIFEST).toMatchObject({
       brad: 'campaignMembers',
       barry: 'campaignMembers',
-      'sample-campaign': 'public',
     });
   });
 

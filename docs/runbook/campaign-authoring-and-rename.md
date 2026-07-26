@@ -1,165 +1,64 @@
-# Runbook: Campaign Authoring and Slug Rename
+# Runbook: Campaign Content Authoring and Slug Changes
 
-This runbook documents the current Campaigns-domain authoring shape and the supported process for adding or renaming campaigns.
+This runbook documents the active Campaign Content surfaces consumed by this site. The previous local Campaigns collection and repo-side campaign rename workflow are not publication paths for live Campaign Content.
 
 ## Source of truth
 
-- Campaign content is authored in the Obsidian vault, not directly in the repo.
-- The campaign folder name is the canonical campaign slug.
-- That slug drives:
-  - Campaign routes (`/campaigns/<campaign-slug>/...`)
-  - Campaign-family routes (`/campaigns/<campaign-slug>/lore/...`, `/campaigns/<campaign-slug>/characters/...`, etc.)
-  - Session routes (`/campaigns/<campaign-slug>/sessions/...`)
-  - Campaign D1 content-index identity and R2 object lookup paths
-  - Campaign access lookups and membership references
+- `woa-admin` owns Campaign Content records, assets, campaign metadata, and persistence.
+- This repo is a read-only runtime consumer through the server-to-server Campaign Content source boundary.
+- The exact campaign slug is shared by Campaign Content, the Campaign Gate, and D1 `campaign_memberships`.
+- Do not publish Campaign Content by adding files under `src/content/campaigns` or by adding a campaign mapping to `scripts/content-sync/`.
 
-## Identity model and consistency note
+## Live content shape
 
-Current state (post-taxonomy refactor):
+The active V1 collection keys are `pages` and `notes`. Document IDs are one path segment.
 
-- Campaign overview identity is derived from folder slug + `index.md` (`<campaign-slug>/index.md`).
-- Nested campaign entries (`sessions`, `lore`, `characters`, etc.) carry explicit `campaign: <campaign-slug>` frontmatter as a foreign key.
-- Nested entries do **not** carry a separate `campaignName`/`campaignTitle` field.
+| Purpose | Campaign Content identity | Public website path |
+| --- | --- | --- |
+| Campaign root | `pages/index` | `/campaigns/<campaign-slug>` |
+| About page | `pages/about` | `/campaigns/<campaign-slug>/about` |
+| Notes index | `notes` collection | `/campaigns/<campaign-slug>/notes` |
+| Note detail | `notes/<document-id>` | `/campaigns/<campaign-slug>/notes/<document-id>` |
+| Asset | bucket-relative `assets/<path>` | `/campaigns/<campaign-slug>/assets/<path>` |
 
-Consistency note:
+The website evaluates the Campaign Gate before fetching protected content. It then sends only the viewer's membership-derived visibility scope to `woa-admin`. Campaign Content asset references are rewritten to the website asset path so browser HTML does not expose or call the `woa-admin` origin.
 
-- This path-derived + field-derived mix is a known modeling inconsistency, not a role/public-private requirement.
-- Campaign display name remains single-source in campaign overview `title` (`<campaign-slug>/index.md`); avoid duplicating names on nested entries.
-- Follow-on normalization can make campaign identity fully explicit across campaign-domain entries without introducing denormalized `campaignName` metadata.
+## Adding or changing content
 
-## Campaign content shape
+1. Create or edit the campaign and its Campaign Content through the approved `woa-admin` operator or authoring workflow.
+2. Ensure the campaign has a root item with collection key `pages` and document ID `index`.
+3. Add the optional about item as `pages/about`.
+4. Add notes to the generic `notes` collection with one-segment document IDs.
+5. Store referenced assets under the campaign's `assets/` source prefix and use `assets/<path>` references in Markdown.
+6. Set each item's Content Visibility to `public`, `campaignMembers`, or `gm` as intended.
+7. Confirm the Campaign Gate and `campaign_memberships` use the same exact campaign slug.
 
-Under the Obsidian Campaigns source folder (for example `World/Campaigns`), organize each campaign like this:
+Repo `pnpm content:sync` commands do not publish these records.
 
-```text
-<campaign-slug>/
-  index.md
-  sessions/
-    <session-slug>.md
-  lore/
-    <entry-slug>.md
-  places/
-    <entry-slug>.md
-  sentients/
-    <entry-slug>.md
-  bestiary/
-    <entry-slug>.md
-  flora/
-    <entry-slug>.md
-  factions/
-    <entry-slug>.md
-  systems/
-    <entry-slug>.md
-  meta/
-    <entry-slug>.md
-  characters/
-    <entry-slug>.md
-  scenes/
-    <entry-slug>.md
-  adventures/
-    <entry-slug>.md
-  hooks/
-    <entry-slug>.md
-  assets/
-    images/
-      original/
-        <asset-path>
-    docs/
-      <asset-path>.pdf
-```
+## Changing a campaign slug
 
-Notes:
+A campaign slug change is a coordinated service and data migration. This repo has no supported campaign rename command for live Campaign Content.
 
-- `index.md` is the campaign overview entry.
-- Family folders map to explicit campaign-domain collections:
-  - `lore` -> `campaignLore`
-  - `places` -> `campaignPlaces`
-  - `sentients` -> `campaignSentients`
-  - `bestiary` -> `campaignBestiary`
-  - `flora` -> `campaignFlora`
-  - `factions` -> `campaignFactions`
-  - `systems` -> `campaignSystems`
-  - `meta` -> `campaignMeta`
-  - `characters` -> `campaignCharacters`
-  - `scenes` -> `campaignScenes`
-  - `adventures` -> `campaignAdventures`
-  - `hooks` -> `campaignHooks`
-- Nested campaign content should keep `campaign: <campaign-slug>` in frontmatter.
-- Campaign images intended for protected delivery should live under `assets/images/original/**`; sync generates `thumb`, `detail`, and `fullscreen` variants in cloud storage.
-- New campaigns no longer require a code edit in `src/content.config.ts`; the previous hardcoded `barry|brad` schema constraint has been removed.
+1. Change the canonical campaign identity through the owning `woa-admin` workflow.
+2. Migrate Campaign Content records and assets to the new slug in the owning service.
+3. Update the Campaign Gate entry and D1 `campaign_memberships` through their approved operator workflows.
+4. Review durable links and decide explicitly whether redirects are required.
+5. Verify the new website paths below and confirm the old slug fails safely.
 
-## Adding a new campaign
-
-1. Create a new campaign folder under the Obsidian Campaigns source root using the desired kebab-case slug.
-2. Add `index.md` for the campaign overview.
-3. Add any needed family folders (`sessions`, `lore`, `places`, `sentients`, `bestiary`, `flora`, `factions`, `systems`, `meta`, `characters`, `scenes`, `adventures`, `hooks`).
-4. Set `campaign: <campaign-slug>` on nested entries.
-5. Run:
-
-```bash
-pnpm content:sync
-```
-
-6. Verify routes locally with either:
-
-```bash
-pnpm dev
-```
-
-or, for cloud-backed parity:
-
-```bash
-pnpm dev:cf
-```
-
-## Renaming a campaign slug
-
-Use the rename script from the repo root:
-
-```bash
-pnpm campaign:rename -- --from=old-campaign-slug --to=new-campaign-slug
-```
-
-Dry-run preview:
-
-```bash
-pnpm campaign:rename -- --from=old-campaign-slug --to=new-campaign-slug --dry-run
-```
-
-What the script updates:
-
-- Renames the campaign folder in the configured Obsidian Campaigns source root.
-- Rewrites nested Markdown frontmatter values from `campaign: old-campaign-slug` to `campaign: new-campaign-slug`.
-- Updates tracked campaign content only. Campaign membership changes belong to `woa-admin`.
-
-What the script does not update:
-
-- Remote D1 membership rows and campaign-management state owned by `woa-admin`.
-- External links or hardcoded route strings outside the renamed campaign content.
-- Redirect rules from the old slug to the new slug.
-
-After the rename:
-
-1. Run the content sync:
-
-```bash
-pnpm content:sync
-```
-
-2. If campaign memberships exist for the renamed campaign, update them through `woa-admin`.
-3. Verify the new routes resolve and the old slug no longer appears where it should not.
-4. Add redirects separately if you need old public links to keep working.
+Do not use the retired repo-side campaign folder rename script as a substitute for this migration; it cannot update the authoritative service data, assets, gate, or memberships.
 
 ## Verification checklist
 
-- Campaign overview route resolves at `/campaigns/<new-slug>`.
-- Session routes resolve at `/campaigns/<new-slug>/sessions/...`.
-- Family routes resolve at `/campaigns/<new-slug>/<family>/...`.
-- Public campaign content appears under the new slug in discovery/search after sync.
-- Membership/access config no longer references the old slug.
+- Campaign root resolves at `/campaigns/<campaign-slug>` from `pages/index`.
+- About resolves at `/campaigns/<campaign-slug>/about` from `pages/about` when present and readable.
+- Notes list at `/campaigns/<campaign-slug>/notes` contains only readable items from the generic `notes` collection.
+- Note detail resolves at `/campaigns/<campaign-slug>/notes/<document-id>`.
+- Asset references resolve through `/campaigns/<campaign-slug>/assets/<path>` and do not expose the source origin.
+- Anonymous, member, and GM access matches the Campaign Gate plus Content Visibility.
+- Source failures and unreadable records fail closed without leaking source details.
 
 ## Related docs
 
 - `docs/content-ingestion-user-guide.md`
 - `docs/runbook/campaign-access-local-dev.md`
-- `docs/status-report-addendum-campaign-model-2026-03-24.md`
+- `docs/runbook/campaign-content-source-boundary.md`

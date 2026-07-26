@@ -2,12 +2,6 @@ import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
 import { isPublicSpellApiError, listSpells } from '@adapters/public-spell-api';
 import { SPELLS_PAGE_SIZE, getSpellListPageHref } from '@utils/spell-browser';
-import { getAllCampaignFamilyEntries, type CampaignFamilyEntry } from '@utils/campaign-content';
-import {
-  extractCampaignFamilySlugFromEntryId,
-  extractCampaignSlugFromEntryId,
-  getCampaignFamilySegmentByCollection,
-} from '@utils/campaign-collections';
 import { getFilteredCollection } from '@utils/content-filter';
 import { buildCanonicalUrl, getNoIndexHeaders, isProductionHostname } from '@utils/seo';
 
@@ -17,13 +11,10 @@ interface SitemapUrlEntry {
 }
 
 interface SitemapEntryDataLike {
+  publication?: string;
+  status?: string;
   createdAt?: Date;
   updatedAt?: Date;
-  start?: Date;
-  end?: Date;
-  date?: Date;
-  campaign?: string;
-  visibility?: string;
 }
 
 interface SitemapCollectionEntryLike {
@@ -65,14 +56,6 @@ function appendCollectionEntries<T extends SitemapCollectionEntryLike>(
   }
 }
 
-function pickCampaignDate(data: SitemapEntryDataLike): string | undefined {
-  return toIsoDate(data.end ?? data.start ?? data.updatedAt ?? data.createdAt);
-}
-
-function pickDatedEntryDate(data: SitemapEntryDataLike): string | undefined {
-  return toIsoDate(data.date ?? data.updatedAt ?? data.createdAt);
-}
-
 export const GET: APIRoute = async ({ request }) => {
   const url = new URL(request.url);
   if (!isProductionHostname(url.hostname)) {
@@ -91,8 +74,6 @@ export const GET: APIRoute = async ({ request }) => {
     factions,
     systems,
     meta,
-    campaigns,
-    familyEntries,
   ] = await Promise.all([
     getCollection('lore'),
     getCollection('places'),
@@ -102,8 +83,6 @@ export const GET: APIRoute = async ({ request }) => {
     getCollection('factions'),
     getCollection('systems'),
     getCollection('meta'),
-    getCollection('campaigns'),
-    getAllCampaignFamilyEntries(),
   ]);
 
   // Spell paths come from a runtime API that can be transiently unavailable
@@ -163,35 +142,6 @@ export const GET: APIRoute = async ({ request }) => {
   appendCollectionEntries(entries, 'factions', factions);
   appendCollectionEntries(entries, 'systems', systems);
   appendCollectionEntries(entries, 'meta', meta);
-
-  const publicCampaigns = campaigns.filter((entry) => entry.data.visibility === 'public');
-  const publicCampaignSlugs = new Set(publicCampaigns.map((entry) => extractCampaignSlugFromEntryId(entry.id)));
-
-  for (const entry of publicCampaigns) {
-    const slug = extractCampaignSlugFromEntryId(entry.id);
-    entries.push(
-      createUrlEntry(`/campaigns/${slug}`, pickCampaignDate(entry.data)),
-    );
-  }
-
-  const familyIndexPaths = new Set<string>();
-  for (const entry of familyEntries as CampaignFamilyEntry[]) {
-    if (!publicCampaignSlugs.has(entry.data.campaign) || entry.data.visibility !== 'public') {
-      continue;
-    }
-
-    const familySegment = getCampaignFamilySegmentByCollection(entry.collection);
-    if (!familySegment) {
-      continue;
-    }
-
-    familyIndexPaths.add(`/campaigns/${entry.data.campaign}/${familySegment}`);
-    entries.push(createUrlEntry(`/campaigns/${entry.data.campaign}/${familySegment}/${extractCampaignFamilySlugFromEntryId(entry.id)}`, pickDatedEntryDate(entry.data)));
-  }
-
-  for (const pathname of familyIndexPaths) {
-    entries.push(createUrlEntry(pathname));
-  }
 
   const seen = new Set<string>();
   const uniqueEntries = entries.filter((entry) => {

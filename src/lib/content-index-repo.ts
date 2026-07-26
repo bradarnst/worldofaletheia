@@ -3,11 +3,6 @@ import { type D1DatabaseLike, getD1BindingFromLocals } from './d1';
 
 type ContentIndexVisibility = 'public' | 'campaignMembers' | 'gm';
 
-export interface ContentIndexCampaignVisibilityAccess {
-  memberCampaignSlugs?: string[];
-  gmCampaignSlugs?: string[];
-}
-
 interface CountRow {
   total_count: number | string;
 }
@@ -74,7 +69,6 @@ interface ContentIndexBaseFilters {
   contributorId?: string;
   environment?: ContentEnvironment;
   visibilityScope?: 'public';
-  visibilityAccess?: ContentIndexCampaignVisibilityAccess;
 }
 
 export interface ContentIndexFilters extends ContentIndexBaseFilters {
@@ -138,16 +132,6 @@ function normalizeTags(tags: string[] | undefined): string[] {
   }
 
   return [...new Set(tags.map((tag) => tag.trim()).filter((tag) => tag.length > 0))].sort((left, right) =>
-    left.localeCompare(right),
-  );
-}
-
-function normalizeCampaignSlugs(slugs: string[] | undefined): string[] {
-  if (!slugs) {
-    return [];
-  }
-
-  return [...new Set(slugs.map((slug) => slug.trim()).filter((slug) => slug.length > 0))].sort((left, right) =>
     left.localeCompare(right),
   );
 }
@@ -225,40 +209,12 @@ function toContentIndexRow(record: ContentIndexRowRecord): ContentIndexRow {
   };
 }
 
-function buildVisibilityClause(filters: ContentIndexBaseFilters): { sql: string; values: unknown[] } {
-  const gmCampaignSlugs = normalizeCampaignSlugs(filters.visibilityAccess?.gmCampaignSlugs);
-  const memberCampaignSlugs = normalizeCampaignSlugs([
-    ...(filters.visibilityAccess?.memberCampaignSlugs ?? []),
-    ...gmCampaignSlugs,
-  ]);
-
-  if (memberCampaignSlugs.length === 0 && gmCampaignSlugs.length === 0) {
-    return {
-      sql: "((content_index.collection != 'sessions' AND content_index.collection NOT LIKE 'campaign%') OR COALESCE(content_index.visibility, 'gm') = 'public')",
-      values: [],
-    };
-  }
-
-  const campaignClauses = ["COALESCE(content_index.visibility, 'gm') = 'public'"];
-  const values: unknown[] = [];
-
-  if (memberCampaignSlugs.length > 0) {
-    campaignClauses.push(
-      `(COALESCE(content_index.visibility, 'gm') = 'campaignMembers' AND content_index.campaign_slug IN (${memberCampaignSlugs.map(() => '?').join(', ')}))`,
-    );
-    values.push(...memberCampaignSlugs);
-  }
-
-  if (gmCampaignSlugs.length > 0) {
-    campaignClauses.push(
-      `(COALESCE(content_index.visibility, 'gm') = 'gm' AND content_index.campaign_slug IN (${gmCampaignSlugs.map(() => '?').join(', ')}))`,
-    );
-    values.push(...gmCampaignSlugs);
-  }
-
+function buildVisibilityClause(): { sql: string; values: unknown[] } {
   return {
-    sql: `((content_index.collection != 'sessions' AND content_index.collection NOT LIKE 'campaign%') OR (${campaignClauses.join(' OR ')}))`,
-    values,
+    // Campaign Content is loaded from woa-admin at request time and must never be
+    // served from stale rows left by the retired main-site publication lane.
+    sql: "content_index.collection != 'sessions' AND content_index.collection != 'campaigns' AND content_index.collection NOT LIKE 'campaign%'",
+    values: [],
   };
 }
 
@@ -309,7 +265,7 @@ function buildWhereClause(filters: ContentIndexBaseFilters): { sql: string; valu
     values.push(contributorId);
   }
 
-  const visibility = buildVisibilityClause(filters);
+  const visibility = buildVisibilityClause();
   clauses.push(visibility.sql);
   values.push(...visibility.values);
 

@@ -34,7 +34,6 @@ export interface CampaignGateAccessDecision {
 export const CAMPAIGN_GATE_MANIFEST = {
   brad: 'campaignMembers',
   barry: 'campaignMembers',
-  'sample-campaign': 'public',
 } as const satisfies Record<string, CampaignGate>;
 
 const FALLBACK_GATE: CampaignGate = 'campaignMembers';

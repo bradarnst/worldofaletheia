@@ -6,6 +6,31 @@ import { describe, expect, it } from 'vitest';
 import { buildSyncDiff } from './fs-diff.mjs';
 
 describe('buildSyncDiff', () => {
+  it('does not emit records for legacy campaign mappings', async () => {
+    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'content-sync-diff-'));
+    const vaultRoot = path.join(tempRoot, 'vault');
+    const repoRoot = path.join(tempRoot, 'repo');
+    await fs.mkdir(path.join(vaultRoot, 'campaigns', 'brad'), { recursive: true });
+    await fs.writeFile(path.join(vaultRoot, 'campaigns', 'brad', 'index.md'), '# Legacy campaign\n', 'utf8');
+
+    const diff = await buildSyncDiff(
+      {
+        vaultRoot,
+        repoRoot,
+        includeExtensions: ['.md'],
+        mappings: [{ from: 'campaigns', to: 'campaigns', target: 'cloud' }],
+      },
+      {
+        cloud: {
+          listObjects: async () => new Map(),
+        },
+      },
+    );
+
+    expect(diff.records).toEqual([]);
+    expect(diff.grouped.excludedByPublication).toEqual([]);
+  });
+
   it('includes local cleanup files as stale for cloud mappings', async () => {
     const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'content-sync-diff-'));
     const vaultRoot = path.join(tempRoot, 'vault');
@@ -99,22 +124,22 @@ describe('buildSyncDiff', () => {
     }
   });
 
-  it('matches campaign family rows against their D1 collection source etags', async () => {
+  it('matches non-campaign rows against their D1 collection source etags', async () => {
     const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'content-sync-diff-'));
     const vaultRoot = path.join(tempRoot, 'vault');
     const repoRoot = path.join(tempRoot, 'repo');
-    const relativePath = 'barry/lore/Test Entry.md';
-    const markdown = '---\ntitle: Test Entry\ncollection: campaignLore\npublication: publish\nauthors:\n  - brad\n---\nBody\n';
+    const relativePath = 'gurps/Test Entry.md';
+    const markdown = '---\ntitle: Test Entry\ncollection: systems\npublication: publish\nauthors:\n  - brad\n---\nBody\n';
 
-    await fs.mkdir(path.join(vaultRoot, 'campaigns', 'barry', 'lore'), { recursive: true });
-    await fs.writeFile(path.join(vaultRoot, 'campaigns', relativePath), markdown, 'utf8');
+    await fs.mkdir(path.join(vaultRoot, 'systems', 'gurps'), { recursive: true });
+    await fs.writeFile(path.join(vaultRoot, 'systems', relativePath), markdown, 'utf8');
 
     const diff = await buildSyncDiff(
       {
         vaultRoot,
         repoRoot,
         includeExtensions: ['.md'],
-        mappings: [{ from: 'campaigns', to: 'campaigns', target: 'cloud' }],
+        mappings: [{ from: 'systems', to: 'systems', target: 'cloud' }],
       },
       {
         cloud: {
@@ -123,7 +148,7 @@ describe('buildSyncDiff', () => {
       },
       {
         previousEtags: new Map([
-          ['campaignLore:barry/lore/Test Entry', createHash('md5').update(markdown).digest('hex')],
+          ['systems:gurps/Test Entry', createHash('md5').update(markdown).digest('hex')],
         ]),
         wikiIndex: new Map(),
       },

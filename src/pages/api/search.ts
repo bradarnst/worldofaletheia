@@ -1,8 +1,6 @@
 import type { APIRoute } from 'astro';
 import { createContentIndexRepoFromLocals, type ContentIndexRow } from '~/lib/content-index-repo';
 import { normalizeFilterValueOptional, normalizePage } from '~/lib/normalizers';
-import { resolveSearchAccess } from '~/lib/search-access';
-import { buildCampaignContentHref } from '@utils/campaign-collections';
 import { getNoIndexHeaders } from '@utils/seo';
 import { getDefaultContentEnvironment } from '@utils/content-filter';
 
@@ -21,10 +19,6 @@ function normalizeTags(searchParams: URLSearchParams): string[] | undefined {
 }
 
 function buildHref(item: ContentIndexRow): string {
-  if (item.collection === 'campaigns' || item.collection.startsWith('campaign')) {
-    return buildCampaignContentHref(item.collection, item.slug, item.campaignSlug);
-  }
-
   return `/${item.collection}/${item.slug}`;
 }
 
@@ -49,7 +43,6 @@ export const GET: APIRoute = async ({ request, locals }) => {
 
   try {
     const repo = await createContentIndexRepoFromLocals(locals);
-    const access = await resolveSearchAccess(request, locals);
     const result = await repo.searchContent({
       query,
       contributorId,
@@ -60,7 +53,6 @@ export const GET: APIRoute = async ({ request, locals }) => {
       page: normalizePage(url.searchParams.get('page')),
       pageSize: normalizePageSize(url.searchParams.get('pageSize')),
       environment: getDefaultContentEnvironment(),
-      visibilityAccess: access.visibilityAccess,
     });
 
     return new Response(
@@ -68,7 +60,12 @@ export const GET: APIRoute = async ({ request, locals }) => {
         ok: true,
         query,
         contributor: contributorId ?? null,
-        scope: access.responseScope,
+        scope: {
+          isAuthenticated: false,
+          visibility: 'public',
+          reason: 'public_content_only',
+          campaignAccess: { membershipCount: 0, gmCount: 0 },
+        },
         pagination: result.pagination,
         items: result.items.map((item) => ({
           id: item.id,

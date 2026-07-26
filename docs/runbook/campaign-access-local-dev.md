@@ -10,11 +10,11 @@ Plain `pnpm dev` is the fast lane for UI/content iteration and is not authoritat
 ## Scope
 
 - Applies only to Campaign domain routes:
-  - [`/campaigns/[...slug]`](src/pages/campaigns/[...slug].astro)
-  - [`/campaigns/[campaign]/sessions`](src/pages/campaigns/[campaign]/sessions/index.astro)
-  - [`/campaigns/[campaign]/sessions/[...slug]`](src/pages/campaigns/[campaign]/sessions/[...slug].astro)
-  - [`/campaigns/[campaign]/[family]`](src/pages/campaigns/[campaign]/[family]/index.astro)
-  - [`/campaigns/[campaign]/[family]/[...slug]`](src/pages/campaigns/[campaign]/[family]/[...slug].astro)
+  - `/campaigns/[campaign]` (Campaign Content `pages/index`)
+  - `/campaigns/[campaign]/about` (Campaign Content `pages/about`)
+  - `/campaigns/[campaign]/notes`
+  - `/campaigns/[campaign]/notes/[documentId]`
+  - `/campaigns/[campaign]/assets/[...path]`
 - Non-campaign domains stay public-by-default and do not use this gate.
 
 ## Model (fallback only)
@@ -32,7 +32,7 @@ Set `CAMPAIGN_MEMBERSHIPS` as JSON in your environment:
 
 ```json
 {
-  "dev123": { "campaigns": { "brad": "gm", "sample-campaign": "member" } },
+  "dev123": { "campaigns": { "brad": "gm", "barry": "member" } },
   "dev999": { "campaigns": { "barry": "member" } }
 }
 ```
@@ -45,7 +45,7 @@ Compatibility note:
 
 ```json
 {
-  "dev123": { "campaigns": ["brad", "sample-campaign"] }
+  "dev123": { "campaigns": ["brad", "barry"] }
 }
 ```
 
@@ -56,7 +56,7 @@ If you rename a campaign slug, update any private local `CAMPAIGN_MEMBERSHIPS` f
 1. Set env:
 
 ```bash
-export CAMPAIGN_MEMBERSHIPS='{"dev123":{"campaigns":{"brad":"gm","sample-campaign":"member"}}}'
+export CAMPAIGN_MEMBERSHIPS='{"dev123":{"campaigns":{"brad":"gm","barry":"member"}}}'
 ```
 
 2. Add browser cookie for local site:
@@ -65,7 +65,7 @@ export CAMPAIGN_MEMBERSHIPS='{"dev123":{"campaigns":{"brad":"gm","sample-campaig
 aletheia-dev-session=dev123
 ```
 
-3. Open campaign/session routes. `campaignMembers` content is visible only when mapping matches.
+3. Open the campaign root, about, notes, or asset routes. `campaignMembers` Campaign Content is visible only when the mapping matches.
 
 ## Current replacement status
 

@@ -167,38 +167,8 @@ function getCloudTargetPrefix(mapping) {
   return mapping.cloudTo || mapping.to;
 }
 
-const CAMPAIGN_FAMILY_COLLECTIONS = {
-  lore: 'campaignLore',
-  places: 'campaignPlaces',
-  sentients: 'campaignSentients',
-  bestiary: 'campaignBestiary',
-  flora: 'campaignFlora',
-  factions: 'campaignFactions',
-  systems: 'campaignSystems',
-  meta: 'campaignMeta',
-  characters: 'campaignCharacters',
-  scenes: 'campaignScenes',
-  adventures: 'campaignAdventures',
-  hooks: 'campaignHooks',
-};
-
-const CAMPAIGN_FAMILY_SEGMENT_PATTERN = Object.keys(CAMPAIGN_FAMILY_COLLECTIONS).join('|');
-
 function getContentIndexCollectionForPath(mapping, relativePath) {
-  if (mapping.collection) {
-    return mapping.collection;
-  }
-
-  if (mapping.to !== 'campaigns') {
-    return mapping.to;
-  }
-
-  const familyMatch = new RegExp(`^[^/]+\/(${CAMPAIGN_FAMILY_SEGMENT_PATTERN})\/.+\.md$`, 'i').exec(relativePath);
-  if (familyMatch) {
-    return CAMPAIGN_FAMILY_COLLECTIONS[familyMatch[1].toLowerCase()];
-  }
-
-  return 'campaigns';
+  return mapping.collection || mapping.to;
 }
 
 function getPreviousEtag(previousEtags, mapping, relativePath) {
@@ -236,17 +206,17 @@ export async function buildSyncDiff(config, services = {}, { previousEtags = nul
   const excludedByPublication = [];
 
   for (const mapping of config.mappings) {
+    const collection = String(mapping.collection || '').toLowerCase();
+    if (mapping.to === 'campaigns' || collection === 'sessions' || collection.startsWith('campaign')) {
+      continue;
+    }
+
     const sourceRoot = path.resolve(config.vaultRoot, mapping.from);
     const unfilteredSourceFiles = await walkFiles(sourceRoot, config.includeExtensions);
     const publicationFiltered = mapping.target === 'cloud'
       ? await filterSourceFilesForPublication(unfilteredSourceFiles, sourceRoot)
       : { files: unfilteredSourceFiles, excluded: [] };
-    const sourceFiles = mapping.to === 'campaigns'
-      ? publicationFiltered.files.filter((file) => {
-          const relativePath = normalizePathForDisplay(path.relative(sourceRoot, file));
-          return !/^[^/]+\/sessions\/[^/]+\.md$/i.test(relativePath);
-        })
-      : publicationFiltered.files;
+    const sourceFiles = publicationFiltered.files;
     excludedByPublication.push(...publicationFiltered.excluded.map((file) => ({
       type: 'excluded',
       relativePath: normalizePathForDisplay(path.relative(sourceRoot, file)),

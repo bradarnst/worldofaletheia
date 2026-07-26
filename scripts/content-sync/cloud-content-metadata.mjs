@@ -247,27 +247,6 @@ function buildSourceEtag(text) {
   return createHash('md5').update(text).digest('hex');
 }
 
-function toCampaignVisibility(value) {
-  return value === 'public' || value === 'campaignMembers' || value === 'gm' ? value : null;
-}
-
-const CAMPAIGN_FAMILY_COLLECTIONS = {
-  lore: 'campaignLore',
-  places: 'campaignPlaces',
-  sentients: 'campaignSentients',
-  bestiary: 'campaignBestiary',
-  flora: 'campaignFlora',
-  factions: 'campaignFactions',
-  systems: 'campaignSystems',
-  meta: 'campaignMeta',
-  characters: 'campaignCharacters',
-  scenes: 'campaignScenes',
-  adventures: 'campaignAdventures',
-  hooks: 'campaignHooks',
-};
-
-const CAMPAIGN_FAMILY_SEGMENT_PATTERN = Object.keys(CAMPAIGN_FAMILY_COLLECTIONS).join('|');
-
 function requireFrontmatterCollection(frontmatterRecord, contextLabel) {
   const collection = normalizeNullableString(frontmatterRecord.collection);
   if (!collection) {
@@ -315,7 +294,7 @@ function createContentIndexRow({
     type: normalizeNullableString(frontmatterRecord.type),
     subtype: normalizeNullableString(frontmatterRecord.subtype),
     tagsJson: JSON.stringify(normalizeTags(frontmatterRecord.tags)),
-    visibility: toCampaignVisibility(frontmatterRecord.visibility) ?? contentEntry.visibility,
+    visibility: null,
     campaignSlug: contentEntry.campaignSlug,
     summary: normalizeNullableString(frontmatterRecord.excerpt),
     publication,
@@ -356,7 +335,7 @@ function createContentSearchRow({
 
 export async function deriveCollectionEntries(mapping, relativePath, transformedMarkdown, sourceStats, cloud, generatedAt) {
   const normalizedRelative = normalizeDisplayPath(relativePath);
-  if (!normalizedRelative.toLowerCase().endsWith('.md')) {
+  if (mapping.to === 'campaigns' || !normalizedRelative.toLowerCase().endsWith('.md')) {
     return [];
   }
 
@@ -367,9 +346,8 @@ export async function deriveCollectionEntries(mapping, relativePath, transformed
   const sourceEtag = buildSourceEtag(transformedMarkdown);
   const lastModified = sourceStats.mtime.toISOString();
   const r2Key = cloud.buildKey(getCloudTargetPrefix(mapping), normalizedRelative);
-  const visibility = toCampaignVisibility(frontmatterRecord.visibility);
 
-  const buildEntry = ({ collection, id, slug, routePath, campaignSlug }) => {
+  const buildEntry = ({ collection, id, slug, routePath }) => {
     const contentEntry = {
       collection,
       id,
@@ -378,8 +356,8 @@ export async function deriveCollectionEntries(mapping, relativePath, transformed
       r2Key,
       etag: sourceEtag,
       lastModified,
-      visibility,
-      campaignSlug,
+      visibility: null,
+      campaignSlug: null,
     };
 
     return {
@@ -407,70 +385,6 @@ export async function deriveCollectionEntries(mapping, relativePath, transformed
     };
   };
 
-  if (mapping.to === 'campaigns') {
-    if (/^[^/]+\/sessions\/[^/]+\.md$/i.test(normalizedRelative)) {
-      return [];
-    }
-
-    const familyMatch = new RegExp(`^([^/]+)\/(${CAMPAIGN_FAMILY_SEGMENT_PATTERN})\/(.+)\.md$`, 'i').exec(normalizedRelative);
-    if (familyMatch) {
-      const campaignSlug = familyMatch[1];
-      const familySegment = familyMatch[2].toLowerCase();
-      const familySlug = normalizeNullableString(frontmatterRecord.slug) ?? familyMatch[3];
-      const collection = CAMPAIGN_FAMILY_COLLECTIONS[familySegment];
-      assertCollectionMatch(frontmatterCollection, collection, normalizedRelative);
-
-      return [
-        buildEntry({
-          collection: frontmatterCollection,
-          id: stripMarkdownExtension(normalizedRelative),
-          slug: familySlug,
-          routePath: `${mapping.to}/${normalizedRelative}`,
-          campaignSlug,
-        }),
-      ];
-    }
-
-    const campaignMatch = /^([^/]+)\/index\.md$/i.exec(normalizedRelative);
-    if (campaignMatch) {
-      const campaignSlug = campaignMatch[1];
-      assertCollectionMatch(frontmatterCollection, 'campaigns', normalizedRelative);
-      return [
-        buildEntry({
-          collection: frontmatterCollection,
-          id: stripMarkdownExtension(normalizedRelative),
-          slug: normalizeNullableString(frontmatterRecord.slug) ?? campaignSlug,
-          routePath: `${mapping.to}/${normalizedRelative}`,
-          campaignSlug,
-        }),
-      ];
-    }
-
-    const legacyCampaignMatch = /^([^/]+)\/([^/]+)\.md$/i.exec(normalizedRelative);
-    if (legacyCampaignMatch) {
-      const campaignSlug = legacyCampaignMatch[1];
-      const topLevelFileName = legacyCampaignMatch[2].toLowerCase();
-      if (
-        topLevelFileName !== 'index' &&
-        topLevelFileName !== 'sessions' &&
-        !Object.prototype.hasOwnProperty.call(CAMPAIGN_FAMILY_COLLECTIONS, topLevelFileName)
-      ) {
-        assertCollectionMatch(frontmatterCollection, 'campaigns', normalizedRelative);
-        return [
-          buildEntry({
-            collection: frontmatterCollection,
-            id: stripMarkdownExtension(normalizedRelative),
-            slug: normalizeNullableString(frontmatterRecord.slug) ?? campaignSlug,
-            routePath: `${mapping.to}/${normalizedRelative}`,
-            campaignSlug,
-          }),
-        ];
-      }
-    }
-
-    return [];
-  }
-
   const collection = frontmatterCollection;
   const expectedCollection = mapping.collection || mapping.to;
   assertCollectionMatch(collection, expectedCollection, normalizedRelative);
@@ -482,7 +396,6 @@ export async function deriveCollectionEntries(mapping, relativePath, transformed
       id,
       slug: normalizeNullableString(frontmatterRecord.slug) ?? id,
       routePath: `${mapping.to}/${normalizedRelative}`,
-      campaignSlug: normalizeNullableString(frontmatterRecord.campaign),
     }),
   ];
 }
@@ -547,10 +460,6 @@ export async function collectCloudContentMetadata(config, services, wikiIndex) {
   const includedPublications = getIncludedPublicationsForSyncLane(syncLane);
 
   for (const mapping of config.mappings.filter((candidate) => candidate.target === 'cloud')) {
-    if (mapping.to === 'campaigns') {
-      managedCollections.add('sessions');
-    }
-
     const { sourceRoot, files } = await gatherSourceFiles(config, mapping);
 
     for (const absolutePath of files) {

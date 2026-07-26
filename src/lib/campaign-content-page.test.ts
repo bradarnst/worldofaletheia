@@ -1,12 +1,23 @@
 // src/lib/campaign-content-page.test.ts
 import { describe, expect, it, vi } from 'vitest';
 import {
-  buildCampaignContentPageModel,
+  buildCampaignContentPageModel as buildCampaignContentPageModelImpl,
   type CampaignContentPageEntry,
   type CampaignContentPageLiveEntryGetter,
 } from '~/lib/campaign-content-page';
 import { parseCampaignGateManifest } from '~/lib/campaign-gate-policy';
 import type { CampaignAccessRole } from '~/lib/campaign-gate-policy';
+
+const testGateManifest = parseCampaignGateManifest({
+  'sample-campaign': 'public',
+  brad: 'campaignMembers',
+});
+
+function buildCampaignContentPageModel(
+  input: Parameters<typeof buildCampaignContentPageModelImpl>[0],
+) {
+  return buildCampaignContentPageModelImpl({ ...input, gateManifest: testGateManifest });
+}
 
 function makeEntry(overrides: Partial<CampaignContentPageEntry['data']> = {}): CampaignContentPageEntry {
   return {

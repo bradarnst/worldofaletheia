@@ -95,7 +95,7 @@ This is a single-context repo with root `CONTEXT.md` and ADRs under `plans/adrs/
 
 ### Content and data naming conventions
 - Field naming conventions for Markdown frontmatter, TypeScript/JSON/OpenAPI, and D1/SQL are documented in `docs/content-field-naming-conventions.md`.
-- Before changing campaign-note Markdown frontmatter, content schemas, Zod schemas, OpenAPI fields, D1 columns, import/export/sync code, or frontmatter serializers/parsers, read that document first.
+- Before changing Markdown frontmatter, content schemas, Zod schemas, OpenAPI fields, D1 columns, import/export/sync code, live Campaign Content mappings, or frontmatter serializers/parsers, read that document first.
 - Preserve the layer-native naming policy unless an explicit architecture decision changes it:
   - Markdown/frontmatter: camelCase
   - TypeScript/JSON/OpenAPI: camelCase
@@ -106,7 +106,7 @@ This is a single-context repo with root `CONTEXT.md` and ADRs under `plans/adrs/
 
 World of Aletheia is a fantasy worldbuilding website and evolving campaign platform for a custom GURPS-based tabletop RPG setting. It is **not just a wiki** — the roadmap includes interactive campaign management tools, relationship-rich navigation, search/filter/sort/group capabilities, authenticated multi-user access, and real-time session features. The Campaigns domain is designed for eventual extraction as an independent service.
 
-Content is co-authored by two people (Brad and Barry) primarily in Obsidian, synced to this repo via a custom pipeline, and published as an Astro static site deployed to Cloudflare Pages.
+Repo-owned world content is co-authored by two people (Brad and Barry) primarily in Obsidian, synced to this repo via a custom pipeline, and published as an Astro site deployed to Cloudflare. Live Campaign Content is owned by `woa-admin` and consumed at request time through a server-to-server boundary.
 
 **Live site**: worldofaletheia.com
 
@@ -134,15 +134,26 @@ Shared world-reference surfaces: calendar, timeline, and maps. These are not con
 - Calendar APIs remain under `/api/calendar/*`
 
 #### 4. Campaigns
-Campaign overviews and session logs. This is the **first domain targeted for interactive features** (Astro Islands) and eventual extraction as an independent service.
-- Routes: `/campaigns`, `/campaigns/[campaign]/sessions/*`
+Campaign metadata and live Campaign Content. This is the **first domain targeted for interactive features** (Astro Islands) and uses `woa-admin` as its external content source.
+- Routes: `/campaigns`, `/campaigns/[campaign]`, `/campaigns/[campaign]/about`, `/campaigns/[campaign]/notes/*`, `/campaigns/[campaign]/assets/*`
 - Layout chain: `BaseLayout → CampaignsLayout → CampaignsContentLayout`
-- Sessions are nested under campaigns in the filesystem and linked via a `campaign` string field (foreign key to campaign slug)
+- Campaign root maps to `pages/index`; about maps to `pages/about`; notes use the generic `notes` Campaign Content collection; assets use source paths under `assets/`
+- Campaign Content is not sourced from local `src/content/campaigns` collections or the repo content-sync pipeline
 
 ### Architecture & Key Patterns
 
 #### Obsidian-First Content Pipeline (ADR-0001)
-Content flows one way: **Obsidian vault → Git repo → Astro build → Cloudflare deploy**. The Obsidian vault is the single source of truth. The sync pipeline (`scripts/content-sync/`) handles diffing, stale file management, frontmatter validation, and git operations. Do not introduce bidirectional sync or CMS patterns.
+Repo-owned content flows one way: **Obsidian vault → Git repo → Astro build → Cloudflare deploy**. The Obsidian vault is the single source of truth for that content. The sync pipeline (`scripts/content-sync/`) handles diffing, stale file management, and frontmatter validation. Do not introduce bidirectional sync or CMS patterns.
+
+Live Campaign Content is a separate boundary: **`woa-admin` → server-to-server live loader → campaign routes**. Do not add local Campaign Content fallbacks, map campaign folders into repo ingestion, call the source directly from browsers, or revive the old notes-only table/API model.
+
+#### Live Campaign Content routes
+- Root: `/campaigns/<campaign-slug>` from `pages/index`
+- About: `/campaigns/<campaign-slug>/about` from `pages/about`
+- Notes list/detail: `/campaigns/<campaign-slug>/notes` and `/campaigns/<campaign-slug>/notes/<document-id>` from the generic `notes` collection
+- Assets: `/campaigns/<campaign-slug>/assets/<path>` from source path `assets/<path>`
+- The Campaign Gate must pass before a source fetch; Content Visibility further constrains returned items
+- Campaign slug changes are coordinated in `woa-admin`, Campaign Gate configuration, and D1 memberships; there is no repo-owned rename workflow for live Campaign Content
 
 ### Page Pattern (Per Collection)
 Each content collection follows a consistent two-file routing pattern:

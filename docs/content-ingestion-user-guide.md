@@ -99,76 +99,16 @@ Minimal example:
 }
 ```
 
-### 4) Optional: sync campaign content to Cloudflare R2
+### 4) Campaign Content is not ingested by this workflow
 
-Use this when you want campaign files to publish to R2 instead of `src/content/campaigns`.
+Do not map campaign folders to `src/content/campaigns` or to a campaign R2 target. Live Campaign Content is owned by `woa-admin` and read through the server-to-server source boundary:
 
-Campaign authoring and slug-rename conventions live in [`docs/runbook/campaign-authoring-and-rename.md`](docs/runbook/campaign-authoring-and-rename.md).
+- root: `/campaigns/<campaign-slug>` from `pages/index`
+- about: `/campaigns/<campaign-slug>/about` from `pages/about`
+- notes: `/campaigns/<campaign-slug>/notes` and `/campaigns/<campaign-slug>/notes/<document-id>` from the generic `notes` collection
+- assets: `/campaigns/<campaign-slug>/assets/<path>` from source paths under `assets/`
 
-Campaign source folders should use this family-based shape:
-
-```text
-<campaign-slug>/
-  index.md
-  sessions/
-  lore/
-  places/
-  sentients/
-  bestiary/
-  flora/
-  factions/
-  systems/
-  meta/
-  characters/
-  scenes/
-  adventures/
-  hooks/
-```
-
-1. Create a bucket (example bucket name):
-
-```bash
-pnpm wrangler r2 bucket create woa-campaign-private
-pnpm wrangler r2 bucket list
-```
-
-2. In `config/content-sync.config.json`, mark the campaign mapping as cloud-targeted and set `campaignCloud.bucket` to the exact same bucket name:
-
-```json
-{
-  "mappings": [
-    { "from": "World/Campaigns", "to": "campaigns", "target": "cloud" }
-  ],
-  "campaignCloud": {
-    "bucket": "woa-campaign-private",
-    "accountId": "<your-cloudflare-account-id>",
-    "accessKeyIdEnv": "R2_ACCESS_KEY_ID",
-    "secretAccessKeyEnv": "R2_SECRET_ACCESS_KEY"
-  }
-}
-```
-
-3. Generate R2 S3 credentials in Cloudflare Dashboard:
-   - Go to **R2 object storage** -> **Manage R2 API tokens**.
-   - Create an R2 token scoped to the bucket (object read/write).
-   - Copy both values shown after creation:
-     - Access Key ID
-     - Secret Access Key
-
-   This sync script uses an S3 client, so it needs this key pair. A single generic Cloudflare API token string is not enough for this flow.
-
-4. Export the key pair in your shell before sync:
-
-```bash
-export R2_ACCESS_KEY_ID="<access-key-id>"
-export R2_SECRET_ACCESS_KEY="<secret-access-key>"
-```
-
-5. Verify:
-
-```bash
-pnpm content:sync:dry-run
-```
+See [`docs/runbook/campaign-authoring-and-rename.md`](docs/runbook/campaign-authoring-and-rename.md) for the active authoring and slug-change boundary.
 
 ### 5) Optional: choose the D1 content-index sync target
 
@@ -263,14 +203,6 @@ pnpm content:sync:dry-run
 pnpm content:sync:validate
 ```
 
-### Campaign slug rename helper
-
-```bash
-pnpm campaign:rename -- --from=old-campaign-slug --to=new-campaign-slug
-```
-
-Use `--dry-run` first for a no-write preview.
-
 ## Stale file decision (important)
 
 If a file exists in repo mapped folders but no longer exists in Obsidian, script asks:
@@ -296,20 +228,10 @@ Detailed operator runbook for parser/ingestion issues:
 | `SYNC-STALE-ABORTED` | User chose abort at stale prompt | Re-run and choose remove or backup |
 | `SYNC-RUNTIME-ERROR` | General runtime failure, including R2/D1 publish failures | Re-run with debug, verify migrations, inspect the exact wrangler/R2 error |
 
-## Campaign media variants
-
-When a cloud-targeted campaign source includes images under `assets/images/original/**`, sync uploads the original object and also generates:
-
-- `thumb`
-- `detail`
-- `fullscreen`
-
-The generated variants are written to `assets/images/variants/<variant>/**` in R2 and are served through the protected campaign-media route.
-
 ## Discovery index scope
 
-- `content_index` now stores both public and protected campaign-domain rows when sync runs.
-- Public discovery/search behavior is still enforced by query guards; protected rows remain deny-by-default outside authorized campaign paths.
+- The repo content-sync `content_index` covers mapped repo-owned collections.
+- Live Campaign Content and its protected metadata are resolved through `woa-admin`, not inserted into this repo's index by `pnpm content:sync`.
 
 ## Debug mode for technical details
 
@@ -332,5 +254,5 @@ $env:CONTENT_SYNC_DEBUG='1'; pnpm content:sync
 - Only folders in your config mappings are touched.
 - Markdown validation applies to `src/content/**` mappings; binary asset mappings under `src/assets/**` are synced but not frontmatter-validated.
 - `pnpm dev:cf` is the canonical discovery/index parity lane; plain `pnpm dev` remains the local convenience lane.
-- Protected campaign rows are intentionally excluded from the public `content_index`; only `visibility: public` campaign-domain entries are written there.
+- Campaign Content is intentionally outside this repo ingestion/index lane.
 - If private campaign content ever existed in Git history, history sanitization is still a separate operator task. Sync/index changes do not rewrite existing Git history.

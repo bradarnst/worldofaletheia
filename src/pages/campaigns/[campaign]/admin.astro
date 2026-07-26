@@ -1,7 +1,5 @@
 ---
-import { getCollection } from 'astro:content';
 import CampaignsLayout from '@layouts/CampaignsLayout.astro';
-import { extractCampaignSlugFromEntryId } from '@utils/campaign-collections';
 
 export const prerender = false;
 
@@ -9,29 +7,8 @@ const { campaign } = Astro.params;
 const campaignSlug = campaign ?? '';
 const loginHref = `/login?next=${encodeURIComponent(Astro.url.pathname + Astro.url.search)}`;
 
-let campaignTitle = campaignSlug;
-let campaignExcerpt: string | undefined;
-let contentUnavailable = false;
-let campaignFound = false;
-
-try {
-  const campaigns = await getCollection('campaigns');
-  const campaignEntry = campaigns.find((entry) => extractCampaignSlugFromEntryId(entry.id) === campaignSlug) ?? null;
-
-  if (campaignEntry) {
-    campaignFound = true;
-    campaignTitle = campaignEntry.data.title;
-    campaignExcerpt = campaignEntry.data.excerpt;
-  }
-} catch (error) {
-  console.error('campaign.admin.content_unavailable', {
-    campaignSlug,
-    message: error instanceof Error ? error.message : 'unknown error',
-  });
-  contentUnavailable = true;
-}
-
-const title = campaignFound ? `${campaignTitle} - Campaign Administration` : 'Campaign Administration';
+const campaignTitle = campaignSlug || 'Unknown campaign';
+const title = `${campaignTitle} - Campaign Administration`;
 ---
 
 <CampaignsLayout title={title} description={`Campaign administration for ${campaignTitle}`} robots="noindex,nofollow">
@@ -39,7 +16,7 @@ const title = campaignFound ? `${campaignTitle} - Campaign Administration` : 'Ca
     <nav class="mb-6 text-sm meta-muted">
       <a href="/campaigns" class="hover:text-primary">Campaigns</a>
       <span class="mx-2">/</span>
-      {campaignFound ? (
+      {campaignSlug ? (
         <a href={`/campaigns/${campaignSlug}`} class="hover:text-primary">{campaignTitle}</a>
       ) : (
         <span>{campaignSlug || 'Unknown campaign'}</span>
@@ -55,28 +32,18 @@ const title = campaignFound ? `${campaignTitle} - Campaign Administration` : 'Ca
       </div>
       <h1 class="mb-3 text-3xl font-bold text-ink-950 md:text-4xl">{campaignTitle}</h1>
       <p class="max-w-3xl text-ink-800">
-        {campaignExcerpt ?? 'Review campaign-scoped membership and GM capability for this campaign.'}
+        Review campaign-scoped membership and GM capability for this campaign.
       </p>
     </header>
 
-    {contentUnavailable && (
-      <section class="ui-surface p-6">
-        <h2 class="mb-2 text-xl font-semibold text-ink-950">Campaign administration unavailable</h2>
-        <p class="text-ink-800">
-          Campaign administration is temporarily unavailable. Protected campaign user data remains closed until the
-          content source is available.
-        </p>
-      </section>
-    )}
-
-    {!contentUnavailable && !campaignFound && (
+    {!campaignSlug && (
       <section class="ui-surface p-6">
         <h2 class="mb-2 text-xl font-semibold text-ink-950">Campaign not found</h2>
         <p class="text-ink-800">The requested campaign could not be found.</p>
       </section>
     )}
 
-    {!contentUnavailable && campaignFound && (
+    {campaignSlug && (
       <div
         class="space-y-8"
         data-campaign-admin
