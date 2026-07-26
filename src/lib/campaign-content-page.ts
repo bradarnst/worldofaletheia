@@ -98,10 +98,6 @@ function isLiveEntryNotFoundError(error: unknown): boolean {
   return isRecord(error) && error.name === 'LiveEntryNotFoundError';
 }
 
-function toActor(viewer: CampaignContentPageViewer) {
-  return toCampaignContentSourceActor(viewer);
-}
-
 /**
  * Build the rendering model for a campaign root or about page.
  *
@@ -149,7 +145,7 @@ export async function buildCampaignContentPageModel(
 
   const accessScope: CampaignContentLiveAccessScope = {
     allowedVisibilities: decision.allowedVisibilities,
-    actor: toActor(input.viewer),
+    actor: toCampaignContentSourceActor(input.viewer),
   };
 
   let result: { entry: CampaignContentPageEntry } | { error: unknown };

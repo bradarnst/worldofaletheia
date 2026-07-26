@@ -60,10 +60,14 @@ describe('mapCampaignAssetReferenceToMainSite', () => {
     );
   });
 
-  it('preserves the campaign slug embedded in a cross-campaign asset endpoint URL', () => {
+  it('keeps cross-campaign asset endpoint URLs scoped to the current campaign', () => {
     expect(mapCampaignAssetReferenceToMainSite(`${WOA_ADMIN}/api/v1/campaigns/barry/assets?path=assets/hero.png`, 'brad')).toBe(
-      '/campaigns/barry/assets/hero.png',
+      '/campaigns/brad/assets/hero.png',
     );
+  });
+
+  it('returns null for malformed percent-encoded relative paths', () => {
+    expect(mapCampaignAssetReferenceToMainSite('assets/%ZZ.png', 'brad')).toBeNull();
   });
 
   it('returns null for non-asset URLs', () => {
@@ -99,6 +103,20 @@ describe('rewriteCampaignContentAssetReferences', () => {
     const markdown = `<img src="${WOA_ADMIN}/api/v1/campaigns/brad/assets?path=assets/poster.png"><a href="assets/poster.png">poster</a>`;
     expect(rewriteCampaignContentAssetReferences(markdown, { campaignSlug: 'brad' })).toBe(
       '<img src="/campaigns/brad/assets/poster.png"><a href="/campaigns/brad/assets/poster.png">poster</a>',
+    );
+  });
+
+  it('rewrites single-quoted inline HTML asset references', () => {
+    const markdown = `<img src='${WOA_ADMIN}/api/v1/campaigns/brad/assets?path=assets/poster.png'><a href='assets/poster.png'>poster</a>`;
+    expect(rewriteCampaignContentAssetReferences(markdown, { campaignSlug: 'brad' })).toBe(
+      "<img src='/campaigns/brad/assets/poster.png'><a href='/campaigns/brad/assets/poster.png'>poster</a>",
+    );
+  });
+
+  it('rewrites reference-style markdown asset definitions', () => {
+    const markdown = `[Map][map-ref]\n\n[map-ref]: ${WOA_ADMIN}/api/v1/campaigns/brad/assets?path=assets/map.png "Battle map"`;
+    expect(rewriteCampaignContentAssetReferences(markdown, { campaignSlug: 'brad' })).toBe(
+      '[Map][map-ref]\n\n[map-ref]: /campaigns/brad/assets/map.png "Battle map"',
     );
   });
 

@@ -1,4 +1,5 @@
 import type { ContentVisibility } from '~/lib/campaign-gate-policy';
+import type { CampaignContentAssetPath } from '~/lib/campaign-content-asset-rewrite';
 import { getCloudflareRuntimeEnv } from '~/utils/cloudflare-env';
 
 export const ASSERTION_EXPIRY_SECONDS = 60;
@@ -6,6 +7,7 @@ export const CAMPAIGN_CONTENT_READ_OPERATION = 'campaignContent:read';
 export const DEFAULT_ASSERTION_AUDIENCE = 'woa-admin:campaign-content-source:v1';
 export const RUNTIME_ASSERTION_HEADER = 'x-woa-runtime-assertion';
 export const RUNTIME_ASSERTION_SIGNATURE_HEADER = 'x-woa-runtime-signature';
+export const CAMPAIGN_CONTENT_ASSET_FETCH_TIMEOUT_MS = 10_000;
 
 type EnvLike = Record<string, string | undefined>;
 type FetchLike = typeof fetch;
@@ -102,11 +104,11 @@ export interface CampaignContentListPage {
  * the trailing path segments after `/campaigns/{campaign}/assets/`.
  */
 export interface CampaignContentAssetOptions extends CampaignContentSourceRequestScope {
-  assetPath: string;
+  assetPath: CampaignContentAssetPath;
 }
 
 export interface CampaignContentAssetBytes {
-  bytes: ArrayBuffer;
+  body: ReadableStream<Uint8Array> | ArrayBuffer;
   contentType: string | null;
   etag: string | null;
 }
@@ -581,6 +583,33 @@ async function readJsonResponse(response: Response): Promise<unknown> {
   }
 }
 
+function streamWithTimeoutCleanup(
+  stream: ReadableStream<Uint8Array>,
+  timeout: ReturnType<typeof setTimeout>,
+): ReadableStream<Uint8Array> {
+  const reader = stream.getReader();
+  return new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      try {
+        const result = await reader.read();
+        if (result.done) {
+          clearTimeout(timeout);
+          controller.close();
+          return;
+        }
+        controller.enqueue(result.value);
+      } catch (error) {
+        clearTimeout(timeout);
+        controller.error(error);
+      }
+    },
+    async cancel(reason) {
+      clearTimeout(timeout);
+      await reader.cancel(reason);
+    },
+  });
+}
+
 export function createCampaignContentSourceClient(options: CreateCampaignContentSourceClientOptions): CampaignContentSourceClient {
   const fetchImpl = options.fetch ?? fetch;
   const config = {
@@ -653,32 +682,41 @@ export function createCampaignContentSourceClient(options: CreateCampaignContent
     }
 
     let response: Response;
+    const abortController = new AbortController();
+    const timeout = setTimeout(() => abortController.abort(), CAMPAIGN_CONTENT_ASSET_FETCH_TIMEOUT_MS);
     try {
       response = await fetchImpl(input.url, {
         method: 'GET',
         headers: {
           ...assertionHeaders,
         },
+        signal: abortController.signal,
       });
     } catch {
+      clearTimeout(timeout);
       return mapCampaignContentSourceFailure({ reason: 'networkFailure' });
     }
 
     if (!response.ok) {
+      clearTimeout(timeout);
       return mapCampaignContentSourceFailure({ status: response.status });
     }
 
     try {
-      const bytes = await response.arrayBuffer();
+      const body = response.body ? streamWithTimeoutCleanup(response.body, timeout) : await response.arrayBuffer();
+      if (!response.body) {
+        clearTimeout(timeout);
+      }
       return {
         ok: true,
         value: {
-          bytes,
+          body,
           contentType: response.headers.get('content-type'),
           etag: response.headers.get('etag'),
         },
       };
     } catch {
+      clearTimeout(timeout);
       return mapCampaignContentSourceFailure({ reason: 'validationFailure' });
     }
   }

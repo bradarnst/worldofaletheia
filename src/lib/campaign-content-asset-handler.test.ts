@@ -64,7 +64,7 @@ describe('handleCampaignContentAssetRequest (issue #11)', () => {
     const bytes = new Uint8Array([9, 8, 7]).buffer;
     vi.mocked(sourceClient.getCampaignContentAsset).mockResolvedValue({
       ok: true,
-      value: { bytes, contentType: 'image/png', etag: '"etag-1"' },
+      value: { body: bytes, contentType: 'image/png', etag: '"etag-1"' },
     });
     createCtxMock.mockResolvedValue(makeRequestContext({ viewer: { kind: 'anonymous' }, role: 'anonymous' }));
 
@@ -82,6 +82,7 @@ describe('handleCampaignContentAssetRequest (issue #11)', () => {
     expect(response.headers.get('etag')).toBe('"etag-1"');
     expect(response.headers.get('cache-control')).toBe('no-store');
     expect(response.headers.get('x-robots-tag')).toBe('noindex, nofollow');
+    expect(response.headers.get('x-content-type-options')).toBe('nosniff');
 
     const call = vi.mocked(sourceClient.getCampaignContentAsset).mock.calls[0]?.[0];
     expect(call).toMatchObject({
@@ -111,7 +112,7 @@ describe('handleCampaignContentAssetRequest (issue #11)', () => {
   it('serves a readable asset for a campaign member with member-scoped visibility', async () => {
     vi.mocked(sourceClient.getCampaignContentAsset).mockResolvedValue({
       ok: true,
-      value: { bytes: new Uint8Array([1]).buffer, contentType: 'image/png', etag: null },
+      value: { body: new Uint8Array([1]).buffer, contentType: 'image/png', etag: null },
     });
     createCtxMock.mockResolvedValue(
       makeRequestContext({ viewer: { kind: 'authenticated', userId: 'user-1', traceId: 't-1' }, role: 'member' }),
@@ -138,7 +139,7 @@ describe('handleCampaignContentAssetRequest (issue #11)', () => {
   it('serves a readable asset for a GM with gm-scoped visibility', async () => {
     vi.mocked(sourceClient.getCampaignContentAsset).mockResolvedValue({
       ok: true,
-      value: { bytes: new Uint8Array([2]).buffer, contentType: 'image/png', etag: null },
+      value: { body: new Uint8Array([2]).buffer, contentType: 'image/png', etag: null },
     });
     createCtxMock.mockResolvedValue(
       makeRequestContext({ viewer: { kind: 'authenticated', userId: 'user-2', traceId: 't-2' }, role: 'gm' }),
@@ -186,6 +187,51 @@ describe('handleCampaignContentAssetRequest (issue #11)', () => {
     });
 
     expect(response.status).toBe(503);
+  });
+
+  it('falls back to octet-stream for executable or unsafe source content types', async () => {
+    vi.mocked(sourceClient.getCampaignContentAsset).mockResolvedValue({
+      ok: true,
+      value: { body: new Uint8Array([60]).buffer, contentType: 'text/html; charset=utf-8', etag: null },
+    });
+    createCtxMock.mockResolvedValue(makeRequestContext({ viewer: { kind: 'anonymous' }, role: 'anonymous' }));
+
+    const response = await handleCampaignContentAssetRequest({
+      request: new Request('https://example.com/campaigns/sample-campaign/assets/page.html'),
+      locals: {},
+      params: { campaign: 'sample-campaign', path: 'page.html' },
+      url: new URL('https://example.com/campaigns/sample-campaign/assets/page.html'),
+      createSourceClient: () => sourceClient,
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toBe('application/octet-stream');
+    expect(response.headers.get('x-content-type-options')).toBe('nosniff');
+  });
+
+  it('streams readable source bodies through the main-site response', async () => {
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new Uint8Array([4, 5, 6]));
+        controller.close();
+      },
+    });
+    vi.mocked(sourceClient.getCampaignContentAsset).mockResolvedValue({
+      ok: true,
+      value: { body, contentType: 'image/webp', etag: null },
+    });
+    createCtxMock.mockResolvedValue(makeRequestContext({ viewer: { kind: 'anonymous' }, role: 'anonymous' }));
+
+    const response = await handleCampaignContentAssetRequest({
+      request: new Request('https://example.com/campaigns/sample-campaign/assets/hero.webp'),
+      locals: {},
+      params: { campaign: 'sample-campaign', path: 'hero.webp' },
+      url: new URL('https://example.com/campaigns/sample-campaign/assets/hero.webp'),
+      createSourceClient: () => sourceClient,
+    });
+
+    expect(response.status).toBe(200);
+    expect(new Uint8Array(await response.arrayBuffer())).toEqual(new Uint8Array([4, 5, 6]));
   });
 
   it('rejects traversal-like asset paths without calling the source', async () => {

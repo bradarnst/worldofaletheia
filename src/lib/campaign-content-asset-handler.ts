@@ -20,7 +20,7 @@ import {
 } from '~/lib/campaign-content-source-boundary';
 import { campaignGateManifest, decideCampaignGateAccess, type CampaignGateLogger } from '~/lib/campaign-gate-policy';
 import { createCampaignPageRequestContext } from '~/lib/campaign-page-request-context';
-import { isValidCampaignContentAssetPath } from '~/lib/campaign-content-asset-rewrite';
+import { toCampaignContentAssetPath } from '~/lib/campaign-content-asset-rewrite';
 
 export interface HandleCampaignContentAssetRequestInput {
   request: Request;
@@ -34,10 +34,37 @@ export interface HandleCampaignContentAssetRequestInput {
 
 export const CAMPAIGN_CONTENT_ASSET_NOINDEX_HEADERS: Record<string, string> = {
   'x-robots-tag': 'noindex, nofollow',
+  'x-content-type-options': 'nosniff',
 };
+
+const DEFAULT_ASSET_CONTENT_TYPE = 'application/octet-stream';
+const SAFE_ASSET_CONTENT_TYPES = new Set([
+  'application/octet-stream',
+  'application/pdf',
+  'audio/mpeg',
+  'audio/mp4',
+  'audio/ogg',
+  'image/avif',
+  'image/gif',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'text/plain',
+  'video/mp4',
+  'video/webm',
+]);
 
 function noIndexHeaders(): Headers {
   return new Headers(CAMPAIGN_CONTENT_ASSET_NOINDEX_HEADERS);
+}
+
+function normalizeAssetContentType(contentType: string | null): string {
+  const trimmed = contentType?.trim();
+  if (!trimmed) {
+    return DEFAULT_ASSET_CONTENT_TYPE;
+  }
+  const mediaType = trimmed.split(';', 1)[0]?.trim().toLowerCase();
+  return mediaType && SAFE_ASSET_CONTENT_TYPES.has(mediaType) ? trimmed : DEFAULT_ASSET_CONTENT_TYPE;
 }
 
 /**
@@ -58,8 +85,8 @@ export async function handleCampaignContentAssetRequest(
 
   // The main-site route keeps the `assets/` prefix implicit; reconstruct the
   // bucket-relative source path expected by `woa-admin`.
-  const sourceAssetPath = `assets/${assetRestPath}`;
-  if (!isValidCampaignContentAssetPath(sourceAssetPath)) {
+  const sourceAssetPath = toCampaignContentAssetPath(`assets/${assetRestPath}`);
+  if (!sourceAssetPath) {
     return new Response(null, { status: 404, headers: noIndexHeaders() });
   }
 
@@ -112,18 +139,12 @@ export async function handleCampaignContentAssetRequest(
   }
 
   const headers = noIndexHeaders();
-  if (result.value.contentType) {
-    headers.set('content-type', result.value.contentType);
-  } else {
-    // The contract defaults the stored asset media type to application/octet-stream
-    // when unknown, so mirror that default for proxied assets.
-    headers.set('content-type', 'application/octet-stream');
-  }
+  headers.set('content-type', normalizeAssetContentType(result.value.contentType));
   if (result.value.etag) {
     headers.set('etag', result.value.etag);
   }
   // The source defaults responses to no-store; mirror that for proxied assets.
   headers.set('cache-control', 'no-store');
 
-  return new Response(result.value.bytes, { status: 200, headers });
+  return new Response(result.value.body, { status: 200, headers });
 }

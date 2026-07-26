@@ -236,4 +236,42 @@ describe('campaign content live loader', () => {
       },
     });
   });
+
+  it('renders unsafe markdown link and image URL schemes as escaped text', async () => {
+    const sourceClient = createSourceClientStub();
+    vi.mocked(sourceClient.getCampaignContentItem).mockResolvedValue({
+      ok: true,
+      value: {
+        campaignSlug: 'brad',
+        collectionKey: 'notes',
+        documentId: 'unsafe-links',
+        title: 'Unsafe Links',
+        visibility: 'campaignMembers',
+        updatedAt: '2026-07-24T12:00:00Z',
+        body: '[Click](javascript:alert) and ![pixel](data:image/svg+xml;base64,abc)',
+        raw: {
+          type: 'session',
+          tags: [],
+          authors: ['brad'],
+        },
+      },
+    });
+    const loader = createCampaignContentLiveLoader({ sourceClient });
+
+    const result = await loader.loadEntry({
+      collection: 'campaignContent',
+      filter: {
+        campaignSlug: 'brad',
+        collectionKey: 'notes',
+        documentId: 'unsafe-links',
+        accessScope,
+      },
+    });
+
+    expect(result).toMatchObject({
+      rendered: {
+        html: '<p>[Click](javascript:alert) and ![pixel](data:image/svg+xml;base64,abc)</p>',
+      },
+    });
+  });
 });

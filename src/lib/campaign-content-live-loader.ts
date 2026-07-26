@@ -365,6 +365,21 @@ function slugifyHeading(value: string): string {
   return slug || 'section';
 }
 
+function isSafeRenderedUrl(value: string): boolean {
+  const trimmed = value.trim();
+  if (trimmed.startsWith('//')) {
+    return false;
+  }
+
+  const schemeMatch = /^[a-z][a-z0-9+.-]*:/i.exec(trimmed);
+  if (!schemeMatch) {
+    return true;
+  }
+
+  const scheme = schemeMatch[0].toLowerCase();
+  return scheme === 'http:' || scheme === 'https:' || scheme === 'mailto:';
+}
+
 function renderInlineMarkdown(text: string): string {
   const IMAGE_OR_LINK_RE = /(!\[[^\]]*\]\([^)\s]+\))|(\[[^\]]+\]\([^)\s]+\))/g;
   let result = '';
@@ -376,13 +391,17 @@ function renderInlineMarkdown(text: string): string {
     const token = match[0];
     if (token.startsWith('!')) {
       const image = /^!\[([^\]]*)\]\(([^)\s]+)\)$/.exec(token);
-      if (image) {
+      if (image && isSafeRenderedUrl(image[2])) {
         result += `<img src="${escapeHtml(image[2])}" alt="${escapeHtml(image[1])}">`;
+      } else if (image) {
+        result += escapeHtml(token);
       }
     } else {
       const link = /^\[([^\]]+)\]\(([^)\s]+)\)$/.exec(token);
-      if (link) {
+      if (link && isSafeRenderedUrl(link[2])) {
         result += `<a href="${escapeHtml(link[2])}">${escapeHtml(link[1])}</a>`;
+      } else if (link) {
+        result += escapeHtml(token);
       }
     }
     lastIndex = IMAGE_OR_LINK_RE.lastIndex;

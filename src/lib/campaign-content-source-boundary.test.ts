@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   ASSERTION_EXPIRY_SECONDS,
+  CAMPAIGN_CONTENT_ASSET_FETCH_TIMEOUT_MS,
   RUNTIME_ASSERTION_HEADER,
   RUNTIME_ASSERTION_SIGNATURE_HEADER,
   createCampaignContentSourceClient,
@@ -8,12 +9,21 @@ import {
   decodeRuntimeAssertion,
   mapCampaignContentSourceFailure,
 } from '~/lib/campaign-content-source-boundary';
+import { toCampaignContentAssetPath } from '~/lib/campaign-content-asset-rewrite';
 
 const sourceConfig = {
   baseUrl: 'https://woa-admin.example.invalid',
   assertionSecret: 'test-runtime-secret',
   assertionAudience: 'woa-admin:campaign-content-source:v1',
 };
+
+function assetPath(path: string) {
+  const parsed = toCampaignContentAssetPath(path);
+  if (!parsed) {
+    throw new Error(`Invalid test asset path: ${path}`);
+  }
+  return parsed;
+}
 
 describe('campaign content source boundary', () => {
   it('mints campaign-scoped read assertions with a 60-second expiry and non-PII subject', async () => {
@@ -224,7 +234,7 @@ describe('campaign content asset source reads', () => {
 
     const result = await client.getCampaignContentAsset({
       campaignSlug: 'brad',
-      assetPath: 'assets/hero.png',
+      assetPath: assetPath('assets/hero.png'),
       allowedVisibilities: ['public', 'campaignMembers'],
       actor: { kind: 'authenticated', userId: 'user_123', traceId: 'session_123' },
     });
@@ -242,8 +252,30 @@ describe('campaign content asset source reads', () => {
       value: { contentType: 'image/png', etag: '"asset-etag"' },
     });
     if (result.ok) {
-      expect(new Uint8Array(result.value.bytes)).toEqual(new Uint8Array([1, 2, 3]));
+      expect(new Uint8Array(await new Response(result.value.body).arrayBuffer())).toEqual(new Uint8Array([1, 2, 3]));
     }
+  });
+
+  it('passes an abort signal to asset source reads', async () => {
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      expect(init?.signal).toBeInstanceOf(AbortSignal);
+      expect(init?.signal?.aborted).toBe(false);
+      return assetBytes([1]);
+    });
+    const client = createCampaignContentSourceClient({ config: sourceConfig, fetch: fetchMock });
+
+    const result = await client.getCampaignContentAsset({
+      campaignSlug: 'brad',
+      assetPath: assetPath('assets/hero.png'),
+      allowedVisibilities: ['public'],
+      actor: { kind: 'anonymous' },
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      await new Response(result.value.body).arrayBuffer();
+    }
+    expect(CAMPAIGN_CONTENT_ASSET_FETCH_TIMEOUT_MS).toBeGreaterThan(0);
   });
 
   it('maps a missing or unreadable asset to a generic 404', async () => {
@@ -252,7 +284,7 @@ describe('campaign content asset source reads', () => {
 
     const result = await client.getCampaignContentAsset({
       campaignSlug: 'brad',
-      assetPath: 'assets/missing.png',
+      assetPath: assetPath('assets/missing.png'),
       allowedVisibilities: ['public'],
       actor: { kind: 'anonymous' },
     });
@@ -266,7 +298,7 @@ describe('campaign content asset source reads', () => {
 
     const result = await client.getCampaignContentAsset({
       campaignSlug: 'brad',
-      assetPath: 'assets/hero.png',
+      assetPath: assetPath('assets/hero.png'),
       allowedVisibilities: ['public', 'campaignMembers'],
       actor: { kind: 'authenticated', userId: 'user_123', traceId: 'session_123' },
     });
@@ -282,7 +314,7 @@ describe('campaign content asset source reads', () => {
 
     const result = await client.getCampaignContentAsset({
       campaignSlug: 'brad',
-      assetPath: 'assets/hero.png',
+      assetPath: assetPath('assets/hero.png'),
       allowedVisibilities: ['public'],
       actor: { kind: 'anonymous' },
     });

@@ -15,6 +15,9 @@
 const ASSET_ENDPOINT_RE = /\/api\/v1\/campaigns\/([^/]+)\/assets$/;
 const MAIN_SITE_ASSET_PREFIX = '/campaigns';
 
+declare const campaignContentAssetPathBrand: unique symbol;
+export type CampaignContentAssetPath = string & { readonly [campaignContentAssetPathBrand]: true };
+
 /**
  * Validates a bucket-relative Campaign Content asset path. Mirrors the contract
  * pattern: must begin with `assets/`, be 8–512 characters, contain no traversal
@@ -51,7 +54,11 @@ export function isValidCampaignContentAssetPath(path: string): boolean {
   return true;
 }
 
-function buildMainSiteAssetUrl(campaignSlug: string, assetPath: string): string {
+export function toCampaignContentAssetPath(path: string): CampaignContentAssetPath | null {
+  return isValidCampaignContentAssetPath(path) ? (path as CampaignContentAssetPath) : null;
+}
+
+function buildMainSiteAssetUrl(campaignSlug: string, assetPath: CampaignContentAssetPath): string {
   const rest = assetPath.slice('assets/'.length).split('/').map((segment) => encodeURIComponent(segment)).join('/');
   return `${MAIN_SITE_ASSET_PREFIX}/${encodeURIComponent(campaignSlug)}/assets/${rest}`;
 }
@@ -80,16 +87,20 @@ export function mapCampaignAssetReferenceToMainSite(rawUrl: string, campaignSlug
 
   const endpointMatch = ASSET_ENDPOINT_RE.exec(parsed.pathname);
   if (endpointMatch) {
-    const urlCampaignSlug = endpointMatch[1];
     const assetPath = parsed.searchParams.get('path');
-    const targetSlug = urlCampaignSlug || campaignSlug;
-    if (assetPath && isValidCampaignContentAssetPath(assetPath)) {
-      return buildMainSiteAssetUrl(targetSlug, assetPath);
+    const validAssetPath = assetPath ? toCampaignContentAssetPath(assetPath) : null;
+    if (validAssetPath) {
+      return buildMainSiteAssetUrl(campaignSlug, validAssetPath);
     }
     return null;
   }
 
-  let candidate = decodeURIComponent(parsed.pathname);
+  let candidate: string;
+  try {
+    candidate = decodeURIComponent(parsed.pathname);
+  } catch {
+    return null;
+  }
   if (candidate.startsWith('/')) {
     candidate = candidate.slice(1);
   }
@@ -97,15 +108,17 @@ export function mapCampaignAssetReferenceToMainSite(rawUrl: string, campaignSlug
     candidate = candidate.slice(2);
   }
 
-  if (candidate.startsWith('assets/') && isValidCampaignContentAssetPath(candidate)) {
-    return buildMainSiteAssetUrl(campaignSlug, candidate);
+  const validCandidate = toCampaignContentAssetPath(candidate);
+  if (validCandidate) {
+    return buildMainSiteAssetUrl(campaignSlug, validCandidate);
   }
 
   return null;
 }
 
 const MARKDOWN_LINK_RE = /(\!?\[[^\]]*\]\()([^)\s]+)(\))/g;
-const HTML_ASSET_ATTR_RE = /(src|href)="([^"]+)"/gi;
+const MARKDOWN_REFERENCE_DEFINITION_RE = /^(\s{0,3}\[[^\]]+\]:\s*)(\S+)(.*)$/gm;
+const HTML_ASSET_ATTR_RE = /\b(src|href)=(["'])([^"']+)\2/gi;
 
 /**
  * Rewrites Campaign Content asset references in Markdown (or rendered-HTML-like
@@ -120,9 +133,14 @@ export function rewriteCampaignContentAssetReferences(input: string, context: { 
     return mapped ? `${pre}${mapped}${post}` : _match;
   });
 
-  result = result.replace(HTML_ASSET_ATTR_RE, (_match, attr: string, url: string) => {
+  result = result.replace(MARKDOWN_REFERENCE_DEFINITION_RE, (_match, pre: string, url: string, post: string) => {
     const mapped = mapCampaignAssetReferenceToMainSite(url, campaignSlug);
-    return mapped ? `${attr}="${mapped}"` : _match;
+    return mapped ? `${pre}${mapped}${post}` : _match;
+  });
+
+  result = result.replace(HTML_ASSET_ATTR_RE, (_match, attr: string, quote: string, url: string) => {
+    const mapped = mapCampaignAssetReferenceToMainSite(url, campaignSlug);
+    return mapped ? `${attr}=${quote}${mapped}${quote}` : _match;
   });
 
   return result;
