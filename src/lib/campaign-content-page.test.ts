@@ -153,6 +153,20 @@ describe('buildCampaignContentPageModel (issue #9)', () => {
     expect(model.reason).toBe('not_found');
   });
 
+  it('treats Astro live entry results without an entry as not found', async () => {
+    const getLiveEntry = vi.fn<CampaignContentPageLiveEntryGetter>(async () => ({}));
+    const model = await buildCampaignContentPageModel({
+      campaignSlug: 'sample-campaign',
+      documentId: 'index',
+      viewer: { kind: 'anonymous' },
+      getCampaignAccessRole: async () => 'anonymous',
+      getLiveEntry,
+    });
+
+    expect(model.httpStatus).toBe(404);
+    expect(model.reason).toBe('not_found');
+  });
+
   it('treats an unavailable source as 503 (noindex)', async () => {
     const getLiveEntry = vi.fn<CampaignContentPageLiveEntryGetter>(async () => liveEntryUnknownError());
     const model = await buildCampaignContentPageModel({

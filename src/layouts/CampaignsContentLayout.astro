@@ -7,7 +7,7 @@ interface Props {
   content: any;
   title?: string;
   description?: string;
-  robots?: string;
+  robots?: string | null;
   showContextMetadata?: boolean;
   children: any;
 }
@@ -21,7 +21,7 @@ const parentChain = showContextMetadata && Array.isArray(data.parentChain) ? dat
 const relationships = showContextMetadata && Array.isArray(data.relationships) ? data.relationships : [];
 ---
 
-<BaseLayout title={contentTitle} description={description} robots={robots}>
+<BaseLayout title={contentTitle} description={description} robots={robots ?? undefined}>
   <GlobalNavigation />
   <CampaignsContentHeader
     title={contentTitle}

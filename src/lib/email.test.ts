@@ -7,7 +7,9 @@ describe('password reset Mailjet email', () => {
   });
 
   it('sends the expected Mailjet reset payload and request id header', async () => {
-    const fetchMock = vi.fn(async () => new Response('{}', { status: 200 }));
+    const fetchMock = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>(
+      async () => new Response('{}', { status: 200 }),
+    );
     vi.stubGlobal('fetch', fetchMock);
 
     await sendPasswordResetEmail({

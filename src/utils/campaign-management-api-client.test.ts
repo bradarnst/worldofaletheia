@@ -24,17 +24,18 @@ describe('campaign management API client', () => {
   });
 
   it('calls only documented public campaign endpoints', async () => {
-    const fetchMock = vi.fn(async () =>
-      new Response(
-        JSON.stringify({
-          campaignSlug: 'crownfall',
-          actor: { userId: 'user_1', displayName: 'Mira' },
-          canAdministerUsers: true,
-          capabilities: ['user-admin'],
-          source: 'campaign-gm',
-        }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } },
-      ),
+    const fetchMock = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>(
+      async () =>
+        new Response(
+          JSON.stringify({
+            campaignSlug: 'crownfall',
+            actor: { userId: 'user_1', displayName: 'Mira' },
+            canAdministerUsers: true,
+            capabilities: ['user-admin'],
+            source: 'campaign-gm',
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ),
     );
     vi.stubGlobal('fetch', fetchMock);
 

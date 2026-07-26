@@ -241,6 +241,18 @@ describe('campaign index live metadata loader', () => {
     expect(logger.error).not.toHaveBeenCalled();
   });
 
+  it('preserves missing campaign root behavior when Astro returns no entry', async () => {
+    const getLiveEntry = vi.fn(async () => ({})) satisfies CampaignIndexLiveEntryGetter;
+    const loadCampaignMetadata = createCampaignIndexLiveMetadataLoader({ getLiveEntry });
+
+    await expect(
+      loadCampaignMetadata({
+        campaignSlug: 'brad',
+        accessScope: createCampaignIndexDiscoveryAccessScope({ kind: 'anonymous' }),
+      }),
+    ).resolves.toEqual({ ok: false, reason: 'missingCampaignRoot' });
+  });
+
   it('extracts live error diagnostics while keeping returned render data generic', async () => {
     const logger = { error: vi.fn() };
     const getLiveEntry = vi.fn(async () => ({
