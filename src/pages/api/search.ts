@@ -61,10 +61,8 @@ export const GET: APIRoute = async ({ request, locals }) => {
         query,
         contributor: contributorId ?? null,
         scope: {
-          isAuthenticated: false,
           visibility: 'public',
           reason: 'public_content_only',
-          campaignAccess: { membershipCount: 0, gmCount: 0 },
         },
         pagination: result.pagination,
         items: result.items.map((item) => ({
