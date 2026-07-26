@@ -195,6 +195,11 @@ export async function loadConfig(options = {}) {
   }
 
   const hasCloudMappings = mappings.some((m) => m.target === 'cloud');
+  if (hasCloudMappings && parsed.campaignCloud && !parsed.contentCloud) {
+    throw new Error(
+      'campaignCloud is retired. Migrate this operator config to contentCloud using docs/content-ingestion-user-guide.md#existing-local-config-migration.',
+    );
+  }
   const contentCloud = hasCloudMappings
     ? normalizeContentCloudConfig(parsed.contentCloud, { requireCredentials: requireCloudCredentials })
     : null;

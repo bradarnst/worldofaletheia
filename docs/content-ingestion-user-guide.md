@@ -108,7 +108,28 @@ Do not map campaign folders to `src/content/campaigns` or to a campaign R2 targe
 - notes: `/campaigns/<campaign-slug>/notes` and `/campaigns/<campaign-slug>/notes/<document-id>` from the generic `notes` collection
 - assets: `/campaigns/<campaign-slug>/assets/<path>` from source paths under `assets/`
 
-See [`docs/runbook/campaign-authoring-and-rename.md`](docs/runbook/campaign-authoring-and-rename.md) for the active authoring and slug-change boundary.
+See [`runbook/campaign-authoring-and-rename.md`](runbook/campaign-authoring-and-rename.md) for the active authoring and slug-change boundary.
+
+#### Existing local config migration
+
+This cleanup changes operator setup for older ignored `config/content-sync.config.json` files. Apply these steps in every local checkout or operator workspace that runs content sync:
+
+1. Back up the current config:
+
+   ```bash
+   cp config/content-sync.config.json config/content-sync.config.json.bak
+   ```
+
+2. Remove every mapping whose destination or collection is `campaigns`, `sessions`, or starts with `campaign`. Campaign folders are no longer accepted by this pipeline.
+3. If the config still uses the top-level `campaignCloud` key for repo-owned cloud mappings, rename it to `contentCloud`.
+4. Set `contentCloud.bucket` to the repo-owned content bucket (`woa-content` in the example config), set the correct Cloudflare `accountId`, keep `prefix` as `content`, and verify `accessKeyIdEnv` and `secretAccessKeyEnv` name the R2 credentials available to the operator shell. Do not reuse the retired private Campaign Content bucket unless it is also the approved repo-owned content bucket.
+5. Compare the result with `config/content-sync.config.example.json`, export the configured R2 credential variables, and verify without writing:
+
+   ```bash
+   pnpm content:sync:dry-run
+   ```
+
+The dry run must list only repo-owned mappings and must not list `campaigns`, `sessions`, or any `campaign*` collection. If verification fails, restore `config/content-sync.config.json.bak` and correct the bucket, account, credentials, or mappings before retrying. Restoring the backup recovers the previous operator configuration but does not restore support for retired Campaign Content mappings.
 
 ### 5) Optional: choose the D1 content-index sync target
 

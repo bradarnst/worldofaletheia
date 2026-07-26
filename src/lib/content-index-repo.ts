@@ -213,7 +213,9 @@ function buildVisibilityClause(): { sql: string; values: unknown[] } {
   return {
     // Campaign Content is loaded from woa-admin at request time and must never be
     // served from stale rows left by the retired main-site publication lane.
-    sql: "content_index.collection != 'sessions' AND content_index.collection != 'campaigns' AND content_index.collection NOT LIKE 'campaign%'",
+    // Repo-owned rows predate visibility and store NULL; after campaign rows are
+    // excluded, NULL means public while explicit protected values remain hidden.
+    sql: "COALESCE(content_index.visibility, 'public') = 'public' AND content_index.collection != 'sessions' AND content_index.collection != 'campaigns' AND content_index.collection NOT LIKE 'campaign%'",
     values: [],
   };
 }

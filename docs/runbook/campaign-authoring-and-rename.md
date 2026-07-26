@@ -61,4 +61,4 @@ Do not use the retired repo-side campaign folder rename script as a substitute f
 
 - `docs/content-ingestion-user-guide.md`
 - `docs/runbook/campaign-access-local-dev.md`
-- `docs/runbook/campaign-content-source-boundary.md`
+- [`campaign-content-source-boundary.md`](campaign-content-source-boundary.md)

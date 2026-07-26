@@ -82,6 +82,7 @@ describe('ContentIndexRepo', () => {
     expect(result.items[0].tags).toEqual(['alpha', 'beta']);
 
     const [countQuery, listQuery] = seenQueries;
+    expect(countQuery.query).toContain("COALESCE(content_index.visibility, 'public') = 'public'");
     expect(countQuery.query).toContain("content_index.collection != 'campaigns'");
     expect(countQuery.values).toEqual(['lore', 'publish']);
     expect(listQuery.query).toContain('ORDER BY updated_at DESC, slug ASC');
@@ -130,6 +131,7 @@ describe('ContentIndexRepo', () => {
       "SELECT tag.value AS value, COUNT(DISTINCT content_index.collection || ':' || content_index.id) AS total_count",
     );
     expect(recordedQuery).toContain("content_index.collection != 'campaigns'");
+    expect(recordedQuery).toContain("COALESCE(content_index.visibility, 'public') = 'public'");
     expect(recordedValues).toEqual(['systems', 'publish']);
   });
 
@@ -150,6 +152,7 @@ describe('ContentIndexRepo', () => {
 
     expect(recordedQuery).toContain("content_index.collection != 'sessions'");
     expect(recordedQuery).toContain("content_index.collection NOT LIKE 'campaign%'");
+    expect(recordedQuery).toContain("COALESCE(content_index.visibility, 'public') = 'public'");
     expect(recordedQuery).not.toContain("COALESCE(content_index.visibility, 'gm') = 'campaignMembers'");
     expect(recordedQuery).not.toContain("COALESCE(content_index.visibility, 'gm') = 'gm'");
     expect(recordedValues).toEqual(['publish', '"journal"', 12, 0]);
@@ -385,6 +388,7 @@ describe('ContentIndexRepo', () => {
     expect(seenQueries[0]?.query).toContain('FROM attributions');
     expect(seenQueries[0]?.query).toContain('attributions.contributor_id = ?');
     expect(seenQueries[0]?.query).toContain("content_index.collection != 'campaigns'");
+    expect(seenQueries[0]?.query).toContain("COALESCE(content_index.visibility, 'public') = 'public'");
     expect(seenQueries[0]?.query).not.toContain('content_search_fts MATCH');
     expect(seenQueries[0]?.values).toEqual(['publish', 'brad']);
   });

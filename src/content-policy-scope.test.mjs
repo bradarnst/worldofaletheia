@@ -15,7 +15,9 @@ describe('Campaign Content ownership boundary', () => {
     expect(source).not.toMatch(/const campaign[A-Z]\w*Schema\s*=/);
     expect(source).not.toContain("createMarkdownLoader('campaigns'");
     expect(source).not.toContain("'src/content/campaigns'");
-    expect(source).not.toMatch(/\b(?:campaigns|sessions|campaignLore|campaignPlaces|campaignSentients|campaignBestiary|campaignFlora|campaignFactions|campaignSystems|campaignMeta|campaignCharacters|campaignScenes|campaignAdventures|campaignHooks),?\n/);
+    expect(source).not.toMatch(
+      /^\s*(?:campaigns|sessions|campaignLore|campaignPlaces|campaignSentients|campaignBestiary|campaignFlora|campaignFactions|campaignSystems|campaignMeta|campaignCharacters|campaignScenes|campaignAdventures|campaignHooks)\s*:/m,
+    );
   });
 
   it('does not expose legacy campaign family or direct-media routes', async () => {
