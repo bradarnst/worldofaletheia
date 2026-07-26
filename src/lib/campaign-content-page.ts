@@ -26,7 +26,7 @@ import type {
   CampaignContentLiveEntryData,
   CampaignContentLiveAccessScope,
 } from '~/lib/campaign-content-live-loader';
-import type { CampaignContentSourceActor } from '~/lib/campaign-content-source-boundary';
+import { toCampaignContentSourceActor, type CampaignContentViewer } from '~/lib/campaign-content-source-boundary';
 
 /** Minimal structural view of a live entry; avoids a hard dependency on Astro's `LiveDataEntry` export. */
 export interface CampaignContentPageEntry {
@@ -48,9 +48,7 @@ export type CampaignContentPageLiveEntryGetter = (
   },
 ) => Promise<{ entry: CampaignContentPageEntry; cacheHint?: unknown } | { error: unknown }>;
 
-export type CampaignContentPageViewer =
-  | { kind: 'anonymous' }
-  | { kind: 'authenticated'; userId: string; traceId: string };
+export type CampaignContentPageViewer = CampaignContentViewer;
 
 export type CampaignContentPageReason =
   | 'ok'
@@ -100,18 +98,6 @@ function isLiveEntryNotFoundError(error: unknown): boolean {
   return isRecord(error) && error.name === 'LiveEntryNotFoundError';
 }
 
-function toActor(viewer: CampaignContentPageViewer): CampaignContentSourceActor {
-  if (viewer.kind === 'anonymous') {
-    return { kind: 'anonymous' };
-  }
-
-  return {
-    kind: 'authenticated',
-    userId: viewer.userId,
-    traceId: viewer.traceId,
-  };
-}
-
 /**
  * Build the rendering model for a campaign root or about page.
  *
@@ -159,7 +145,7 @@ export async function buildCampaignContentPageModel(
 
   const accessScope: CampaignContentLiveAccessScope = {
     allowedVisibilities: decision.allowedVisibilities,
-    actor: toActor(input.viewer),
+    actor: toCampaignContentSourceActor(input.viewer),
   };
 
   let result: { entry: CampaignContentPageEntry } | { error: unknown };

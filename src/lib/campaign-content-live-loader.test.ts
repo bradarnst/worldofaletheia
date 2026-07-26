@@ -12,6 +12,7 @@ function createSourceClientStub(): CampaignContentSourceClient {
   return {
     listCampaignContent: vi.fn(),
     getCampaignContentItem: vi.fn(),
+    getCampaignContentAsset: vi.fn(),
   };
 }
 
@@ -195,6 +196,82 @@ describe('campaign content live loader', () => {
         name: 'CampaignContentLiveLoaderError',
         code: 'invalid_filter',
       }),
+    });
+  });
+
+  it('rewrites campaign content asset references to main-site URLs before rendering images', async () => {
+    const sourceClient = createSourceClientStub();
+    vi.mocked(sourceClient.getCampaignContentItem).mockResolvedValue({
+      ok: true,
+      value: {
+        campaignSlug: 'brad',
+        collectionKey: 'notes',
+        documentId: 'session-zero',
+        title: 'Session Zero',
+        visibility: 'campaignMembers',
+        updatedAt: '2026-07-24T12:00:00Z',
+        body: '# Map\n\n![Battle map](https://woa-admin.example.invalid/api/v1/campaigns/brad/assets?path=assets/map.png)',
+        raw: {
+          type: 'session',
+          tags: [],
+          authors: ['brad'],
+        },
+      },
+    });
+    const loader = createCampaignContentLiveLoader({ sourceClient });
+
+    const result = await loader.loadEntry({
+      collection: 'campaignContent',
+      filter: {
+        campaignSlug: 'brad',
+        collectionKey: 'notes',
+        documentId: 'session-zero',
+        accessScope,
+      },
+    });
+
+    expect(result).toMatchObject({
+      rendered: {
+        html: '<h1 id="map">Map</h1>\n<p><img src="/campaigns/brad/assets/map.png" alt="Battle map"></p>',
+      },
+    });
+  });
+
+  it('renders unsafe markdown link and image URL schemes as escaped text', async () => {
+    const sourceClient = createSourceClientStub();
+    vi.mocked(sourceClient.getCampaignContentItem).mockResolvedValue({
+      ok: true,
+      value: {
+        campaignSlug: 'brad',
+        collectionKey: 'notes',
+        documentId: 'unsafe-links',
+        title: 'Unsafe Links',
+        visibility: 'campaignMembers',
+        updatedAt: '2026-07-24T12:00:00Z',
+        body: '[Click](javascript:alert) and ![pixel](data:image/svg+xml;base64,abc)',
+        raw: {
+          type: 'session',
+          tags: [],
+          authors: ['brad'],
+        },
+      },
+    });
+    const loader = createCampaignContentLiveLoader({ sourceClient });
+
+    const result = await loader.loadEntry({
+      collection: 'campaignContent',
+      filter: {
+        campaignSlug: 'brad',
+        collectionKey: 'notes',
+        documentId: 'unsafe-links',
+        accessScope,
+      },
+    });
+
+    expect(result).toMatchObject({
+      rendered: {
+        html: '<p>[Click](javascript:alert) and ![pixel](data:image/svg+xml;base64,abc)</p>',
+      },
     });
   });
 });
