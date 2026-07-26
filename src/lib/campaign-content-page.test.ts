@@ -229,6 +229,32 @@ describe('buildCampaignContentPageModel (issue #9)', () => {
     expect(getLiveEntry).not.toHaveBeenCalled();
   });
 
+  it('warns but still reads source-available content for a member when the manifest entry is missing', async () => {
+    const logger = { warn: vi.fn(), error: vi.fn() };
+    const getLiveEntry = vi.fn<CampaignContentPageLiveEntryGetter>(async () =>
+      liveEntryResult(makeEntry({ campaignSlug: 'ghost', documentId: 'about', visibility: 'campaignMembers' })),
+    );
+
+    const model = await buildCampaignContentPageModel({
+      campaignSlug: 'ghost',
+      documentId: 'about',
+      viewer: { kind: 'authenticated', userId: 'user-1', traceId: 'trace-1' },
+      getCampaignAccessRole: async () => 'member',
+      getLiveEntry,
+      gateManifest: parseCampaignGateManifest({}),
+      logger,
+    });
+
+    expect(model).toMatchObject({
+      gate: 'campaignMembers',
+      gateSource: 'missing-default',
+      sourceFetched: true,
+      canView: true,
+      robots: 'noindex, nofollow',
+    });
+    expect(logger.warn).toHaveBeenCalledWith('campaign.gate_manifest.missing_entry', expect.objectContaining({ campaignSlug: 'ghost' }));
+  });
+
   it('constrains the about page by Content Visibility after a public gate passes', async () => {
     // Public gate allows anonymous, but the about item is campaignMembers-only, so the
     // source will not return it (allowedVisibilities = ['public']).

@@ -125,8 +125,15 @@ describe('rewriteCampaignContentAssetReferences', () => {
     expect(rewriteCampaignContentAssetReferences(markdown, { campaignSlug: 'brad' })).toBe(markdown);
   });
 
-  it('does not rewrite unsafe asset paths', () => {
+  it('neutralizes unsafe source asset paths instead of exposing the source origin', () => {
     const markdown = `![leak](${WOA_ADMIN}/api/v1/campaigns/brad/assets?path=assets/../secret.png)`;
-    expect(rewriteCampaignContentAssetReferences(markdown, { campaignSlug: 'brad' })).toBe(markdown);
+    expect(rewriteCampaignContentAssetReferences(markdown, { campaignSlug: 'brad' })).toBe('![leak](#)');
+  });
+
+  it('neutralizes non-asset source links while preserving unrelated external links', () => {
+    const markdown = `[source](${WOA_ADMIN}/internal) and [external](https://example.com/page)`;
+    expect(rewriteCampaignContentAssetReferences(markdown, { campaignSlug: 'brad' })).toBe(
+      '[source](#) and [external](https://example.com/page)',
+    );
   });
 });

@@ -27,9 +27,9 @@ export interface CampaignContentLiveCollectionFilter {
   accessScope: CampaignContentLiveAccessScope;
   type?: string;
   subtype?: string;
-  tag?: string | string[];
-  author?: string | string[];
-  contributor?: string | string[];
+  tag?: string;
+  author?: string;
+  contributor?: string;
   title?: string;
   updatedSince?: string;
   limit?: number;
@@ -122,25 +122,6 @@ function getOptionalTrimmedString(value: unknown, field: string): string | undef
   return trimmed ? trimmed : undefined;
 }
 
-function getOptionalStringOrStringArray(value: unknown, field: string): string | string[] | undefined {
-  if (value === undefined || value === null) {
-    return undefined;
-  }
-
-  if (typeof value === 'string') {
-    return getOptionalTrimmedString(value, field);
-  }
-
-  if (!Array.isArray(value)) {
-    throw new CampaignContentLiveLoaderError(`Campaign Content live loader ${field} filter must be a string or string array.`, {
-      code: 'invalid_filter',
-    });
-  }
-
-  const values = value.map((item) => getRequiredTrimmedString(item, field));
-  return values.length > 0 ? values : undefined;
-}
-
 function normalizeOptionalLimit(value: unknown): number | undefined {
   if (value === undefined || value === null) {
     return undefined;
@@ -224,9 +205,9 @@ function normalizeCollectionFilter(filter: unknown): CampaignContentLiveCollecti
     accessScope: normalizeAccessScope(filter.accessScope),
     type: getOptionalTrimmedString(filter.type, 'type'),
     subtype: getOptionalTrimmedString(filter.subtype, 'subtype'),
-    tag: getOptionalStringOrStringArray(filter.tag, 'tag'),
-    author: getOptionalStringOrStringArray(filter.author, 'author'),
-    contributor: getOptionalStringOrStringArray(filter.contributor, 'contributor'),
+    tag: getOptionalTrimmedString(filter.tag, 'tag'),
+    author: getOptionalTrimmedString(filter.author, 'author'),
+    contributor: getOptionalTrimmedString(filter.contributor, 'contributor'),
     title: getOptionalTrimmedString(filter.title, 'title'),
     updatedSince: getOptionalTrimmedString(filter.updatedSince, 'updatedSince'),
     limit: normalizeOptionalLimit(filter.limit),

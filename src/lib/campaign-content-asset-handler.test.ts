@@ -62,6 +62,18 @@ function unavailableFailure() {
   };
 }
 
+function sourceFailure(
+  reason: 'integrationRejected' | 'invalidRequest' | 'rateLimited' | 'sourceUnavailable' | 'networkFailure' | 'validationFailure',
+) {
+  return {
+    ok: false as const,
+    reason,
+    mainSiteStatus: 503 as const,
+    retryable: reason === 'rateLimited' || reason === 'sourceUnavailable' || reason === 'networkFailure',
+    safeMessage: 'Campaign content unavailable.' as const,
+  };
+}
+
 describe('handleCampaignContentAssetRequest (issue #11)', () => {
   let sourceClient: CampaignContentSourceClient;
 
@@ -117,6 +129,33 @@ describe('handleCampaignContentAssetRequest (issue #11)', () => {
     expect(response.status).toBe(404);
     expect(response.headers.get('x-robots-tag')).toBe('noindex, nofollow');
     expect(sourceClient.getCampaignContentAsset).not.toHaveBeenCalled();
+  });
+
+  it('warns but serves a source-available asset to a member when the manifest entry is missing', async () => {
+    const logger = { warn: vi.fn(), error: vi.fn() };
+    vi.mocked(sourceClient.getCampaignContentAsset).mockResolvedValue({
+      ok: true,
+      value: { body: new Uint8Array([1]).buffer, contentType: 'image/png', etag: null },
+    });
+    createCtxMock.mockResolvedValue(
+      makeRequestContext({ viewer: { kind: 'authenticated', userId: 'user-1', traceId: 'trace-1' }, role: 'member' }),
+    );
+
+    const response = await handleCampaignContentAssetRequestImpl({
+      request: new Request('https://example.com/campaigns/ghost/assets/hero.png'),
+      locals: {},
+      params: { campaign: 'ghost', path: 'hero.png' },
+      url: new URL('https://example.com/campaigns/ghost/assets/hero.png'),
+      gateManifest: parseCampaignGateManifest({}),
+      createSourceClient: () => sourceClient,
+      logger,
+    });
+
+    expect(response.status).toBe(200);
+    expect(sourceClient.getCampaignContentAsset).toHaveBeenCalledWith(
+      expect.objectContaining({ campaignSlug: 'ghost', allowedVisibilities: ['public', 'campaignMembers'] }),
+    );
+    expect(logger.warn).toHaveBeenCalledWith('campaign.gate_manifest.missing_entry', expect.objectContaining({ campaignSlug: 'ghost' }));
   });
 
   it('serves a readable asset for a campaign member with member-scoped visibility', async () => {
@@ -197,6 +236,47 @@ describe('handleCampaignContentAssetRequest (issue #11)', () => {
     });
 
     expect(response.status).toBe(503);
+  });
+
+  it.each([
+    'integrationRejected',
+    'invalidRequest',
+    'rateLimited',
+    'sourceUnavailable',
+    'networkFailure',
+    'validationFailure',
+  ] as const)('fails closed without source details for %s asset failures', async (reason) => {
+    vi.mocked(sourceClient.getCampaignContentAsset).mockResolvedValue(sourceFailure(reason));
+    createCtxMock.mockResolvedValue(makeRequestContext({ viewer: { kind: 'anonymous' }, role: 'anonymous' }));
+
+    const response = await handleCampaignContentAssetRequest({
+      request: new Request('https://example.com/campaigns/sample-campaign/assets/hero.png'),
+      locals: {},
+      params: { campaign: 'sample-campaign', path: 'hero.png' },
+      url: new URL('https://example.com/campaigns/sample-campaign/assets/hero.png'),
+      createSourceClient: () => sourceClient,
+    });
+
+    expect(response.status).toBe(503);
+    expect(await response.text()).toBe('');
+    expect([...response.headers.values()].join(' ')).not.toContain('woa-admin');
+  });
+
+  it('fails closed when the source client unexpectedly throws', async () => {
+    vi.mocked(sourceClient.getCampaignContentAsset).mockRejectedValue(new Error('secret source diagnostic'));
+    createCtxMock.mockResolvedValue(makeRequestContext({ viewer: { kind: 'anonymous' }, role: 'anonymous' }));
+
+    const response = await handleCampaignContentAssetRequest({
+      request: new Request('https://example.com/campaigns/sample-campaign/assets/hero.png'),
+      locals: {},
+      params: { campaign: 'sample-campaign', path: 'hero.png' },
+      url: new URL('https://example.com/campaigns/sample-campaign/assets/hero.png'),
+      createSourceClient: () => sourceClient,
+      logger: { warn: vi.fn(), error: vi.fn() },
+    });
+
+    expect(response.status).toBe(503);
+    expect(await response.text()).toBe('');
   });
 
   it('falls back to octet-stream for executable or unsafe source content types', async () => {

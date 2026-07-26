@@ -14,7 +14,7 @@ import { toCampaignContentAssetPath } from '~/lib/campaign-content-asset-rewrite
 const sourceConfig = {
   baseUrl: 'https://woa-admin.example.invalid',
   assertionSecret: 'test-runtime-secret',
-  assertionAudience: 'woa-admin:campaign-content-source:v1',
+  assertionAudience: 'woa-admin:campaign-content:v1',
 };
 
 function assetPath(path: string) {
@@ -40,14 +40,14 @@ describe('campaign content source boundary', () => {
     const payload = decodeRuntimeAssertion(headers[RUNTIME_ASSERTION_HEADER]);
 
     expect(payload).toMatchObject({
-      aud: 'woa-admin:campaign-content-source:v1',
+      aud: 'woa-admin:campaign-content:v1',
       campaignSlug: 'brad',
-      operation: 'campaignContent:read',
-      allowedVisibilities: ['public', 'campaignMembers'],
-      subject: { kind: 'authenticated' },
+      operation: 'content:read',
+      allowedVisibility: ['public', 'campaignMembers'],
     });
-    expect(payload.exp - payload.iat).toBe(ASSERTION_EXPIRY_SECONDS);
-    expect(payload.exp).toBe(Math.floor(issuedAt.getTime() / 1000) + 60);
+    expect(payload.exp).toBe(Math.floor(issuedAt.getTime() / 1000) + ASSERTION_EXPIRY_SECONDS);
+    expect(payload.subject).toMatch(/^auth_[A-Za-z0-9_-]{24}$/);
+    expect(payload).not.toHaveProperty('iat');
     expect(JSON.stringify(payload)).not.toContain('user_123456789');
     expect(JSON.stringify(payload)).not.toContain('member-session-1');
     expect(headers[RUNTIME_ASSERTION_SIGNATURE_HEADER]).toMatch(/^[A-Za-z0-9_-]+$/);
@@ -57,14 +57,25 @@ describe('campaign content source boundary', () => {
     const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
       new Response(
         JSON.stringify({
-          campaignSlug: 'sample-campaign',
           items: [
             {
+              id: 'index',
               collectionKey: 'pages',
-              documentId: 'index',
-              title: 'Sample Campaign',
-              visibility: 'public',
-              updatedAt: '2026-07-24T12:00:00Z',
+              collection: 'campaignPages',
+              campaignSlug: 'sample-campaign',
+              data: {
+                campaign: 'sample-campaign',
+                collection: 'campaignPages',
+                title: 'Sample Campaign',
+                type: 'campaign',
+                publication: 'publish',
+                visibility: 'public',
+                authors: ['brad'],
+                createdAt: '2026-07-01T00:00:00Z',
+                updatedAt: '2026-07-24T12:00:00Z',
+                contentState: 'stable',
+                audienceWarnings: [],
+              },
             },
           ],
           nextCursor: null,
@@ -81,9 +92,9 @@ describe('campaign content source boundary', () => {
       actor: { kind: 'anonymous' },
       type: 'overview',
       subtype: 'root',
-      tag: ['intro', 'session zero'],
+      tag: 'intro',
       author: 'author-1',
-      contributor: ['contributor-1', 'contributor-2'],
+      contributor: 'contributor-1',
       title: 'sample',
       updatedSince: '2026-07-01T00:00:00Z',
       limit: 25,
@@ -93,7 +104,7 @@ describe('campaign content source boundary', () => {
     expect(result.ok).toBe(true);
     expect(fetchMock).toHaveBeenCalledOnce();
     expect(fetchMock.mock.calls[0]?.[0]).toBe(
-      'https://woa-admin.example.invalid/api/v1/campaigns/sample-campaign/campaign-content?collectionKey=pages&type=overview&subtype=root&tag=intro&tag=session+zero&author=author-1&contributor=contributor-1&contributor=contributor-2&title=sample&updatedSince=2026-07-01T00%3A00%3A00Z&limit=25&cursor=next+page',
+      'https://woa-admin.example.invalid/api/v1/campaigns/sample-campaign/collections/pages/documents?type=overview&subtype=root&tag=intro&author=author-1&contributor=contributor-1&title=sample&updatedSince=2026-07-01T00%3A00%3A00Z&limit=25&cursor=next+page',
     );
     expect(fetchMock.mock.calls[0]?.[1]?.headers).toMatchObject({
       Accept: 'application/json',
@@ -106,15 +117,24 @@ describe('campaign content source boundary', () => {
     const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
       new Response(
         JSON.stringify({
+          id: 'session-zero',
+          collectionKey: 'notes',
+          collection: 'campaignNotes',
           campaignSlug: 'brad',
-          item: {
-            collectionKey: 'notes',
-            documentId: 'session-zero',
+          data: {
+            campaign: 'brad',
+            collection: 'campaignNotes',
             title: 'Session Zero',
+            type: 'session-note',
+            publication: 'publish',
             visibility: 'campaignMembers',
-            body: '# Session Zero',
+            authors: ['brad'],
+            createdAt: '2026-07-01T00:00:00Z',
             updatedAt: '2026-07-24T12:00:00Z',
+            contentState: 'stable',
+            audienceWarnings: [],
           },
+          markdown: '# Session Zero',
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } },
       ),
@@ -141,7 +161,7 @@ describe('campaign content source boundary', () => {
       },
     });
     expect(fetchMock.mock.calls[0]?.[0]).toBe(
-      'https://woa-admin.example.invalid/api/v1/campaigns/brad/campaign-content/notes/session-zero',
+      'https://woa-admin.example.invalid/api/v1/campaigns/brad/collections/notes/documents/session-zero',
     );
   });
 
@@ -149,13 +169,25 @@ describe('campaign content source boundary', () => {
     const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
       new Response(
         JSON.stringify({
-          campaignSlug: 'brad',
           items: [
             {
+              id: 'gm-secret',
               collectionKey: 'notes',
-              documentId: 'gm-secret',
-              title: 'GM Secret',
-              visibility: 'gm',
+              collection: 'campaignNotes',
+              campaignSlug: 'brad',
+              data: {
+                campaign: 'brad',
+                collection: 'campaignNotes',
+                title: 'GM Secret',
+                type: 'gm-note',
+                publication: 'publish',
+                visibility: 'gm',
+                authors: ['brad'],
+                createdAt: '2026-07-01T00:00:00Z',
+                updatedAt: '2026-07-24T12:00:00Z',
+                contentState: 'stable',
+                audienceWarnings: [],
+              },
             },
           ],
           nextCursor: null,

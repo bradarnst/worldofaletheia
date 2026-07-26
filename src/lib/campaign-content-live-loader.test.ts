@@ -58,9 +58,9 @@ describe('campaign content live loader', () => {
         accessScope,
         type: 'session',
         subtype: 'recap',
-        tag: ['session-zero', 'table'],
+        tag: 'session-zero',
         author: 'brad',
-        contributor: ['barry'],
+        contributor: 'barry',
         title: 'zero',
         updatedSince: '2026-07-01T00:00:00Z',
         limit: 25,
@@ -75,9 +75,9 @@ describe('campaign content live loader', () => {
       actor: accessScope.actor,
       type: 'session',
       subtype: 'recap',
-      tag: ['session-zero', 'table'],
+      tag: 'session-zero',
       author: 'brad',
-      contributor: ['barry'],
+      contributor: 'barry',
       title: 'zero',
       updatedSince: '2026-07-01T00:00:00Z',
       limit: 25,
@@ -273,5 +273,39 @@ describe('campaign content live loader', () => {
         html: '<p>[Click](javascript:alert) and ![pixel](data:image/svg+xml;base64,abc)</p>',
       },
     });
+  });
+
+  it('never renders source-origin URLs or runtime assertion details into browser HTML', async () => {
+    const sourceClient = createSourceClientStub();
+    vi.mocked(sourceClient.getCampaignContentItem).mockResolvedValue({
+      ok: true,
+      value: {
+        campaignSlug: 'brad',
+        collectionKey: 'notes',
+        documentId: 'source-links',
+        title: 'Source Links',
+        visibility: 'public',
+        updatedAt: '2026-07-24T12:00:00Z',
+        body: '[source](https://admin.worldofaletheia.com/internal)\n\n![bad](https://woa-admin.example.invalid/api/v1/campaigns/brad/assets?path=../secret.png)',
+        raw: { type: 'campaign-note', tags: [], authors: ['brad'] },
+      },
+    });
+    const loader = createCampaignContentLiveLoader({ sourceClient });
+
+    const result = await loader.loadEntry({
+      collection: 'campaignContent',
+      filter: {
+        campaignSlug: 'brad',
+        collectionKey: 'notes',
+        documentId: 'source-links',
+        accessScope,
+      },
+    });
+
+    if (!result || 'error' in result) {
+      throw new Error('Expected a renderable Campaign Content live entry.');
+    }
+    expect(result.rendered?.html).not.toContain('admin.worldofaletheia.com');
+    expect(result.rendered?.html).not.toContain('woa-admin');
   });
 });

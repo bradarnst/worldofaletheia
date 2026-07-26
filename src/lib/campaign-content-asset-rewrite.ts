@@ -116,6 +116,25 @@ export function mapCampaignAssetReferenceToMainSite(rawUrl: string, campaignSlug
   return null;
 }
 
+function isSourceBoundaryUrl(rawUrl: string): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(rawUrl, 'http://_relative_.invalid');
+  } catch {
+    return false;
+  }
+
+  return (
+    parsed.pathname.startsWith('/api/v1/campaigns/')
+    || parsed.hostname === 'admin.worldofaletheia.com'
+    || parsed.hostname.includes('woa-admin')
+  );
+}
+
+function rewriteUrl(rawUrl: string, campaignSlug: string): string | null {
+  return mapCampaignAssetReferenceToMainSite(rawUrl, campaignSlug) ?? (isSourceBoundaryUrl(rawUrl) ? '#' : null);
+}
+
 const MARKDOWN_LINK_RE = /(\!?\[[^\]]*\]\()([^)\s]+)(\))/g;
 const MARKDOWN_REFERENCE_DEFINITION_RE = /^(\s{0,3}\[[^\]]+\]:\s*)(\S+)(.*)$/gm;
 const HTML_ASSET_ATTR_RE = /\b(src|href)=(["'])([^"']+)\2/gi;
@@ -129,17 +148,17 @@ export function rewriteCampaignContentAssetReferences(input: string, context: { 
   const campaignSlug = context.campaignSlug.trim();
 
   let result = input.replace(MARKDOWN_LINK_RE, (_match, pre: string, url: string, post: string) => {
-    const mapped = mapCampaignAssetReferenceToMainSite(url, campaignSlug);
+    const mapped = rewriteUrl(url, campaignSlug);
     return mapped ? `${pre}${mapped}${post}` : _match;
   });
 
   result = result.replace(MARKDOWN_REFERENCE_DEFINITION_RE, (_match, pre: string, url: string, post: string) => {
-    const mapped = mapCampaignAssetReferenceToMainSite(url, campaignSlug);
+    const mapped = rewriteUrl(url, campaignSlug);
     return mapped ? `${pre}${mapped}${post}` : _match;
   });
 
   result = result.replace(HTML_ASSET_ATTR_RE, (_match, attr: string, quote: string, url: string) => {
-    const mapped = mapCampaignAssetReferenceToMainSite(url, campaignSlug);
+    const mapped = rewriteUrl(url, campaignSlug);
     return mapped ? `${attr}=${quote}${mapped}${quote}` : _match;
   });
 

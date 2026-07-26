@@ -138,14 +138,25 @@ export async function handleCampaignContentAssetRequest(
     return new Response(null, { status: 503, headers: noIndexHeaders() });
   }
 
-  const result = await client.getCampaignContentAsset({
-    campaignSlug,
-    assetPath: sourceAssetPath,
-    allowedVisibilities: decision.allowedVisibilities,
-    actor: toCampaignContentSourceActor(ctx.viewer),
-  });
+  let result: Awaited<ReturnType<CampaignContentSourceClient['getCampaignContentAsset']>>;
+  try {
+    result = await client.getCampaignContentAsset({
+      campaignSlug,
+      assetPath: sourceAssetPath,
+      allowedVisibilities: decision.allowedVisibilities,
+      actor: toCampaignContentSourceActor(ctx.viewer),
+    });
+  } catch {
+    logger.error('campaign.asset.source_failed', { campaignSlug });
+    return new Response(null, { status: 503, headers: noIndexHeaders() });
+  }
 
   if (!result.ok) {
+    logger.error('campaign.asset.source_unavailable', {
+      campaignSlug,
+      reason: result.reason,
+      sourceStatus: result.sourceStatus,
+    });
     return new Response(null, { status: result.mainSiteStatus, headers: noIndexHeaders() });
   }
 

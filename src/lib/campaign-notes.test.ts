@@ -140,6 +140,26 @@ describe('buildCampaignNotesListModel (issue #10)', () => {
     expect(getLiveCollection).not.toHaveBeenCalled();
   });
 
+  it('warns but still lists source-available notes for a member when the manifest entry is missing', async () => {
+    const logger = { warn: vi.fn(), error: vi.fn() };
+    const getLiveCollection = vi.fn<CampaignNotesListLiveGetter>(async () =>
+      liveNotes([makeNoteEntry({ campaignSlug: 'ghost', visibility: 'campaignMembers' })]),
+    );
+
+    const model = await buildCampaignNotesListModel({
+      campaignSlug: 'ghost',
+      gateManifest: parseCampaignGateManifest({}),
+      viewer: { kind: 'authenticated', userId: 'user-1', traceId: 'trace-1' },
+      getCampaignAccessRole: async () => 'member',
+      getLiveCollection,
+      logger,
+    });
+
+    expect(model).toMatchObject({ gateSource: 'missing-default', sourceFetched: true, isAvailable: true });
+    expect(model.entries).toHaveLength(1);
+    expect(logger.warn).toHaveBeenCalledWith('campaign.gate_manifest.missing_entry', expect.objectContaining({ campaignSlug: 'ghost' }));
+  });
+
   it('lets a campaign member read campaignMembers notes but not GM-only notes in the list', async () => {
     const getLiveCollection = vi.fn<CampaignNotesListLiveGetter>(async (_collection, filter) => {
       const accessScope = filter.accessScope;
@@ -159,6 +179,20 @@ describe('buildCampaignNotesListModel (issue #10)', () => {
     expect(model.entries).toHaveLength(1);
     expect(model.entries[0]?.visibility).toBe('campaignMembers');
     expect(model.entries[0]?.documentId).toBe('session-two');
+    expect(model.robots).toBe('noindex, nofollow');
+  });
+
+  it('marks an authenticated public-gate notes list noindex even when only public notes are returned', async () => {
+    const model = await buildCampaignNotesListModel({
+      campaignSlug: 'public-fixture',
+      gateManifest: publicGateManifest,
+      viewer: { kind: 'authenticated', userId: 'user-1', traceId: 'trace-1' },
+      getCampaignAccessRole: async () => 'member',
+      getLiveCollection: async () => liveNotes([makeNoteEntry({ visibility: 'public' })]),
+    });
+
+    expect(model.isAvailable).toBe(true);
+    expect(model.robots).toBe('noindex, nofollow');
   });
 
   it('lets a GM read GM-only notes in the list', async () => {

@@ -213,9 +213,9 @@ export async function buildCampaignNotesListModel(
     .filter((entry) => decision.allowedVisibilities.includes(entry.data.visibility))
     .map((entry) => mapNoteEntry(entry, campaignSlug));
 
-  // Indexable only when the gate is public. Individual non-public notes carry their own
-  // robots directive on their detail pages; the list itself is personalized otherwise.
-  const robots = decision.gate === 'public' ? null : CAMPAIGN_NOTES_NOINDEX;
+  // Only the anonymous, public-only representation is indexable. Member and GM
+  // lists are personalized and may contain protected titles.
+  const robots = decision.gate === 'public' && campaignAccessRole === 'anonymous' ? null : CAMPAIGN_NOTES_NOINDEX;
 
   return {
     ...shared,
