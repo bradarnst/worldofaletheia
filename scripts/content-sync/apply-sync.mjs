@@ -1,6 +1,5 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { buildCampaignImageVariantUploads, getCampaignImageVariantPlan } from './campaign-media-variants.mjs';
 import { buildWikiLinkIndex, transformObsidianLinks } from './obsidian-links.mjs';
 import { syncContentDiscovery } from './content-discovery-writer.mjs';
 import { collectCloudContentMetadata } from './cloud-content-metadata.mjs';
@@ -85,36 +84,11 @@ async function uploadCloudRecord({ rec, config, wikiIndex, cloud }) {
     return [key];
   }
 
-  const uploadedKeys = [
-    await cloud.uploadFile(getCloudTargetPrefix(rec.mapping), rec.relativePath, rec.sourceAbs, contentType),
-  ];
-  const variantPlan = getCampaignImageVariantPlan(rec.relativePath);
-  if (!variantPlan) {
-    return uploadedKeys;
-  }
-
-  const variantUploads = await buildCampaignImageVariantUploads(rec.sourceAbs, variantPlan);
-  for (const variantUpload of variantUploads) {
-    const key = cloud.buildKey(getCloudTargetPrefix(rec.mapping), variantUpload.relativePath);
-    await cloud.uploadBytes(key, variantUpload.body, variantUpload.contentType);
-    uploadedKeys.push(key);
-  }
-
-  return uploadedKeys;
+  return [await cloud.uploadFile(getCloudTargetPrefix(rec.mapping), rec.relativePath, rec.sourceAbs, contentType)];
 }
 
 async function deleteCloudRecord(mapping, relativePath, cloud) {
-  const deletedKeys = [await cloud.deleteObject(getCloudTargetPrefix(mapping), relativePath)];
-  const variantPlan = getCampaignImageVariantPlan(relativePath);
-  if (!variantPlan) {
-    return deletedKeys;
-  }
-
-  for (const variant of variantPlan.variants) {
-    deletedKeys.push(await cloud.deleteObject(getCloudTargetPrefix(mapping), variant.relativePath));
-  }
-
-  return deletedKeys;
+  return [await cloud.deleteObject(getCloudTargetPrefix(mapping), relativePath)];
 }
 
 export async function applySync(diff, config, staleAction, services = {}) {

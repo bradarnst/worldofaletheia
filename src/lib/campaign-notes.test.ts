@@ -10,12 +10,14 @@ import {
   type CampaignContentPageEntry,
   type CampaignContentPageLiveEntryGetter,
 } from '~/lib/campaign-content-page';
-import type { CampaignAccessRole } from '~/lib/campaign-gate-policy';
+import { parseCampaignGateManifest, type CampaignAccessRole } from '~/lib/campaign-gate-policy';
+
+const publicGateManifest = parseCampaignGateManifest({ 'public-fixture': 'public' });
 
 // --- Helpers: notes list entries ---------------------------------------------------------
 
 function makeNoteEntry(overrides: Partial<CampaignNotesPageEntry['data']> = {}): CampaignNotesPageEntry {
-  const campaignSlug = overrides.campaignSlug ?? 'sample-campaign';
+  const campaignSlug = overrides.campaignSlug ?? 'public-fixture';
   const documentId = overrides.documentId ?? 'session-zero';
   return {
     id: `${campaignSlug}/notes/${documentId}`,
@@ -98,7 +100,8 @@ describe('buildCampaignNotesListModel (issue #10)', () => {
       liveNotes([makeNoteEntry({ visibility: 'public', title: 'Welcome Note' })]),
     );
     const model = await buildCampaignNotesListModel({
-      campaignSlug: 'sample-campaign',
+      campaignSlug: 'public-fixture',
+      gateManifest: publicGateManifest,
       viewer: { kind: 'anonymous' },
       getCampaignAccessRole: async () => 'anonymous',
       getLiveCollection,
@@ -114,7 +117,7 @@ describe('buildCampaignNotesListModel (issue #10)', () => {
     expect(model.httpStatus).toBe(200);
     expect(model.entries).toHaveLength(1);
     expect(model.entries[0]?.title).toBe('Welcome Note');
-    expect(model.entries[0]?.href).toBe('/campaigns/sample-campaign/notes/session-zero');
+    expect(model.entries[0]?.href).toBe('/campaigns/public-fixture/notes/session-zero');
   });
 
   it('blocks anonymous users from a campaignMembers-gated notes list BEFORE any source fetch', async () => {
@@ -183,7 +186,8 @@ describe('buildCampaignNotesListModel (issue #10)', () => {
   it('renders an empty list (ok) when the source returns no readable notes', async () => {
     const getLiveCollection = vi.fn<CampaignNotesListLiveGetter>(async () => liveNotes([]));
     const model = await buildCampaignNotesListModel({
-      campaignSlug: 'sample-campaign',
+      campaignSlug: 'public-fixture',
+      gateManifest: publicGateManifest,
       viewer: { kind: 'anonymous' },
       getCampaignAccessRole: async () => 'anonymous',
       getLiveCollection,
@@ -198,7 +202,8 @@ describe('buildCampaignNotesListModel (issue #10)', () => {
   it('treats a thrown source failure as source_error (503, noindex)', async () => {
     const getLiveCollection = vi.fn<CampaignNotesListLiveGetter>(() => Promise.reject(new Error('source exploded')));
     const model = await buildCampaignNotesListModel({
-      campaignSlug: 'sample-campaign',
+      campaignSlug: 'public-fixture',
+      gateManifest: publicGateManifest,
       viewer: { kind: 'anonymous' },
       getCampaignAccessRole: async () => 'anonymous',
       getLiveCollection,
@@ -214,7 +219,8 @@ describe('buildCampaignNotesListModel (issue #10)', () => {
   it('treats an unavailable source as 503 (noindex)', async () => {
     const getLiveCollection = vi.fn<CampaignNotesListLiveGetter>(async () => liveNotesError());
     const model = await buildCampaignNotesListModel({
-      campaignSlug: 'sample-campaign',
+      campaignSlug: 'public-fixture',
+      gateManifest: publicGateManifest,
       viewer: { kind: 'anonymous' },
       getCampaignAccessRole: async () => 'anonymous',
       getLiveCollection,
@@ -296,7 +302,8 @@ describe('campaign note detail via buildCampaignContentPageModel (issue #10)', (
   it('treats a missing note as not found (404, noindex)', async () => {
     const getLiveEntry = vi.fn<CampaignContentPageLiveEntryGetter>(async () => liveEntryNotFoundError());
     const model = await buildCampaignContentPageModel({
-      campaignSlug: 'sample-campaign',
+      campaignSlug: 'public-fixture',
+      gateManifest: publicGateManifest,
       documentId: 'does-not-exist',
       collectionKey: 'notes',
       viewer: { kind: 'anonymous' },
@@ -314,7 +321,8 @@ describe('campaign note detail via buildCampaignContentPageModel (issue #10)', (
   it('treats a source error as 503 (noindex)', async () => {
     const getLiveEntry = vi.fn<CampaignContentPageLiveEntryGetter>(async () => liveEntryUnknownError());
     const model = await buildCampaignContentPageModel({
-      campaignSlug: 'sample-campaign',
+      campaignSlug: 'public-fixture',
+      gateManifest: publicGateManifest,
       documentId: 'session-zero',
       collectionKey: 'notes',
       viewer: { kind: 'anonymous' },

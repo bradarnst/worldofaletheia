@@ -61,16 +61,16 @@ Each collection follows a two-file pattern:
 Reference routes live under `/references/**`. Calendar, timeline, and maps are reference surfaces, not content collections. Keep their page/layout/navigation work gathered under the Reference route family while leaving calendar APIs under `/api/calendar/*`.
 
 ### Campaign-Specific Routing
-Sessions use nested routes: `/campaigns/[campaign]/sessions/[...slug].astro`. The `campaign` param comes from the URL; the session's `data.campaign` field is the foreign key linking back to the campaign slug.
+Campaign Content is loaded live from `woa-admin` after the Campaign Gate passes. Current routes are the campaign root, about page, generic notes list/detail, and main-site asset proxy under `/campaigns/[campaign]/**`. Do not add local Campaign Content collections or fallbacks.
 
 ## Content Collections
 
-All 11 collections are defined in `src/content.config.ts`:
+Repo-owned static collections are defined in `src/content.config.ts`; live Campaign Content is defined separately in `src/live.config.ts`:
 
 - **Schema source of truth**: `src/content.config.ts` — not the meta design docs in `src/content/meta/`
-- **Base schema**: All collections except `pages` extend `baseSchema` (includes `status`, `author`, `secret`, `tags`, `campaign`, `permissions`, `parentChain`, `relationships`)
-- **Campaigns omit status**: Uses `baseSchema.omit({ status: true }).extend()` and relies on `visibility` for access behavior and public listing decisions
-- **Sessions require campaign**: The `campaign` field is required on sessions (overrides the optional base field)
+- **Base schema**: Repo-owned content collections extend `baseSchema` (includes publication metadata, authorship, tags, `parentChain`, and `relationships`)
+- **Campaign Content schema**: `src/live.config.ts` validates source-owned Campaign Content and its cumulative Content Visibility.
+- **Ownership boundary**: `campaigns`, `sessions`, and `campaign*` static collections are retired and must not be restored.
 
 ### Content Filtering
 **Current state**: Index pages use inline `item.data.status === 'publish'` checks. The utility `src/utils/content-filter.ts` exists with `shouldIncludeContent()`, `getFilteredCollection()`, etc., but no pages use it yet.

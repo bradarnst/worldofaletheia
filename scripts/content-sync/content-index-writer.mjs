@@ -4,6 +4,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { resolveWranglerCommand } from '../../src/lib/wrangler-command.mjs';
+import { isRetiredCampaignCollection } from './retired-campaign-content.mjs';
 
 function normalizeNullableString(value) {
   if (typeof value !== 'string') {
@@ -34,9 +35,12 @@ function parseEnabledFlag(value) {
 export function buildContentIndexSyncPlan({ rows, managedCollections }) {
   return {
     rows: rows
+      .filter((row) => !isRetiredCampaignCollection(row.collection))
       .slice()
       .sort((left, right) => left.collection.localeCompare(right.collection) || left.id.localeCompare(right.id)),
-    managedCollections: [...new Set(managedCollections)].sort((left, right) => left.localeCompare(right)),
+    managedCollections: [...new Set(managedCollections)]
+      .filter((collection) => !isRetiredCampaignCollection(collection))
+      .sort((left, right) => left.localeCompare(right)),
   };
 }
 

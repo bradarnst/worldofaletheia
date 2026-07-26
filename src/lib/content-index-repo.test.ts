@@ -29,7 +29,7 @@ function createDbMock(handler: QueryHandler): D1DatabaseLike {
 }
 
 describe('ContentIndexRepo', () => {
-  it('applies pagination, status filtering, and public visibility guards to list queries', async () => {
+  it('applies pagination, publication filtering, and legacy campaign exclusions to list queries', async () => {
     const seenQueries: Array<{ query: string; values: unknown[]; method: 'first' | 'all' }> = [];
     const repo = new ContentIndexRepo(
       createDbMock((query, values, method) => {
@@ -82,7 +82,8 @@ describe('ContentIndexRepo', () => {
     expect(result.items[0].tags).toEqual(['alpha', 'beta']);
 
     const [countQuery, listQuery] = seenQueries;
-    expect(countQuery.query).toContain("COALESCE(content_index.visibility, 'gm') = 'public'");
+    expect(countQuery.query).toContain("COALESCE(content_index.visibility, 'public') = 'public'");
+    expect(countQuery.query).toContain("content_index.collection != 'campaigns'");
     expect(countQuery.values).toEqual(['lore', 'publish']);
     expect(listQuery.query).toContain('ORDER BY updated_at DESC, slug ASC');
     expect(listQuery.values).toEqual(['lore', 'publish', 10, 10]);
@@ -111,7 +112,7 @@ describe('ContentIndexRepo', () => {
     expect(seenQueries[0].values.at(-1)).toBe(2);
   });
 
-  it('returns distinct tags with the same public visibility guard', async () => {
+  it('returns distinct tags with the same legacy campaign exclusions', async () => {
     let recordedQuery = '';
     let recordedValues: unknown[] = [];
     const repo = new ContentIndexRepo(
@@ -125,15 +126,16 @@ describe('ContentIndexRepo', () => {
       }),
     );
 
-    await expect(repo.listTags({ collection: 'campaigns' })).resolves.toEqual(['alpha', 'beta']);
+    await expect(repo.listTags({ collection: 'systems' })).resolves.toEqual(['alpha', 'beta']);
     expect(recordedQuery).toContain(
       "SELECT tag.value AS value, COUNT(DISTINCT content_index.collection || ':' || content_index.id) AS total_count",
     );
-    expect(recordedQuery).toContain("COALESCE(content_index.visibility, 'gm') = 'public'");
-    expect(recordedValues).toEqual(['campaigns', 'publish']);
+    expect(recordedQuery).toContain("content_index.collection != 'campaigns'");
+    expect(recordedQuery).toContain("COALESCE(content_index.visibility, 'public') = 'public'");
+    expect(recordedValues).toEqual(['systems', 'publish']);
   });
 
-  it('applies the public visibility guard to campaign family collections', async () => {
+  it('excludes stale legacy campaign rows regardless of requested access', async () => {
     let recordedQuery = '';
     let recordedValues: unknown[] = [];
     const repo = new ContentIndexRepo(
@@ -144,11 +146,16 @@ describe('ContentIndexRepo', () => {
       }),
     );
 
-    await repo.listContent({ collection: 'campaignLore' });
+    await repo.searchContent({
+      query: 'journal',
+    });
 
+    expect(recordedQuery).toContain("content_index.collection != 'sessions'");
     expect(recordedQuery).toContain("content_index.collection NOT LIKE 'campaign%'");
-    expect(recordedQuery).toContain("COALESCE(content_index.visibility, 'gm') = 'public'");
-    expect(recordedValues).toEqual(['campaignLore', 'publish', 12, 0]);
+    expect(recordedQuery).toContain("COALESCE(content_index.visibility, 'public') = 'public'");
+    expect(recordedQuery).not.toContain("COALESCE(content_index.visibility, 'gm') = 'campaignMembers'");
+    expect(recordedQuery).not.toContain("COALESCE(content_index.visibility, 'gm') = 'gm'");
+    expect(recordedValues).toEqual(['publish', '"journal"', 12, 0]);
   });
 
   it('returns grouped facet counts for type queries', async () => {
@@ -357,41 +364,6 @@ describe('ContentIndexRepo', () => {
     ]);
   });
 
-  it('extends campaign search visibility for authenticated member and gm access', async () => {
-    const seenQueries: Array<{ query: string; values: unknown[]; method: 'first' | 'all' }> = [];
-    const repo = new ContentIndexRepo(
-      createDbMock((query, values, method) => {
-        seenQueries.push({ query, values, method });
-
-        if (method === 'first') {
-          return { total_count: 2 };
-        }
-
-        return [];
-      }),
-    );
-
-    await repo.searchContent({
-      query: 'journal',
-      collection: 'campaigns',
-      visibilityAccess: {
-        memberCampaignSlugs: ['barry'],
-        gmCampaignSlugs: ['brad'],
-      },
-    });
-
-    expect(seenQueries[0]?.query).toContain("COALESCE(content_index.visibility, 'gm') = 'campaignMembers'");
-    expect(seenQueries[0]?.query).toContain("COALESCE(content_index.visibility, 'gm') = 'gm'");
-    expect(seenQueries[0]?.values.slice(0, 5)).toEqual([
-      'campaigns',
-      'publish',
-      'barry',
-      'brad',
-      'brad',
-    ]);
-    expect(seenQueries[0]?.values.slice(5)).toEqual(['"journal"']);
-  });
-
   it('filters search results by exact contributor attribution without bypassing visibility guards', async () => {
     const seenQueries: Array<{ query: string; values: unknown[]; method: 'first' | 'all' }> = [];
     const repo = new ContentIndexRepo(
@@ -415,7 +387,8 @@ describe('ContentIndexRepo', () => {
 
     expect(seenQueries[0]?.query).toContain('FROM attributions');
     expect(seenQueries[0]?.query).toContain('attributions.contributor_id = ?');
-    expect(seenQueries[0]?.query).toContain("COALESCE(content_index.visibility, 'gm') = 'public'");
+    expect(seenQueries[0]?.query).toContain("content_index.collection != 'campaigns'");
+    expect(seenQueries[0]?.query).toContain("COALESCE(content_index.visibility, 'public') = 'public'");
     expect(seenQueries[0]?.query).not.toContain('content_search_fts MATCH');
     expect(seenQueries[0]?.values).toEqual(['publish', 'brad']);
   });

@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { resolvePublicationSyncLane } from './publication-policy.mjs';
+import { assertActiveContentMapping } from './retired-campaign-content.mjs';
 import { fail, normalizePathForDisplay, support } from './utils.mjs';
 
 const CONFIG_PATH = path.resolve('config/content-sync.config.json');
@@ -47,6 +48,8 @@ function normalizeMapping(mapping, index) {
   if (!from || !to) {
     throw new Error(`Mapping #${index + 1} requires both "from" and "to".`);
   }
+
+  assertActiveContentMapping({ ...mapping, from, to });
 
   if (target === 'repo') {
     const normalizedTo = normalizeRepoPath(to, index, 'destination');
@@ -184,8 +187,13 @@ export async function loadConfig(options = {}) {
   }
 
   const hasCloudMappings = mappings.some((m) => m.target === 'cloud');
+  if (hasCloudMappings && parsed.campaignCloud && !parsed.contentCloud) {
+    throw new Error(
+      'campaignCloud is retired. Migrate this operator config to contentCloud using docs/content-ingestion-user-guide.md#existing-local-config-migration.',
+    );
+  }
   const contentCloud = hasCloudMappings
-    ? normalizeContentCloudConfig(parsed.contentCloud || parsed.campaignCloud, { requireCredentials: requireCloudCredentials })
+    ? normalizeContentCloudConfig(parsed.contentCloud, { requireCredentials: requireCloudCredentials })
     : null;
 
   const includeExtensions = Array.isArray(parsed.includeExtensions) && parsed.includeExtensions.length
@@ -218,6 +226,5 @@ export async function loadConfig(options = {}) {
     requireCleanWorkingTreeBeforePull,
     hasCloudMappings,
     contentCloud,
-    campaignCloud: contentCloud,
   };
 }

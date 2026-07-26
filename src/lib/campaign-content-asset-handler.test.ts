@@ -7,10 +7,20 @@ vi.mock('~/lib/campaign-page-request-context', () => ({
 
 import { createCampaignPageRequestContext } from '~/lib/campaign-page-request-context';
 import type { CampaignContentSourceClient } from '~/lib/campaign-content-source-boundary';
-import { handleCampaignContentAssetRequest } from '~/lib/campaign-content-asset-handler';
-import type { CampaignAccessRole } from '~/lib/campaign-gate-policy';
+import { handleCampaignContentAssetRequest as handleCampaignContentAssetRequestImpl } from '~/lib/campaign-content-asset-handler';
+import { parseCampaignGateManifest, type CampaignAccessRole } from '~/lib/campaign-gate-policy';
 
 const createCtxMock = vi.mocked(createCampaignPageRequestContext);
+const testGateManifest = parseCampaignGateManifest({
+  'sample-campaign': 'public',
+  brad: 'campaignMembers',
+});
+
+function handleCampaignContentAssetRequest(
+  input: Parameters<typeof handleCampaignContentAssetRequestImpl>[0],
+): Promise<Response> {
+  return handleCampaignContentAssetRequestImpl({ ...input, gateManifest: testGateManifest });
+}
 
 interface Scenario {
   viewer: { kind: 'anonymous' } | { kind: 'authenticated'; userId: string; traceId: string };

@@ -66,30 +66,6 @@ function computeRouteFromMarkdownPath(absolutePath, repoRoot) {
     return `/${slug}`;
   }
 
-  if (collection === 'campaigns') {
-    const campaignFolder = routeSegments[1];
-    const campaignContentSegments = routeSegments.slice(2);
-
-    if (campaignContentSegments.length === 0) {
-      return `/campaigns/${campaignFolder}`;
-    }
-
-    if (campaignContentSegments[0] === 'sessions') {
-      return `/campaigns/${campaignFolder}/notes`;
-    }
-
-    if (campaignContentSegments.length === 1) {
-      return `/campaigns/${campaignFolder}`;
-    }
-
-    const [familySegment, ...familySlugSegments] = campaignContentSegments;
-    if (familySlugSegments.length === 0 || (familySlugSegments.length === 1 && familySlugSegments[0] === 'index')) {
-      return `/campaigns/${campaignFolder}/${familySegment}`;
-    }
-
-    return `/campaigns/${campaignFolder}/${familySegment}/${familySlugSegments.join('/')}`;
-  }
-
   return `/${collection}/${slug}`;
 }
 
@@ -220,7 +196,7 @@ function normalizeInternalPath(urlPath) {
   }
 
   const collection = segments[0];
-  const knownCollections = new Set(['lore', 'places', 'sentients', 'bestiary', 'flora', 'factions', 'systems', 'meta', 'campaigns']);
+  const knownCollections = new Set(['lore', 'places', 'sentients', 'bestiary', 'flora', 'factions', 'systems', 'meta']);
   if (!knownCollections.has(collection)) {
     return urlPath;
   }

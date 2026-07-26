@@ -2,8 +2,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-describe('campaign visibility policy scope', () => {
-  it('keeps visibility out of the base schema and in campaign-domain schemas', async () => {
+describe('Campaign Content ownership boundary', () => {
+  it('keeps Campaign Content out of static Astro collections', async () => {
     const configPath = path.join(process.cwd(), 'src/content.config.ts');
     const source = await fs.readFile(configPath, 'utf8');
 
@@ -11,16 +11,24 @@ describe('campaign visibility policy scope', () => {
     expect(baseSchemaBlock).toBeTruthy();
     expect(baseSchemaBlock[1]).not.toContain('visibility:');
 
-    const campaignsSchemaBlock = source.match(/const campaignsSchema = baseSchema\.extend\(\{([\s\S]*?)\}\);/);
-    expect(campaignsSchemaBlock).toBeTruthy();
-    expect(campaignsSchemaBlock[1]).toContain("visibility: z.enum(['public', 'campaignMembers', 'gm'])");
-    expect(campaignsSchemaBlock[1]).toContain("default('gm')");
+    expect(source).not.toMatch(/const campaignsSchema\s*=/);
+    expect(source).not.toMatch(/const campaign[A-Z]\w*Schema\s*=/);
+    expect(source).not.toContain("createMarkdownLoader('campaigns'");
+    expect(source).not.toContain("'src/content/campaigns'");
+    expect(source).not.toMatch(
+      /^\s*(?:campaigns|sessions|campaignLore|campaignPlaces|campaignSentients|campaignBestiary|campaignFlora|campaignFactions|campaignSystems|campaignMeta|campaignCharacters|campaignScenes|campaignAdventures|campaignHooks)\s*:/m,
+    );
+  });
 
-    expect(source).not.toContain('const sessionsSchema =');
+  it('does not expose legacy campaign family or direct-media routes', async () => {
+    const legacyRoutePaths = [
+      'src/pages/campaigns/[campaign]/[family]/index.astro',
+      'src/pages/campaigns/[campaign]/[family]/[...slug].astro',
+      'src/pages/api/campaign-media/[campaign]/images/[variant]/[...asset].ts',
+    ];
 
-    const campaignLoreSchemaBlock = source.match(/const campaignLoreSchema = baseSchema\.extend\(\{([\s\S]*?)\}\);/);
-    expect(campaignLoreSchemaBlock).toBeTruthy();
-    expect(campaignLoreSchemaBlock[1]).toContain("visibility: z.enum(['public', 'campaignMembers', 'gm'])");
-    expect(campaignLoreSchemaBlock[1]).toContain("default('campaignMembers')");
+    for (const routePath of legacyRoutePaths) {
+      await expect(fs.access(path.join(process.cwd(), routePath))).rejects.toThrow();
+    }
   });
 });

@@ -17,14 +17,15 @@ These rules apply to:
   request/response shapes, admin and main-site route handlers, and any API
   producer or consumer that touches authored content fields.
 - **Storage and indexes:** D1 tables, D1 columns, content-index rows, and other
-  persisted metadata owned by the World of Aletheia / campaign-notes pipeline.
+  persisted metadata owned by World of Aletheia. Live Campaign Content persistence
+  is owned by `woa-admin` and is translated at that external boundary.
 - **Routing and identifiers:** Markdown file stems, URL slugs, campaign slugs,
-  session slugs, and other stable string identifiers derived from content.
+  document IDs, and other stable string identifiers derived from content.
 
-This document is intentionally broader than the campaign-note admin API: it also
-covers the static worldbuilding collections in this repo (`lore`, `places`,
-`sentients`, `bestiary`, `flora`, `factions`, `systems`, `meta`, `campaigns`,
-`sessions`, and `contributors`). Other product domains (spells, accounts,
+This document covers the static worldbuilding collections in this repo (`lore`,
+`places`, `sentients`, `bestiary`, `flora`, `factions`, `systems`, `meta`, and
+`contributors`) and the main-site representation of live Campaign Content.
+Other product domains (spells, accounts,
 public spell read API, etc.) are out of scope, though the layer-native-casing
 rule stated below should be adopted broadly.
 
@@ -39,7 +40,7 @@ Apply the casing native to each representation layer, and translate at boundarie
 | D1 / SQL columns                | **snake_case**   | Idiomatic for SQL; matches Cloudflare and SQLite ecosystem conventions.                         |
 | D1 / SQL table names            | **snake_case**   | Consistency with column names and the broader SQL convention.                                   |
 | File names (Markdown stems)     | **kebab-case**   | URL-safe, shell-safe, readable; matches route-slug conventions.                                 |
-| Slug-style string identifiers   | **kebab-case**   | e.g. `campaignSlug`, `sessionSlug`, `sessionDate`. Slugs are values stored in camelCase fields. |
+| Slug-style string identifiers   | **kebab-case**   | e.g. `campaignSlug` and route-safe `documentId` values. Slugs are values stored in camelCase fields. |
 
 Do **not** force one spelling across all layers. The correct invariant is
 "case native to each layer, with explicit boundary mapping." Obsidian does not
@@ -62,7 +63,7 @@ layers or repos.
 | title | `title` | `title` | `title` | Human-readable display title. |
 | content type | `type` | `type` | `type` | Collection-local enum used for grouping/filtering. |
 | content subtype | `subtype` | `subtype` | `subtype` | Optional narrower grouping/filtering value. |
-| authors | `authors` | `authors` | `authors_json` or mapping table | Authored content commonly uses display names; campaign-note APIs may use user ids. |
+| authors | `authors` | `authors` | `authors_json` or mapping table | Authored content commonly uses display names. |
 | campaign slug | `campaign` | `campaign` or `campaignSlug` | `campaign_slug` | Frontmatter keeps the concise authored key; API boundaries may use `campaignSlug`. |
 | publication state | `publication` | `publication` | `publication` | Canonical authored state for publish/preview/draft-like behavior. |
 | content state | `contentState` | `contentState` | `content_state` | Editorial/content maturity state. |
@@ -72,43 +73,34 @@ layers or repos.
 | created timestamp | `createdAt` | `createdAt` | `created_at` | Required RFC 3339 date-time for authored content. |
 | modified timestamp | `updatedAt` | `updatedAt` | `updated_at` | Required RFC 3339 date-time for authored content. |
 
-## Field-by-field reference (campaign notes API)
+## Field-by-field reference (live Campaign Content)
 
-For externally owned campaign-note APIs, the authoritative source is the
-contract under `docs/contracts/`; do not edit that contract from this repo.
-For repo-owned content validation, `src/content.config.ts` is the schema source
-of truth. The table below shows the expected spelling of each field at each
-layer for convenience.
+Live Campaign Content is an externally owned source consumed by this repo through
+the `campaignContent` live collection. External contracts under `docs/contracts/`
+remain authoritative and must not be edited here. This table records the names
+used by the main-site consumer; it does not prescribe the owning service's D1
+schema.
 
-| Concept            | Frontmatter (YAML) | TypeScript / JSON API | D1 / SQL column |
-| ------------------ | ------------------- | --------------------- | ---------------- |
-| collection         | `collection`        | `collection`          | `collection`     |
-| campaign slug      | `campaign`          | `campaignSlug`        | `campaign_slug`  |
-| document id        | `documentId`        | `documentId`          | `document_id`    |
-| title              | `title`             | `title`               | `title`          |
-| visibility         | `visibility`        | `visibility`          | `visibility`     |
-| author user ids    | `authorUserIds`     | `authorUserIds`       | `author_user_id` (single, normalized via mapping) |
-| note type          | `type`              | `noteType`            | `note_type`      |
-| session slug        | `sessionSlug`       | `sessionSlug`         | `session_slug`   |
-| session date       | `sessionDate`       | `sessionDate`         | `session_date`   |
-| created timestamp  | `createdAt`         | `createdAt`           | `created_at`     |
-| modified timestamp | `updatedAt`         | `updatedAt`           | `updated_at`     |
-| version / etag     | `version`           | `version`             | (no dedicated column; use `current_content_hash`) |
+| Concept | Campaign Content JSON / TypeScript | Notes |
+| ------- | ---------------------------------- | ----- |
+| collection key | `collectionKey` | Active V1 values are `pages` and `notes`. |
+| campaign slug | `campaignSlug` | Exact identifier used by routes, Campaign Gate, and memberships. |
+| document id | `documentId` | One path segment in V1; root is `index` and about is `about`. |
+| title | `title` | Human-readable item title. |
+| visibility | `visibility` | `public`, `campaignMembers`, or `gm`. |
+| content type | `type` | Generic item type; notes remain items in collection key `notes`. |
+| content subtype | `subtype` | Optional narrower classification. |
+| authors | `authors` | Display-name array returned for rendering. |
+| contributors | `contributors` | Contributor identifier array returned by the source. |
+| modified timestamp | `updatedAt` | RFC 3339 date-time or `null`. |
 
-### Notes
+Main-site paths map to these identities as follows:
 
-- `campaign` is the frontmatter key; it becomes `campaignSlug` in the API
-  because the field is not always literally the campaign itself — it's the slug
-  used as the campaign identifier.
-- `type` is the frontmatter key (it lives inside the document body's metadata
-  block, so `type` is unambiguous there). In API/TS we name it `noteType` to
-  avoid collision with `typeof` / structural type concepts.
-- `authorUserIds` is an array in frontmatter/JSON (multiple authors), and a
-  normalized single `author_user_id` column in D1 when the design stores a
-  primary author; multi-author storage is documented in the schema.
-- `version` in frontmatter is an optimistic-concurrency marker (r2 etag or
-  content hash). The durable storage representation is `current_content_hash`
-  and related revision columns in D1 — do not invent a dedicated `version` column.
+- `/campaigns/<campaign-slug>` -> `pages/index`
+- `/campaigns/<campaign-slug>/about` -> `pages/about`
+- `/campaigns/<campaign-slug>/notes` -> generic `notes` collection query
+- `/campaigns/<campaign-slug>/notes/<document-id>` -> `notes/<document-id>`
+- `/campaigns/<campaign-slug>/assets/<path>` -> source asset `assets/<path>`
 
 ## Date and time encoding
 
@@ -144,7 +136,7 @@ The cross-system migration plan that introduced this convention is in
 
 - Frontmatter `created` / `modified` is a legacy spelling; canonical is
   `createdAt` / `updatedAt`.
-- There is no compatibility window. Validators reject notes that supply only
+- There is no compatibility window. Validators reject documents that supply only
   `created` / `modified`, because unknown keys are stripped and the canonical
   required fields are then missing.
 - Obsidian itself does not require `created` / `modified`, so migration is a

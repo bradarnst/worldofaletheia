@@ -18,7 +18,12 @@ import {
   toCampaignContentSourceActor,
   type CampaignContentSourceClient,
 } from '~/lib/campaign-content-source-boundary';
-import { campaignGateManifest, decideCampaignGateAccess, type CampaignGateLogger } from '~/lib/campaign-gate-policy';
+import {
+  campaignGateManifest,
+  decideCampaignGateAccess,
+  type CampaignGateLogger,
+  type ParsedCampaignGateManifest,
+} from '~/lib/campaign-gate-policy';
 import { createCampaignPageRequestContext } from '~/lib/campaign-page-request-context';
 import { toCampaignContentAssetPath } from '~/lib/campaign-content-asset-rewrite';
 
@@ -30,6 +35,7 @@ export interface HandleCampaignContentAssetRequestInput {
   /** Inject a source client for tests; defaults to a real `woa-admin` client. */
   createSourceClient?: () => CampaignContentSourceClient | Promise<CampaignContentSourceClient>;
   logger?: CampaignGateLogger;
+  gateManifest?: ParsedCampaignGateManifest;
 }
 
 export const CAMPAIGN_CONTENT_ASSET_NOINDEX_HEADERS: Record<string, string> = {
@@ -106,7 +112,12 @@ export async function handleCampaignContentAssetRequest(
   }
 
   const campaignAccessRole = await ctx.getCampaignAccessRole(campaignSlug);
-  const decision = decideCampaignGateAccess({ campaignSlug, manifest: campaignGateManifest, campaignAccessRole, logger });
+  const decision = decideCampaignGateAccess({
+    campaignSlug,
+    manifest: input.gateManifest ?? campaignGateManifest,
+    campaignAccessRole,
+    logger,
+  });
 
   // Anonymous blocked by a campaignMembers gate: stop before any source fetch.
   if (!decision.gateAllowsRequest) {

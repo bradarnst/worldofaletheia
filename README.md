@@ -23,16 +23,16 @@ Design-wise, the homepage follows a story-first pattern instead of acting like a
 
 Core capabilities currently implemented:
 
-- **Content publishing and domain separation** across 23 Astro collections with schema validation in `src/content.config.ts`
+- **Content publishing and domain separation** for repo-owned Astro collections, plus a live Campaign Content collection loaded from `woa-admin`
 - **Taxonomy-aware discovery** on high-volume collections (latest/grouped views, type/subtype/tag filtering, pagination)
 - **Reference surfaces** with live chronology routes:
   - `/references/calendar` (month/week/year views)
   - `/references/timeline` (dated lore event chronology)
   - `/references/maps` (Reference-domain map placeholder)
   - `/api/calendar/*` (month/week/year, moon phase, and date-diff JSON contracts)
-- **Campaign family model** with explicit campaign collections (`campaignLore`, `campaignPlaces`, `campaignCharacters`, `campaignScenes`, `campaignAdventures`, `campaignHooks`, etc.)
+- **Live Campaign Content** for campaign root pages, about pages, and notes through the server-to-server `woa-admin` source boundary
 - **Campaign access boundaries** using Better Auth + D1 membership checks and fail-closed behavior for protected content
-- **Protected campaign media delivery** through API routes with auth-aware gating and sync-time `thumb`/`detail`/`fullscreen` variants
+- **Protected Campaign Content assets** through `/campaigns/<campaign-slug>/assets/<path>`, with the same gate and visibility scope as content reads
 - **Search API foundation** via `/api/search` backed by the discovery metadata index
 
 ## Content Workflow (Obsidian-First)
@@ -41,10 +41,12 @@ This project follows an Obsidian-first source-of-truth model (ADR-0001):
 
 - Canonical writing happens in an Obsidian vault
 - Markdown + frontmatter are synchronized through `scripts/content-sync/`
-- Default sync mappings target cloud-backed collections in R2
+- Repo-owned collection mappings can target the configured local or cloud-backed publication lane
 - The website repo is the publication/deployment target
 
 The flow is one-way by design: Obsidian -> repo sync -> build/deploy. There is no CMS or bidirectional sync pattern.
+
+Live Campaign Content is separate from this repo ingestion lane. Campaign root (`/campaigns/<campaign-slug>`), about (`/campaigns/<campaign-slug>/about`), notes (`/campaigns/<campaign-slug>/notes` and `/campaigns/<campaign-slug>/notes/<document-id>`), and assets (`/campaigns/<campaign-slug>/assets/<path>`) are read from `woa-admin` at request time. They are not populated from local `src/content/campaigns` collections.
 
 ## Architecture Snapshot
 
@@ -52,8 +54,8 @@ This architecture stays static-first where possible and uses runtime checks only
 
 ```mermaid
 flowchart LR
-  O[Obsidian authoring vault] --> S[Content sync pipeline]
-  S --> R2[Cloud content store in R2]
+  O[Obsidian authoring vault] --> S[Repo content sync pipeline]
+  S --> R2[Repo-owned cloud content in R2]
   S --> IDX[D1 content index and object lookup]
   R2 --> A[Astro content loaders]
   A --> B[Astro build and SSR routes]
@@ -61,8 +63,8 @@ flowchart LR
   B --> CF[Cloudflare deploy]
 
   U[Campaign request] --> AUTH[Better Auth session plus D1 checks]
-  AUTH -->|allow| CR[Campaign content resolver]
-  CR --> R2
+  AUTH -->|allow| CR[Live Campaign Content loader]
+  CR --> ADMIN[woa-admin Campaign Content API]
   AUTH -->|deny| X[Fail closed 403 or redirect]
 ```
 
@@ -75,7 +77,7 @@ Cloud-backed content mode is now the canonical runtime lane (ADR-0010), with loc
 - **Runtime/deploy:** Cloudflare Workers/Pages + Wrangler
 - **Auth:** Better Auth
 - **Data/index:** Cloudflare D1 (`content_index` object lookup/discovery index, auth/session data)
-- **Content storage:** Cloudflare R2 object storage with D1-backed markdown lookup
+- **Content storage:** Cloudflare R2 object storage with D1-backed lookup for repo-owned cloud content; `woa-admin` owns live Campaign Content persistence
 - **Content sync:** Node ESM scripts in `scripts/content-sync/`
 - **Testing:** Vitest
 - **Package manager:** pnpm
@@ -121,7 +123,6 @@ pnpm test
 pnpm content:sync
 pnpm content:sync:dry-run
 pnpm content:validate
-pnpm campaign:rename -- --from=old-campaign-slug --to=new-campaign-slug
 ```
 
 Initial setup:

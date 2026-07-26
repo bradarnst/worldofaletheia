@@ -223,5 +223,3 @@ export function createContentCloudAdapter(cloudConfig) {
     readText,
   };
 }
-
-export const createCampaignCloudAdapter = createContentCloudAdapter;

@@ -14,13 +14,10 @@ describe('content source mode resolution', () => {
   it('applies emergency collection overrides on top of global mode', () => {
     const env = {
       CONTENT_SOURCE_MODE: 'cloud',
-      CONTENT_SOURCE_OVERRIDES: 'meta:local,campaigns:cloud',
+      CONTENT_SOURCE_OVERRIDES: 'meta:local,lore:cloud',
     } as EnvLike;
 
     expect(resolveCollectionSource('meta', env)).toBe('local');
-    expect(resolveCollectionSource('campaigns', env)).toBe('cloud');
-    expect(resolveCollectionSource('campaignLore', env)).toBe('cloud');
-    expect(resolveCollectionSource('sessions', env)).toBe('cloud');
     expect(resolveCollectionSource('lore', env)).toBe('cloud');
   });
 });

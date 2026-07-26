@@ -72,7 +72,6 @@ export interface CampaignIndexModel {
 export const CAMPAIGN_INDEX_CAMPAIGNS = [
   { slug: 'brad' },
   { slug: 'barry' },
-  { slug: 'sample-campaign' },
 ] as const satisfies readonly CampaignIndexCampaignConfig[];
 
 const genericUnavailableTitle = 'Campaign temporarily unavailable';
