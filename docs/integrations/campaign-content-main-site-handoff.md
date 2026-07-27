@@ -3,7 +3,7 @@
 This guide is derived from the Campaign Content OpenAPI contracts:
 
 - `docs/contracts/campaign-content-read-api.openapi.yaml`
-- `docs/contracts/campaign-content-operator-api.openapi.yaml`
+- `docs/contracts/campaign-content-operator-api.openapi.yaml` (owned and versioned in the `woa-admin` sister repository; not included in this repository)
 
 OpenAPI is authoritative for routes, status codes, schemas, filtering, pagination, auth headers, and error bodies. This guide exists to make the intended `worldofaletheia.com` integration boundary explicit.
 

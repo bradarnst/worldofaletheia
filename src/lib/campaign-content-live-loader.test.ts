@@ -48,7 +48,7 @@ describe('campaign content live loader', () => {
         ],
       },
     });
-    const loader = createCampaignContentLiveLoader({ sourceClient });
+    const loader = createCampaignContentLiveLoader({ sourceClient, sourceBaseUrl: 'https://woa-admin.example.invalid' });
 
     const result = await loader.loadCollection({
       collection: 'campaignContent',
@@ -126,7 +126,7 @@ describe('campaign content live loader', () => {
         },
       },
     });
-    const loader = createCampaignContentLiveLoader({ sourceClient });
+    const loader = createCampaignContentLiveLoader({ sourceClient, sourceBaseUrl: 'https://woa-admin.example.invalid' });
 
     const result = await loader.loadEntry({
       collection: 'campaignContent',
@@ -180,7 +180,7 @@ describe('campaign content live loader', () => {
 
   it('rejects missing access scope before source reads', async () => {
     const sourceClient = createSourceClientStub();
-    const loader = createCampaignContentLiveLoader({ sourceClient });
+    const loader = createCampaignContentLiveLoader({ sourceClient, sourceBaseUrl: 'https://woa-admin.example.invalid' });
 
     const result = await loader.loadCollection({
       collection: 'campaignContent',
@@ -218,7 +218,7 @@ describe('campaign content live loader', () => {
         },
       },
     });
-    const loader = createCampaignContentLiveLoader({ sourceClient });
+    const loader = createCampaignContentLiveLoader({ sourceClient, sourceBaseUrl: 'https://woa-admin.example.invalid' });
 
     const result = await loader.loadEntry({
       collection: 'campaignContent',
@@ -256,7 +256,7 @@ describe('campaign content live loader', () => {
         },
       },
     });
-    const loader = createCampaignContentLiveLoader({ sourceClient });
+    const loader = createCampaignContentLiveLoader({ sourceClient, sourceBaseUrl: 'https://woa-admin.example.invalid' });
 
     const result = await loader.loadEntry({
       collection: 'campaignContent',
@@ -290,7 +290,7 @@ describe('campaign content live loader', () => {
         raw: { type: 'campaign-note', tags: [], authors: ['brad'] },
       },
     });
-    const loader = createCampaignContentLiveLoader({ sourceClient });
+    const loader = createCampaignContentLiveLoader({ sourceClient, sourceBaseUrl: 'https://woa-admin.example.invalid' });
 
     const result = await loader.loadEntry({
       collection: 'campaignContent',

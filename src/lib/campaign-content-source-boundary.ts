@@ -298,6 +298,31 @@ function isContentVisibility(value: unknown): value is ContentVisibility {
   return value === 'public' || value === 'campaignMembers' || value === 'gm';
 }
 
+const campaignContentCollectionByKey: Record<string, string> = {
+  pages: 'campaignPages',
+  notes: 'campaignNotes',
+  lore: 'campaignLore',
+  places: 'campaignPlaces',
+  sentients: 'campaignSentients',
+  bestiary: 'campaignBestiary',
+  flora: 'campaignFlora',
+  factions: 'campaignFactions',
+  systems: 'campaignSystems',
+  meta: 'campaignMeta',
+  characters: 'campaignCharacters',
+  scenes: 'campaignScenes',
+  adventures: 'campaignAdventures',
+  hooks: 'campaignHooks',
+};
+
+function isPublishPublication(value: unknown): boolean {
+  return value === 'publish';
+}
+
+function isNonEmptyStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.length > 0 && value.every((item) => typeof item === 'string' && item.trim().length > 0);
+}
+
 function isRuntimeAssertionPayload(value: unknown): value is CampaignContentRuntimeAssertionPayload {
   if (!isRecord(value)) {
     return false;
@@ -333,6 +358,10 @@ function getOptionalString(record: Record<string, unknown>, field: string): stri
   return value;
 }
 
+function assertRequiredString(record: Record<string, unknown>, field: string): void {
+  getRequiredString(record, field);
+}
+
 function assertMatchingField(actual: string, expected: string, field: string): void {
   if (actual !== expected) {
     throw new Error(`Campaign Content source response ${field} did not match the request.`);
@@ -359,6 +388,10 @@ function validateSummaryItem(input: {
   assertMatchingField(itemCampaignSlug, input.campaignSlug, 'campaignSlug');
 
   const collectionKey = getRequiredString(input.item, 'collectionKey');
+  const expectedCollection = campaignContentCollectionByKey[collectionKey];
+  if (!expectedCollection) {
+    throw new Error('Campaign Content source response returned an unsupported collectionKey.');
+  }
   if (input.collectionKey) {
     assertMatchingField(collectionKey, input.collectionKey, 'collectionKey');
   }
@@ -367,12 +400,26 @@ function validateSummaryItem(input: {
   validateDocumentId(documentId);
 
   const collection = getRequiredString(input.item, 'collection');
+  assertMatchingField(collection, expectedCollection, 'collection');
   const data = input.item.data;
   if (!isRecord(data)) {
     throw new Error('Campaign Content source response item is missing data.');
   }
   assertMatchingField(getRequiredString(data, 'campaign'), input.campaignSlug, 'data.campaign');
   assertMatchingField(getRequiredString(data, 'collection'), collection, 'data.collection');
+
+  if (!isPublishPublication(data.publication)) {
+    throw new Error('Campaign Content source response returned unpublished content.');
+  }
+
+  assertRequiredString(data, 'title');
+  assertRequiredString(data, 'type');
+  assertRequiredString(data, 'createdAt');
+  assertRequiredString(data, 'updatedAt');
+
+  if (!isNonEmptyStringArray(data.authors)) {
+    throw new Error('Campaign Content source response is missing authors.');
+  }
 
   const visibility = data.visibility;
   if (!isContentVisibility(visibility) || !input.allowedVisibilities.includes(visibility)) {

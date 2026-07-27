@@ -78,6 +78,7 @@ export class CampaignContentLiveLoaderError extends Error {
 interface CreateCampaignContentLiveLoaderOptions {
   sourceClient?: CampaignContentSourceClient;
   createSourceClient?: () => CampaignContentSourceClient | Promise<CampaignContentSourceClient>;
+  sourceBaseUrl?: string;
   renderMarkdown?: (markdown: string) => string;
 }
 
@@ -250,8 +251,12 @@ async function resolveRuntimeSourceEnv(): Promise<EnvLike> {
   };
 }
 
-async function createDefaultSourceClient(): Promise<CampaignContentSourceClient> {
-  return createCampaignContentSourceClient({ config: resolveCampaignContentSourceConfig(await resolveRuntimeSourceEnv()) });
+async function createDefaultSourceContext(): Promise<{ client: CampaignContentSourceClient; sourceBaseUrl: string }> {
+  const config = resolveCampaignContentSourceConfig(await resolveRuntimeSourceEnv());
+  return {
+    client: createCampaignContentSourceClient({ config }),
+    sourceBaseUrl: config.baseUrl,
+  };
 }
 
 function getOptionalStringArray(raw: Record<string, unknown>, field: string): string[] {
@@ -457,14 +462,23 @@ export function createCampaignContentLiveLoader(
   options: CreateCampaignContentLiveLoaderOptions = {},
 ): LiveLoader<CampaignContentLiveEntryData, CampaignContentLiveEntryFilter, CampaignContentLiveCollectionFilter, CampaignContentLiveLoaderError> {
   const renderMarkdown = options.renderMarkdown ?? renderCampaignContentMarkdown;
-  const getSourceClient = async () => options.sourceClient ?? options.createSourceClient?.() ?? createDefaultSourceClient();
+  const getSourceContext = async () => {
+    if (options.sourceClient) {
+      return { client: options.sourceClient, sourceBaseUrl: options.sourceBaseUrl };
+    }
+    if (options.createSourceClient) {
+      return { client: await options.createSourceClient(), sourceBaseUrl: options.sourceBaseUrl };
+    }
+    return createDefaultSourceContext();
+  };
 
   return {
     name: 'campaign-content-live-loader',
     async loadCollection({ filter }) {
       try {
         const normalizedFilter = normalizeCollectionFilter(filter);
-        const result = await (await getSourceClient()).listCampaignContent(toListOptions(normalizedFilter));
+        const { client } = await getSourceContext();
+        const result = await client.listCampaignContent(toListOptions(normalizedFilter));
         if (!result.ok) {
           return { error: createSourceFailureError(result) };
         }
@@ -485,7 +499,8 @@ export function createCampaignContentLiveLoader(
     async loadEntry({ filter }) {
       try {
         const normalizedFilter = normalizeEntryFilter(filter);
-        const result = await (await getSourceClient()).getCampaignContentItem({
+        const { client, sourceBaseUrl } = await getSourceContext();
+        const result = await client.getCampaignContentItem({
           campaignSlug: normalizedFilter.campaignSlug,
           collectionKey: normalizedFilter.collectionKey,
           documentId: normalizedFilter.documentId,
@@ -499,7 +514,7 @@ export function createCampaignContentLiveLoader(
         // rendering (issue #11). The rendered HTML must never point at `woa-admin`.
         const entryWithMainSiteAssets: CampaignContentItemDetail = {
           ...result.value,
-          body: rewriteCampaignContentAssetReferences(result.value.body, { campaignSlug: result.value.campaignSlug }),
+          body: rewriteCampaignContentAssetReferences(result.value.body, { campaignSlug: result.value.campaignSlug, sourceBaseUrl }),
         };
 
         return toRenderableLiveEntry({ item: entryWithMainSiteAssets, renderMarkdown });

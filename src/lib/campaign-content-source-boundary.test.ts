@@ -17,6 +17,41 @@ const sourceConfig = {
   assertionAudience: 'woa-admin:campaign-content:v1',
 };
 
+function makeSourceEntry(overrides: {
+  id?: string;
+  collectionKey?: string;
+  collection?: string;
+  campaignSlug?: string;
+  data?: Record<string, unknown>;
+  markdown?: string;
+} = {}) {
+  const campaignSlug = overrides.campaignSlug ?? 'sample-campaign';
+  const collectionKey = overrides.collectionKey ?? 'pages';
+  const collection = overrides.collection ?? (collectionKey === 'notes' ? 'campaignNotes' : 'campaignPages');
+  const baseData = {
+    campaign: campaignSlug,
+    collection,
+    title: 'Sample Campaign',
+    type: collectionKey === 'notes' ? 'session-note' : 'campaign',
+    publication: 'publish',
+    visibility: 'public',
+    authors: ['brad'],
+    createdAt: '2026-07-01T00:00:00Z',
+    updatedAt: '2026-07-24T12:00:00Z',
+    contentState: 'stable',
+    audienceWarnings: [],
+  };
+
+  return {
+    id: overrides.id ?? 'index',
+    collectionKey,
+    collection,
+    campaignSlug,
+    data: { ...baseData, ...overrides.data },
+    ...(overrides.markdown === undefined ? {} : { markdown: overrides.markdown }),
+  };
+}
+
 function assetPath(path: string) {
   const parsed = toCampaignContentAssetPath(path);
   if (!parsed) {
@@ -57,27 +92,7 @@ describe('campaign content source boundary', () => {
     const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
       new Response(
         JSON.stringify({
-          items: [
-            {
-              id: 'index',
-              collectionKey: 'pages',
-              collection: 'campaignPages',
-              campaignSlug: 'sample-campaign',
-              data: {
-                campaign: 'sample-campaign',
-                collection: 'campaignPages',
-                title: 'Sample Campaign',
-                type: 'campaign',
-                publication: 'publish',
-                visibility: 'public',
-                authors: ['brad'],
-                createdAt: '2026-07-01T00:00:00Z',
-                updatedAt: '2026-07-24T12:00:00Z',
-                contentState: 'stable',
-                audienceWarnings: [],
-              },
-            },
-          ],
+          items: [makeSourceEntry()],
           nextCursor: null,
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } },
@@ -116,26 +131,14 @@ describe('campaign content source boundary', () => {
   it('maps detail reads with structured campaign, collection, and document identifiers', async () => {
     const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
       new Response(
-        JSON.stringify({
+        JSON.stringify(makeSourceEntry({
           id: 'session-zero',
           collectionKey: 'notes',
           collection: 'campaignNotes',
           campaignSlug: 'brad',
-          data: {
-            campaign: 'brad',
-            collection: 'campaignNotes',
-            title: 'Session Zero',
-            type: 'session-note',
-            publication: 'publish',
-            visibility: 'campaignMembers',
-            authors: ['brad'],
-            createdAt: '2026-07-01T00:00:00Z',
-            updatedAt: '2026-07-24T12:00:00Z',
-            contentState: 'stable',
-            audienceWarnings: [],
-          },
+          data: { campaign: 'brad', collection: 'campaignNotes', title: 'Session Zero', visibility: 'campaignMembers' },
           markdown: '# Session Zero',
-        }),
+        })),
         { status: 200, headers: { 'Content-Type': 'application/json' } },
       ),
     );
@@ -170,25 +173,13 @@ describe('campaign content source boundary', () => {
       new Response(
         JSON.stringify({
           items: [
-            {
+            makeSourceEntry({
               id: 'gm-secret',
               collectionKey: 'notes',
               collection: 'campaignNotes',
               campaignSlug: 'brad',
-              data: {
-                campaign: 'brad',
-                collection: 'campaignNotes',
-                title: 'GM Secret',
-                type: 'gm-note',
-                publication: 'publish',
-                visibility: 'gm',
-                authors: ['brad'],
-                createdAt: '2026-07-01T00:00:00Z',
-                updatedAt: '2026-07-24T12:00:00Z',
-                contentState: 'stable',
-                audienceWarnings: [],
-              },
-            },
+              data: { campaign: 'brad', collection: 'campaignNotes', title: 'GM Secret', type: 'gm-note', visibility: 'gm' },
+            }),
           ],
           nextCursor: null,
         }),
@@ -211,6 +202,53 @@ describe('campaign content source boundary', () => {
       retryable: false,
       safeMessage: 'Campaign content unavailable.',
     });
+  });
+
+  it.each([
+    ['missing collectionKey', { omit: 'collectionKey' }],
+    ['mismatched collection mapping', { collection: 'campaignPages' }],
+    ['mismatched data collection', { data: { collection: 'campaignPages' } }],
+    ['unpublished content', { data: { publication: 'preview' } }],
+    ['missing title', { data: { title: '' } }],
+    ['missing type', { data: { type: '' } }],
+    ['missing authors', { data: { authors: [] } }],
+    ['missing createdAt', { data: { createdAt: '' } }],
+    ['missing updatedAt', { data: { updatedAt: '' } }],
+  ] as const)('fails closed when source list responses have %s', async (_label, entryOverrides) => {
+    const entry = makeSourceEntry({ collectionKey: 'notes', collection: 'campaignNotes', campaignSlug: 'brad', ...entryOverrides });
+    if ('omit' in entryOverrides && entryOverrides.omit === 'collectionKey') {
+      delete (entry as { collectionKey?: string }).collectionKey;
+    }
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ items: [entry], nextCursor: null }), { status: 200 }));
+    const client = createCampaignContentSourceClient({ config: sourceConfig, fetch: fetchMock });
+
+    await expect(
+      client.listCampaignContent({
+        campaignSlug: 'brad',
+        collectionKey: 'notes',
+        allowedVisibilities: ['public', 'campaignMembers'],
+        actor: { kind: 'authenticated', userId: 'user_123', traceId: 'session_123' },
+      }),
+    ).resolves.toMatchObject({ ok: false, reason: 'validationFailure', mainSiteStatus: 503 });
+  });
+
+  it('fails closed when source detail responses omit Markdown', async () => {
+    const fetchMock = vi.fn(async () =>
+      new Response(JSON.stringify(makeSourceEntry({ id: 'session-zero', collectionKey: 'notes', collection: 'campaignNotes', campaignSlug: 'brad' })), {
+        status: 200,
+      }),
+    );
+    const client = createCampaignContentSourceClient({ config: sourceConfig, fetch: fetchMock });
+
+    await expect(
+      client.getCampaignContentItem({
+        campaignSlug: 'brad',
+        collectionKey: 'notes',
+        documentId: 'session-zero',
+        allowedVisibilities: ['public', 'campaignMembers'],
+        actor: { kind: 'authenticated', userId: 'user_123', traceId: 'session_123' },
+      }),
+    ).resolves.toMatchObject({ ok: false, reason: 'validationFailure', mainSiteStatus: 503 });
   });
 
   it.each([
