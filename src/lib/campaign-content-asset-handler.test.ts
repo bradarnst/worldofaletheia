@@ -6,7 +6,13 @@ vi.mock('~/lib/campaign-page-request-context', () => ({
 }));
 
 import { createCampaignPageRequestContext } from '~/lib/campaign-page-request-context';
-import type { CampaignContentSourceClient } from '~/lib/campaign-content-source-boundary';
+import {
+  RUNTIME_ASSERTION_HEADER,
+  RUNTIME_ASSERTION_SIGNATURE_HEADER,
+  createCampaignContentSourceClient,
+  type CampaignContentSourceFailure,
+  type CampaignContentSourceClient,
+} from '~/lib/campaign-content-source-boundary';
 import { handleCampaignContentAssetRequest as handleCampaignContentAssetRequestImpl } from '~/lib/campaign-content-asset-handler';
 import { parseCampaignGateManifest, type CampaignAccessRole } from '~/lib/campaign-gate-policy';
 
@@ -42,23 +48,23 @@ function makeRequestContext(scenario: Scenario) {
   };
 }
 
-function notFoundFailure() {
+function sourceFailure(
+  reason:
+    | 'notFoundOrNotReadable'
+    | 'integrationRejected'
+    | 'invalidRequest'
+    | 'rateLimited'
+    | 'sourceUnavailable'
+    | 'networkFailure'
+    | 'validationFailure',
+): CampaignContentSourceFailure {
+  const mainSiteStatus: 404 | 503 = reason === 'notFoundOrNotReadable' ? 404 : 503;
   return {
     ok: false as const,
-    reason: 'notFoundOrNotReadable' as const,
-    mainSiteStatus: 404 as const,
-    retryable: false,
-    safeMessage: 'Campaign content not found.' as const,
-  };
-}
-
-function unavailableFailure() {
-  return {
-    ok: false as const,
-    reason: 'sourceUnavailable' as const,
-    mainSiteStatus: 503 as const,
-    retryable: true,
-    safeMessage: 'Campaign content unavailable.' as const,
+    reason,
+    mainSiteStatus,
+    retryable: reason === 'rateLimited' || reason === 'sourceUnavailable' || reason === 'networkFailure',
+    safeMessage: mainSiteStatus === 404 ? 'Campaign content not found.' as const : 'Campaign content unavailable.' as const,
   };
 }
 
@@ -119,6 +125,33 @@ describe('handleCampaignContentAssetRequest (issue #11)', () => {
     expect(sourceClient.getCampaignContentAsset).not.toHaveBeenCalled();
   });
 
+  it('warns but serves a source-available asset to a member when the manifest entry is missing', async () => {
+    const logger = { warn: vi.fn(), error: vi.fn() };
+    vi.mocked(sourceClient.getCampaignContentAsset).mockResolvedValue({
+      ok: true,
+      value: { body: new Uint8Array([1]).buffer, contentType: 'image/png', etag: null },
+    });
+    createCtxMock.mockResolvedValue(
+      makeRequestContext({ viewer: { kind: 'authenticated', userId: 'user-1', traceId: 'trace-1' }, role: 'member' }),
+    );
+
+    const response = await handleCampaignContentAssetRequestImpl({
+      request: new Request('https://example.com/campaigns/ghost/assets/hero.png'),
+      locals: {},
+      params: { campaign: 'ghost', path: 'hero.png' },
+      url: new URL('https://example.com/campaigns/ghost/assets/hero.png'),
+      gateManifest: parseCampaignGateManifest({}),
+      createSourceClient: () => sourceClient,
+      logger,
+    });
+
+    expect(response.status).toBe(200);
+    expect(sourceClient.getCampaignContentAsset).toHaveBeenCalledWith(
+      expect.objectContaining({ campaignSlug: 'ghost', allowedVisibilities: ['public', 'campaignMembers'] }),
+    );
+    expect(logger.warn).toHaveBeenCalledWith('campaign.gate_manifest.missing_entry', expect.objectContaining({ campaignSlug: 'ghost' }));
+  });
+
   it('serves a readable asset for a campaign member with member-scoped visibility', async () => {
     vi.mocked(sourceClient.getCampaignContentAsset).mockResolvedValue({
       ok: true,
@@ -169,7 +202,7 @@ describe('handleCampaignContentAssetRequest (issue #11)', () => {
   });
 
   it('returns a generic 404 when the source reports a missing or unreadable asset', async () => {
-    vi.mocked(sourceClient.getCampaignContentAsset).mockResolvedValue(notFoundFailure());
+    vi.mocked(sourceClient.getCampaignContentAsset).mockResolvedValue(sourceFailure('notFoundOrNotReadable'));
     createCtxMock.mockResolvedValue(makeRequestContext({ viewer: { kind: 'anonymous' }, role: 'anonymous' }));
 
     const response = await handleCampaignContentAssetRequest({
@@ -185,7 +218,7 @@ describe('handleCampaignContentAssetRequest (issue #11)', () => {
   });
 
   it('returns a generic 503 when the source is unavailable or rejects the assertion', async () => {
-    vi.mocked(sourceClient.getCampaignContentAsset).mockResolvedValue(unavailableFailure());
+    vi.mocked(sourceClient.getCampaignContentAsset).mockResolvedValue(sourceFailure('sourceUnavailable'));
     createCtxMock.mockResolvedValue(makeRequestContext({ viewer: { kind: 'anonymous' }, role: 'anonymous' }));
 
     const response = await handleCampaignContentAssetRequest({
@@ -197,6 +230,47 @@ describe('handleCampaignContentAssetRequest (issue #11)', () => {
     });
 
     expect(response.status).toBe(503);
+  });
+
+  it.each([
+    'integrationRejected',
+    'invalidRequest',
+    'rateLimited',
+    'sourceUnavailable',
+    'networkFailure',
+    'validationFailure',
+  ] as const)('fails closed without source details for %s asset failures', async (reason) => {
+    vi.mocked(sourceClient.getCampaignContentAsset).mockResolvedValue(sourceFailure(reason));
+    createCtxMock.mockResolvedValue(makeRequestContext({ viewer: { kind: 'anonymous' }, role: 'anonymous' }));
+
+    const response = await handleCampaignContentAssetRequest({
+      request: new Request('https://example.com/campaigns/sample-campaign/assets/hero.png'),
+      locals: {},
+      params: { campaign: 'sample-campaign', path: 'hero.png' },
+      url: new URL('https://example.com/campaigns/sample-campaign/assets/hero.png'),
+      createSourceClient: () => sourceClient,
+    });
+
+    expect(response.status).toBe(503);
+    expect(await response.text()).toBe('');
+    expect([...response.headers.values()].join(' ')).not.toContain('woa-admin');
+  });
+
+  it('fails closed when the source client unexpectedly throws', async () => {
+    vi.mocked(sourceClient.getCampaignContentAsset).mockRejectedValue(new Error('secret source diagnostic'));
+    createCtxMock.mockResolvedValue(makeRequestContext({ viewer: { kind: 'anonymous' }, role: 'anonymous' }));
+
+    const response = await handleCampaignContentAssetRequest({
+      request: new Request('https://example.com/campaigns/sample-campaign/assets/hero.png'),
+      locals: {},
+      params: { campaign: 'sample-campaign', path: 'hero.png' },
+      url: new URL('https://example.com/campaigns/sample-campaign/assets/hero.png'),
+      createSourceClient: () => sourceClient,
+      logger: { warn: vi.fn(), error: vi.fn() },
+    });
+
+    expect(response.status).toBe(503);
+    expect(await response.text()).toBe('');
   });
 
   it('falls back to octet-stream for executable or unsafe source content types', async () => {
@@ -242,6 +316,43 @@ describe('handleCampaignContentAssetRequest (issue #11)', () => {
 
     expect(response.status).toBe(200);
     expect(new Uint8Array(await response.arrayBuffer())).toEqual(new Uint8Array([4, 5, 6]));
+  });
+
+  it('does not leak runtime assertion values or headers into the browser asset response', async () => {
+    const captured = { assertion: '', signature: '' };
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      const headers = new Headers(init?.headers);
+      captured.assertion = headers.get(RUNTIME_ASSERTION_HEADER) ?? '';
+      captured.signature = headers.get(RUNTIME_ASSERTION_SIGNATURE_HEADER) ?? '';
+      return new Response(new Uint8Array([7, 7]).buffer, { status: 200, headers: { 'content-type': 'image/png' } });
+    });
+    createCtxMock.mockResolvedValue(makeRequestContext({ viewer: { kind: 'anonymous' }, role: 'anonymous' }));
+
+    const response = await handleCampaignContentAssetRequest({
+      request: new Request('https://example.com/campaigns/sample-campaign/assets/hero.png'),
+      locals: {},
+      params: { campaign: 'sample-campaign', path: 'hero.png' },
+      url: new URL('https://example.com/campaigns/sample-campaign/assets/hero.png'),
+      createSourceClient: () =>
+        createCampaignContentSourceClient({
+          config: {
+            baseUrl: 'https://woa-admin.example.invalid',
+            assertionSecret: 'test-secret',
+            assertionAudience: 'woa-admin:campaign-content:v1',
+          },
+          fetch: fetchMock,
+        }),
+    });
+
+    const body = String.fromCharCode(...new Uint8Array(await response.arrayBuffer()));
+    const headerText = [...response.headers.entries()].flat().join('\n');
+    expect(captured.assertion).toBeTruthy();
+    expect(captured.signature).toBeTruthy();
+    expect(`${headerText}\n${body}`).not.toContain(captured.assertion);
+    expect(`${headerText}\n${body}`).not.toContain(captured.signature);
+    expect(headerText).not.toContain(RUNTIME_ASSERTION_HEADER);
+    expect(headerText).not.toContain(RUNTIME_ASSERTION_SIGNATURE_HEADER);
+    expect(headerText).not.toContain('woa-admin:campaign-content:v1');
   });
 
   it('rejects traversal-like asset paths without calling the source', async () => {

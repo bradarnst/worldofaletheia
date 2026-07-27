@@ -39,7 +39,6 @@ const layoutContent = entryData ?? {
 };
 
 const title = entryData?.title ?? 'About this campaign';
-const loginHref = `/login?next=${encodeURIComponent(Astro.url.pathname + Astro.url.search)}`;
 ---
 
 <CampaignsContentLayout content={layoutContent} title={title} robots={model.robots} showContextMetadata={model.canView}>
@@ -57,7 +56,6 @@ const loginHref = `/login?next=${encodeURIComponent(Astro.url.pathname + Astro.u
   ) : (
     <CampaignContentPageState
       reason={model.reason}
-      loginHref={loginHref}
       notFoundHeading="About page not found"
       notFoundBody="This campaign does not have an about page in the current publication environment."
       notFoundBackHref={`/campaigns/${campaignSlug}`}

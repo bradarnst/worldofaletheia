@@ -14,8 +14,43 @@ import { toCampaignContentAssetPath } from '~/lib/campaign-content-asset-rewrite
 const sourceConfig = {
   baseUrl: 'https://woa-admin.example.invalid',
   assertionSecret: 'test-runtime-secret',
-  assertionAudience: 'woa-admin:campaign-content-source:v1',
+  assertionAudience: 'woa-admin:campaign-content:v1',
 };
+
+function makeSourceEntry(overrides: {
+  id?: string;
+  collectionKey?: string;
+  collection?: string;
+  campaignSlug?: string;
+  data?: Record<string, unknown>;
+  markdown?: string;
+} = {}) {
+  const campaignSlug = overrides.campaignSlug ?? 'sample-campaign';
+  const collectionKey = overrides.collectionKey ?? 'pages';
+  const collection = overrides.collection ?? (collectionKey === 'notes' ? 'campaignNotes' : 'campaignPages');
+  const baseData = {
+    campaign: campaignSlug,
+    collection,
+    title: 'Sample Campaign',
+    type: collectionKey === 'notes' ? 'session-note' : 'campaign',
+    publication: 'publish',
+    visibility: 'public',
+    authors: ['brad'],
+    createdAt: '2026-07-01T00:00:00Z',
+    updatedAt: '2026-07-24T12:00:00Z',
+    contentState: 'stable',
+    audienceWarnings: [],
+  };
+
+  return {
+    id: overrides.id ?? 'index',
+    collectionKey,
+    collection,
+    campaignSlug,
+    data: { ...baseData, ...overrides.data },
+    ...(overrides.markdown === undefined ? {} : { markdown: overrides.markdown }),
+  };
+}
 
 function assetPath(path: string) {
   const parsed = toCampaignContentAssetPath(path);
@@ -40,14 +75,14 @@ describe('campaign content source boundary', () => {
     const payload = decodeRuntimeAssertion(headers[RUNTIME_ASSERTION_HEADER]);
 
     expect(payload).toMatchObject({
-      aud: 'woa-admin:campaign-content-source:v1',
+      aud: 'woa-admin:campaign-content:v1',
       campaignSlug: 'brad',
-      operation: 'campaignContent:read',
-      allowedVisibilities: ['public', 'campaignMembers'],
-      subject: { kind: 'authenticated' },
+      operation: 'content:read',
+      allowedVisibility: ['public', 'campaignMembers'],
     });
-    expect(payload.exp - payload.iat).toBe(ASSERTION_EXPIRY_SECONDS);
-    expect(payload.exp).toBe(Math.floor(issuedAt.getTime() / 1000) + 60);
+    expect(payload.exp).toBe(Math.floor(issuedAt.getTime() / 1000) + ASSERTION_EXPIRY_SECONDS);
+    expect(payload.subject).toMatch(/^auth_[A-Za-z0-9_-]{24}$/);
+    expect(payload).not.toHaveProperty('iat');
     expect(JSON.stringify(payload)).not.toContain('user_123456789');
     expect(JSON.stringify(payload)).not.toContain('member-session-1');
     expect(headers[RUNTIME_ASSERTION_SIGNATURE_HEADER]).toMatch(/^[A-Za-z0-9_-]+$/);
@@ -57,16 +92,7 @@ describe('campaign content source boundary', () => {
     const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
       new Response(
         JSON.stringify({
-          campaignSlug: 'sample-campaign',
-          items: [
-            {
-              collectionKey: 'pages',
-              documentId: 'index',
-              title: 'Sample Campaign',
-              visibility: 'public',
-              updatedAt: '2026-07-24T12:00:00Z',
-            },
-          ],
+          items: [makeSourceEntry()],
           nextCursor: null,
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } },
@@ -81,9 +107,9 @@ describe('campaign content source boundary', () => {
       actor: { kind: 'anonymous' },
       type: 'overview',
       subtype: 'root',
-      tag: ['intro', 'session zero'],
+      tag: 'intro',
       author: 'author-1',
-      contributor: ['contributor-1', 'contributor-2'],
+      contributor: 'contributor-1',
       title: 'sample',
       updatedSince: '2026-07-01T00:00:00Z',
       limit: 25,
@@ -93,7 +119,7 @@ describe('campaign content source boundary', () => {
     expect(result.ok).toBe(true);
     expect(fetchMock).toHaveBeenCalledOnce();
     expect(fetchMock.mock.calls[0]?.[0]).toBe(
-      'https://woa-admin.example.invalid/api/v1/campaigns/sample-campaign/campaign-content?collectionKey=pages&type=overview&subtype=root&tag=intro&tag=session+zero&author=author-1&contributor=contributor-1&contributor=contributor-2&title=sample&updatedSince=2026-07-01T00%3A00%3A00Z&limit=25&cursor=next+page',
+      'https://woa-admin.example.invalid/api/v1/campaigns/sample-campaign/collections/pages/documents?type=overview&subtype=root&tag=intro&author=author-1&contributor=contributor-1&title=sample&updatedSince=2026-07-01T00%3A00%3A00Z&limit=25&cursor=next+page',
     );
     expect(fetchMock.mock.calls[0]?.[1]?.headers).toMatchObject({
       Accept: 'application/json',
@@ -105,17 +131,14 @@ describe('campaign content source boundary', () => {
   it('maps detail reads with structured campaign, collection, and document identifiers', async () => {
     const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
       new Response(
-        JSON.stringify({
+        JSON.stringify(makeSourceEntry({
+          id: 'session-zero',
+          collectionKey: 'notes',
+          collection: 'campaignNotes',
           campaignSlug: 'brad',
-          item: {
-            collectionKey: 'notes',
-            documentId: 'session-zero',
-            title: 'Session Zero',
-            visibility: 'campaignMembers',
-            body: '# Session Zero',
-            updatedAt: '2026-07-24T12:00:00Z',
-          },
-        }),
+          data: { campaign: 'brad', collection: 'campaignNotes', title: 'Session Zero', visibility: 'campaignMembers' },
+          markdown: '# Session Zero',
+        })),
         { status: 200, headers: { 'Content-Type': 'application/json' } },
       ),
     );
@@ -141,7 +164,7 @@ describe('campaign content source boundary', () => {
       },
     });
     expect(fetchMock.mock.calls[0]?.[0]).toBe(
-      'https://woa-admin.example.invalid/api/v1/campaigns/brad/campaign-content/notes/session-zero',
+      'https://woa-admin.example.invalid/api/v1/campaigns/brad/collections/notes/documents/session-zero',
     );
   });
 
@@ -149,14 +172,14 @@ describe('campaign content source boundary', () => {
     const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
       new Response(
         JSON.stringify({
-          campaignSlug: 'brad',
           items: [
-            {
+            makeSourceEntry({
+              id: 'gm-secret',
               collectionKey: 'notes',
-              documentId: 'gm-secret',
-              title: 'GM Secret',
-              visibility: 'gm',
-            },
+              collection: 'campaignNotes',
+              campaignSlug: 'brad',
+              data: { campaign: 'brad', collection: 'campaignNotes', title: 'GM Secret', type: 'gm-note', visibility: 'gm' },
+            }),
           ],
           nextCursor: null,
         }),
@@ -179,6 +202,53 @@ describe('campaign content source boundary', () => {
       retryable: false,
       safeMessage: 'Campaign content unavailable.',
     });
+  });
+
+  it.each([
+    ['missing collectionKey', { omit: 'collectionKey' }],
+    ['mismatched collection mapping', { collection: 'campaignPages' }],
+    ['mismatched data collection', { data: { collection: 'campaignPages' } }],
+    ['unpublished content', { data: { publication: 'preview' } }],
+    ['missing title', { data: { title: '' } }],
+    ['missing type', { data: { type: '' } }],
+    ['missing authors', { data: { authors: [] } }],
+    ['missing createdAt', { data: { createdAt: '' } }],
+    ['missing updatedAt', { data: { updatedAt: '' } }],
+  ] as const)('fails closed when source list responses have %s', async (_label, entryOverrides) => {
+    const entry = makeSourceEntry({ collectionKey: 'notes', collection: 'campaignNotes', campaignSlug: 'brad', ...entryOverrides });
+    if ('omit' in entryOverrides && entryOverrides.omit === 'collectionKey') {
+      delete (entry as { collectionKey?: string }).collectionKey;
+    }
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ items: [entry], nextCursor: null }), { status: 200 }));
+    const client = createCampaignContentSourceClient({ config: sourceConfig, fetch: fetchMock });
+
+    await expect(
+      client.listCampaignContent({
+        campaignSlug: 'brad',
+        collectionKey: 'notes',
+        allowedVisibilities: ['public', 'campaignMembers'],
+        actor: { kind: 'authenticated', userId: 'user_123', traceId: 'session_123' },
+      }),
+    ).resolves.toMatchObject({ ok: false, reason: 'validationFailure', mainSiteStatus: 503 });
+  });
+
+  it('fails closed when source detail responses omit Markdown', async () => {
+    const fetchMock = vi.fn(async () =>
+      new Response(JSON.stringify(makeSourceEntry({ id: 'session-zero', collectionKey: 'notes', collection: 'campaignNotes', campaignSlug: 'brad' })), {
+        status: 200,
+      }),
+    );
+    const client = createCampaignContentSourceClient({ config: sourceConfig, fetch: fetchMock });
+
+    await expect(
+      client.getCampaignContentItem({
+        campaignSlug: 'brad',
+        collectionKey: 'notes',
+        documentId: 'session-zero',
+        allowedVisibilities: ['public', 'campaignMembers'],
+        actor: { kind: 'authenticated', userId: 'user_123', traceId: 'session_123' },
+      }),
+    ).resolves.toMatchObject({ ok: false, reason: 'validationFailure', mainSiteStatus: 503 });
   });
 
   it.each([

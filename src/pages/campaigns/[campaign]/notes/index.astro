@@ -13,7 +13,6 @@ export const prerender = false;
 
 const { campaign } = Astro.params;
 const campaignSlug = campaign ?? '';
-const loginHref = `/login?next=${encodeURIComponent(Astro.url.pathname + Astro.url.search)}`;
 
 const ctx = await createCampaignPageRequestContext({
   request: Astro.request,
@@ -39,7 +38,7 @@ const model = await buildCampaignNotesListModel({
 Astro.response.status = model.httpStatus;
 
 const pageTitle = `${campaignSlug} - Notes`;
-const isRestricted = model.reason === 'gate_blocked';
+const isNotFound = model.reason === 'not_found';
 const isUnavailable = model.reason === 'unavailable' || model.reason === 'source_error';
 const visibleNotes = model.entries;
 const updatedAt = (value: string | null) => (value ? new Date(value).toLocaleDateString('en-GB') : '');
@@ -69,12 +68,9 @@ const updatedAt = (value: string | null) => (value ? new Date(value).toLocaleDat
       </div>
 
       {
-        isRestricted && (
+        isNotFound && (
           <section class="ui-surface ui-surface--muted p-6 text-sm text-ink-800">
-            <p>These notes are restricted to campaign members. Sign in with your account to view them.</p>
-            <p class="mt-3">
-              <a href={loginHref} class="ui-button ui-button--primary ui-button--sm">Sign in to continue</a>
-            </p>
+            <p>Campaign notes were not found or are not readable in the current publication environment.</p>
           </section>
         )
       }
@@ -92,7 +88,7 @@ const updatedAt = (value: string | null) => (value ? new Date(value).toLocaleDat
     </div>
 
     {
-      !isRestricted && !isUnavailable && (
+      !isNotFound && !isUnavailable && (
         <div class="mb-12">
           {visibleNotes.length === 0 ? (
             <div class="rounded-xl border border-base-300 bg-base-100 p-8 text-center text-ink-800">

@@ -14,6 +14,8 @@
 
 const ASSET_ENDPOINT_RE = /\/api\/v1\/campaigns\/([^/]+)\/assets$/;
 const MAIN_SITE_ASSET_PREFIX = '/campaigns';
+const RELATIVE_URL_BASE = 'http://_relative_.invalid';
+const APPROVED_SOURCE_ORIGINS = new Set(['https://admin.worldofaletheia.com', 'https://woa-admin.worldofaletheia.com']);
 
 declare const campaignContentAssetPathBrand: unique symbol;
 export type CampaignContentAssetPath = string & { readonly [campaignContentAssetPathBrand]: true };
@@ -77,21 +79,34 @@ function buildMainSiteAssetUrl(campaignSlug: string, assetPath: CampaignContentA
  * Non-asset URLs (doc links, external images, etc.) return `null` and are left
  * unchanged by the caller.
  */
-export function mapCampaignAssetReferenceToMainSite(rawUrl: string, campaignSlug: string): string | null {
+function isApprovedOrConfiguredSourceOrigin(parsed: URL, sourceBaseUrl?: string): boolean {
+  const configuredOrigin = normalizeOrigin(sourceBaseUrl);
+  return parsed.origin === configuredOrigin || APPROVED_SOURCE_ORIGINS.has(parsed.origin);
+}
+
+export function mapCampaignAssetReferenceToMainSite(rawUrl: string, campaignSlug: string, sourceBaseUrl?: string): string | null {
   let parsed: URL;
   try {
-    parsed = new URL(rawUrl, 'http://_relative_.invalid');
+    parsed = new URL(rawUrl, RELATIVE_URL_BASE);
   } catch {
     return null;
   }
 
   const endpointMatch = ASSET_ENDPOINT_RE.exec(parsed.pathname);
   if (endpointMatch) {
+    if (parsed.origin !== RELATIVE_URL_BASE && !isApprovedOrConfiguredSourceOrigin(parsed, sourceBaseUrl)) {
+      return null;
+    }
+
     const assetPath = parsed.searchParams.get('path');
     const validAssetPath = assetPath ? toCampaignContentAssetPath(assetPath) : null;
     if (validAssetPath) {
       return buildMainSiteAssetUrl(campaignSlug, validAssetPath);
     }
+    return null;
+  }
+
+  if (parsed.origin !== RELATIVE_URL_BASE) {
     return null;
   }
 
@@ -116,6 +131,38 @@ export function mapCampaignAssetReferenceToMainSite(rawUrl: string, campaignSlug
   return null;
 }
 
+function normalizeOrigin(value: string | undefined): string | null {
+  const trimmed = value?.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  try {
+    return new URL(trimmed).origin;
+  } catch {
+    return null;
+  }
+}
+
+function isSourceBoundaryUrl(rawUrl: string, sourceBaseUrl?: string): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(rawUrl, RELATIVE_URL_BASE);
+  } catch {
+    return false;
+  }
+
+  if (parsed.origin === RELATIVE_URL_BASE) {
+    return parsed.pathname.startsWith('/api/v1/campaigns/');
+  }
+
+  return isApprovedOrConfiguredSourceOrigin(parsed, sourceBaseUrl);
+}
+
+function mapOrNeutralizeSourceUrl(rawUrl: string, campaignSlug: string, sourceBaseUrl?: string): string | null {
+  return mapCampaignAssetReferenceToMainSite(rawUrl, campaignSlug, sourceBaseUrl) ?? (isSourceBoundaryUrl(rawUrl, sourceBaseUrl) ? '#' : null);
+}
+
 const MARKDOWN_LINK_RE = /(\!?\[[^\]]*\]\()([^)\s]+)(\))/g;
 const MARKDOWN_REFERENCE_DEFINITION_RE = /^(\s{0,3}\[[^\]]+\]:\s*)(\S+)(.*)$/gm;
 const HTML_ASSET_ATTR_RE = /\b(src|href)=(["'])([^"']+)\2/gi;
@@ -125,21 +172,21 @@ const HTML_ASSET_ATTR_RE = /\b(src|href)=(["'])([^"']+)\2/gi;
  * fragments) to main-site asset URLs. Image/link syntax and inline `src`/`href`
  * attributes are considered; every other URL is preserved verbatim.
  */
-export function rewriteCampaignContentAssetReferences(input: string, context: { campaignSlug: string }): string {
+export function rewriteCampaignContentAssetReferences(input: string, context: { campaignSlug: string; sourceBaseUrl?: string }): string {
   const campaignSlug = context.campaignSlug.trim();
 
   let result = input.replace(MARKDOWN_LINK_RE, (_match, pre: string, url: string, post: string) => {
-    const mapped = mapCampaignAssetReferenceToMainSite(url, campaignSlug);
+    const mapped = mapOrNeutralizeSourceUrl(url, campaignSlug, context.sourceBaseUrl);
     return mapped ? `${pre}${mapped}${post}` : _match;
   });
 
   result = result.replace(MARKDOWN_REFERENCE_DEFINITION_RE, (_match, pre: string, url: string, post: string) => {
-    const mapped = mapCampaignAssetReferenceToMainSite(url, campaignSlug);
+    const mapped = mapOrNeutralizeSourceUrl(url, campaignSlug, context.sourceBaseUrl);
     return mapped ? `${pre}${mapped}${post}` : _match;
   });
 
   result = result.replace(HTML_ASSET_ATTR_RE, (_match, attr: string, quote: string, url: string) => {
-    const mapped = mapCampaignAssetReferenceToMainSite(url, campaignSlug);
+    const mapped = mapOrNeutralizeSourceUrl(url, campaignSlug, context.sourceBaseUrl);
     return mapped ? `${attr}=${quote}${mapped}${quote}` : _match;
   });
 

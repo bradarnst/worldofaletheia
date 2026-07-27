@@ -12,7 +12,6 @@ export const prerender = false;
 
 const { campaign, documentId } = Astro.params;
 const campaignSlug = campaign ?? '';
-const loginHref = `/login?next=${encodeURIComponent(Astro.url.pathname + Astro.url.search)}`;
 
 const ctx = await createCampaignPageRequestContext({
   request: Astro.request,
@@ -72,7 +71,6 @@ const canView = model?.canView ?? false;
   ) : (
     <CampaignContentPageState
       reason={model?.reason ?? 'not_found'}
-      loginHref={loginHref}
       notFoundHeading="Note not found"
       notFoundBody="This note was not found or is not readable in the current publication environment."
       notFoundBackHref={`/campaigns/${campaignSlug}/notes`}

@@ -3,9 +3,9 @@ import type { CampaignContentAssetPath } from '~/lib/campaign-content-asset-rewr
 import { getCloudflareRuntimeEnv } from '~/utils/cloudflare-env';
 
 export const ASSERTION_EXPIRY_SECONDS = 60;
-export const CAMPAIGN_CONTENT_READ_OPERATION = 'campaignContent:read';
-export const DEFAULT_ASSERTION_AUDIENCE = 'woa-admin:campaign-content-source:v1';
-export const RUNTIME_ASSERTION_HEADER = 'x-woa-runtime-assertion';
+export const CAMPAIGN_CONTENT_READ_OPERATION = 'content:read';
+export const DEFAULT_ASSERTION_AUDIENCE = 'woa-admin:campaign-content:v1';
+export const RUNTIME_ASSERTION_HEADER = 'x-woa-runtime-actor';
 export const RUNTIME_ASSERTION_SIGNATURE_HEADER = 'x-woa-runtime-signature';
 export const CAMPAIGN_CONTENT_ASSET_FETCH_TIMEOUT_MS = 10_000;
 
@@ -37,15 +37,11 @@ export function toCampaignContentSourceActor(viewer: CampaignContentViewer): Cam
 
 export interface CampaignContentRuntimeAssertionPayload {
   aud: string;
-  iat: number;
   exp: number;
   campaignSlug: string;
   operation: typeof CAMPAIGN_CONTENT_READ_OPERATION;
-  allowedVisibilities: ContentVisibility[];
-  subject: {
-    kind: CampaignContentSourceActor['kind'];
-    trace: string;
-  };
+  allowedVisibility: ContentVisibility[];
+  subject: string;
 }
 
 export interface RuntimeAssertionHeaders {
@@ -63,9 +59,9 @@ export interface CampaignContentListOptions extends CampaignContentSourceRequest
   collectionKey?: string;
   type?: string;
   subtype?: string;
-  tag?: string | string[];
-  author?: string | string[];
-  contributor?: string | string[];
+  tag?: string;
+  author?: string;
+  contributor?: string;
   title?: string;
   updatedSince?: string;
   limit?: number;
@@ -251,16 +247,13 @@ async function signBase64Url(value: string, secret: string): Promise<string> {
   return toBase64Url(new Uint8Array(signature));
 }
 
-async function createSubjectTrace(actor: CampaignContentSourceActor, secret: string): Promise<CampaignContentRuntimeAssertionPayload['subject']> {
+async function createRuntimeAssertionSubject(actor: CampaignContentSourceActor, secret: string): Promise<string> {
   if (actor.kind === 'anonymous') {
-    return { kind: 'anonymous', trace: 'anonymous' };
+    return 'anonymous';
   }
 
   const signature = await signBase64Url(`${actor.userId}:${actor.traceId}`, secret);
-  return {
-    kind: 'authenticated',
-    trace: `auth_${signature.slice(0, 24)}`,
-  };
+  return `auth_${signature.slice(0, 24)}`;
 }
 
 export async function createRuntimeAssertionHeaders(input: {
@@ -274,12 +267,11 @@ export async function createRuntimeAssertionHeaders(input: {
   const assertionSecret = input.config.assertionSecret;
   const payload: CampaignContentRuntimeAssertionPayload = {
     aud: input.config.assertionAudience ?? DEFAULT_ASSERTION_AUDIENCE,
-    iat: issuedAt,
     exp: issuedAt + ASSERTION_EXPIRY_SECONDS,
     campaignSlug: input.campaignSlug,
     operation: CAMPAIGN_CONTENT_READ_OPERATION,
-    allowedVisibilities: [...input.allowedVisibilities],
-    subject: await createSubjectTrace(input.actor, assertionSecret),
+    allowedVisibility: [...input.allowedVisibilities],
+    subject: await createRuntimeAssertionSubject(input.actor, assertionSecret),
   };
   const assertion = encodeJsonPayload(payload);
 
@@ -306,23 +298,44 @@ function isContentVisibility(value: unknown): value is ContentVisibility {
   return value === 'public' || value === 'campaignMembers' || value === 'gm';
 }
 
+const campaignContentCollectionByKey: Record<string, string> = {
+  pages: 'campaignPages',
+  notes: 'campaignNotes',
+  lore: 'campaignLore',
+  places: 'campaignPlaces',
+  sentients: 'campaignSentients',
+  bestiary: 'campaignBestiary',
+  flora: 'campaignFlora',
+  factions: 'campaignFactions',
+  systems: 'campaignSystems',
+  meta: 'campaignMeta',
+  characters: 'campaignCharacters',
+  scenes: 'campaignScenes',
+  adventures: 'campaignAdventures',
+  hooks: 'campaignHooks',
+};
+
+function isPublishPublication(value: unknown): boolean {
+  return value === 'publish';
+}
+
+function isNonEmptyStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.length > 0 && value.every((item) => typeof item === 'string' && item.trim().length > 0);
+}
+
 function isRuntimeAssertionPayload(value: unknown): value is CampaignContentRuntimeAssertionPayload {
   if (!isRecord(value)) {
     return false;
   }
 
-  const subject = value.subject;
   return (
     typeof value.aud === 'string'
-    && typeof value.iat === 'number'
     && typeof value.exp === 'number'
     && typeof value.campaignSlug === 'string'
     && value.operation === CAMPAIGN_CONTENT_READ_OPERATION
-    && Array.isArray(value.allowedVisibilities)
-    && value.allowedVisibilities.every(isContentVisibility)
-    && isRecord(subject)
-    && (subject.kind === 'anonymous' || subject.kind === 'authenticated')
-    && typeof subject.trace === 'string'
+    && Array.isArray(value.allowedVisibility)
+    && value.allowedVisibility.every(isContentVisibility)
+    && typeof value.subject === 'string'
   );
 }
 
@@ -343,6 +356,10 @@ function getOptionalString(record: Record<string, unknown>, field: string): stri
     throw new Error(`Campaign Content source response has invalid ${field}.`);
   }
   return value;
+}
+
+function assertRequiredString(record: Record<string, unknown>, field: string): void {
+  getRequiredString(record, field);
 }
 
 function assertMatchingField(actual: string, expected: string, field: string): void {
@@ -367,18 +384,44 @@ function validateSummaryItem(input: {
     throw new Error('Campaign Content source response item must be an object.');
   }
 
-  const itemCampaignSlug = getOptionalString(input.item, 'campaignSlug') ?? input.campaignSlug;
+  const itemCampaignSlug = getRequiredString(input.item, 'campaignSlug');
   assertMatchingField(itemCampaignSlug, input.campaignSlug, 'campaignSlug');
 
   const collectionKey = getRequiredString(input.item, 'collectionKey');
+  const expectedCollection = campaignContentCollectionByKey[collectionKey];
+  if (!expectedCollection) {
+    throw new Error('Campaign Content source response returned an unsupported collectionKey.');
+  }
   if (input.collectionKey) {
     assertMatchingField(collectionKey, input.collectionKey, 'collectionKey');
   }
 
-  const documentId = getRequiredString(input.item, 'documentId');
+  const documentId = getRequiredString(input.item, 'id');
   validateDocumentId(documentId);
 
-  const visibility = input.item.visibility;
+  const collection = getRequiredString(input.item, 'collection');
+  assertMatchingField(collection, expectedCollection, 'collection');
+  const data = input.item.data;
+  if (!isRecord(data)) {
+    throw new Error('Campaign Content source response item is missing data.');
+  }
+  assertMatchingField(getRequiredString(data, 'campaign'), input.campaignSlug, 'data.campaign');
+  assertMatchingField(getRequiredString(data, 'collection'), collection, 'data.collection');
+
+  if (!isPublishPublication(data.publication)) {
+    throw new Error('Campaign Content source response returned unpublished content.');
+  }
+
+  assertRequiredString(data, 'title');
+  assertRequiredString(data, 'type');
+  assertRequiredString(data, 'createdAt');
+  assertRequiredString(data, 'updatedAt');
+
+  if (!isNonEmptyStringArray(data.authors)) {
+    throw new Error('Campaign Content source response is missing authors.');
+  }
+
+  const visibility = data.visibility;
   if (!isContentVisibility(visibility) || !input.allowedVisibilities.includes(visibility)) {
     throw new Error('Campaign Content source response returned unreadable or invalid visibility.');
   }
@@ -387,10 +430,10 @@ function validateSummaryItem(input: {
     campaignSlug: itemCampaignSlug,
     collectionKey,
     documentId,
-    title: getRequiredString(input.item, 'title'),
+    title: getRequiredString(data, 'title'),
     visibility,
-    updatedAt: getOptionalString(input.item, 'updatedAt'),
-    raw: input.item,
+    updatedAt: getOptionalString(data, 'updatedAt'),
+    raw: data,
   };
 }
 
@@ -408,9 +451,9 @@ function validateDetailItem(input: {
     throw new Error('Campaign Content source detail response item must be an object.');
   }
 
-  const body = input.item.body;
+  const body = input.item.markdown;
   if (typeof body !== 'string') {
-    throw new Error('Campaign Content source detail response is missing body.');
+    throw new Error('Campaign Content source detail response is missing markdown.');
   }
 
   return {
@@ -428,8 +471,6 @@ function validateListResponse(input: {
   if (!isRecord(input.body)) {
     throw new Error('Campaign Content source list response must be an object.');
   }
-
-  assertMatchingField(getRequiredString(input.body, 'campaignSlug'), input.campaignSlug, 'campaignSlug');
 
   const items = input.body.items;
   if (!Array.isArray(items)) {
@@ -466,9 +507,8 @@ function validateDetailResponse(input: {
     throw new Error('Campaign Content source detail response must be an object.');
   }
 
-  assertMatchingField(getRequiredString(input.body, 'campaignSlug'), input.campaignSlug, 'campaignSlug');
   return validateDetailItem({
-    item: input.body.item,
+    item: input.body,
     campaignSlug: input.campaignSlug,
     collectionKey: input.collectionKey,
     documentId: input.documentId,
@@ -525,31 +565,17 @@ function appendStringFilter(searchParams: URLSearchParams, key: string, value: s
   }
 }
 
-function appendRepeatedFilter(searchParams: URLSearchParams, key: string, value: string | string[] | undefined): void {
-  if (value === undefined) {
-    return;
-  }
-
-  const values = Array.isArray(value) ? value : [value];
-  for (const item of values) {
-    const trimmed = item.trim();
-    if (trimmed) {
-      searchParams.append(key, trimmed);
-    }
-  }
-}
-
 function buildListUrl(config: CampaignContentSourceConfig, options: CampaignContentListOptions): string {
-  const url = new URL(
-    `/api/v1/campaigns/${encodeURIComponent(options.campaignSlug)}/campaign-content`,
-    trimTrailingSlashes(config.baseUrl),
-  );
-  appendStringFilter(url.searchParams, 'collectionKey', options.collectionKey);
+  const campaignPath = `/api/v1/campaigns/${encodeURIComponent(options.campaignSlug)}`;
+  const documentsPath = options.collectionKey
+    ? `${campaignPath}/collections/${encodeURIComponent(options.collectionKey)}/documents`
+    : `${campaignPath}/documents`;
+  const url = new URL(documentsPath, trimTrailingSlashes(config.baseUrl));
   appendStringFilter(url.searchParams, 'type', options.type);
   appendStringFilter(url.searchParams, 'subtype', options.subtype);
-  appendRepeatedFilter(url.searchParams, 'tag', options.tag);
-  appendRepeatedFilter(url.searchParams, 'author', options.author);
-  appendRepeatedFilter(url.searchParams, 'contributor', options.contributor);
+  appendStringFilter(url.searchParams, 'tag', options.tag);
+  appendStringFilter(url.searchParams, 'author', options.author);
+  appendStringFilter(url.searchParams, 'contributor', options.contributor);
   appendStringFilter(url.searchParams, 'title', options.title);
   appendStringFilter(url.searchParams, 'updatedSince', options.updatedSince);
   if (options.limit !== undefined) {
@@ -561,7 +587,7 @@ function buildListUrl(config: CampaignContentSourceConfig, options: CampaignCont
 
 function buildDetailUrl(config: CampaignContentSourceConfig, options: CampaignContentDetailOptions): string {
   return new URL(
-    `/api/v1/campaigns/${encodeURIComponent(options.campaignSlug)}/campaign-content/${encodeURIComponent(options.collectionKey)}/${encodeURIComponent(options.documentId)}`,
+    `/api/v1/campaigns/${encodeURIComponent(options.campaignSlug)}/collections/${encodeURIComponent(options.collectionKey)}/documents/${encodeURIComponent(options.documentId)}`,
     trimTrailingSlashes(config.baseUrl),
   ).toString();
 }
