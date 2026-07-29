@@ -21,9 +21,32 @@ servers:
   - url: https://admin.worldofaletheia.com
     description: woa-admin origin.
 tags:
+  - name: Campaign Surface Registry
   - name: Campaign Content Documents
   - name: Campaign Content Assets
 paths:
+  /api/v1/campaigns:
+    get:
+      operationId: listCampaignSurfaceRegistry
+      tags: [Campaign Surface Registry]
+      summary: List active campaign surfaces for the current environment
+      description: >-
+        Returns the environment-specific Campaign Surface Registry used by
+        worldofaletheia.com for campaign listing and Campaign Gate resolution. V1 has no query
+        parameters and no pagination. Empty registry state is represented as items: []. A returned
+        surface requires both active campaign storage configured for the current runtime environment
+        and matching Campaign Surface Registry metadata for the same campaign and environment.
+        Results are ordered by title ascending, then campaignSlug ascending. Inclusion in this endpoint
+        is the listing decision; response items deliberately omit listed,
+        environment, storage fields, membership/user fields, admin metadata, and Campaign Content
+        document metadata such as excerpts, tags, Markdown, rendered HTML, or asset paths.
+      security:
+        - {}
+      responses:
+        '200': { $ref: '#/components/responses/CampaignSurfaceRegistry' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
   /api/v1/campaigns/{campaignSlug}/documents:
     get:
       operationId: listCampaignContentDocuments
@@ -233,6 +256,13 @@ components:
       in: query
       schema: { type: string, maxLength: 512 }
   responses:
+    CampaignSurfaceRegistry:
+      description: Active campaign surfaces for the current runtime environment.
+      headers:
+        Cache-Control: { $ref: '#/components/headers/NoStore' }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/CampaignSurfaceRegistryResponse' }
     DocumentList:
       description: Cursor page of readable metadata-only entries.
       headers:
@@ -305,6 +335,7 @@ components:
       enum: [campaignPages, campaignNotes, campaignLore, campaignPlaces, campaignSentients, campaignBestiary, campaignFlora, campaignFactions, campaignSystems, campaignMeta, campaignCharacters, campaignScenes, campaignAdventures, campaignHooks]
     Publication: { type: string, enum: [preview, publish, archive] }
     Visibility: { type: string, enum: [public, campaignMembers, gm] }
+    CampaignGate: { type: string, enum: [public, campaignMembers] }
     ContentState: { type: string, enum: [stable, mayChange, unfinished], default: stable }
     AudienceWarning: { type: string, enum: [gmSpoilers] }
     CampaignContentData:
@@ -506,6 +537,26 @@ components:
           items: { $ref: '#/components/schemas/CampaignContentEntrySummary' }
         nextCursor:
           type: [string, 'null']
+      additionalProperties: false
+    CampaignSurfaceRegistryItem:
+      type: object
+      required: [campaignSlug, title, gate, updatedAt]
+      properties:
+        campaignSlug: { type: string, pattern: '^[a-z0-9][a-z0-9-]*[a-z0-9]$' }
+        title: { type: string, minLength: 1, maxLength: 240 }
+        gate: { $ref: '#/components/schemas/CampaignGate' }
+        updatedAt:
+          type: string
+          format: date-time
+          description: Campaign Surface Registry metadata timestamp, not bucket freshness or latest content freshness.
+      additionalProperties: false
+    CampaignSurfaceRegistryResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/CampaignSurfaceRegistryItem' }
       additionalProperties: false
     ErrorResponse:
       type: object
