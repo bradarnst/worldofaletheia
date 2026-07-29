@@ -61,6 +61,76 @@ function assetPath(path: string) {
 }
 
 describe('campaign content source boundary', () => {
+  it('loads and validates Campaign Surface Registry items without runtime assertion headers', async () => {
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
+      new Response(
+        JSON.stringify({
+          items: [
+            {
+              campaignSlug: 'the-weight-of-sun-and-soil',
+              title: 'The Weight of Sun and Soil',
+              gate: 'campaignMembers',
+              updatedAt: '2026-07-29T00:00:00Z',
+            },
+            {
+              campaignSlug: 'public-campaign',
+              title: 'Public Campaign',
+              gate: 'public',
+              updatedAt: '2026-07-29T00:00:00Z',
+            },
+          ],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+    const client = createCampaignContentSourceClient({ config: sourceConfig, fetch: fetchMock });
+
+    await expect(client.listCampaignSurfaces()).resolves.toEqual({
+      ok: true,
+      value: {
+        items: [
+          {
+            campaignSlug: 'the-weight-of-sun-and-soil',
+            title: 'The Weight of Sun and Soil',
+            gate: 'campaignMembers',
+            updatedAt: '2026-07-29T00:00:00Z',
+          },
+          {
+            campaignSlug: 'public-campaign',
+            title: 'Public Campaign',
+            gate: 'public',
+            updatedAt: '2026-07-29T00:00:00Z',
+          },
+        ],
+      },
+    });
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('https://woa-admin.example.invalid/api/v1/campaigns');
+    expect(fetchMock.mock.calls[0]?.[1]?.headers).toEqual({ Accept: 'application/json' });
+  });
+
+  it.each([
+    ['missing items', {}],
+    ['extra response field', { items: [], total: 1 }],
+    ['invalid slug', { items: [{ campaignSlug: 'Bad Slug', title: 'Bad', gate: 'public', updatedAt: '2026-07-29T00:00:00Z' }] }],
+    ['whitespace-padded slug', { items: [{ campaignSlug: ' padded-slug ', title: 'Bad', gate: 'public', updatedAt: '2026-07-29T00:00:00Z' }] }],
+    ['invalid gate', { items: [{ campaignSlug: 'bad-gate', title: 'Bad', gate: 'gm', updatedAt: '2026-07-29T00:00:00Z' }] }],
+    ['non-date-time updatedAt', { items: [{ campaignSlug: 'bad-date', title: 'Bad', gate: 'public', updatedAt: '2026-07-29' }] }],
+    ['date-time without timezone', { items: [{ campaignSlug: 'bad-date', title: 'Bad', gate: 'public', updatedAt: '2026-07-29T00:00:00' }] }],
+    ['extra item field', { items: [{ campaignSlug: 'extra-field', title: 'Bad', gate: 'public', updatedAt: '2026-07-29T00:00:00Z', bucket: 'private' }] }],
+  ] as const)('fails closed when Campaign Surface Registry response has %s', async (_label, body) => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify(body), { status: 200 }));
+    const client = createCampaignContentSourceClient({ config: sourceConfig, fetch: fetchMock });
+
+    await expect(client.listCampaignSurfaces()).resolves.toMatchObject({ ok: false, reason: 'validationFailure', mainSiteStatus: 503 });
+  });
+
+  it('fails closed when the Campaign Surface Registry source is unavailable', async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ error: { code: 'service_unavailable', message: 'down' } }), { status: 503 }));
+    const client = createCampaignContentSourceClient({ config: sourceConfig, fetch: fetchMock });
+
+    await expect(client.listCampaignSurfaces()).resolves.toMatchObject({ ok: false, reason: 'sourceUnavailable', mainSiteStatus: 503 });
+  });
+
   it('mints campaign-scoped read assertions with a 60-second expiry and non-PII subject', async () => {
     const issuedAt = new Date('2026-07-24T12:00:00.000Z');
 

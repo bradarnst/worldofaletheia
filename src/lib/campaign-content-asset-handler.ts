@@ -21,6 +21,7 @@ import {
 import {
   campaignGateManifest,
   decideCampaignGateAccess,
+  isUnknownCampaignGateSource,
   type CampaignGateLogger,
   type ParsedCampaignGateManifest,
 } from '~/lib/campaign-gate-policy';
@@ -36,6 +37,7 @@ export interface HandleCampaignContentAssetRequestInput {
   createSourceClient?: () => CampaignContentSourceClient | Promise<CampaignContentSourceClient>;
   logger?: CampaignGateLogger;
   gateManifest?: ParsedCampaignGateManifest;
+  requireKnownCampaignGate?: boolean;
 }
 
 export const CAMPAIGN_CONTENT_ASSET_NOINDEX_HEADERS: Record<string, string> = {
@@ -118,6 +120,10 @@ export async function handleCampaignContentAssetRequest(
     campaignAccessRole,
     logger,
   });
+
+  if (input.requireKnownCampaignGate && isUnknownCampaignGateSource(decision.gateSource)) {
+    return new Response(null, { status: 404, headers: noIndexHeaders() });
+  }
 
   // Anonymous blocked by a campaignMembers gate: stop before any source fetch.
   if (!decision.gateAllowsRequest) {

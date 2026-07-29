@@ -1,3 +1,10 @@
+---
+audience: developer-operator
+publication: repo-local
+status: current
+owner: woa-admin
+---
+
 # Campaign Content Source API main-site handoff
 
 This guide is derived from the Campaign Content OpenAPI contracts:
@@ -5,7 +12,9 @@ This guide is derived from the Campaign Content OpenAPI contracts:
 - `docs/contracts/campaign-content-read-api.openapi.yaml`
 - `docs/contracts/campaign-content-operator-api.openapi.yaml` (owned and versioned in the `woa-admin` sister repository; not included in this repository)
 
-OpenAPI is authoritative for routes, status codes, schemas, filtering, pagination, auth headers, and error bodies. This guide exists to make the intended `worldofaletheia.com` integration boundary explicit.
+OpenAPI is binding and authoritative for routes, status codes, schemas, filtering, pagination, auth headers, and error bodies. This contract-adjacent handoff exists to make the intended `worldofaletheia.com` integration boundary explicit without becoming procedural setup guidance or redefining HTTP behavior.
+
+For first rollout sequencing across `woa-admin`, Cloudflare resources, GM sync setup, main-site cutover, and legacy cleanup, use the rollout guide owned by the `woa-admin` sister repository.
 
 ## Ownership split
 
@@ -38,6 +47,18 @@ The decoded assertion payload uses:
 ```
 
 `woa-admin` verifies the envelope, expiry, audience, operation, campaign match, signature, and allowed visibility values. It does not read Better Auth cookies or decide whether an end user is a campaign member. The main site must make that decision before minting the assertion.
+
+## Campaign surfaces
+
+The main site discovers active campaign surfaces through:
+
+```text
+GET /api/v1/campaigns
+```
+
+This endpoint returns the environment-specific Campaign Surface Registry. A returned surface requires both active campaign storage configured in `woa-admin` for that runtime environment and matching Campaign Surface Registry metadata for the same campaign and environment. Bucket rows alone are not public-site campaign listing metadata.
+
+Response items are intentionally limited to the OpenAPI-defined `campaignSlug`, `title`, `gate`, and `updatedAt` fields. The endpoint does not expose bucket names, storage slugs, environment fields, membership/user fields, admin metadata, document excerpts, tags, Markdown, rendered HTML, or asset paths.
 
 ## Astro entry mapping
 

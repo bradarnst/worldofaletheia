@@ -161,6 +161,29 @@ describe('buildCampaignNotesListModel (issue #10)', () => {
     expect(logger.warn).toHaveBeenCalledWith('campaign.gate_manifest.missing_entry', expect.objectContaining({ campaignSlug: 'ghost' }));
   });
 
+  it('fails closed before source fetch when a required registry notes gate is malformed', async () => {
+    const getLiveCollection = vi.fn<CampaignNotesListLiveGetter>();
+
+    const model = await buildCampaignNotesListModel({
+      campaignSlug: 'bad-registry-gate',
+      gateManifest: parseCampaignGateManifest({ 'bad-registry-gate': 'gm' }, { source: 'registry' }),
+      viewer: { kind: 'authenticated', userId: 'user-1', traceId: 'trace-1' },
+      getCampaignAccessRole: async () => 'member',
+      getLiveCollection,
+      requireKnownCampaignGate: true,
+    });
+
+    expect(model).toMatchObject({
+      gate: 'campaignMembers',
+      gateSource: 'invalid-default',
+      gateAllowsRequest: false,
+      sourceFetched: false,
+      httpStatus: 404,
+      reason: 'not_found',
+    });
+    expect(getLiveCollection).not.toHaveBeenCalled();
+  });
+
   it('lets a campaign member read campaignMembers notes but not GM-only notes in the list', async () => {
     const getLiveCollection = vi.fn<CampaignNotesListLiveGetter>(async (_collection, filter) => {
       const accessScope = filter.accessScope;

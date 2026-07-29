@@ -1,4 +1,4 @@
-import type { ContentVisibility } from '~/lib/campaign-gate-policy';
+import { isCampaignGate, type CampaignGate, type ContentVisibility } from '~/lib/campaign-gate-policy';
 import type { CampaignContentAssetPath } from '~/lib/campaign-content-asset-rewrite';
 import { getCloudflareRuntimeEnv } from '~/utils/cloudflare-env';
 
@@ -93,6 +93,17 @@ export interface CampaignContentListPage {
   nextCursor: string | null;
 }
 
+export interface CampaignSurfaceRegistryItem {
+  campaignSlug: string;
+  title: string;
+  gate: CampaignGate;
+  updatedAt: string;
+}
+
+export interface CampaignSurfaceRegistry {
+  items: CampaignSurfaceRegistryItem[];
+}
+
 /**
  * Bucket-relative Campaign Content asset path, e.g. `assets/hero.png` or
  * `assets/maps/region.png`. Mirrors the `path` query parameter accepted by the
@@ -134,6 +145,7 @@ export interface CampaignContentSourceFailure {
 export type CampaignContentSourceResult<T> = { ok: true; value: T } | CampaignContentSourceFailure;
 
 export interface CampaignContentSourceClient {
+  listCampaignSurfaces(): Promise<CampaignContentSourceResult<CampaignSurfaceRegistry>>;
   listCampaignContent(options: CampaignContentListOptions): Promise<CampaignContentSourceResult<CampaignContentListPage>>;
   getCampaignContentItem(options: CampaignContentDetailOptions): Promise<CampaignContentSourceResult<CampaignContentItemDetail>>;
   getCampaignContentAsset(options: CampaignContentAssetOptions): Promise<CampaignContentAssetReadResult>;
@@ -496,6 +508,70 @@ function validateListResponse(input: {
   };
 }
 
+function validateIsoDateTime(value: string, field: string): void {
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(value)) {
+    throw new Error(`Campaign Content source response has invalid ${field}.`);
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    throw new Error(`Campaign Content source response has invalid ${field}.`);
+  }
+}
+
+function validateNoAdditionalProperties(record: Record<string, unknown>, allowedFields: readonly string[], name: string): void {
+  for (const field of Object.keys(record)) {
+    if (!allowedFields.includes(field)) {
+      throw new Error(`${name} includes unsupported field ${field}.`);
+    }
+  }
+}
+
+function validateCampaignSurfaceRegistryItem(item: unknown): CampaignSurfaceRegistryItem {
+  if (!isRecord(item)) {
+    throw new Error('Campaign Surface Registry item must be an object.');
+  }
+
+  validateNoAdditionalProperties(item, ['campaignSlug', 'title', 'gate', 'updatedAt'], 'Campaign Surface Registry item');
+
+  const campaignSlug = getRequiredString(item, 'campaignSlug');
+  if (!/^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(campaignSlug)) {
+    throw new Error('Campaign Surface Registry item has invalid campaignSlug.');
+  }
+
+  const title = getRequiredString(item, 'title').trim();
+  if (title.length > 240) {
+    throw new Error('Campaign Surface Registry item title is too long.');
+  }
+
+  const gate = item.gate;
+  if (!isCampaignGate(gate)) {
+    throw new Error('Campaign Surface Registry item has invalid gate.');
+  }
+
+  const updatedAt = getRequiredString(item, 'updatedAt');
+  validateIsoDateTime(updatedAt, 'updatedAt');
+
+  return { campaignSlug, title, gate, updatedAt };
+}
+
+function validateCampaignSurfaceRegistryResponse(body: unknown): CampaignSurfaceRegistry {
+  if (!isRecord(body)) {
+    throw new Error('Campaign Surface Registry response must be an object.');
+  }
+
+  validateNoAdditionalProperties(body, ['items'], 'Campaign Surface Registry response');
+
+  const items = body.items;
+  if (!Array.isArray(items)) {
+    throw new Error('Campaign Surface Registry response is missing items.');
+  }
+
+  return {
+    items: items.map(validateCampaignSurfaceRegistryItem),
+  };
+}
+
 function validateDetailResponse(input: {
   body: unknown;
   campaignSlug: string;
@@ -583,6 +659,10 @@ function buildListUrl(config: CampaignContentSourceConfig, options: CampaignCont
   }
   appendStringFilter(url.searchParams, 'cursor', options.cursor ?? undefined);
   return url.toString();
+}
+
+function buildCampaignSurfaceRegistryUrl(config: CampaignContentSourceConfig): string {
+  return new URL('/api/v1/campaigns', trimTrailingSlashes(config.baseUrl)).toString();
 }
 
 function buildDetailUrl(config: CampaignContentSourceConfig, options: CampaignContentDetailOptions): string {
@@ -748,6 +828,27 @@ export function createCampaignContentSourceClient(options: CreateCampaignContent
   }
 
   return {
+    async listCampaignSurfaces() {
+      let response: Response;
+      try {
+        response = await fetchImpl(buildCampaignSurfaceRegistryUrl(config), {
+          method: 'GET',
+          headers: { Accept: 'application/json' },
+        });
+      } catch {
+        return mapCampaignContentSourceFailure({ reason: 'networkFailure' });
+      }
+
+      if (!response.ok) {
+        return mapCampaignContentSourceFailure({ status: response.status });
+      }
+
+      try {
+        return { ok: true, value: validateCampaignSurfaceRegistryResponse(await readJsonResponse(response)) };
+      } catch {
+        return mapCampaignContentSourceFailure({ reason: 'validationFailure' });
+      }
+    },
     listCampaignContent(listOptions) {
       return fetchSourceJson({
         url: buildListUrl(config, listOptions),

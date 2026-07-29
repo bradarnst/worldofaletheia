@@ -12,11 +12,8 @@ describe('campaign gate policy', () => {
     vi.restoreAllMocks();
   });
 
-  it('exposes the non-dynamic manifest keyed by campaign slug', () => {
-    expect(CAMPAIGN_GATE_MANIFEST).toMatchObject({
-      brad: 'campaignMembers',
-      barry: 'campaignMembers',
-    });
+  it('does not expose hard-coded campaign gate entries as active runtime defaults', () => {
+    expect(CAMPAIGN_GATE_MANIFEST).toEqual({});
   });
 
   it('parses only public and campaignMembers gate values', () => {

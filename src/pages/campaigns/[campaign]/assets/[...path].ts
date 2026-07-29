@@ -7,14 +7,18 @@
 
 import type { APIRoute } from 'astro';
 import { handleCampaignContentAssetRequest } from '~/lib/campaign-content-asset-handler';
+import { loadCampaignSurfaceGateManifestFailClosed } from '~/lib/campaign-index';
 
 export const prerender = false;
 
 export const GET: APIRoute = async ({ request, locals, params, url }) => {
+  const gateManifest = await loadCampaignSurfaceGateManifestFailClosed();
   return handleCampaignContentAssetRequest({
     request,
     locals,
     params: { campaign: params.campaign, path: params.path },
     url,
+    gateManifest,
+    requireKnownCampaignGate: true,
   });
 };

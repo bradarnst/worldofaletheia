@@ -35,6 +35,7 @@ interface Scenario {
 
 function makeSourceClientStub(): CampaignContentSourceClient {
   return {
+    listCampaignSurfaces: vi.fn(),
     listCampaignContent: vi.fn(),
     getCampaignContentItem: vi.fn(),
     getCampaignContentAsset: vi.fn(),
@@ -150,6 +151,44 @@ describe('handleCampaignContentAssetRequest (issue #11)', () => {
       expect.objectContaining({ campaignSlug: 'ghost', allowedVisibilities: ['public', 'campaignMembers'] }),
     );
     expect(logger.warn).toHaveBeenCalledWith('campaign.gate_manifest.missing_entry', expect.objectContaining({ campaignSlug: 'ghost' }));
+  });
+
+  it('fails closed before source fetch when a required asset gate is missing', async () => {
+    createCtxMock.mockResolvedValue(
+      makeRequestContext({ viewer: { kind: 'authenticated', userId: 'user-1', traceId: 'trace-1' }, role: 'member' }),
+    );
+
+    const response = await handleCampaignContentAssetRequestImpl({
+      request: new Request('https://example.com/campaigns/ghost/assets/hero.png'),
+      locals: {},
+      params: { campaign: 'ghost', path: 'hero.png' },
+      url: new URL('https://example.com/campaigns/ghost/assets/hero.png'),
+      gateManifest: parseCampaignGateManifest({}, { source: 'registry' }),
+      requireKnownCampaignGate: true,
+      createSourceClient: () => sourceClient,
+    });
+
+    expect(response.status).toBe(404);
+    expect(sourceClient.getCampaignContentAsset).not.toHaveBeenCalled();
+  });
+
+  it('fails closed before source fetch when a required asset gate is malformed', async () => {
+    createCtxMock.mockResolvedValue(
+      makeRequestContext({ viewer: { kind: 'authenticated', userId: 'user-1', traceId: 'trace-1' }, role: 'member' }),
+    );
+
+    const response = await handleCampaignContentAssetRequestImpl({
+      request: new Request('https://example.com/campaigns/bad-registry-gate/assets/hero.png'),
+      locals: {},
+      params: { campaign: 'bad-registry-gate', path: 'hero.png' },
+      url: new URL('https://example.com/campaigns/bad-registry-gate/assets/hero.png'),
+      gateManifest: parseCampaignGateManifest({ 'bad-registry-gate': 'gm' }, { source: 'registry' }),
+      requireKnownCampaignGate: true,
+      createSourceClient: () => sourceClient,
+    });
+
+    expect(response.status).toBe(404);
+    expect(sourceClient.getCampaignContentAsset).not.toHaveBeenCalled();
   });
 
   it('serves a readable asset for a campaign member with member-scoped visibility', async () => {

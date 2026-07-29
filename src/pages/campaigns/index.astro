@@ -1,16 +1,15 @@
 ---
-import { getLiveEntry } from 'astro:content';
 import CampaignsLayout from '@layouts/CampaignsLayout.astro';
 import CollectionHeroShell from '@components/site/CollectionHeroShell.astro';
 import rideOnTheBeach from '@images/ride-on-the-beach.png';
 import {
   buildCampaignIndexModel,
-  createCampaignIndexLiveMetadataLoader,
+  createCampaignSurfaceRegistryLoader,
   type CampaignIndexViewer,
 } from '~/lib/campaign-index';
 import { getRequestSession } from '~/lib/auth-session';
 
-const loadCampaignMetadata = createCampaignIndexLiveMetadataLoader({ getLiveEntry });
+const loadCampaignSurfaces = createCampaignSurfaceRegistryLoader();
 
 const session = await getRequestSession(Astro.request, Astro.locals);
 const viewer: CampaignIndexViewer = session
@@ -19,7 +18,7 @@ const viewer: CampaignIndexViewer = session
 
 const campaignIndex = await buildCampaignIndexModel({
   viewer,
-  loadCampaignMetadata,
+  loadCampaignSurfaces,
 });
 
 const next = encodeURIComponent(`${Astro.url.pathname}${Astro.url.search}`);
