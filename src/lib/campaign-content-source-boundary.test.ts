@@ -112,7 +112,10 @@ describe('campaign content source boundary', () => {
     ['missing items', {}],
     ['extra response field', { items: [], total: 1 }],
     ['invalid slug', { items: [{ campaignSlug: 'Bad Slug', title: 'Bad', gate: 'public', updatedAt: '2026-07-29T00:00:00Z' }] }],
+    ['whitespace-padded slug', { items: [{ campaignSlug: ' padded-slug ', title: 'Bad', gate: 'public', updatedAt: '2026-07-29T00:00:00Z' }] }],
     ['invalid gate', { items: [{ campaignSlug: 'bad-gate', title: 'Bad', gate: 'gm', updatedAt: '2026-07-29T00:00:00Z' }] }],
+    ['non-date-time updatedAt', { items: [{ campaignSlug: 'bad-date', title: 'Bad', gate: 'public', updatedAt: '2026-07-29' }] }],
+    ['date-time without timezone', { items: [{ campaignSlug: 'bad-date', title: 'Bad', gate: 'public', updatedAt: '2026-07-29T00:00:00' }] }],
     ['extra item field', { items: [{ campaignSlug: 'extra-field', title: 'Bad', gate: 'public', updatedAt: '2026-07-29T00:00:00Z', bucket: 'private' }] }],
   ] as const)('fails closed when Campaign Surface Registry response has %s', async (_label, body) => {
     const fetchMock = vi.fn(async () => new Response(JSON.stringify(body), { status: 200 }));

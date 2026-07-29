@@ -1,4 +1,4 @@
-import type { CampaignGate, ContentVisibility } from '~/lib/campaign-gate-policy';
+import { isCampaignGate, type CampaignGate, type ContentVisibility } from '~/lib/campaign-gate-policy';
 import type { CampaignContentAssetPath } from '~/lib/campaign-content-asset-rewrite';
 import { getCloudflareRuntimeEnv } from '~/utils/cloudflare-env';
 
@@ -310,10 +310,6 @@ function isContentVisibility(value: unknown): value is ContentVisibility {
   return value === 'public' || value === 'campaignMembers' || value === 'gm';
 }
 
-function isCampaignGate(value: unknown): value is CampaignGate {
-  return value === 'public' || value === 'campaignMembers';
-}
-
 const campaignContentCollectionByKey: Record<string, string> = {
   pages: 'campaignPages',
   notes: 'campaignNotes',
@@ -513,6 +509,10 @@ function validateListResponse(input: {
 }
 
 function validateIsoDateTime(value: string, field: string): void {
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(value)) {
+    throw new Error(`Campaign Content source response has invalid ${field}.`);
+  }
+
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
     throw new Error(`Campaign Content source response has invalid ${field}.`);
@@ -534,7 +534,7 @@ function validateCampaignSurfaceRegistryItem(item: unknown): CampaignSurfaceRegi
 
   validateNoAdditionalProperties(item, ['campaignSlug', 'title', 'gate', 'updatedAt'], 'Campaign Surface Registry item');
 
-  const campaignSlug = getRequiredString(item, 'campaignSlug').trim();
+  const campaignSlug = getRequiredString(item, 'campaignSlug');
   if (!/^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(campaignSlug)) {
     throw new Error('Campaign Surface Registry item has invalid campaignSlug.');
   }

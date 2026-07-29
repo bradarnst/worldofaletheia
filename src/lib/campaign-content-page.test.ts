@@ -7,6 +7,7 @@ import {
 } from '~/lib/campaign-content-page';
 import { parseCampaignGateManifest } from '~/lib/campaign-gate-policy';
 import type { CampaignAccessRole } from '~/lib/campaign-gate-policy';
+import { loadCampaignSurfaceGateManifest } from '~/lib/campaign-index';
 
 const testGateManifest = parseCampaignGateManifest({
   'sample-campaign': 'public',
@@ -280,6 +281,70 @@ describe('buildCampaignContentPageModel (issue #9)', () => {
       httpStatus: 404,
       reason: 'not_found',
     });
+    expect(getLiveEntry).not.toHaveBeenCalled();
+  });
+
+  it('uses a registry-loaded public gate to allow anonymous page reads', async () => {
+    const gateManifest = await loadCampaignSurfaceGateManifest({
+      loadCampaignSurfaces: async () => [
+        { campaignSlug: 'registry-public', title: 'Registry Public', gate: 'public', updatedAt: '2026-07-29T00:00:00Z' },
+      ],
+    });
+    const getLiveEntry = vi.fn<CampaignContentPageLiveEntryGetter>(async () =>
+      liveEntryResult(makeEntry({ campaignSlug: 'registry-public', visibility: 'public' })),
+    );
+
+    const model = await buildCampaignContentPageModelImpl({
+      campaignSlug: 'registry-public',
+      documentId: 'index',
+      viewer: { kind: 'anonymous' },
+      getCampaignAccessRole: async () => 'anonymous',
+      getLiveEntry,
+      gateManifest,
+      requireKnownCampaignGate: true,
+    });
+
+    expect(model).toMatchObject({ gate: 'public', gateSource: 'registry', gateAllowsRequest: true, sourceFetched: true, httpStatus: 200 });
+    const [, filter] = getLiveEntry.mock.calls[0] as [string, Record<string, unknown>];
+    expect(filter.accessScope).toMatchObject({ allowedVisibilities: ['public'] });
+  });
+
+  it('uses a registry-loaded campaignMembers gate to block anonymous page reads before source fetch', async () => {
+    const gateManifest = await loadCampaignSurfaceGateManifest({
+      loadCampaignSurfaces: async () => [
+        { campaignSlug: 'registry-members', title: 'Registry Members', gate: 'campaignMembers', updatedAt: '2026-07-29T00:00:00Z' },
+      ],
+    });
+    const getLiveEntry = vi.fn<CampaignContentPageLiveEntryGetter>();
+
+    const model = await buildCampaignContentPageModelImpl({
+      campaignSlug: 'registry-members',
+      documentId: 'index',
+      viewer: { kind: 'anonymous' },
+      getCampaignAccessRole: async () => 'anonymous',
+      getLiveEntry,
+      gateManifest,
+      requireKnownCampaignGate: true,
+    });
+
+    expect(model).toMatchObject({ gate: 'campaignMembers', gateSource: 'registry', gateAllowsRequest: false, sourceFetched: false, httpStatus: 404 });
+    expect(getLiveEntry).not.toHaveBeenCalled();
+  });
+
+  it('fails closed before source fetch when a required registry gate is malformed', async () => {
+    const getLiveEntry = vi.fn<CampaignContentPageLiveEntryGetter>();
+
+    const model = await buildCampaignContentPageModelImpl({
+      campaignSlug: 'bad-registry-gate',
+      documentId: 'index',
+      viewer: { kind: 'authenticated', userId: 'user_123', traceId: 'trace_123' },
+      getCampaignAccessRole: async () => 'member',
+      getLiveEntry,
+      gateManifest: parseCampaignGateManifest({ 'bad-registry-gate': 'gm' }, { source: 'registry' }),
+      requireKnownCampaignGate: true,
+    });
+
+    expect(model).toMatchObject({ gate: 'campaignMembers', gateSource: 'invalid-default', gateAllowsRequest: false, sourceFetched: false, httpStatus: 404 });
     expect(getLiveEntry).not.toHaveBeenCalled();
   });
 

@@ -21,6 +21,7 @@ import {
 import {
   campaignGateManifest,
   decideCampaignGateAccess,
+  isUnknownCampaignGateSource,
   type CampaignGateLogger,
   type ParsedCampaignGateManifest,
 } from '~/lib/campaign-gate-policy';
@@ -120,7 +121,7 @@ export async function handleCampaignContentAssetRequest(
     logger,
   });
 
-  if (input.requireKnownCampaignGate && decision.gateSource === 'missing-default') {
+  if (input.requireKnownCampaignGate && isUnknownCampaignGateSource(decision.gateSource)) {
     return new Response(null, { status: 404, headers: noIndexHeaders() });
   }
 

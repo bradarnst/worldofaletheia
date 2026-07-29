@@ -1,3 +1,10 @@
+---
+audience: developer-operator
+publication: repo-local
+status: current
+owner: woa-admin
+---
+
 # Campaign Content Source API main-site handoff
 
 This guide is derived from the Campaign Content OpenAPI contracts:
@@ -5,7 +12,9 @@ This guide is derived from the Campaign Content OpenAPI contracts:
 - `docs/contracts/campaign-content-read-api.openapi.yaml`
 - `docs/contracts/campaign-content-operator-api.openapi.yaml` (owned and versioned in the `woa-admin` sister repository; not included in this repository)
 
-OpenAPI is authoritative for routes, status codes, schemas, filtering, pagination, auth headers, and error bodies. This guide exists to make the intended `worldofaletheia.com` integration boundary explicit.
+OpenAPI is binding and authoritative for routes, status codes, schemas, filtering, pagination, auth headers, and error bodies. This contract-adjacent handoff exists to make the intended `worldofaletheia.com` integration boundary explicit without becoming procedural setup guidance or redefining HTTP behavior.
+
+For first rollout sequencing across `woa-admin`, Cloudflare resources, GM sync setup, main-site cutover, and legacy cleanup, use the rollout guide owned by the `woa-admin` sister repository.
 
 ## Ownership split
 
@@ -39,52 +48,17 @@ The decoded assertion payload uses:
 
 `woa-admin` verifies the envelope, expiry, audience, operation, campaign match, signature, and allowed visibility values. It does not read Better Auth cookies or decide whether an end user is a campaign member. The main site must make that decision before minting the assertion.
 
-## Campaign Surface Registry
+## Campaign surfaces
 
-The main site uses `GET /api/v1/campaigns` as the source of truth for campaign listing and Campaign Gate metadata.
+The main site discovers active campaign surfaces through:
 
-Returned surfaces require both active campaign storage and matching Campaign Surface Registry metadata for the same campaign and environment. Bucket rows alone are not public-site listing metadata. Registry response items are intentionally limited to the OpenAPI-defined fields: `campaignSlug`, `title`, `gate`, and `updatedAt`.
+```text
+GET /api/v1/campaigns
+```
 
-If the registry is unavailable or malformed, the main site must fail closed: the campaign index degrades without listing protected surfaces, and campaign route gate resolution must not fall back to local hard-coded slugs.
+This endpoint returns the environment-specific Campaign Surface Registry. A returned surface requires both active campaign storage configured in `woa-admin` for that runtime environment and matching Campaign Surface Registry metadata for the same campaign and environment. Bucket rows alone are not public-site campaign listing metadata.
 
-### Production setup and verification
-
-Setup is applied in `woa-admin`, because it owns Campaign Content storage and registry metadata. There is no main-site database migration, seed file, local fallback list, or `wrangler` command to run in this repository for registry rows.
-
-For each public-site environment, the owning `woa-admin` operator must configure an active Campaign Surface Registry row for every campaign surface that should be listable or routable on `worldofaletheia.com`. The exact mutation command or UI path is intentionally owned by the `woa-admin` project; this repository's required setup action is to request/verify that the `woa-admin` registry endpoint returns the contract-shaped rows below for the target environment.
-
-Required registry metadata per surface:
-
-- `campaignSlug`
-- `title`
-- `gate` (`public` or `campaignMembers`)
-- `updatedAt`
-
-Verification steps:
-
-1. Confirm the main-site environment has `CAMPAIGN_CONTENT_SOURCE_BASE_URL` pointed at the matching `woa-admin` environment. For Cloudflare Pages/Workers, inspect the deployed environment variable or secret in the Cloudflare dashboard/environment settings.
-2. From an operator shell with access to that origin, request the registry:
-
-   ```bash
-   curl -fsS "$CAMPAIGN_CONTENT_SOURCE_BASE_URL/api/v1/campaigns"
-   ```
-
-   Verify it returns `200` with only an `items` array of registry items using the four fields above.
-3. Verify the response shape locally before deployment-sensitive testing:
-
-   ```bash
-   CAMPAIGN_CONTENT_SOURCE_BASE_URL="https://<woa-admin-origin>" curl -fsS "$CAMPAIGN_CONTENT_SOURCE_BASE_URL/api/v1/campaigns"
-   ```
-
-4. Load `/campaigns` on the main site and verify the returned registry surfaces appear.
-5. Load a `public` campaign route anonymously and verify public content is reachable.
-6. Load a `campaignMembers` campaign route anonymously and verify it fails closed before protected source content is fetched; then sign in as a D1 `campaign_memberships` member/GM for the exact `campaignSlug` and verify access.
-
-Rollback/recovery:
-
-- To remove a campaign from public-site listing and routing, remove or disable its Campaign Surface Registry metadata in `woa-admin`; do not change bucket rows alone.
-- If registry metadata is malformed or the registry endpoint is down, the main site will fail closed. Restore the previous valid registry response or roll back the `woa-admin` registry deployment/configuration.
-- Do not add local hard-coded campaign slug or gate fallbacks in this repository as a recovery mechanism.
+Response items are intentionally limited to the OpenAPI-defined `campaignSlug`, `title`, `gate`, and `updatedAt` fields. The endpoint does not expose bucket names, storage slugs, environment fields, membership/user fields, admin metadata, document excerpts, tags, Markdown, rendered HTML, or asset paths.
 
 ## Astro entry mapping
 

@@ -13,6 +13,7 @@
 import {
   campaignGateManifest,
   decideCampaignGateAccess,
+  isUnknownCampaignGateSource,
   type CampaignAccessRole,
   type CampaignGate,
   type CampaignGateLogger,
@@ -147,7 +148,7 @@ export async function buildCampaignNotesListModel(
     campaignAccessRole,
   };
 
-  if (input.requireKnownCampaignGate && decision.gateSource === 'missing-default') {
+  if (input.requireKnownCampaignGate && isUnknownCampaignGateSource(decision.gateSource)) {
     return {
       ...shared,
       gateAllowsRequest: false,

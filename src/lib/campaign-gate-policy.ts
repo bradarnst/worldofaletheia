@@ -42,8 +42,12 @@ const allowedVisibilitiesByAccessRole: Record<CampaignAccessRole, ContentVisibil
   gm: ['public', 'campaignMembers', 'gm'],
 };
 
-function isCampaignGate(value: unknown): value is CampaignGate {
+export function isCampaignGate(value: unknown): value is CampaignGate {
   return value === 'public' || value === 'campaignMembers';
+}
+
+export function isUnknownCampaignGateSource(source: CampaignGateSource): source is 'invalid-default' | 'missing-default' {
+  return source === 'invalid-default' || source === 'missing-default';
 }
 
 function normalizeCampaignSlug(slug: string): string {
