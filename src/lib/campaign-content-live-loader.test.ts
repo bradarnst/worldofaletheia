@@ -10,6 +10,7 @@ import type { CampaignContentSourceClient } from '~/lib/campaign-content-source-
 
 function createSourceClientStub(): CampaignContentSourceClient {
   return {
+    listCampaignSurfaces: vi.fn(),
     listCampaignContent: vi.fn(),
     getCampaignContentItem: vi.fn(),
     getCampaignContentAsset: vi.fn(),

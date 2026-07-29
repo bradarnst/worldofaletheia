@@ -4,6 +4,7 @@ import CampaignsContentLayout from '@layouts/CampaignsContentLayout.astro';
 import CampaignContentPageState from '@components/CampaignContentPageState.astro';
 import { buildCampaignContentPageModel } from '~/lib/campaign-content-page';
 import { createCampaignPageRequestContext } from '~/lib/campaign-page-request-context';
+import { loadCampaignSurfaceGateManifestFailClosed } from '~/lib/campaign-index';
 
 // Campaign Note Detail: rendered as a Campaign Content Item in the `notes` collection (issue #10).
 // V1 detail routes accept one-segment document IDs only. Multi-segment paths (e.g. /notes/a/b)
@@ -20,6 +21,7 @@ const ctx = await createCampaignPageRequestContext({
 });
 
 const isValidDocumentId = typeof documentId === 'string' && !documentId.includes('/');
+const gateManifest = await loadCampaignSurfaceGateManifestFailClosed();
 
 const model = isValidDocumentId
   ? await buildCampaignContentPageModel({
@@ -29,6 +31,8 @@ const model = isValidDocumentId
       viewer: ctx.viewer,
       getCampaignAccessRole: ctx.getCampaignAccessRole,
       getLiveEntry,
+      gateManifest,
+      requireKnownCampaignGate: true,
     })
   : null;
 

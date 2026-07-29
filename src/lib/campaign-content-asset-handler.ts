@@ -36,6 +36,7 @@ export interface HandleCampaignContentAssetRequestInput {
   createSourceClient?: () => CampaignContentSourceClient | Promise<CampaignContentSourceClient>;
   logger?: CampaignGateLogger;
   gateManifest?: ParsedCampaignGateManifest;
+  requireKnownCampaignGate?: boolean;
 }
 
 export const CAMPAIGN_CONTENT_ASSET_NOINDEX_HEADERS: Record<string, string> = {
@@ -118,6 +119,10 @@ export async function handleCampaignContentAssetRequest(
     campaignAccessRole,
     logger,
   });
+
+  if (input.requireKnownCampaignGate && decision.gateSource === 'missing-default') {
+    return new Response(null, { status: 404, headers: noIndexHeaders() });
+  }
 
   // Anonymous blocked by a campaignMembers gate: stop before any source fetch.
   if (!decision.gateAllowsRequest) {

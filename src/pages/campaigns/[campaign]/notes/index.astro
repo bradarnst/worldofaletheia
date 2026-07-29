@@ -7,6 +7,7 @@ import {
   type CampaignNotesPageEntry,
 } from '~/lib/campaign-notes';
 import { createCampaignPageRequestContext } from '~/lib/campaign-page-request-context';
+import { loadCampaignSurfaceGateManifestFailClosed } from '~/lib/campaign-index';
 
 // Campaign Notes Index: rendered from the `notes` Campaign Content collection (issue #10).
 export const prerender = false;
@@ -28,11 +29,15 @@ const getLiveNotesCollection: CampaignNotesListLiveGetter = async (collection, f
   return { entries: result.entries as CampaignNotesPageEntry[] };
 };
 
+const gateManifest = await loadCampaignSurfaceGateManifestFailClosed();
+
 const model = await buildCampaignNotesListModel({
   campaignSlug,
   viewer: ctx.viewer,
   getCampaignAccessRole: ctx.getCampaignAccessRole,
   getLiveCollection: getLiveNotesCollection,
+  gateManifest,
+  requireKnownCampaignGate: true,
 });
 
 Astro.response.status = model.httpStatus;

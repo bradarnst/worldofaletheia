@@ -91,6 +91,7 @@ export interface BuildCampaignContentPageModelInput {
   getCampaignAccessRole: (campaignSlug: string) => Promise<CampaignAccessRole>;
   getLiveEntry: CampaignContentPageLiveEntryGetter;
   gateManifest?: ParsedCampaignGateManifest;
+  requireKnownCampaignGate?: boolean;
   logger?: CampaignGateLogger;
 }
 
@@ -131,6 +132,21 @@ export async function buildCampaignContentPageModel(
     gateSource: decision.gateSource,
     campaignAccessRole,
   };
+
+  if (input.requireKnownCampaignGate && decision.gateSource === 'missing-default') {
+    return {
+      ...shared,
+      gateAllowsRequest: false,
+      sourceFetched: false,
+      isAvailable: false,
+      canView: false,
+      entry: null,
+      visibility: null,
+      robots: CAMPAIGN_CONTENT_PAGE_NOINDEX,
+      httpStatus: 404,
+      reason: 'not_found',
+    };
+  }
 
   if (!decision.gateAllowsRequest) {
     return {

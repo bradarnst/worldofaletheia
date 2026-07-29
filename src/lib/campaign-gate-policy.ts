@@ -2,7 +2,7 @@ export type CampaignGate = 'public' | 'campaignMembers';
 export type ContentVisibility = 'public' | 'campaignMembers' | 'gm';
 export type CampaignAccessRole = 'anonymous' | 'member' | 'gm';
 
-export type CampaignGateSource = 'manifest' | 'invalid-default' | 'missing-default';
+export type CampaignGateSource = 'registry' | 'manifest' | 'invalid-default' | 'missing-default';
 
 export interface CampaignGateLogger {
   warn(event: string, details: Record<string, unknown>): void;
@@ -32,8 +32,6 @@ export interface CampaignGateAccessDecision {
 }
 
 export const CAMPAIGN_GATE_MANIFEST = {
-  brad: 'campaignMembers',
-  barry: 'campaignMembers',
 } as const satisfies Record<string, CampaignGate>;
 
 const FALLBACK_GATE: CampaignGate = 'campaignMembers';
@@ -54,9 +52,10 @@ function normalizeCampaignSlug(slug: string): string {
 
 export function parseCampaignGateManifest(
   rawManifest: Record<string, unknown>,
-  options: { logger?: CampaignGateLogger } = {},
+  options: { logger?: CampaignGateLogger; source?: Exclude<CampaignGateSource, 'invalid-default' | 'missing-default'> } = {},
 ): ParsedCampaignGateManifest {
   const logger = options.logger ?? defaultLogger;
+  const source = options.source ?? 'manifest';
   const entries: Record<string, CampaignGate> = {};
   const sources: Record<string, Exclude<CampaignGateSource, 'missing-default'>> = {};
 
@@ -72,7 +71,7 @@ export function parseCampaignGateManifest(
 
     if (isCampaignGate(value)) {
       entries[campaignSlug] = value;
-      sources[campaignSlug] = 'manifest';
+      sources[campaignSlug] = source;
       continue;
     }
 

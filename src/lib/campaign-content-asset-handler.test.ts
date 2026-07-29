@@ -35,6 +35,7 @@ interface Scenario {
 
 function makeSourceClientStub(): CampaignContentSourceClient {
   return {
+    listCampaignSurfaces: vi.fn(),
     listCampaignContent: vi.fn(),
     getCampaignContentItem: vi.fn(),
     getCampaignContentAsset: vi.fn(),

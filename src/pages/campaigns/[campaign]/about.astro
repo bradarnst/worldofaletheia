@@ -5,6 +5,7 @@ import CampaignsContentLayout from '@layouts/CampaignsContentLayout.astro';
 import CampaignContentPageState from '@components/CampaignContentPageState.astro';
 import { buildCampaignContentPageModel } from '~/lib/campaign-content-page';
 import { createCampaignPageRequestContext } from '~/lib/campaign-page-request-context';
+import { loadCampaignSurfaceGateManifestFailClosed } from '~/lib/campaign-index';
 
 // Campaign About: rendered as a normal Campaign Content Item (not a second gate/settings doc).
 const ABOUT_DOCUMENT_ID = 'about';
@@ -18,12 +19,16 @@ const ctx = await createCampaignPageRequestContext({
   hostname: Astro.url.hostname,
 });
 
+const gateManifest = await loadCampaignSurfaceGateManifestFailClosed();
+
 const model = await buildCampaignContentPageModel({
   campaignSlug,
   documentId: ABOUT_DOCUMENT_ID,
   viewer: ctx.viewer,
   getCampaignAccessRole: ctx.getCampaignAccessRole,
   getLiveEntry,
+  gateManifest,
+  requireKnownCampaignGate: true,
 });
 
 Astro.response.status = model.httpStatus;

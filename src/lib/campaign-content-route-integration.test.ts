@@ -7,7 +7,7 @@ import {
   createCampaignContentSourceClient,
 } from '~/lib/campaign-content-source-boundary';
 import { buildCampaignContentPageModel, type CampaignContentPageLiveEntryGetter } from '~/lib/campaign-content-page';
-import { buildCampaignIndexModel, createCampaignIndexLiveMetadataLoader, type CampaignIndexLiveEntryGetter } from '~/lib/campaign-index';
+import { buildCampaignIndexModel } from '~/lib/campaign-index';
 import { buildCampaignNotesListModel, type CampaignNotesListLiveGetter, type CampaignNotesPageEntry } from '~/lib/campaign-notes';
 import { parseCampaignGateManifest, type CampaignAccessRole } from '~/lib/campaign-gate-policy';
 
@@ -136,17 +136,6 @@ function makeRouteHarness() {
     return { entry: result };
   };
 
-  const getIndexLiveEntry: CampaignIndexLiveEntryGetter = async (collection, filter) => {
-    const result = await loader.loadEntry({ collection, filter });
-    if (!result) {
-      return {};
-    }
-    if ('error' in result) {
-      return { error: result.error };
-    }
-    return { entry: result };
-  };
-
   const getLiveCollection: CampaignNotesListLiveGetter = async (collection, filter) => {
     const result = await loader.loadCollection({ collection, filter });
     if ('error' in result) {
@@ -155,7 +144,7 @@ function makeRouteHarness() {
     return { entries: result.entries as CampaignNotesPageEntry[] };
   };
 
-  return { calls, getLiveEntry, getIndexLiveEntry, getLiveCollection };
+  return { calls, getLiveEntry, getLiveCollection };
 }
 
 function renderBrowserResponse(input: { status: number; robots: string | null; html: string }): Response {
@@ -184,10 +173,12 @@ describe('Campaign Content browser-facing route integration', () => {
   it('verifies Campaign Index final HTML with public-only source scope', async () => {
     const harness = makeRouteHarness();
     const model = await buildCampaignIndexModel({
-      campaigns: [{ slug: 'public' }, { slug: 'members' }],
+      campaigns: [
+        { campaignSlug: 'public', title: 'public Campaign', gate: 'public' },
+        { campaignSlug: 'members', title: 'members Campaign', gate: 'campaignMembers' },
+      ],
       viewer: { kind: 'anonymous' },
-      gateManifest,
-      loadCampaignMetadata: createCampaignIndexLiveMetadataLoader({ getLiveEntry: harness.getIndexLiveEntry }),
+      loadCampaignSurfaces: vi.fn(async () => []),
     });
     const response = renderBrowserResponse({ status: 200, robots: null, html: model.campaigns.map((campaign) => campaign.title).join('\n') });
     const html = await response.text();
@@ -196,7 +187,7 @@ describe('Campaign Content browser-facing route integration', () => {
     expect(html).toContain('public Campaign');
     expect(html).toContain('members Campaign');
     expect(html).not.toContain('GM Secrets');
-    expect(harness.calls.map((call) => call.allowedVisibility)).toEqual([['public'], ['public']]);
+    expect(harness.calls).toEqual([]);
     assertNoSentinelRuntimeAssertionLeak(html, harness.calls);
   });
 

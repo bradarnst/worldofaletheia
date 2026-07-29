@@ -84,6 +84,7 @@ export interface BuildCampaignNotesListModelInput {
   getCampaignAccessRole: (campaignSlug: string) => Promise<CampaignAccessRole>;
   getLiveCollection: CampaignNotesListLiveGetter;
   gateManifest?: ParsedCampaignGateManifest;
+  requireKnownCampaignGate?: boolean;
   logger?: CampaignGateLogger;
 }
 
@@ -145,6 +146,19 @@ export async function buildCampaignNotesListModel(
     gateSource: decision.gateSource,
     campaignAccessRole,
   };
+
+  if (input.requireKnownCampaignGate && decision.gateSource === 'missing-default') {
+    return {
+      ...shared,
+      gateAllowsRequest: false,
+      sourceFetched: false,
+      isAvailable: false,
+      entries: [],
+      robots: CAMPAIGN_NOTES_NOINDEX,
+      httpStatus: 404,
+      reason: 'not_found',
+    };
+  }
 
   if (!decision.gateAllowsRequest) {
     return {
