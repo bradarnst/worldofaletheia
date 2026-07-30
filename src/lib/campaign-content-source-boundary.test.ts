@@ -12,10 +12,12 @@ import {
 import { toCampaignContentAssetPath } from '~/lib/campaign-content-asset-rewrite';
 
 const sourceConfig = {
-  baseUrl: 'https://woa-admin.example.invalid',
+  baseUrl: 'https://woa-admin.example.invalid/api/v2',
   assertionSecret: 'test-runtime-secret',
   assertionAudience: 'woa-admin:campaign-content:v1',
 };
+
+const expectedSourceApiBase = sourceConfig.baseUrl;
 
 function makeSourceEntry(overrides: {
   id?: string;
@@ -104,7 +106,7 @@ describe('campaign content source boundary', () => {
         ],
       },
     });
-    expect(fetchMock.mock.calls[0]?.[0]).toBe('https://woa-admin.example.invalid/api/v1/campaigns');
+    expect(fetchMock.mock.calls[0]?.[0]).toBe(`${expectedSourceApiBase}/campaigns`);
     expect(fetchMock.mock.calls[0]?.[1]?.headers).toEqual({ Accept: 'application/json' });
   });
 
@@ -189,7 +191,7 @@ describe('campaign content source boundary', () => {
     expect(result.ok).toBe(true);
     expect(fetchMock).toHaveBeenCalledOnce();
     expect(fetchMock.mock.calls[0]?.[0]).toBe(
-      'https://woa-admin.example.invalid/api/v1/campaigns/sample-campaign/collections/pages/documents?type=overview&subtype=root&tag=intro&author=author-1&contributor=contributor-1&title=sample&updatedSince=2026-07-01T00%3A00%3A00Z&limit=25&cursor=next+page',
+      `${expectedSourceApiBase}/campaigns/sample-campaign/collections/pages/documents?type=overview&subtype=root&tag=intro&author=author-1&contributor=contributor-1&title=sample&updatedSince=2026-07-01T00%3A00%3A00Z&limit=25&cursor=next+page`,
     );
     expect(fetchMock.mock.calls[0]?.[1]?.headers).toMatchObject({
       Accept: 'application/json',
@@ -234,7 +236,7 @@ describe('campaign content source boundary', () => {
       },
     });
     expect(fetchMock.mock.calls[0]?.[0]).toBe(
-      'https://woa-admin.example.invalid/api/v1/campaigns/brad/collections/notes/documents/session-zero',
+      `${expectedSourceApiBase}/campaigns/brad/collections/notes/documents/session-zero`,
     );
   });
 
@@ -381,7 +383,7 @@ describe('campaign content asset source reads', () => {
 
     expect(fetchMock).toHaveBeenCalledOnce();
     expect(fetchMock.mock.calls[0]?.[0]).toBe(
-      'https://woa-admin.example.invalid/api/v1/campaigns/brad/assets?path=assets%2Fhero.png',
+      `${expectedSourceApiBase}/campaigns/brad/assets?path=assets%2Fhero.png`,
     );
     expect(fetchMock.mock.calls[0]?.[1]?.headers).toMatchObject({
       [RUNTIME_ASSERTION_HEADER]: expect.any(String),

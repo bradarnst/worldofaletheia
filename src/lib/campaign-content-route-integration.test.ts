@@ -11,7 +11,7 @@ import { buildCampaignIndexModel } from '~/lib/campaign-index';
 import { buildCampaignNotesListModel, type CampaignNotesListLiveGetter, type CampaignNotesPageEntry } from '~/lib/campaign-notes';
 import { parseCampaignGateManifest, type CampaignAccessRole } from '~/lib/campaign-gate-policy';
 
-const sourceBaseUrl = 'https://woa-admin.example.invalid';
+const sourceBaseUrl = 'https://woa-admin.example.invalid/api/v1';
 const gateManifest = parseCampaignGateManifest({ public: 'public', members: 'campaignMembers' });
 
 type Viewer = { kind: 'anonymous' } | { kind: 'authenticated'; userId: string; traceId: string };
