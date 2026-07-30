@@ -6,7 +6,7 @@ This setup is required before `worldofaletheia.com` can read Campaign Content fr
 
 Apply these values in each Cloudflare Workers environment that will read Campaign Content:
 
-- `CAMPAIGN_CONTENT_SOURCE_BASE_URL` — the `woa-admin` origin for the same environment, for example `https://woa-admin.worldofaletheia.com`.
+- `CAMPAIGN_CONTENT_SOURCE_BASE_URL` — the versioned Campaign Content API base for the same environment. For production, use `https://worldofaletheia.com/api/v1`, which Cloudflare routes to the `woa-admin` Worker. Do not use the Access-protected `woa-admin.worldofaletheia.com` hostname for main-site reads.
 - `CAMPAIGN_CONTENT_RUNTIME_ASSERTION_SECRET` — shared HMAC secret known only to `worldofaletheia.com` and `woa-admin` for that environment.
 - `CAMPAIGN_CONTENT_RUNTIME_ASSERTION_AUDIENCE` — optional; defaults to the V1 contract audience `woa-admin:campaign-content:v1` and should only differ if the matching `woa-admin` environment expects a different audience.
 
@@ -35,6 +35,8 @@ Apply these values in each Cloudflare Workers environment that will read Campaig
 
 4. Redeploy the main site after the variables are present.
 
+The main-site source client appends Campaign Content resource paths such as `/campaigns` and `/campaigns/{campaignSlug}/documents` to `CAMPAIGN_CONTENT_SOURCE_BASE_URL`. Include the API version in the configured base URL so future API version changes remain deployment configuration rather than code changes.
+
 ## Verification
 
 - Run `pnpm test src/lib/campaign-content-source-boundary.test.ts` to verify assertion payloads, headers, validation, error mapping, and Campaign Content asset source reads.
@@ -43,7 +45,7 @@ Apply these values in each Cloudflare Workers environment that will read Campaig
 - Run `pnpm test src/lib/campaign-content-asset-handler.test.ts` to verify the `/campaigns/{campaign}/assets/{path}` route applies the Campaign Gate + membership-derived visibility scope, serves readable assets for public/member/GM requests, blocks anonymous readers on campaignMembers-gated campaigns before any source fetch, and fails closed to generic 404/503 responses.
 - Run `pnpm test` for the complete project test suite before release.
 - Run `pnpm astro check` and `pnpm build` before release to verify type safety and production build behavior.
-- In an environment wired to `woa-admin`, perform a campaign content read and verify `woa-admin` receives both `x-woa-runtime-actor` and `x-woa-runtime-signature` headers at the V1 `/collections/{collection}/documents` endpoint.
+- In an environment wired to `woa-admin`, perform a campaign content read and verify `woa-admin` receives both `x-woa-runtime-actor` and `x-woa-runtime-signature` headers at the configured versioned API route, for example `/api/v1/campaigns/{campaign}/collections/{collection}/documents` in production.
 - Decode the assertion payload only in a trusted operator context and confirm `exp` is approximately 60 seconds after issuance, `operation` is `content:read`, `allowedVisibility` matches the reader scope, `campaignSlug` matches the requested campaign, and no email, display name, cookie, or session token appears in the payload.
 - Verify anonymous, member, and GM reads return only their cumulative visibility scope and that missing, unreadable, malformed, rate-limited, and unavailable reads produce generic 404/503 browser behavior.
 
@@ -51,5 +53,5 @@ Apply these values in each Cloudflare Workers environment that will read Campaig
 
 - To stop source reads, remove or rotate `CAMPAIGN_CONTENT_RUNTIME_ASSERTION_SECRET` in either environment. Calls fail closed as unavailable.
 - If a secret is exposed, rotate it in both `worldofaletheia.com` and `woa-admin`, then redeploy or restart both runtimes.
-- If an environment points to the wrong `woa-admin` origin, correct `CAMPAIGN_CONTENT_SOURCE_BASE_URL` and redeploy before re-enabling Campaign Content routes.
+- If an environment points to the wrong Campaign Content API base, correct `CAMPAIGN_CONTENT_SOURCE_BASE_URL` and redeploy before re-enabling Campaign Content routes.
 - If the contract rollout must be reverted, deploy the preceding main-site release together with the matching `woa-admin` release; the assertion header, payload, and document routes must change as one unit.

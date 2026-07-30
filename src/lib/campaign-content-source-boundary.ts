@@ -164,6 +164,12 @@ function trimTrailingSlashes(value: string): string {
   return value.replace(/\/+$/g, '');
 }
 
+function buildSourceUrl(config: CampaignContentSourceConfig, resourcePath: string): URL {
+  const base = `${trimTrailingSlashes(config.baseUrl)}/`;
+  const path = resourcePath.replace(/^\/+/, '');
+  return new URL(path, base);
+}
+
 function normalizeRequiredConfigValue(value: string | undefined, name: string): string {
   const trimmed = value?.trim() ?? '';
   if (!trimmed) {
@@ -642,11 +648,11 @@ function appendStringFilter(searchParams: URLSearchParams, key: string, value: s
 }
 
 function buildListUrl(config: CampaignContentSourceConfig, options: CampaignContentListOptions): string {
-  const campaignPath = `/api/v1/campaigns/${encodeURIComponent(options.campaignSlug)}`;
+  const campaignPath = `campaigns/${encodeURIComponent(options.campaignSlug)}`;
   const documentsPath = options.collectionKey
     ? `${campaignPath}/collections/${encodeURIComponent(options.collectionKey)}/documents`
     : `${campaignPath}/documents`;
-  const url = new URL(documentsPath, trimTrailingSlashes(config.baseUrl));
+  const url = buildSourceUrl(config, documentsPath);
   appendStringFilter(url.searchParams, 'type', options.type);
   appendStringFilter(url.searchParams, 'subtype', options.subtype);
   appendStringFilter(url.searchParams, 'tag', options.tag);
@@ -662,21 +668,18 @@ function buildListUrl(config: CampaignContentSourceConfig, options: CampaignCont
 }
 
 function buildCampaignSurfaceRegistryUrl(config: CampaignContentSourceConfig): string {
-  return new URL('/api/v1/campaigns', trimTrailingSlashes(config.baseUrl)).toString();
+  return buildSourceUrl(config, 'campaigns').toString();
 }
 
 function buildDetailUrl(config: CampaignContentSourceConfig, options: CampaignContentDetailOptions): string {
-  return new URL(
-    `/api/v1/campaigns/${encodeURIComponent(options.campaignSlug)}/collections/${encodeURIComponent(options.collectionKey)}/documents/${encodeURIComponent(options.documentId)}`,
-    trimTrailingSlashes(config.baseUrl),
+  return buildSourceUrl(
+    config,
+    `campaigns/${encodeURIComponent(options.campaignSlug)}/collections/${encodeURIComponent(options.collectionKey)}/documents/${encodeURIComponent(options.documentId)}`,
   ).toString();
 }
 
 function buildAssetUrl(config: CampaignContentSourceConfig, options: CampaignContentAssetOptions): string {
-  const url = new URL(
-    `/api/v1/campaigns/${encodeURIComponent(options.campaignSlug)}/assets`,
-    trimTrailingSlashes(config.baseUrl),
-  );
+  const url = buildSourceUrl(config, `campaigns/${encodeURIComponent(options.campaignSlug)}/assets`);
   url.searchParams.set('path', options.assetPath);
   return url.toString();
 }
